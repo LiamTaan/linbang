@@ -1,0 +1,131 @@
+package cn.iocoder.yudao.module.linbang.controller.admin.memberqualification.vo;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Schema(description = "管理后台 - 用户资质详情 Response VO")
+@Data
+public class MemberQualificationDetailRespVO {
+
+    private Long id;
+    private Long userId;
+    private String qualificationType;
+    private String qualificationName;
+    private String qualificationNo;
+    private Long fileId;
+    private LocalDate validStartDate;
+    private LocalDate validEndDate;
+    private String auditStatus;
+    private String auditRemark;
+    private Long auditBy;
+    private LocalDateTime auditTime;
+    private String rejectReason;
+    private LocalDateTime createTime;
+    private LocalDateTime updateTime;
+    private UserRespVO user;
+    private RealNameRespVO realName;
+    private MerchantRespVO merchant;
+    private LatestEntryRespVO latestEntry;
+    private SummaryRespVO summary;
+    private List<RelatedQualificationRespVO> relatedQualifications;
+    private List<CreditRecordRespVO> creditRecords;
+
+    @Data
+    public static class UserRespVO {
+        private Long id;
+        private String userNo;
+        private String mobile;
+        private String nickname;
+        private String currentRoleCode;
+        private String status;
+        private LocalDateTime lastLoginTime;
+        private String lastLoginIp;
+    }
+
+    @Data
+    public static class RealNameRespVO {
+        private Long id;
+        private String realName;
+        private String idCardNo;
+        private String auditStatus;
+        private String auditRemark;
+        private Long auditBy;
+        private LocalDateTime auditTime;
+        private String rejectReason;
+    }
+
+    @Data
+    public static class MerchantRespVO {
+        private Long id;
+        private Long userId;
+        private String merchantName;
+        private String contactName;
+        private String contactMobile;
+        private String status;
+        private String acceptStatus;
+        private Integer creditScore;
+        private String creditLevel;
+        private String serviceScopeDesc;
+    }
+
+    @Data
+    public static class LatestEntryRespVO {
+        private Long id;
+        private String entryNo;
+        private String regionCode;
+        private String firstAuditStatus;
+        private String finalAuditStatus;
+        private String status;
+        private String remark;
+        private LocalDateTime createTime;
+    }
+
+    @Data
+    public static class SummaryRespVO {
+        private Integer sameUserQualificationCount;
+        private Integer approvedQualificationCount;
+        private Integer rejectedQualificationCount;
+        private Integer expiringSoonCount;
+        private Integer creditRecordCount;
+        private Integer latestCreditScore;
+        private String latestCreditLevel;
+        private Boolean realNameApproved;
+        private Boolean merchantBound;
+    }
+
+    @Data
+    public static class RelatedQualificationRespVO {
+        private Long id;
+        private String qualificationType;
+        private String qualificationName;
+        private String qualificationNo;
+        private Long fileId;
+        private LocalDate validStartDate;
+        private LocalDate validEndDate;
+        private String auditStatus;
+        private String auditRemark;
+        private Long auditBy;
+        private LocalDateTime auditTime;
+        private String rejectReason;
+        private LocalDateTime createTime;
+    }
+
+    @Data
+    public static class CreditRecordRespVO {
+        private Long id;
+        private String ruleCode;
+        private String ruleName;
+        private Integer scoreChange;
+        private Integer beforeScore;
+        private Integer afterScore;
+        private String triggerType;
+        private String bizType;
+        private Long bizId;
+        private String remark;
+        private LocalDateTime createTime;
+    }
+}

@@ -1,0 +1,368 @@
+meta:
+  project_name_cn: "邻里互助"
+  project_name_en: "LinBang"
+  project_type: "local-life-neighborhood-help"
+  architecture: "single-app"
+  backend_repo: "https://github.com/YunaiV/ruoyi-vue-pro"
+  admin_repo: "https://github.com/yudaocode/yudao-ui-admin-vue3"
+  notes:
+    - "禁止切换到 yudao-boot-mini"
+    - "禁止切换到 yudao-cloud-mini"
+    - "支付必须复用 yudao-module-pay"
+    - "地图统一使用高德"
+
+single_source_of_truth:
+  rules_file: "spec/business-rules.yaml"
+  api_file: "spec/openapi-structure.md"
+  requirement_file: "docs/邻里互助项目需求总稿.md"
+
+roles:
+  app_roles:
+    - code: "USER"
+      name: "普通用户"
+    - code: "MERCHANT"
+      name: "服务商"
+    - code: "PROMOTER"
+      name: "推广员"
+    - code: "PARTNER"
+      name: "区域合作商"
+  admin_roles:
+    - code: "SUPER_ADMIN"
+      name: "平台超级管理员"
+    - code: "OPERATOR"
+      name: "运营管理员"
+    - code: "FINANCE"
+      name: "财务管理员"
+    - code: "RISK_ADMIN"
+      name: "风控管理员"
+    - code: "AUDITOR"
+      name: "审核专员"
+    - code: "PARTNER_ADMIN"
+      name: "区域合作商后台角色"
+
+permissions:
+  dimensions:
+    - "menu"
+    - "button"
+    - "data"
+    - "region"
+  partner_constraints:
+    - "只能查看辖区内用户、订单、投诉、入驻申请"
+    - "可做入驻初审，不可做终审"
+    - "可查看辖区推广数据，不可查看全平台财务总账"
+
+objects:
+  core:
+    - "user"
+    - "merchant"
+    - "service_category"
+    - "address"
+    - "order"
+    - "order_unit"
+    - "pay_order"
+    - "pay_refund"
+    - "wallet_account"
+    - "wallet_flow"
+    - "withdraw_order"
+    - "bank_card"
+    - "complaint"
+    - "appeal"
+    - "review"
+    - "credit_record"
+    - "promoter"
+    - "commission_order"
+    - "partner"
+
+api:
+  app_prefix: "/app-api"
+  admin_prefix: "/admin-api"
+  naming:
+    list: "getXxxPage"
+    detail: "getXxx"
+    create: "createXxx"
+    update: "updateXxx"
+    delete: "deleteXxx"
+    export: "exportXxxExcel"
+    audit: "auditXxx"
+  response_rules:
+    - "普通接口返回 CommonResult<T>"
+    - "分页接口使用框架统一分页对象"
+    - "禁止自造另一套响应结构"
+
+field_rules:
+  conventions:
+    id_fields: "业务主键使用 XxxId 命名；通用主键在对象内部可用 id"
+    time_fields:
+      - "createTime"
+      - "updateTime"
+    status_fields: "统一使用 status"
+    audit_fields:
+      - "auditStatus"
+      - "auditRemark"
+      - "rejectReason"
+  address_fields:
+    - "province"
+    - "city"
+    - "district"
+    - "street"
+    - "detailAddress"
+    - "longitude"
+    - "latitude"
+    - "adcode"
+
+status_dict:
+  real_name_status:
+    - code: "PENDING"
+      label: "待审核"
+    - code: "APPROVED"
+      label: "已通过"
+    - code: "REJECTED"
+      label: "已驳回"
+  merchant_entry_status:
+    - code: "PENDING"
+      label: "待审核"
+    - code: "FIRST_APPROVED"
+      label: "初审通过"
+    - code: "APPROVED"
+      label: "终审通过"
+    - code: "REJECTED"
+      label: "已驳回"
+  order_status:
+    - code: "PENDING_PAY"
+      label: "待支付"
+    - code: "PENDING_ACCEPT"
+      label: "待接单"
+    - code: "ACCEPTED"
+      label: "已接单"
+    - code: "SERVING"
+      label: "服务中"
+    - code: "PENDING_CONFIRM"
+      label: "待确认"
+    - code: "AFTER_SALE"
+      label: "售后中"
+    - code: "FINISHED"
+      label: "已完成"
+    - code: "REFUNDED"
+      label: "已退款"
+    - code: "CLOSED"
+      label: "已关闭"
+  order_unit_status:
+    - code: "PENDING_CREATE"
+      label: "待生成"
+    - code: "PENDING_ACCEPT"
+      label: "待接单"
+    - code: "ACCEPTED"
+      label: "已接单"
+    - code: "SERVING"
+      label: "服务中"
+    - code: "PENDING_CONFIRM"
+      label: "待验收"
+    - code: "FINISHED"
+      label: "已完成"
+    - code: "APPEALING"
+      label: "申诉中"
+    - code: "REFUNDED"
+      label: "已退款"
+    - code: "CLOSED"
+      label: "已关闭"
+  pay_status:
+    - code: "WAITING"
+      label: "待支付"
+    - code: "SUCCESS"
+      label: "支付成功"
+    - code: "FAILED"
+      label: "支付失败"
+    - code: "CLOSED"
+      label: "已关闭"
+  refund_status:
+    - code: "PENDING"
+      label: "待审核"
+    - code: "APPROVED"
+      label: "已通过"
+    - code: "REJECTED"
+      label: "已驳回"
+    - code: "SUCCESS"
+      label: "退款成功"
+    - code: "FAILED"
+      label: "退款失败"
+  withdraw_status:
+    - code: "PENDING"
+      label: "待审核"
+    - code: "APPROVED"
+      label: "审核通过"
+    - code: "REJECTED"
+      label: "审核驳回"
+    - code: "SUCCESS"
+      label: "打款成功"
+    - code: "FAILED"
+      label: "打款失败"
+  complaint_status:
+    - code: "PENDING"
+      label: "待受理"
+    - code: "PROCESSING"
+      label: "处理中"
+    - code: "FINISHED"
+      label: "已完结"
+    - code: "REJECTED"
+      label: "已驳回"
+  appeal_status:
+    - code: "PENDING"
+      label: "待审核"
+    - code: "PROCESSING"
+      label: "处理中"
+    - code: "APPROVED"
+      label: "通过"
+    - code: "REJECTED"
+      label: "驳回"
+    - code: "FINISHED"
+      label: "已完结"
+  role_apply_status:
+    - code: "PENDING"
+      label: "待审核"
+    - code: "APPROVED"
+      label: "已通过"
+    - code: "REJECTED"
+      label: "已驳回"
+  price_report_audit_status:
+    - code: "PENDING"
+      label: "待审核"
+    - code: "APPROVED"
+      label: "已通过"
+    - code: "REJECTED"
+      label: "已驳回"
+  message_push_task_status:
+    - code: "PENDING"
+      label: "待执行"
+    - code: "PROCESSING"
+      label: "执行中"
+    - code: "SUCCESS"
+      label: "执行成功"
+    - code: "PARTIAL_FAILED"
+      label: "部分失败"
+    - code: "FAILED"
+      label: "执行失败"
+
+payment:
+  channels:
+    - "WECHAT_PAY"
+    - "ALIPAY"
+    - "BANK_CARD_WITHDRAW"
+  implementation:
+    module: "yudao-module-pay"
+    rules:
+      - "订单支付优先微信支付和支付宝支付"
+      - "银行卡用于绑卡与提现"
+      - "如需银行卡直付，单独评估支付通道"
+      - "支付成功回调必须幂等"
+      - "退款回调必须幂等"
+
+map:
+  provider: "AMAP"
+  frontend_api: "JS API"
+  backend_api: "Web Service API"
+  capabilities:
+    - "location"
+    - "geocode"
+    - "reverse_geocode"
+    - "distance"
+    - "nearby_search"
+    - "district_resolve"
+
+security:
+  dynamic_key:
+    required: true
+    mode: "admin-second-password-with-short-lived-token"
+    token_ttl_minutes: 5
+    token_bind_scope:
+      - "admin_user_id"
+    config_keys:
+      - "linbang.admin.dynamic-key.password"
+    protected_operations:
+      - "merchant_entry_audit"
+      - "wallet_withdraw_audit"
+      - "pay_refund_audit"
+      - "partner_price_report_audit"
+      - "divide_rule_create"
+      - "divide_rule_update"
+      - "risk_rule_create"
+      - "risk_rule_update"
+      - "risk_rule_delete"
+      - "platform_config_create"
+      - "platform_config_update"
+
+qualification_expiry:
+  reminder_days:
+    - 7
+    - 1
+  reminder_channel:
+    - "INTERNAL_MESSAGE"
+  expiry_action:
+    merchant_accept_status: "DISABLE"
+    require_operate_log: true
+    require_message_record: true
+  recovery_rule:
+    - "资质更新并审核通过后，允许人工或业务逻辑恢复接单状态"
+  runtime_validation:
+    - "抢单或接单前必须校验服务商资质未过期"
+    - "已过期服务商不得进入接单成功状态"
+
+split_engine:
+  required: true
+  triggers:
+    - "amount_threshold"
+    - "quantity_threshold"
+    - "forced_by_category"
+    - "forced_by_project_type"
+    - "user_selected"
+  rules:
+    max_unit_amount: 200
+    next_unit_locked_before_prev_finished: true
+    lock_release_requires_admin_or_prev_finished: true
+    record_hit_rule_log: true
+  modes:
+    - "by_process"
+    - "by_progress"
+    - "by_quantity"
+    - "by_content"
+    - "by_multi_person"
+  linkage:
+    - "所有单元完成后主订单才可完成"
+    - "任一单元申诉中则主订单进入售后中"
+    - "任一单元退款完成则主订单金额与状态需重算"
+
+risk_config:
+  configurable_items:
+    - "split_amount_threshold"
+    - "split_quantity_threshold"
+    - "max_unit_amount"
+    - "accept_countdown_seconds"
+    - "flow_timeout_minutes"
+    - "cancel_limit_count"
+    - "cancel_limit_duration"
+    - "large_order_deposit_threshold"
+    - "credit_score_deduct_rules"
+    - "good_review_add_rules"
+    - "auto_review_hours"
+    - "appeal_valid_days"
+
+delivery_gate:
+  page_done_definition:
+    - "接入真实接口"
+    - "使用真实字段渲染"
+    - "覆盖真实业务状态"
+    - "覆盖真实权限校验"
+    - "覆盖真实错误提示"
+    - "不依赖长期 mock 数据"
+  not_done_examples:
+    - "只有假数据表格"
+    - "只有按钮壳子"
+    - "详情字段与真实接口不一致"
+
+development_sequence:
+  - "business_rules"
+  - "database_schema"
+  - "api_contract"
+  - "backend_implementation"
+  - "frontend_integration"
+  - "joint_testing"
+  - "automated_testing"
