@@ -1441,6 +1441,32 @@ CREATE TABLE IF NOT EXISTS `lb_order_operate_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单操作日志表';
 
 DROP TABLE IF EXISTS `lb_wallet_account`;
+CREATE TABLE IF NOT EXISTS `lb_commission_order` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `commission_no` VARCHAR(32) NOT NULL COMMENT '佣金单号',
+  `promoter_id` BIGINT NOT NULL COMMENT '推广员ID',
+  `user_id` BIGINT NOT NULL COMMENT '来源用户ID',
+  `source_order_id` BIGINT DEFAULT NULL COMMENT '来源订单ID',
+  `source_unit_id` BIGINT DEFAULT NULL COMMENT '来源单元ID',
+  `commission_type` VARCHAR(32) NOT NULL COMMENT '佣金类型',
+  `commission_amount` DECIMAL(18,2) NOT NULL DEFAULT 0.00 COMMENT '佣金金额',
+  `status` VARCHAR(32) NOT NULL DEFAULT 'PENDING' COMMENT '佣金状态',
+  `settle_time` DATETIME DEFAULT NULL COMMENT '结算时间',
+  `tenant_id` BIGINT NOT NULL DEFAULT 1 COMMENT '租户编号',
+  `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_lb_commission_order_no` (`commission_no`),
+  KEY `idx_lb_commission_order_promoter_id` (`promoter_id`),
+  KEY `idx_lb_commission_order_user_id` (`user_id`),
+  KEY `idx_lb_commission_order_status` (`status`),
+  KEY `idx_lb_commission_order_tenant_id` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='推广佣金单表';
+
+DROP TABLE IF EXISTS `lb_wallet_account`;
 CREATE TABLE IF NOT EXISTS `lb_wallet_account` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
   `user_id` BIGINT NOT NULL COMMENT '用户ID',

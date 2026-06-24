@@ -1,16 +1,16 @@
 <template>
   <el-tabs v-model="activeTab" class="linbang-tabs">
     <el-tab-pane label="推广员" name="promoter">
-      <PromoterIndex />
+      <PromoterIndex v-if="activeTab === 'promoter'" />
     </el-tab-pane>
     <el-tab-pane label="佣金记录" name="commission">
-      <CommissionOrderIndex />
+      <CommissionOrderIndex v-if="activeTab === 'commission'" />
     </el-tab-pane>
     <el-tab-pane label="区域合作商" name="partner">
-      <PartnerInfoIndex />
+      <PartnerInfoIndex v-if="activeTab === 'partner'" />
     </el-tab-pane>
     <el-tab-pane label="价格申报" name="priceReport">
-      <MerchantPriceReportIndex />
+      <MerchantPriceReportIndex v-if="activeTab === 'priceReport'" />
     </el-tab-pane>
   </el-tabs>
 </template>

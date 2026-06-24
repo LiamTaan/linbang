@@ -14,6 +14,7 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategory.MerchantS
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantpricereport.MerchantPriceReportDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.memberrealname.MemberUserRealNameDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderinfo.OrderInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.partnerinfo.PartnerInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.partnerregionrel.PartnerRegionRelDO;
@@ -23,6 +24,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.merchantcategory.MerchantServic
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantpricereport.MerchantPriceReportMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.memberrealname.MemberUserRealNameMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderinfo.OrderInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.partnerinfo.PartnerInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.partnerregionrel.PartnerRegionRelMapper;
@@ -62,6 +64,8 @@ public class PartnerInfoServiceImpl implements PartnerInfoService {
     private OrderInfoMapper orderInfoMapper;
     @Resource
     private MemberUserMapper memberUserMapper;
+    @Resource
+    private MemberUserRealNameMapper memberUserRealNameMapper;
     @Resource
     private MerchantInfoMapper merchantInfoMapper;
     @Resource
@@ -133,6 +137,31 @@ public class PartnerInfoServiceImpl implements PartnerInfoService {
     @Override
     public PartnerInfoDO getPartnerInfoByUserId(Long userId) {
         return partnerInfoMapper.selectOne(PartnerInfoDO::getUserId, userId);
+    }
+
+    @Override
+    public PartnerInfoDO getOrCreatePartner(Long userId) {
+        PartnerInfoDO partnerInfo = getPartnerInfoByUserId(userId);
+        if (partnerInfo != null) {
+            return partnerInfo;
+        }
+        MemberUserDO user = memberUserMapper.selectById(userId);
+        if (user == null) {
+            throw exception(PARTNER_INFO_NOT_EXISTS);
+        }
+        MemberUserRealNameDO realName = memberUserRealNameMapper.selectByUserId(userId);
+        String contactName = realName != null && StrUtil.isNotBlank(realName.getRealName())
+                ? realName.getRealName()
+                : StrUtil.blankToDefault(user.getNickname(), "区域合作商");
+        partnerInfo = PartnerInfoDO.builder()
+                .userId(userId)
+                .partnerName(contactName)
+                .contactName(contactName)
+                .contactMobile(user.getMobile())
+                .status("ENABLE")
+                .build();
+        partnerInfoMapper.insert(partnerInfo);
+        return partnerInfo;
     }
 
     @Override

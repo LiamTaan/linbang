@@ -16,6 +16,10 @@ public interface PromoterMapper extends BaseMapperX<PromoterDO> {
         return selectOne(PromoterDO::getUserId, userId);
     }
 
+    default PromoterDO selectByInviteCode(String inviteCode) {
+        return selectOne(PromoterDO::getInviteCode, inviteCode);
+    }
+
     default PageResult<PromoterDO> selectPage(PromoterPageReqVO reqVO, Collection<Long> userIds) {
         return selectPage(reqVO, new LambdaQueryWrapperX<PromoterDO>()
                 .inIfPresent(PromoterDO::getUserId, userIds)

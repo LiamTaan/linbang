@@ -2051,6 +2051,10 @@ models:
       settleTime: "LocalDateTime?"
       createTime: "LocalDateTime?"
 
+  PromoteInviteCodeBindReq:
+    fields:
+      inviteCode: "String"
+
   AppPartnerWorkbenchResp:
     fields:
       partnerId: "Long"
@@ -2769,6 +2773,34 @@ models:
       inviteCode: "String?"
       levelCode: "String?"
       status: "String?"
+
+  AppMemberRoleApplyCreateReq:
+    fields:
+      applyRoleCode: "String"
+      applyReason: "String?"
+      resourceDesc: "String?"
+
+  AppMemberRoleApplyPageReq:
+    fields:
+      pageNo: "Integer"
+      pageSize: "Integer"
+      applyRoleCode: "String?"
+      auditStatus: "String?"
+      createTime: "LocalDateTime[]?"
+
+  AppMemberRoleApplyResp:
+    fields:
+      id: "Long"
+      userId: "Long"
+      applyRoleCode: "String"
+      applyReason: "String?"
+      resourceDesc: "String?"
+      auditStatus: "String"
+      auditRemark: "String?"
+      rejectReason: "String?"
+      auditTime: "LocalDateTime?"
+      createTime: "LocalDateTime"
+      updateTime: "LocalDateTime?"
 
   MemberRoleApplyAuditReq:
     fields:
@@ -3520,6 +3552,14 @@ endpoints:
         fields:
           inviteCode: "String"
           inviteUrl: "String"
+
+    - name: "绑定邀请码"
+      method: "POST"
+      path: "/app-api/promote/invite-code/bind"
+      request: "PromoteInviteCodeBindReq"
+      response_inline:
+        fields:
+          success: "Boolean"
 
     - name: "消息记录分页"
       method: "GET"

@@ -20,10 +20,10 @@
           :inline="true"
           label-width="68px"
         >
-          <el-form-item label="用户名称" prop="username">
+          <el-form-item label="登录账号" prop="username">
             <el-input
               v-model="queryParams.username"
-              placeholder="请输入用户名称"
+              placeholder="请输入登录账号"
               clearable
               @keyup.enter="handleQuery"
               class="!w-240px"
@@ -108,7 +108,7 @@
           <el-table-column type="selection" width="55" />
           <el-table-column label="用户编号" align="center" key="id" prop="id" />
           <el-table-column
-            label="用户名称"
+            label="登录账号"
             align="center"
             prop="username"
             :show-overflow-tooltip="true"

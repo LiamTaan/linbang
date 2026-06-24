@@ -1,19 +1,19 @@
 <template>
   <el-tabs v-model="activeTab" class="linbang-tabs">
     <el-tab-pane label="投诉处理" name="complaint">
-      <ComplaintIndex />
+      <ComplaintIndex v-if="activeTab === 'complaint'" />
     </el-tab-pane>
     <el-tab-pane label="申诉审核" name="appeal">
-      <AppealIndex />
+      <AppealIndex v-if="activeTab === 'appeal'" />
     </el-tab-pane>
     <el-tab-pane label="评价记录" name="comment">
-      <ReviewCommentIndex />
+      <ReviewCommentIndex v-if="activeTab === 'comment'" />
     </el-tab-pane>
     <el-tab-pane label="信用记录" name="credit-record">
-      <CreditRecordIndex />
+      <CreditRecordIndex v-if="activeTab === 'credit-record'" />
     </el-tab-pane>
     <el-tab-pane label="信用规则" name="credit-rule">
-      <CreditRuleIndex />
+      <CreditRuleIndex v-if="activeTab === 'credit-rule'" />
     </el-tab-pane>
   </el-tabs>
 </template>

@@ -1,10 +1,10 @@
 <template>
   <el-tabs v-model="activeTab" class="linbang-tabs">
     <el-tab-pane label="帮助反馈" name="feedback">
-      <HelpFeedbackIndex />
+      <HelpFeedbackIndex v-if="activeTab === 'feedback'" />
     </el-tab-pane>
     <el-tab-pane label="平台配置" name="config">
-      <PlatformConfigIndex />
+      <PlatformConfigIndex v-if="activeTab === 'config'" />
     </el-tab-pane>
   </el-tabs>
 </template>

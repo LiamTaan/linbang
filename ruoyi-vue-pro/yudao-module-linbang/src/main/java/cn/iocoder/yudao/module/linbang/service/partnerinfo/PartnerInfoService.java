@@ -18,5 +18,7 @@ public interface PartnerInfoService {
 
     PartnerInfoDO getPartnerInfoByUserId(Long userId);
 
+    PartnerInfoDO getOrCreatePartner(Long userId);
+
     List<String> getPartnerRegionAdcodes(Long partnerId);
 }

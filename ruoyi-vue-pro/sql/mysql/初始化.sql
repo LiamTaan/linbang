@@ -290,6 +290,12 @@ VALUES
 (100133, '字典修改', 'system:dict:update', 3, 3, 100130, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100134, '字典删除', 'system:dict:delete', 3, 4, 100130, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100135, '字典导出', 'system:dict:export', 3, 5, 100130, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100143, '配置管理', '', 2, 45, 100000, 'config', 'ep:setting', 'infra/config/index', 'InfraConfig', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100144, '参数查询', 'infra:config:query', 3, 1, 100143, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100145, '参数新增', 'infra:config:create', 3, 2, 100143, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100146, '参数修改', 'infra:config:update', 3, 3, 100143, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100147, '参数删除', 'infra:config:delete', 3, 4, 100143, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100148, '参数导出', 'infra:config:export', 3, 5, 100143, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100140, '操作日志', '', 2, 50, 100000, 'operatelog', 'ep:document', 'system/operatelog/index', 'SystemOperateLog', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100141, '操作日志查询', 'system:operate-log:query', 3, 1, 100140, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100142, '操作日志导出', 'system:operate-log:export', 3, 2, 100140, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
@@ -305,6 +311,21 @@ VALUES
 (100166, '文件配置修改', 'infra:file-config:update', 3, 3, 100163, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100167, '文件配置删除', 'infra:file-config:delete', 3, 4, 100163, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100168, '文件配置导出', 'infra:file-config:export', 3, 5, 100163, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100180, '短信渠道', '', 2, 100, 100000, 'sms-channel', 'ep:message', 'system/sms/channel/index', 'SystemSmsChannel', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100181, '短信渠道查询', 'system:sms-channel:query', 3, 1, 100180, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100182, '短信渠道新增', 'system:sms-channel:create', 3, 2, 100180, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100183, '短信渠道修改', 'system:sms-channel:update', 3, 3, 100180, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100184, '短信渠道删除', 'system:sms-channel:delete', 3, 4, 100180, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100190, '短信模板', '', 2, 110, 100000, 'sms-template', 'ep:chat-dot-round', 'system/sms/template/index', 'SystemSmsTemplate', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100191, '短信模板查询', 'system:sms-template:query', 3, 1, 100190, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100192, '短信模板新增', 'system:sms-template:create', 3, 2, 100190, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100193, '短信模板修改', 'system:sms-template:update', 3, 3, 100190, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100194, '短信模板删除', 'system:sms-template:delete', 3, 4, 100190, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100195, '短信模板导出', 'system:sms-template:export', 3, 5, 100190, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100196, '短信模板测试', 'system:sms-template:send-sms', 3, 6, 100190, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100197, '短信日志', '', 2, 120, 100000, 'sms-log', 'ep:document-copy', 'system/sms/log/index', 'SystemSmsLog', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100198, '短信日志查询', 'system:sms-log:query', 3, 1, 100197, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100199, '短信日志导出', 'system:sms-log:export', 3, 2, 100197, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100170, '支付应用配置', '', 2, 90, 100000, 'pay-app', 'ep:wallet-filled', 'pay/app/index', 'PayApp', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100171, '支付应用查询', 'pay:app:query', 3, 1, 100170, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100172, '支付应用新增', 'pay:app:create', 3, 2, 100170, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
@@ -529,7 +550,8 @@ VALUES
 INSERT INTO `system_menu`
 (`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`, `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
 VALUES
-(110000, '平台工作台', '', 2, 10, 0, '/linbang-dashboard', 'ep:data-analysis', 'linbang/dashboard/index', 'LinbangDashboard', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+-- 平台工作台为单独一级菜单页面，不承载其它父级目录
+(110000, '平台工作台', 'linbang:dashboard:query', 2, 10, 0, '/linbang-dashboard', 'ep:data-analysis', 'linbang/dashboard/index', 'LinbangDashboard', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110100, '用户中心', '', 1, 20, 0, '/linbang-member', 'ep:user', NULL, NULL, 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110110, '用户中心概览', '', 2, 1, 110100, 'overview', 'ep:histogram', 'linbang/member/index', 'LinbangMemberOverview', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110120, '用户列表', 'linbang:member-user:query', 2, 10, 110100, 'member-user', 'ep:user-filled', 'linbang/memberuser/index', 'LinbangMemberUser', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
@@ -570,6 +592,11 @@ VALUES
 (110242, '类目修改', 'linbang:merchant-service-category:update', 3, 2, 110240, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110243, '类目删除', 'linbang:merchant-service-category:delete', 3, 3, 110240, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110244, '类目导出', 'linbang:merchant-service-category:export', 3, 4, 110240, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110250, '服务点管理', 'linbang:merchant:service-point:query', 2, 40, 110200, 'merchant-service-point', 'ep:map-location', 'linbang/merchantservicepoint/index', 'LinbangMerchantServicePoint', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110251, '服务点新增', 'linbang:merchant:service-point:create', 3, 1, 110250, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110252, '服务点修改', 'linbang:merchant:service-point:update', 3, 2, 110250, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110253, '服务点删除', 'linbang:merchant:service-point:delete', 3, 3, 110250, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110254, '服务点导出', 'linbang:merchant:service-point:export', 3, 4, 110250, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110300, '订单中心', '', 1, 40, 0, '/linbang-order', 'ep:document', NULL, NULL, 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110310, '订单中心概览', '', 2, 1, 110300, 'overview', 'ep:tickets', 'linbang/order/index', 'LinbangOrderOverview', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110320, '订单列表', 'linbang:order:info:query', 2, 10, 110300, 'order-info', 'ep:document-copy', 'linbang/orderinfo/index', 'LinbangOrderInfo', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
@@ -668,6 +695,13 @@ VALUES
 (110653, '信用规则删除', 'linbang:review:credit-rule:delete', 3, 3, 110650, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110654, '信用规则导出', 'linbang:review:credit-rule:export', 3, 4, 110650, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110661, '信用记录导出', 'linbang:review:credit-record:export', 3, 1, 110660, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+-- 推广中心为独立一级父级菜单，不挂在平台工作台下
+(110680, '推广中心', '', 1, 75, 0, '/linbang-promote', 'ep:share', NULL, NULL, 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110681, '推广中心概览', '', 2, 1, 110680, 'overview', 'ep:promotion', 'linbang/promote/index', 'LinbangPromote', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110682, '推广员管理', 'linbang:promote:user:query', 2, 10, 110680, 'promoter', 'ep:user-filled', 'linbang/promoter/index', 'LinbangPromoter', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110683, '推广员详情', 'linbang:promote:user:get', 3, 1, 110682, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110684, '佣金记录', 'linbang:promote:commission:query', 2, 20, 110680, 'commission-order', 'ep:wallet-filled', 'linbang/commissionorder/index', 'LinbangCommissionOrder', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110685, '佣金记录详情', 'linbang:promote:commission:get', 3, 1, 110684, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110700, '合作商中心', '', 1, 80, 0, '/linbang-partner', 'ep:office-building', NULL, NULL, 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110720, '价格申报审核', 'linbang:partner:price-report:query', 2, 10, 110700, 'merchant-price-report', 'ep:money', 'linbang/merchantpricereport/index', 'LinbangMerchantPriceReport', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110721, '价格申报审核动作', 'linbang:partner:price-report:audit', 3, 1, 110720, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
@@ -684,7 +718,7 @@ INSERT INTO `system_role_menu`
 (`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
 SELECT 20001, `id`, 'admin', NOW(), 'admin', NOW(), b'0', 1
 FROM `system_menu`
-WHERE (`id` BETWEEN 110000 AND 110399) OR (`id` BETWEEN 110600 AND 110661) OR (`id` BETWEEN 110700 AND 110830);
+WHERE (`id` BETWEEN 110000 AND 110399) OR (`id` BETWEEN 110600 AND 110685) OR (`id` BETWEEN 110700 AND 110830);
 
 INSERT INTO `system_role_menu`
 (`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
@@ -707,10 +741,11 @@ WHERE `id` IN (
   110100, 110130, 110131, 110132, 110133, 110134, 110135,
   110140, 110141,
   110160, 110161,
-  110200, 110230, 110231, 110232, 110233, 110234, 110235,
+  110200, 110230, 110231, 110232, 110233, 110234, 110235, 110250, 110251, 110252, 110253, 110254,
   110700, 110720, 110721,
   110400, 110440, 110441, 110442, 110443, 110444, 110445, 110450, 110451, 110452,
   110600, 110620, 110625, 110630, 110635
+  ,110680, 110681, 110682, 110683, 110684, 110685
 );
 
 INSERT INTO `system_role_menu`
@@ -721,9 +756,10 @@ WHERE `id` IN (
   110000,
   110100, 110110, 110120, 110130, 110140, 110150,
   110160,
-  110200, 110210, 110220, 110230, 110240,
+  110200, 110210, 110220, 110230, 110240, 110250,
   110300, 110310, 110320, 110330, 110340, 110350, 110360,
   110600, 110610, 110620, 110630,
+  110680, 110681, 110682, 110684,
   110700, 110720
 );
 

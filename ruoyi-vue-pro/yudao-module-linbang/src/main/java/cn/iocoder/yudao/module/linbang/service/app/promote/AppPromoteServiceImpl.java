@@ -4,6 +4,7 @@ import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppCommissionPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppInviteCodeRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteInviteCodeBindReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteCenterRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.commissionorder.CommissionOrderDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.promoter.PromoterDO;
@@ -34,6 +35,7 @@ public class AppPromoteServiceImpl implements AppPromoteService {
                 new AppCommissionPageReqVO());
         List<CommissionOrderDO> commissionOrders = recentPage.getList();
         AppPromoteCenterRespVO respVO = BeanUtils.toBean(promoter, AppPromoteCenterRespVO.class);
+        respVO.setPromoterId(promoter.getId());
         respVO.setPendingCommissionCount(countByStatus(commissionOrders, "PENDING"));
         respVO.setSettledCommissionCount(countByStatus(commissionOrders, "SETTLED"));
         respVO.setInvalidCommissionCount(countByStatus(commissionOrders, "INVALID"));
@@ -56,6 +58,11 @@ public class AppPromoteServiceImpl implements AppPromoteService {
     public AppInviteCodeRespVO getInviteCode(Long userId) {
         PromoterDO promoter = promoterService.getOrCreatePromoter(userId);
         return new AppInviteCodeRespVO(promoter.getInviteCode(), promoter.getInviteUrl());
+    }
+
+    @Override
+    public void bindInviteCode(Long userId, AppPromoteInviteCodeBindReqVO reqVO) {
+        promoterService.bindInviteCode(userId, reqVO);
     }
 
     private Integer countByStatus(List<CommissionOrderDO> commissionOrders, String status) {

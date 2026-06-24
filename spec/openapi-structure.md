@@ -43,6 +43,9 @@
 - `GET /app-api/member/real-name/get`
 - `POST /app-api/member/qualification/create`
 - `GET /app-api/member/qualification/page`
+- `POST /app-api/member/role-apply/create`
+- `GET /app-api/member/role-apply/page`
+- `GET /app-api/member/role-apply/get`
 
 认证补充说明：
 
@@ -130,6 +133,7 @@
 - `GET /app-api/promote/center/get`
 - `GET /app-api/promote/commission/page`
 - `GET /app-api/promote/invite-code/get`
+- `POST /app-api/promote/invite-code/bind`
 
 ### 3.8 区域合作商与工作台
 

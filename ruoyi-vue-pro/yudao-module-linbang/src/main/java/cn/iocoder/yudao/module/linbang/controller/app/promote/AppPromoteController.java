@@ -6,13 +6,16 @@ import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppCommissionPageItemRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppCommissionPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppInviteCodeRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteInviteCodeBindReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteCenterRespVO;
 import cn.iocoder.yudao.module.linbang.service.app.promote.AppPromoteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
@@ -46,5 +49,12 @@ public class AppPromoteController {
     @Operation(summary = "获取邀请码")
     public CommonResult<AppInviteCodeRespVO> getInviteCode() {
         return success(appPromoteService.getInviteCode(getLoginUserId()));
+    }
+
+    @PostMapping("/invite-code/bind")
+    @Operation(summary = "绑定邀请码")
+    public CommonResult<Boolean> bindInviteCode(@Valid @RequestBody AppPromoteInviteCodeBindReqVO reqVO) {
+        appPromoteService.bindInviteCode(getLoginUserId(), reqVO);
+        return success(Boolean.TRUE);
     }
 }

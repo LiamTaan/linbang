@@ -2,7 +2,7 @@
   系统用户弹窗选择器（V2，支持单选/多选）
 
   对齐 MdVendorSelectDialog 架构模式 + userSelect 左侧部门树
-  搜索字段 & 展示字段：用户名称、用户昵称、部门、手机号码
+  搜索字段 & 展示字段：登录账号、用户昵称、部门、手机号码
 
   Props:
     multiple — true 多选（checkbox），false 单选（radio）；默认 true
@@ -25,10 +25,10 @@
       <el-col class="h-full overflow-auto" :span="19" :xs="24">
         <ContentWrap>
           <el-form class="-mb-[15px]" :inline="true" :model="queryParams" label-width="72px">
-            <el-form-item label="用户名称">
+            <el-form-item label="登录账号">
               <el-input
                 v-model="queryParams.username"
-                placeholder="请输入用户名称"
+                placeholder="请输入登录账号"
                 clearable
                 @keyup.enter="handleQuery"
                 class="!w-240px"
@@ -117,7 +117,7 @@
               </template>
             </el-table-column>
             <el-table-column label="用户编号" align="center" prop="id" width="150" />
-            <el-table-column label="用户名称" align="center" prop="username" width="150" />
+            <el-table-column label="登录账号" align="center" prop="username" width="150" />
             <el-table-column label="用户昵称" align="left" prop="nickname" min-width="150" />
             <el-table-column label="部门" align="center" prop="deptName" width="150" />
             <el-table-column label="手机号码" align="center" prop="mobile" width="130" />
@@ -250,7 +250,7 @@ const handleRowDblClick = (row: UserSelectRow) => {
 const queryParams = reactive({
   pageNo: 1, // 页码
   pageSize: 10, // 每页条数
-  username: undefined as string | undefined, // 用户名称
+    username: undefined as string | undefined, // 登录账号
   nickname: undefined as string | undefined, // 用户昵称
   mobile: undefined as string | undefined, // 手机号码
   status: CommonStatusEnum.ENABLE as number | undefined, // 状态：默认只查启用

@@ -19,6 +19,8 @@ public interface ErrorCodeConstants {
     ErrorCode MEMBER_ROLE_APPLY_NOT_EXISTS = new ErrorCode(1_099_001_006, "身份申请不存在");
     ErrorCode MEMBER_ROLE_APPLY_AUDIT_STATUS_INVALID = new ErrorCode(1_099_001_007, "当前身份申请状态不允许审核");
     ErrorCode MEMBER_QUALIFICATION_EXPIRED = new ErrorCode(1_099_001_008, "服务资质已过期，暂不允许接单");
+    ErrorCode MEMBER_ROLE_APPLY_ROLE_CODE_INVALID = new ErrorCode(1_099_001_009, "当前申请角色不受支持");
+    ErrorCode MEMBER_ROLE_APPLY_PENDING_EXISTS = new ErrorCode(1_099_001_010, "当前角色已有待审核申请，请勿重复提交");
 
     // ========== MERCHANT 模块 1-099-002-000 ==========
     ErrorCode MERCHANT_SERVICE_CATEGORY_NOT_EXISTS = new ErrorCode(1_099_002_000, "服务类目不存在");

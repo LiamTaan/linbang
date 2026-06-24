@@ -1,16 +1,16 @@
 <template>
   <el-tabs v-model="activeTab" class="linbang-tabs">
     <el-tab-pane label="风控规则" name="rule">
-      <RiskRuleIndex />
+      <RiskRuleIndex v-if="activeTab === 'rule'" />
     </el-tab-pane>
     <el-tab-pane label="敏感词" name="word">
-      <SensitiveWordIndex />
+      <SensitiveWordIndex v-if="activeTab === 'word'" />
     </el-tab-pane>
     <el-tab-pane label="风险事件" name="event">
-      <RiskEventIndex />
+      <RiskEventIndex v-if="activeTab === 'event'" />
     </el-tab-pane>
     <el-tab-pane label="黑名单" name="blacklist">
-      <BlacklistIndex />
+      <BlacklistIndex v-if="activeTab === 'blacklist'" />
     </el-tab-pane>
   </el-tabs>
 </template>

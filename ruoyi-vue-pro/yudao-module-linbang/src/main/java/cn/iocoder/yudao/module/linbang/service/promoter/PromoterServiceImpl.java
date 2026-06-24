@@ -6,16 +6,19 @@ import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteInviteCodeBindReqVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.promoter.vo.PromoterDetailRespVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.promoter.vo.PromoterRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.commissionorder.CommissionOrderDO;
 import cn.iocoder.yudao.module.linbang.controller.admin.promoter.vo.PromoterPageReqVO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.dividerule.DivideRuleDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderinfo.OrderInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderunit.OrderUnitDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.promoter.PromoterDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.promoterrelation.PromoterRelationDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.commissionorder.CommissionOrderMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.dividerule.DivideRuleMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderinfo.OrderInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderunit.OrderUnitMapper;
@@ -27,9 +30,12 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -55,6 +61,8 @@ public class PromoterServiceImpl implements PromoterService {
     private OrderInfoMapper orderInfoMapper;
     @Resource
     private OrderUnitMapper orderUnitMapper;
+    @Resource
+    private DivideRuleMapper divideRuleMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -81,6 +89,98 @@ public class PromoterServiceImpl implements PromoterService {
                 .build();
         promoterMapper.insert(promoter);
         return promoter;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void bindInviteCode(Long userId, AppPromoteInviteCodeBindReqVO reqVO) {
+        MemberUserDO user = memberUserMapper.selectById(userId);
+        if (user == null) {
+            throw exception(MEMBER_USER_NOT_EXISTS);
+        }
+        PromoterDO promoter = promoterMapper.selectByInviteCode(reqVO.getInviteCode());
+        if (promoter == null) {
+            throw exception(PROMOTER_NOT_EXISTS);
+        }
+        if (Objects.equals(promoter.getUserId(), userId)) {
+            return;
+        }
+        PromoterRelationDO existed = promoterRelationMapper.selectByPromoterIdAndUserId(promoter.getId(), userId);
+        if (existed != null) {
+            return;
+        }
+        promoterRelationMapper.insert(PromoterRelationDO.builder()
+                .promoterId(promoter.getId())
+                .userId(userId)
+                .bindTime(LocalDateTime.now())
+                .convertStatus("BOUND")
+                .build());
+        promoterMapper.updateById(PromoterDO.builder()
+                .id(promoter.getId())
+                .bindUserCount(defaultInt(promoter.getBindUserCount()) + 1)
+                .build());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void handleOrderFinished(OrderInfoDO order, OrderUnitDO unit) {
+        if (order == null || unit == null || order.getUserId() == null || unit.getId() == null) {
+            return;
+        }
+        PromoterRelationDO relation = promoterRelationMapper.selectOne(new LambdaQueryWrapperX<PromoterRelationDO>()
+                .eq(PromoterRelationDO::getUserId, order.getUserId())
+                .orderByAsc(PromoterRelationDO::getId)
+                .last("LIMIT 1"));
+        if (relation == null || relation.getPromoterId() == null) {
+            return;
+        }
+        CommissionOrderDO existed = commissionOrderMapper.selectOne(new LambdaQueryWrapperX<CommissionOrderDO>()
+                .eq(CommissionOrderDO::getPromoterId, relation.getPromoterId())
+                .eq(CommissionOrderDO::getUserId, order.getUserId())
+                .eq(CommissionOrderDO::getSourceOrderId, order.getId())
+                .eq(CommissionOrderDO::getSourceUnitId, unit.getId())
+                .last("LIMIT 1"));
+        if (existed != null) {
+            return;
+        }
+        DivideRuleDO divideRule = resolveDivideRule(order.getCategoryId());
+        if (divideRule == null || divideRule.getPromoterRate() == null
+                || divideRule.getPromoterRate().compareTo(BigDecimal.ZERO) <= 0
+                || order.getOrderAmount() == null || order.getOrderAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+        BigDecimal commissionAmount = order.getOrderAmount()
+                .multiply(divideRule.getPromoterRate())
+                .setScale(2, RoundingMode.HALF_UP);
+        if (commissionAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+        commissionOrderMapper.insert(CommissionOrderDO.builder()
+                .commissionNo("LBCM" + IdUtil.getSnowflakeNextIdStr())
+                .promoterId(relation.getPromoterId())
+                .userId(order.getUserId())
+                .sourceOrderId(order.getId())
+                .sourceUnitId(unit.getId())
+                .commissionType("ORDER")
+                .commissionAmount(commissionAmount)
+                .status("PENDING")
+                .build());
+        PromoterDO promoter = promoterMapper.selectById(relation.getPromoterId());
+        if (promoter != null) {
+            promoterMapper.updateById(PromoterDO.builder()
+                    .id(promoter.getId())
+                    .convertCount(nextConvertCount(relation, promoter))
+                    .totalCommissionAmount(defaultAmount(promoter.getTotalCommissionAmount()).add(commissionAmount))
+                    .availableCommissionAmount(defaultAmount(promoter.getAvailableCommissionAmount()).add(commissionAmount))
+                    .build());
+        }
+        if (relation.getFirstOrderId() == null || !"CONVERTED".equalsIgnoreCase(relation.getConvertStatus())) {
+            promoterRelationMapper.updateById(PromoterRelationDO.builder()
+                    .id(relation.getId())
+                    .firstOrderId(order.getId())
+                    .convertStatus("CONVERTED")
+                    .build());
+        }
     }
 
     @Override
@@ -162,5 +262,35 @@ public class PromoterServiceImpl implements PromoterService {
             item.setUserNickname(user.getNickname());
             item.setUserMobile(user.getMobile());
         });
+    }
+
+    private DivideRuleDO resolveDivideRule(Long categoryId) {
+        DivideRuleDO matched = divideRuleMapper.selectOne(new LambdaQueryWrapperX<DivideRuleDO>()
+                .eq(DivideRuleDO::getStatus, "ENABLE")
+                .eqIfPresent(DivideRuleDO::getCategoryId, categoryId)
+                .orderByDesc(DivideRuleDO::getEffectiveTime, DivideRuleDO::getId)
+                .last("LIMIT 1"));
+        if (matched != null) {
+            return matched;
+        }
+        return divideRuleMapper.selectOne(new LambdaQueryWrapperX<DivideRuleDO>()
+                .eq(DivideRuleDO::getStatus, "ENABLE")
+                .orderByDesc(DivideRuleDO::getEffectiveTime, DivideRuleDO::getId)
+                .last("LIMIT 1"));
+    }
+
+    private BigDecimal defaultAmount(BigDecimal amount) {
+        return amount == null ? BigDecimal.ZERO : amount;
+    }
+
+    private Integer defaultInt(Integer value) {
+        return value == null ? 0 : value;
+    }
+
+    private Integer nextConvertCount(PromoterRelationDO relation, PromoterDO promoter) {
+        if (relation.getFirstOrderId() != null || "CONVERTED".equalsIgnoreCase(relation.getConvertStatus())) {
+            return promoter.getConvertCount();
+        }
+        return defaultInt(promoter.getConvertCount()) + 1;
     }
 }

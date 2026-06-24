@@ -36,6 +36,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.orderunitproof.OrderUnitProofMa
 import cn.iocoder.yudao.module.linbang.service.map.AmapLocationService;
 import cn.iocoder.yudao.module.linbang.service.memberqualification.MemberQualificationExpiryService;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
+import cn.iocoder.yudao.module.linbang.service.promoter.PromoterService;
 import cn.iocoder.yudao.module.pay.dal.dataobject.refund.PayRefundDO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.order.PayOrderDO;
 import cn.iocoder.yudao.module.pay.dal.mysql.order.PayOrderMapper;
@@ -99,6 +100,8 @@ public class AppOrderServiceImpl implements AppOrderService {
     private PayOrderMapper payOrderMapper;
     @Resource
     private AmapLocationService amapLocationService;
+    @Resource
+    private PromoterService promoterService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -517,6 +520,9 @@ public class AppOrderServiceImpl implements AppOrderService {
                     .id(order.getId())
                     .status(nextOrderStatus)
                     .build());
+        }
+        if (Objects.equals("FINISHED", nextOrderStatus)) {
+            promoterService.handleOrderFinished(order, unit);
         }
         return Boolean.TRUE;
     }

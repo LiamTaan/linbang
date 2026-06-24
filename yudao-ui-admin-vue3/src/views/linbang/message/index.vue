@@ -1,10 +1,10 @@
 <template>
   <el-tabs v-model="activeTab" class="linbang-tabs">
     <el-tab-pane label="消息模板" name="template">
-      <MessageTemplateIndex />
+      <MessageTemplateIndex v-if="activeTab === 'template'" />
     </el-tab-pane>
     <el-tab-pane label="发送记录" name="record">
-      <MessageRecordIndex />
+      <MessageRecordIndex v-if="activeTab === 'record'" />
     </el-tab-pane>
   </el-tabs>
 </template>

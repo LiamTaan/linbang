@@ -1,25 +1,25 @@
 <template>
   <el-tabs v-model="activeTab" class="linbang-tabs">
     <el-tab-pane label="支付订单" name="pay-order">
-      <PayOrderIndex />
+      <PayOrderIndex v-if="activeTab === 'pay-order'" />
     </el-tab-pane>
     <el-tab-pane label="钱包账户" name="account">
-      <WalletAccountIndex />
+      <WalletAccountIndex v-if="activeTab === 'account'" />
     </el-tab-pane>
     <el-tab-pane label="资金流水" name="flow">
-      <WalletFlowIndex />
+      <WalletFlowIndex v-if="activeTab === 'flow'" />
     </el-tab-pane>
     <el-tab-pane label="提现申请" name="withdraw">
-      <WalletWithdrawIndex />
+      <WalletWithdrawIndex v-if="activeTab === 'withdraw'" />
     </el-tab-pane>
     <el-tab-pane label="退款审核" name="refund">
-      <PayRefundIndex />
+      <PayRefundIndex v-if="activeTab === 'refund'" />
     </el-tab-pane>
     <el-tab-pane label="银行卡" name="bank-card">
-      <WalletBankCardIndex />
+      <WalletBankCardIndex v-if="activeTab === 'bank-card'" />
     </el-tab-pane>
     <el-tab-pane label="分账规则" name="divide-rule">
-      <DivideRuleIndex />
+      <DivideRuleIndex v-if="activeTab === 'divide-rule'" />
     </el-tab-pane>
   </el-tabs>
 </template>

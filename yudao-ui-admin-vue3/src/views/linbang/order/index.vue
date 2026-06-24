@@ -1,19 +1,19 @@
 <template>
   <el-tabs v-model="activeTab" class="linbang-tabs">
     <el-tab-pane label="订单总览" name="info">
-      <OrderInfoIndex />
+      <OrderInfoIndex v-if="activeTab === 'info'" />
     </el-tab-pane>
     <el-tab-pane label="单元订单" name="unit">
-      <OrderUnitIndex />
+      <OrderUnitIndex v-if="activeTab === 'unit'" />
     </el-tab-pane>
     <el-tab-pane label="异常订单" name="abnormal">
-      <OrderAbnormalIndex />
+      <OrderAbnormalIndex v-if="activeTab === 'abnormal'" />
     </el-tab-pane>
     <el-tab-pane label="抢单记录" name="accept">
-      <OrderAcceptRecordIndex />
+      <OrderAcceptRecordIndex v-if="activeTab === 'accept'" />
     </el-tab-pane>
     <el-tab-pane label="匹配记录" name="match">
-      <OrderMatchRecordIndex />
+      <OrderMatchRecordIndex v-if="activeTab === 'match'" />
     </el-tab-pane>
   </el-tabs>
 </template>

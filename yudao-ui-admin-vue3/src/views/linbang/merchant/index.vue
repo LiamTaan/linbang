@@ -1,16 +1,16 @@
 <template>
   <el-tabs v-model="activeTab" class="linbang-tabs">
     <el-tab-pane label="服务商信息" name="info">
-      <MerchantInfoIndex />
+      <MerchantInfoIndex v-if="activeTab === 'info'" />
     </el-tab-pane>
     <el-tab-pane label="入驻申请" name="entry">
-      <MerchantEntryIndex />
+      <MerchantEntryIndex v-if="activeTab === 'entry'" />
     </el-tab-pane>
     <el-tab-pane label="服务类目" name="category">
-      <MerchantCategoryIndex />
+      <MerchantCategoryIndex v-if="activeTab === 'category'" />
     </el-tab-pane>
     <el-tab-pane label="服务点管理" name="servicePoint">
-      <MerchantServicePointIndex />
+      <MerchantServicePointIndex v-if="activeTab === 'servicePoint'" />
     </el-tab-pane>
   </el-tabs>
 </template>

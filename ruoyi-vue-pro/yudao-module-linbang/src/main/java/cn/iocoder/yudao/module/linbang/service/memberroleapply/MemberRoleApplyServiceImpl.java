@@ -21,6 +21,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.memberroleapply.MemberRoleApply
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.promoter.PromoterMapper;
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
+import cn.iocoder.yudao.module.linbang.service.partnerinfo.PartnerInfoService;
 import cn.iocoder.yudao.module.linbang.service.promoter.PromoterService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,6 +56,8 @@ public class MemberRoleApplyServiceImpl implements MemberRoleApplyService {
     private PromoterMapper promoterMapper;
     @Resource
     private PromoterService promoterService;
+    @Resource
+    private PartnerInfoService partnerInfoService;
     @Resource
     private MessagePushDispatchService messagePushDispatchService;
 
@@ -147,6 +150,8 @@ public class MemberRoleApplyServiceImpl implements MemberRoleApplyService {
                 .build());
         if ("PROMOTER".equals(apply.getApplyRoleCode())) {
             promoterService.getOrCreatePromoter(apply.getUserId());
+        } else if ("PARTNER".equals(apply.getApplyRoleCode())) {
+            partnerInfoService.getOrCreatePartner(apply.getUserId());
         }
     }
 
