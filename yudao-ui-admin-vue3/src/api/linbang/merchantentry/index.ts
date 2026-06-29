@@ -26,6 +26,13 @@ export interface MerchantEntry {
 }
 
 export interface MerchantEntryDetail extends MerchantEntry {
+  progressStatus?: string
+  currentStageName?: string
+  currentStageTime?: string | Dayjs
+  rejectReason?: string
+  onboardingBlockedReason?: string
+  acceptEnabled?: boolean
+  bankCardRequired?: boolean
   updateTime?: string | Dayjs
   applicant?: {
     id?: number
@@ -65,6 +72,8 @@ export interface MerchantEntryDetail extends MerchantEntry {
     categoryCount?: number
     qualificationCount?: number
     approvedQualificationCount?: number
+    businessLicenseUploaded?: boolean
+    insuranceUploaded?: boolean
   }
   categories?: Array<{
     categoryId?: number

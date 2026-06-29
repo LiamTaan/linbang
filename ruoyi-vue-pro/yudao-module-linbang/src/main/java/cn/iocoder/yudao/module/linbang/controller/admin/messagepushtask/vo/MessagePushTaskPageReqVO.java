@@ -13,9 +13,17 @@ public class MessagePushTaskPageReqVO extends PageParam {
 
     private String taskName;
 
+    private Long campaignId;
+
+    private String sceneCode;
+
+    private String messageCategory;
+
     private String channelType;
 
     private String status;
+
+    private String executeStatus;
 
     private String bizType;
 

@@ -1,20 +1,16 @@
 <template>
   <div class="linbang-dashboard">
-    <section class="dashboard-head">
-      <div class="head-top">
-        <div class="head-title">
-          <p class="eyebrow">LinBang Command Dashboard</p>
-          <div class="head-heading">
-            <h1>平台运行指挥台</h1>
-            <el-tag effect="dark" round type="success">真实 dashboard 接口</el-tag>
+    <section class="overview-section">
+      <div class="section-title section-title--light">
+        <div class="section-title__main">
+          <Icon icon="ep:data-analysis" class="section-title__icon" />
+          <div>
+            <h2>今日数据概览</h2>
+            <p>管理端实时工作台，聚焦订单、审核、风控与资金链路</p>
           </div>
         </div>
-
-        <div class="head-toolbar">
-          <div class="toolbar-meta">
-            <span class="toolbar-label">最后刷新</span>
-            <strong>{{ updatedAt || '--' }}</strong>
-          </div>
+        <div class="overview-toolbar">
+          <span>Data updated: {{ updatedAtLabel }}</span>
           <el-button :loading="loading" plain type="primary" @click="loadDashboard">
             <Icon icon="ep:refresh" class="mr-6px" />
             刷新看板
@@ -22,129 +18,196 @@
         </div>
       </div>
 
-      <div class="head-strip">
-        <article v-for="item in heroHighlights" :key="item.label" class="strip-card">
-          <span>{{ item.label }}</span>
-          <strong>{{ item.value }}</strong>
-          <small>{{ item.tip }}</small>
-        </article>
+      <div class="overview-grid">
         <article
-          v-for="item in signalCards"
-          :key="item.label"
-          class="strip-card strip-card--signal"
+          v-for="card in desktopSummaryCards"
+          :key="card.label"
+          :class="['overview-card', `overview-card--${card.tone}`]"
         >
-          <span>{{ item.label }}</span>
-          <strong>{{ item.value }}</strong>
-          <small>{{ item.tip }}</small>
+          <div class="overview-card__top">
+            <span>{{ card.label }}</span>
+            <em :class="['overview-card__trend', `is-${card.trendTone}`]">{{ card.trend }}</em>
+          </div>
+          <strong>{{ card.value }}</strong>
+          <small>{{ card.tip }}</small>
+          <div class="overview-card__track">
+            <span :style="{ width: `${card.progress}%` }"></span>
+          </div>
         </article>
       </div>
     </section>
 
-    <section class="metric-grid">
-      <article v-for="card in metricCards" :key="card.key" class="metric-card">
-        <div class="metric-top">
-          <span>{{ card.label }}</span>
-          <Icon :icon="card.icon" class="metric-icon" />
-        </div>
-        <strong>{{ card.value }}</strong>
-        <div class="metric-bottom">
-          <small>{{ card.tip }}</small>
-          <span :class="['metric-badge', `metric-badge--${card.tone}`]">{{ card.badge }}</span>
-        </div>
-      </article>
-    </section>
-
-    <section class="board-grid">
-      <div class="surface surface--trend">
-        <div class="surface-head">
-          <div>
-            <h3>订单 / 交易 / 拉新总览</h3>
-            <p>近 7 日平台核心运行趋势</p>
+    <section class="command-layout">
+      <div class="surface surface--command-center">
+        <div class="surface-head surface-head--flat">
+          <div class="section-title__main">
+            <Icon icon="ep:operation" class="surface-head__icon" />
+            <div>
+              <h3>待办指挥舱</h3>
+              <p>直接落到真实业务处理页面</p>
+            </div>
           </div>
-          <el-tag round type="info">近 7 日</el-tag>
-        </div>
-        <el-skeleton :loading="loading" animated>
-          <Echart :options="trendChartOptions" :height="360" />
-        </el-skeleton>
-      </div>
-
-      <div class="surface surface--command">
-        <div class="surface-head">
-          <div>
-            <h3>待办指挥舱</h3>
-            <p>直接落到真实业务处理页面</p>
-          </div>
-          <el-tag round type="warning">{{ priorityItems.length }} 组重点</el-tag>
+          <span class="surface-head__link">Batch Process</span>
         </div>
 
-        <div class="priority-list">
+        <div v-if="desktopCommandItems.length" class="command-list">
           <button
-            v-for="item in priorityItems"
+            v-for="item in desktopCommandItems"
             :key="item.title"
-            class="priority-item"
+            class="command-item"
             type="button"
             @click="router.push(item.path)"
           >
-            <div>
-              <div class="priority-title">
-                <span>{{ item.title }}</span>
-                <el-tag :type="item.tagType" effect="plain" round size="small">
-                  {{ item.level }}
-                </el-tag>
-              </div>
+            <div :class="['command-item__icon', `is-${item.accent}`]">
+              <Icon :icon="item.icon" />
+            </div>
+            <div class="command-item__body">
+              <strong>{{ item.title }}</strong>
               <p>{{ item.description }}</p>
             </div>
-            <strong>{{ formatCount(item.count) }}</strong>
-          </button>
-        </div>
-
-        <div v-if="quickActions.length" class="action-grid">
-          <button
-            v-for="item in quickActions"
-            :key="item.path"
-            class="action-card"
-            type="button"
-            @click="router.push(item.path)"
-          >
-            <Icon :icon="item.icon" class="action-icon" />
-            <div>
-              <span>{{ item.title }}</span>
-              <small>{{ item.description }}</small>
+            <div class="command-item__meta">
+              <strong>{{ formatCount(item.count) }}</strong>
+              <span>{{ item.metricLabel }}</span>
             </div>
+            <em :class="['command-item__badge', `is-${item.badgeTone}`]">{{ item.statusText }}</em>
+            <Icon icon="ep:arrow-right" class="command-item__arrow" />
           </button>
         </div>
         <el-empty v-else description="当前账号暂无工作台快捷入口" />
       </div>
 
-      <div class="surface">
-        <div class="surface-head">
-          <div>
-            <h3>审核与风险压力</h3>
-            <p>当前待办与异常负载分布</p>
+      <div class="surface surface--pressure-panel">
+        <div class="surface-head surface-head--inverse">
+          <div class="section-title__main">
+            <Icon icon="ep:histogram" class="surface-head__icon" />
+            <div>
+              <h3>运营压力监测</h3>
+              <p>审核、身份申请与风险预警的即时负载</p>
+            </div>
           </div>
-          <el-tag round type="danger">即时压力</el-tag>
+        </div>
+
+        <div class="pressure-list">
+          <article v-for="item in desktopPressureItems" :key="item.label" class="pressure-item">
+            <div class="pressure-item__top">
+              <span>{{ item.label }}</span>
+              <strong>{{ Math.round(item.percentage) }}%</strong>
+            </div>
+            <div class="pressure-item__bar">
+              <span :style="{ width: `${item.percentage}%`, background: item.color }"></span>
+            </div>
+          </article>
+        </div>
+
+        <div class="pressure-footer">
+          <article>
+            <span>Queue Status</span>
+            <strong>{{ queueStatusLabel }}</strong>
+          </article>
+          <article>
+            <span>Risk Level</span>
+            <strong>{{ riskLevelLabel }}</strong>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="insight-layout">
+      <div class="surface surface--world">
+        <div class="surface-head surface-head--inverse">
+          <div>
+            <h3>平台交易流</h3>
+            <p>近 7 日订单、交易额与新增用户趋势</p>
+          </div>
         </div>
         <el-skeleton :loading="loading" animated>
-          <Echart :options="pressureChartOptions" :height="280" />
+          <Echart :options="trendChartOptions" :height="320" />
         </el-skeleton>
-        <div class="queue-stack">
-          <article v-for="item in queueBars" :key="item.label" class="queue-item">
-            <div class="queue-meta">
-              <span>{{ item.label }}</span>
-              <strong>{{ formatCount(item.value) }}</strong>
+        <div class="world-meta">
+          <span>Active Nodes: {{ formatCount(sevenDayTotals.orderCount) }}</span>
+          <span>Latency: {{ formatPercent(withdrawRate) }}</span>
+        </div>
+      </div>
+
+      <div class="surface surface--health">
+        <div class="surface-head surface-head--flat">
+          <div>
+            <h3>System Health Summary</h3>
+            <p>核心履约、提现与风控指标的快速判读</p>
+          </div>
+        </div>
+        <div class="health-grid">
+          <article
+            v-for="item in desktopHealthStats"
+            :key="item.label"
+            :class="['health-item', `health-item--${item.tone}`]"
+          >
+            <div class="health-item__ring">
+              <strong>{{ item.value }}</strong>
             </div>
-            <el-progress
-              :color="item.color"
-              :percentage="item.percentage"
-              :show-text="false"
-              :stroke-width="10"
-            />
+            <span>{{ item.label }}</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="signal-layout">
+      <div class="surface surface--signal-cluster">
+        <div class="surface-head surface-head--flat">
+          <div>
+            <h3>重点运营信号</h3>
+            <p>把最需要人工介入的事项压到一屏内快速判读</p>
+          </div>
+          <el-tag round type="warning">6 Key Signals</el-tag>
+        </div>
+
+        <div class="signal-grid">
+          <article v-for="card in focusMetricCards" :key="card.key" class="signal-card">
+            <div class="signal-card__head">
+              <span :class="['signal-card__icon', `signal-card__icon--${card.tone}`]">
+                <Icon :icon="card.icon" />
+              </span>
+              <span :class="['metric-badge', `metric-badge--${card.tone}`]">{{ card.badge }}</span>
+            </div>
+            <div class="signal-card__main">
+              <strong>{{ card.value }}</strong>
+              <h4>{{ card.label }}</h4>
+            </div>
+            <p>{{ card.tip }}</p>
           </article>
         </div>
       </div>
 
+      <aside class="surface surface--signal-rail">
+        <div class="surface-head surface-head--flat">
+          <div>
+            <h3>其他提醒</h3>
+            <p>低频协同项收成提醒列，避免再铺 9 张同质卡片</p>
+          </div>
+          <el-tag round type="info">{{ compactSignalCards.length }} Items</el-tag>
+        </div>
+
+        <div class="signal-rail">
+          <article v-for="card in compactSignalCards" :key="card.key" class="signal-rail__item">
+            <div class="signal-rail__meta">
+              <span :class="['signal-rail__dot', `signal-rail__dot--${card.tone}`]"></span>
+              <div>
+                <strong>{{ card.label }}</strong>
+                <p>{{ card.tip }}</p>
+              </div>
+            </div>
+            <div class="signal-rail__value">
+              <strong>{{ card.value }}</strong>
+              <span :class="['metric-badge', `metric-badge--${card.tone}`]">{{ card.badge }}</span>
+            </div>
+          </article>
+        </div>
+      </aside>
+    </section>
+
+    <section class="chart-layout">
       <div class="surface">
-        <div class="surface-head">
+        <div class="surface-head surface-head--flat">
           <div>
             <h3>资金脉冲</h3>
             <p>交易额与提现申请额对照</p>
@@ -154,20 +217,10 @@
         <el-skeleton :loading="loading" animated>
           <Echart :options="financeChartOptions" :height="280" />
         </el-skeleton>
-        <div class="mini-summary">
-          <article class="mini-summary__item">
-            <span>7 日交易额</span>
-            <strong>{{ formatCurrency(sevenDayTotals.tradeAmount) }}</strong>
-          </article>
-          <article class="mini-summary__item">
-            <span>7 日提现申请额</span>
-            <strong>{{ formatCurrency(sevenDayTotals.withdrawAmount) }}</strong>
-          </article>
-        </div>
       </div>
 
       <div class="surface">
-        <div class="surface-head">
+        <div class="surface-head surface-head--flat">
           <div>
             <h3>运行脉冲</h3>
             <p>对当前队列和近 7 日订单做快速判读</p>
@@ -178,12 +231,11 @@
         <div class="pulse-grid">
           <article class="pulse-card">
             <el-progress
-              color="#14b8a6"
+              color="#1768c6"
               :percentage="normalizedCompletionRate"
               :stroke-width="12"
-              status="success"
               type="circle"
-              :width="120"
+              :width="118"
             />
             <div class="pulse-card__copy">
               <span>订单完成率</span>
@@ -201,15 +253,17 @@
           </article>
         </div>
       </div>
+    </section>
 
-      <div class="surface surface--table">
-        <div class="surface-head">
-          <div>
-            <h3>近 7 日运行明细</h3>
-            <p>真实聚合字段落表，便于值班复盘</p>
-          </div>
-          <el-tag round type="info">{{ mergedTrendRows.length }} 天</el-tag>
+    <section class="surface surface--table">
+      <div class="surface-head surface-head--flat">
+        <div>
+          <h3>近 7 日运行明细</h3>
+          <p>真实聚合字段落表，便于值班复盘</p>
         </div>
+        <el-tag round type="info">{{ mergedTrendRows.length }} 天</el-tag>
+      </div>
+      <div class="table-shell">
         <el-table :data="mergedTrendRows" :stripe="true" size="large">
           <el-table-column label="日期" prop="statDate" min-width="120" />
           <el-table-column label="订单量" min-width="100">
@@ -267,14 +321,6 @@ import { hasPermission } from '@/directives/permission/hasPermi'
 
 defineOptions({ name: 'LinbangDashboard' })
 
-interface QuickAction {
-  title: string
-  description: string
-  icon: string
-  path: string
-  permissions: string[]
-}
-
 interface TrendRow {
   statDate: string
   orderCount: number
@@ -296,6 +342,31 @@ interface PrioritySeed {
     path: string
     permission: string
   }>
+}
+
+interface DashboardSummaryCard {
+  label: string
+  value: string
+  tip: string
+  trend: string
+  progress: number
+  tone: 'blue' | 'green' | 'slate' | 'danger'
+  trendTone: 'rise' | 'fall' | 'neutral'
+}
+
+interface DashboardCommandItem extends PrioritySeed {
+  path: string
+  icon: string
+  accent: 'blue' | 'red' | 'cyan' | 'slate'
+  badgeTone: 'danger' | 'warning' | 'info' | 'neutral'
+  metricLabel: string
+  statusText: string
+}
+
+interface DashboardHealthStat {
+  label: string
+  value: string
+  tone: 'blue' | 'navy' | 'slate'
 }
 
 const router = useRouter()
@@ -323,85 +394,15 @@ const orderTrend = ref<DashboardTrendPoint[]>([])
 const financeTrend = ref<DashboardTrendPoint[]>([])
 const userTrend = ref<DashboardTrendPoint[]>([])
 
-const quickActionSeed: QuickAction[] = [
+const priorityVisualMap: Record<string, { icon: string; accent: DashboardCommandItem['accent'] }> =
   {
-    title: '实名认证审核',
-    description: '优先清实名与活体待办',
-    icon: 'ep:checked',
-    path: '/linbang-member/member-real-name',
-    permissions: ['linbang:member-user-real-name:query']
-  },
-  {
-    title: '服务商入驻审核',
-    description: '处理入驻初审与终审',
-    icon: 'ep:stamp',
-    path: '/linbang-merchant/merchant-entry',
-    permissions: ['linbang:merchant-entry:query']
-  },
-  {
-    title: '提现审核',
-    description: '跟进提现和打款链路',
-    icon: 'ep:wallet-filled',
-    path: '/linbang-wallet/wallet-withdraw',
-    permissions: ['linbang:wallet:withdraw:query']
-  },
-  {
-    title: '异常订单处理',
-    description: '人工介入异常订单',
-    icon: 'ep:warning',
-    path: '/linbang-order/order-abnormal',
-    permissions: ['linbang:order:abnormal:query']
-  },
-  {
-    title: '投诉处理',
-    description: '处理售后投诉工单',
-    icon: 'ep:chat-dot-round',
-    path: '/linbang-review/complaint',
-    permissions: ['linbang:review:complaint:query']
-  },
-  {
-    title: '申诉审核',
-    description: '关注拆单申诉与复核',
-    icon: 'ep:guide',
-    path: '/linbang-review/appeal',
-    permissions: ['linbang:review:appeal:query']
-  },
-  {
-    title: '风控规则',
-    description: '调整风控命中阈值',
-    icon: 'ep:set-up',
-    path: '/linbang-risk/risk-rule',
-    permissions: ['linbang:risk-rule:query']
-  },
-  {
-    title: '退款审核',
-    description: '跟进支付退款闭环',
-    icon: 'ep:refresh-left',
-    path: '/linbang-wallet/pay-refund',
-    permissions: ['pay:refund:query']
-  },
-  {
-    title: '身份申请审核',
-    description: '处理服务商、推广员、合作商身份申请',
-    icon: 'ep:user',
-    path: '/linbang-member/member-role-apply',
-    permissions: ['linbang:member:role-apply:query']
-  },
-  {
-    title: '价格申报审核',
-    description: '复核合作商与服务商价格申报',
-    icon: 'ep:money',
-    path: '/linbang-partner/merchant-price-report',
-    permissions: ['linbang:partner:price-report:query']
-  },
-  {
-    title: '推送任务追踪',
-    description: '查看失败与待执行推送任务',
-    icon: 'ep:promotion',
-    path: '/linbang-message/message-push-task',
-    permissions: ['linbang:message:push-task:query']
+    审核清队: { icon: 'ep:checked', accent: 'blue' },
+    异常止损: { icon: 'ep:warning-filled', accent: 'cyan' },
+    风险复核: { icon: 'ep:bell-filled', accent: 'red' },
+    退款售后: { icon: 'ep:refresh-left', accent: 'slate' },
+    价格申报审核: { icon: 'ep:money', accent: 'blue' },
+    消息任务追踪: { icon: 'ep:promotion', accent: 'cyan' }
   }
-]
 
 const toNumber = (value: unknown) => {
   const result = Number(value ?? 0)
@@ -470,6 +471,32 @@ const peakOrderCount = computed(() =>
   mergedTrendRows.value.reduce((max, item) => Math.max(max, toNumber(item.orderCount)), 0)
 )
 
+const peakNewUserCount = computed(() =>
+  mergedTrendRows.value.reduce((max, item) => Math.max(max, toNumber(item.newUserCount)), 0)
+)
+
+const deltaInfo = (field: keyof TrendRow) => {
+  const rows = mergedTrendRows.value
+  if (rows.length < 2) {
+    return { text: '刚同步', tone: 'neutral' as const }
+  }
+  const latest = toNumber(rows[rows.length - 1][field])
+  const previous = toNumber(rows[rows.length - 2][field])
+  if (previous === 0) {
+    return latest === 0
+      ? { text: '持平', tone: 'neutral' as const }
+      : { text: '↑ 新高', tone: 'rise' as const }
+  }
+  const ratio = ((latest - previous) / previous) * 100
+  if (Math.abs(ratio) < 0.05) {
+    return { text: '持平', tone: 'neutral' as const }
+  }
+  return {
+    text: `${ratio > 0 ? '↑' : '↓'} ${Math.abs(ratio).toFixed(1)}%`,
+    tone: ratio > 0 ? ('rise' as const) : ('fall' as const)
+  }
+}
+
 const recentDelta = (field: keyof TrendRow) => {
   const rows = mergedTrendRows.value
   if (rows.length < 2) {
@@ -484,57 +511,6 @@ const recentDelta = (field: keyof TrendRow) => {
   const prefix = ratio > 0 ? '+' : ''
   return `较昨日 ${prefix}${ratio.toFixed(1)}%`
 }
-
-const heroHighlights = computed(() => [
-  {
-    label: '近 7 日订单总量',
-    value: formatCount(sevenDayTotals.value.orderCount),
-    tip: '订单与拆单链路的总观测面'
-  },
-  {
-    label: '近 7 日交易额',
-    value: formatCurrency(sevenDayTotals.value.tradeAmount),
-    tip: '支付与履约联动总盘子'
-  },
-  {
-    label: '近 7 日新增用户',
-    value: formatCount(sevenDayTotals.value.newUserCount),
-    tip: '拉新与转化基础面'
-  }
-])
-
-const signalCards = computed(() => [
-  {
-    label: '待审核总量',
-    value: formatCount(overview.value.pendingAuditCount),
-    tip: '实名、资质、入驻、提现待办'
-  },
-  {
-    label: '身份申请待审',
-    value: formatCount(overview.value.pendingRoleApplyCount),
-    tip: '推广员 / 服务商 / 合作商角色切换'
-  },
-  {
-    label: '风险预警',
-    value: formatCount(overview.value.riskAlertCount),
-    tip: '当前命中风控规则的工单数'
-  },
-  {
-    label: '退款待办',
-    value: formatCount(overview.value.refundPendingCount),
-    tip: '售后与退款链路需要继续跟进'
-  },
-  {
-    label: '到期证件提醒',
-    value: formatCount(overview.value.expiringQualificationCount),
-    tip: '需尽快跟进资质续期与接单恢复'
-  },
-  {
-    label: '失败推送任务',
-    value: formatCount(overview.value.failedPushTaskCount),
-    tip: '检查消息任务执行异常与补发'
-  }
-])
 
 const metricCards = computed(() => [
   {
@@ -656,8 +632,92 @@ const metricCards = computed(() => [
   }
 ])
 
-const quickActions = computed(() =>
-  quickActionSeed.filter((item) => hasPermission(item.permissions))
+const updatedAtLabel = computed(() => updatedAt.value || '等待同步')
+
+const desktopSummaryCards = computed<DashboardSummaryCard[]>(() => {
+  const tradeDelta = deltaInfo('tradeAmount')
+  const orderDelta = deltaInfo('orderCount')
+  const userDelta = deltaInfo('newUserCount')
+  const completionBenchmark = 85
+  const completionGap = normalizedCompletionRate.value - completionBenchmark
+  return [
+    {
+      label: '今日交易额',
+      value: formatCurrency(overview.value.todayTradeAmount),
+      tip: '支付与履约联动金额',
+      trend: tradeDelta.text,
+      progress: clamp(
+        peakTradeAmount.value <= 0
+          ? 0
+          : (toNumber(overview.value.todayTradeAmount) / peakTradeAmount.value) * 100,
+        6,
+        100
+      ),
+      tone: 'blue',
+      trendTone: tradeDelta.tone
+    },
+    {
+      label: '今日订单量',
+      value: formatCount(overview.value.todayOrderCount),
+      tip: '近 7 日日峰值对照',
+      trend: orderDelta.text,
+      progress: clamp(
+        peakOrderCount.value <= 0
+          ? 0
+          : (toNumber(overview.value.todayOrderCount) / peakOrderCount.value) * 100,
+        6,
+        100
+      ),
+      tone: 'green',
+      trendTone: orderDelta.tone
+    },
+    {
+      label: '今日新增用户',
+      value: formatCount(overview.value.todayNewUserCount),
+      tip: '拉新转化即时表现',
+      trend: userDelta.text,
+      progress: clamp(
+        peakNewUserCount.value <= 0
+          ? 0
+          : (toNumber(overview.value.todayNewUserCount) / peakNewUserCount.value) * 100,
+        6,
+        100
+      ),
+      tone: 'blue',
+      trendTone: userDelta.tone
+    },
+    {
+      label: '订单完成率',
+      value: formatPercent(overview.value.completionRate),
+      tip: `履约基准 ${completionBenchmark}%`,
+      trend:
+        completionGap >= 0
+          ? `↑ 高于基准 ${completionGap.toFixed(1)}%`
+          : `↓ 低于基准 ${Math.abs(completionGap).toFixed(1)}%`,
+      progress: clamp(normalizedCompletionRate.value, 6, 100),
+      tone: completionGap >= 0 ? 'slate' : 'danger',
+      trendTone: completionGap >= 0 ? 'rise' : 'fall'
+    }
+  ]
+})
+
+const secondaryMetricCards = computed(() => metricCards.value.slice(4))
+
+const focusMetricCardKeySet = new Set([
+  'pendingAuditCount',
+  'abnormalOrderCount',
+  'riskAlertCount',
+  'refundPendingCount',
+  'pendingRoleApplyCount',
+  'pendingPriceReportCount'
+])
+
+const focusMetricCards = computed(() =>
+  secondaryMetricCards.value.filter((card) => focusMetricCardKeySet.has(card.key))
+)
+
+const compactSignalCards = computed(() =>
+  secondaryMetricCards.value.filter((card) => !focusMetricCardKeySet.has(card.key))
 )
 
 const prioritySeed = computed<PrioritySeed[]>(() => [
@@ -740,6 +800,31 @@ const priorityItems = computed(() =>
     })
 )
 
+const desktopCommandItems = computed<DashboardCommandItem[]>(() =>
+  priorityItems.value.slice(0, 4).map((item) => {
+    const count = toNumber(item.count)
+    const visual = priorityVisualMap[item.title] ?? {
+      icon: 'ep:data-analysis',
+      accent: 'blue' as const
+    }
+    return {
+      ...item,
+      icon: visual.icon,
+      accent: visual.accent,
+      badgeTone: count > 20 ? 'danger' : count > 0 ? 'warning' : 'neutral',
+      metricLabel:
+        item.title === '审核清队'
+          ? 'Pending Cases'
+          : item.title === '风险复核'
+            ? 'Risk Alerts'
+            : item.title === '异常止损'
+              ? 'Anomalies'
+              : 'Open Tickets',
+      statusText: count > 20 ? '需要清队' : count > 0 ? '处理中' : '队列正常'
+    }
+  })
+)
+
 const queueBars = computed(() => {
   const values = [
     overview.value.pendingAuditCount,
@@ -797,6 +882,10 @@ const queueBars = computed(() => {
   ]
 })
 
+const desktopPressureItems = computed(() =>
+  queueBars.value.filter((item) => ['审核堆积', '身份申请', '风险预警'].includes(item.label))
+)
+
 const normalizedCompletionRate = computed(() =>
   clamp(toNumber(overview.value.completionRate), 0, 100)
 )
@@ -853,6 +942,44 @@ const pulseStats = computed(() => [
     label: '到期资质提醒',
     value: formatCount(overview.value.expiringQualificationCount),
     tip: '需优先推动资质补齐与恢复接单'
+  }
+])
+
+const queueStatusLabel = computed(() => {
+  if (pressureIndex.value >= 80) {
+    return '高负载'
+  }
+  if (pressureIndex.value >= 45) {
+    return '处理中'
+  }
+  return '平稳'
+})
+
+const riskLevelLabel = computed(() => {
+  if (riskHitRate.value >= 12) {
+    return '高风险'
+  }
+  if (riskHitRate.value >= 6) {
+    return '中风险'
+  }
+  return '低风险'
+})
+
+const desktopHealthStats = computed<DashboardHealthStat[]>(() => [
+  {
+    label: '履约完成率',
+    value: formatPercent(overview.value.completionRate),
+    tone: 'blue'
+  },
+  {
+    label: '提现申请占比',
+    value: formatPercent(withdrawRate.value),
+    tone: 'navy'
+  },
+  {
+    label: '风险命中率',
+    value: formatPercent(riskHitRate.value),
+    tone: 'slate'
   }
 ])
 
@@ -914,37 +1041,6 @@ const trendChartOptions = computed<EChartsOption>(() => ({
       symbolSize: 7,
       data: mergedTrendRows.value.map((item) => toNumber(item.newUserCount)),
       areaStyle: { color: 'rgba(56, 189, 248, 0.12)' }
-    }
-  ]
-}))
-
-const pressureChartOptions = computed<EChartsOption>(() => ({
-  color: ['#f59e0b', '#ef4444', '#f97316', '#0ea5e9'],
-  grid: { top: 16, left: 90, right: 18, bottom: 8, containLabel: true },
-  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-  xAxis: {
-    type: 'value',
-    splitLine: { lineStyle: { color: '#e2e8f0' } },
-    axisLabel: { color: '#64748b' }
-  },
-  yAxis: {
-    type: 'category',
-    data: queueBars.value.map((item) => item.label),
-    axisLabel: { color: '#0f172a', fontWeight: 600 },
-    axisTick: { show: false },
-    axisLine: { show: false }
-  },
-  series: [
-    {
-      type: 'bar',
-      barWidth: 18,
-      data: queueBars.value.map((item) => item.value),
-      showBackground: true,
-      backgroundStyle: { color: '#f1f5f9' },
-      itemStyle: {
-        borderRadius: [0, 10, 10, 0],
-        color: ({ dataIndex }) => queueBars.value[dataIndex]?.color || '#94a3b8'
-      }
     }
   ]
 }))
@@ -1041,192 +1137,631 @@ onMounted(() => {
 
 <style scoped>
 .linbang-dashboard {
-  --board-ink: #e2e8f0;
-  --board-muted: rgb(226 232 240 / 72%);
-  --surface-border: rgb(148 163 184 / 18%);
-  --shadow-soft: 0 20px 48px rgb(15 23 42 / 8%);
+  --surface-border: rgb(15 23 42 / 8%);
+  --shadow-soft: 0 18px 42px rgb(15 23 42 / 8%);
+  --blue-600: #1464d2;
+  --blue-700: #123d88;
+  --blue-900: #0e2c64;
+  --text-main: #183153;
+  --text-soft: #7b8aa5;
+  --line-soft: #dbe4f1;
 
   display: grid;
   gap: 18px;
 }
 
-.dashboard-head {
-  position: relative;
-  display: grid;
-  padding: 20px 22px;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at top left, rgb(20 184 166 / 22%), transparent 34%),
-    radial-gradient(circle at right center, rgb(245 158 11 / 20%), transparent 28%),
-    linear-gradient(135deg, #04111d 0%, #0b2532 52%, #14384b 100%);
-  border-radius: 24px;
-  gap: 18px;
-}
-
-.dashboard-head::before {
-  position: absolute;
-  background-image:
-    linear-gradient(rgb(255 255 255 / 5%) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 5%) 1px, transparent 1px);
-  background-position: center;
-  background-size: 28px 28px;
-  content: '';
-  inset: 0;
-  mask-image: linear-gradient(135deg, rgb(0 0 0 / 95%), transparent 90%);
-}
-
-.head-top,
-.head-strip {
-  position: relative;
-  z-index: 1;
-}
-
-.eyebrow {
-  margin: 0 0 8px;
-  font-family: Bahnschrift, 'Segoe UI', 'PingFang SC', sans-serif;
-  font-size: 12px;
-  letter-spacing: 0.24em;
-  color: rgb(186 230 253 / 78%);
-  text-transform: uppercase;
-}
-
-.head-top,
-.head-heading,
-.head-toolbar {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.head-heading {
-  flex-wrap: wrap;
-  justify-content: flex-start;
-}
-
-.head-heading h1 {
-  margin: 0;
-  font-family: Bahnschrift, 'Segoe UI', 'PingFang SC', sans-serif;
-  font-size: clamp(26px, 2.2vw, 34px);
-  letter-spacing: 0.03em;
-  color: #f8fafc;
-}
-
-.head-title {
-  min-width: 0;
-}
-
-.head-toolbar {
-  flex-wrap: wrap;
-}
-
-.toolbar-meta {
-  display: grid;
-  gap: 4px;
-}
-
-.head-strip {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-}
-
-.strip-card {
-  backdrop-filter: blur(12px);
-  background: rgb(255 255 255 / 8%);
-  border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: 18px;
-}
-
-.strip-card {
-  display: grid;
-  gap: 6px;
-  min-height: 96px;
-  padding: 14px 16px;
-}
-
-.strip-card span,
-.toolbar-label {
-  font-size: 12px;
-  color: rgb(226 232 240 / 68%);
-}
-
-.strip-card strong,
-.toolbar-meta strong {
-  font-family: Bahnschrift, 'Segoe UI', 'PingFang SC', sans-serif;
-  font-size: 22px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.strip-card small {
-  line-height: 1.5;
-  color: rgb(226 232 240 / 68%);
-}
-
-.strip-card--signal {
-  background: rgb(255 255 255 / 10%);
-}
-
-.metric-grid {
-  display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.metric-card,
+.overview-section,
 .surface {
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 98%), rgb(248 250 252 / 96%)),
-    linear-gradient(135deg, rgb(20 184 166 / 6%), rgb(245 158 11 / 8%));
+    linear-gradient(180deg, rgb(255 255 255 / 99%), rgb(248 250 252 / 97%)),
+    linear-gradient(135deg, rgb(20 119 216 / 4%), rgb(12 74 110 / 6%));
   border: 1px solid var(--surface-border);
   border-radius: 24px;
   box-shadow: var(--shadow-soft);
 }
 
-.metric-card {
+.overview-section,
+.surface {
   display: grid;
-  gap: 14px;
-  min-height: 158px;
-  padding: 20px;
+  gap: 18px;
+  padding: 22px;
 }
 
-.metric-top,
-.metric-bottom,
+.section-title,
 .surface-head,
-.queue-meta,
-.priority-title {
-  align-items: center;
+.overview-toolbar,
+.overview-card__top,
+.pressure-item__top {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 
-.metric-top span {
+.section-title__main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.section-title__icon,
+.surface-head__icon {
+  margin-top: 2px;
+  font-size: 22px;
+  color: var(--blue-600);
+}
+
+.section-title h2,
+.surface-head h3 {
+  margin: 0;
+  font-family: Bahnschrift, 'Segoe UI', 'PingFang SC', sans-serif;
+  color: var(--text-main);
+}
+
+.section-title h2 {
+  font-size: 22px;
+}
+
+.section-title p,
+.surface-head p {
+  margin: 6px 0 0;
   font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-soft);
+}
+
+.overview-toolbar {
+  flex-wrap: wrap;
+}
+
+.overview-toolbar span {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.overview-grid,
+.chart-layout,
+.signal-grid,
+.signal-rail {
+  display: grid;
+  gap: 16px;
+}
+
+.overview-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.overview-card {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-height: 136px;
+  padding: 16px 18px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--line-soft);
+  border-radius: 20px;
+}
+
+.overview-card::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  background: var(--blue-600);
+  content: '';
+}
+
+.overview-card--green::before {
+  background: #16a34a;
+}
+
+.overview-card--slate::before {
+  background: #67748a;
+}
+
+.overview-card--danger::before {
+  background: #dc2626;
+}
+
+.overview-card__top span,
+.overview-card small {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.overview-card__trend {
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.overview-card__trend.is-rise {
+  color: #16a34a;
+}
+
+.overview-card__trend.is-fall {
+  color: #dc2626;
+}
+
+.overview-card__trend.is-neutral {
   color: #64748b;
 }
 
-.metric-icon {
-  font-size: 22px;
-  color: #0f766e;
+.overview-card strong {
+  font-family: Bahnschrift, 'Segoe UI', 'PingFang SC', sans-serif;
+  font-size: 40px;
+  line-height: 1;
+  color: var(--text-main);
 }
 
-.metric-card strong {
+.overview-card__track {
+  height: 4px;
+  margin-top: auto;
+  overflow: hidden;
+  background: #e6edf7;
+  border-radius: 999px;
+}
+
+.overview-card__track span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue-600), #73aef7);
+  border-radius: inherit;
+}
+
+.overview-card--green .overview-card__track span {
+  background: linear-gradient(90deg, #16a34a, #7ddf99);
+}
+
+.overview-card--slate .overview-card__track span {
+  background: linear-gradient(90deg, #67748a, #b0b8c6);
+}
+
+.overview-card--danger .overview-card__track span {
+  background: linear-gradient(90deg, #dc2626, #f59e9e);
+}
+
+.command-layout,
+.insight-layout {
+  display: grid;
+  gap: 18px;
+}
+
+.command-layout {
+  grid-template-columns: minmax(0, 2.3fr) minmax(320px, 1fr);
+}
+
+.insight-layout,
+.chart-layout {
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr);
+}
+
+.surface--command-center {
+  background: linear-gradient(180deg, #fbfdff, #f5f8fd);
+}
+
+.surface--pressure-panel,
+.surface--world {
+  color: #fff;
+  background:
+    radial-gradient(circle at top left, rgb(56 189 248 / 15%), transparent 30%),
+    linear-gradient(160deg, var(--blue-700) 0%, var(--blue-900) 100%);
+}
+
+.surface-head--inverse h3,
+.surface-head--inverse p,
+.surface--world .world-meta span,
+.pressure-item__top span,
+.pressure-footer span {
+  color: rgb(255 255 255 / 78%);
+}
+
+.surface-head--inverse h3,
+.pressure-item__top strong,
+.pressure-footer strong {
+  color: #fff;
+}
+
+.surface-head--flat {
+  align-items: flex-start;
+}
+
+.surface-head__link {
+  font-size: 12px;
+  color: var(--blue-700);
+}
+
+.command-list,
+.pressure-list {
+  display: grid;
+  gap: 12px;
+}
+
+.command-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 16px;
+  text-align: left;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid var(--line-soft);
+  border-radius: 18px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.command-item:hover {
+  border-color: rgb(20 100 210 / 22%);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgb(15 23 42 / 6%);
+}
+
+.command-item__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+  border-radius: 50%;
+}
+
+.command-item__icon.is-blue {
+  color: var(--blue-600);
+  background: rgb(20 100 210 / 10%);
+}
+
+.command-item__icon.is-red {
+  color: #cf2f25;
+  background: rgb(207 47 37 / 10%);
+}
+
+.command-item__icon.is-cyan {
+  color: #1076b8;
+  background: rgb(16 118 184 / 10%);
+}
+
+.command-item__icon.is-slate {
+  color: #67748a;
+  background: rgb(103 116 138 / 12%);
+}
+
+.command-item__body strong {
+  display: block;
+  font-size: 18px;
+  color: var(--text-main);
+}
+
+.command-item__body p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-soft);
+}
+
+.command-item__meta {
+  min-width: 84px;
+  text-align: center;
+}
+
+.command-item__meta strong {
+  display: block;
   font-family: Bahnschrift, 'Segoe UI', 'PingFang SC', sans-serif;
   font-size: 34px;
   line-height: 1;
-  letter-spacing: 0.02em;
-  color: #0f172a;
+  color: var(--blue-700);
 }
 
-.metric-bottom small {
-  line-height: 1.5;
-  color: #94a3b8;
+.command-item__meta span {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-soft);
+}
+
+.command-item__badge {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+  border-radius: 999px;
+}
+
+.command-item__badge.is-danger {
+  color: #fff;
+  background: #cf2f25;
+}
+
+.command-item__badge.is-warning {
+  color: #8a4b00;
+  background: rgb(245 158 11 / 18%);
+}
+
+.command-item__badge.is-info {
+  color: #155eef;
+  background: rgb(21 94 239 / 10%);
+}
+
+.command-item__badge.is-neutral {
+  color: #667085;
+  background: rgb(148 163 184 / 15%);
+}
+
+.command-item__arrow {
+  font-size: 18px;
+  color: #93a2b9;
+}
+
+.pressure-item {
+  display: grid;
+  gap: 8px;
+}
+
+.pressure-item__top strong {
+  font-family: Bahnschrift, 'Segoe UI', 'PingFang SC', sans-serif;
+  font-size: 28px;
+}
+
+.pressure-item__bar {
+  height: 8px;
+  overflow: hidden;
+  background: rgb(255 255 255 / 14%);
+  border-radius: 999px;
+}
+
+.pressure-item__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.pressure-footer {
+  display: grid;
+  gap: 12px;
+  margin-top: auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pressure-footer article {
+  display: grid;
+  gap: 6px;
+  padding: 16px 14px;
+  background: rgb(255 255 255 / 8%);
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 16px;
+}
+
+.world-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12px;
+}
+
+.health-grid,
+.pulse-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.health-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.health-item {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.health-item__ring {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  background: #fff;
+  border: 8px solid var(--blue-600);
+  border-radius: 50%;
+}
+
+.health-item--navy .health-item__ring {
+  border-color: var(--blue-700);
+}
+
+.health-item--slate .health-item__ring {
+  border-color: #8f98a8;
+}
+
+.health-item__ring strong {
+  font-family: Bahnschrift, 'Segoe UI', 'PingFang SC', sans-serif;
+  font-size: 28px;
+  color: var(--text-main);
+}
+
+.health-item span {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.signal-layout {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1.7fr) minmax(300px, 0.85fr);
+}
+
+.surface--signal-cluster {
+  gap: 20px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 99%), rgb(247 250 255 / 98%)),
+    radial-gradient(circle at top right, rgb(20 100 210 / 10%), transparent 32%);
+}
+
+.surface--signal-rail {
+  gap: 18px;
+  background:
+    linear-gradient(180deg, #f8fbff, #f4f8fd),
+    linear-gradient(135deg, rgb(14 165 233 / 6%), rgb(15 23 42 / 4%));
+}
+
+.signal-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.signal-card {
+  display: grid;
+  gap: 12px;
+  min-height: 148px;
+  padding: 18px;
+  background: linear-gradient(180deg, #fff, #f8fbff);
+  border: 1px solid rgb(219 228 241 / 90%);
+  border-radius: 20px;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.signal-card:hover {
+  border-color: rgb(20 100 210 / 18%);
+  transform: translateY(-1px);
+  box-shadow: 0 16px 28px rgb(15 23 42 / 6%);
+}
+
+.signal-card__head,
+.signal-rail__item,
+.signal-rail__meta,
+.signal-rail__value {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.signal-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  font-size: 18px;
+  border-radius: 12px;
+}
+
+.signal-card__icon--info {
+  color: #0369a1;
+  background: rgb(14 165 233 / 12%);
+}
+
+.signal-card__icon--success {
+  color: #047857;
+  background: rgb(16 185 129 / 12%);
+}
+
+.signal-card__icon--warning {
+  color: #b45309;
+  background: rgb(245 158 11 / 14%);
+}
+
+.signal-card__icon--danger {
+  color: #b91c1c;
+  background: rgb(239 68 68 / 12%);
+}
+
+.signal-card__main {
+  display: grid;
+  gap: 4px;
+}
+
+.signal-card__main strong,
+.signal-rail__value strong {
+  font-family: Bahnschrift, 'Segoe UI', 'PingFang SC', sans-serif;
+  line-height: 1;
+  color: var(--text-main);
+}
+
+.signal-card__main strong {
+  font-size: 34px;
+}
+
+.signal-card__main h4,
+.signal-rail__meta strong {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-main);
+}
+
+.signal-card p,
+.signal-rail__meta p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-soft);
+}
+
+.signal-rail {
+  gap: 12px;
+}
+
+.signal-rail__item {
+  padding: 14px 16px;
+  background: rgb(255 255 255 / 84%);
+  border: 1px solid rgb(219 228 241 / 90%);
+  border-radius: 18px;
+}
+
+.signal-rail__meta {
+  align-items: flex-start;
+  justify-content: flex-start;
+  min-width: 0;
+  flex: 1;
+}
+
+.signal-rail__meta > div {
+  min-width: 0;
+}
+
+.signal-rail__dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 5px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+}
+
+.signal-rail__dot--info {
+  background: #0ea5e9;
+}
+
+.signal-rail__dot--success {
+  background: #10b981;
+}
+
+.signal-rail__dot--warning {
+  background: #f59e0b;
+}
+
+.signal-rail__dot--danger {
+  background: #ef4444;
+}
+
+.signal-rail__value {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.signal-rail__value strong {
+  font-size: 30px;
 }
 
 .metric-badge {
-  padding: 4px 10px;
+  padding: 6px 12px;
   font-size: 12px;
   white-space: nowrap;
   border-radius: 999px;
@@ -1252,195 +1787,46 @@ onMounted(() => {
   background: rgb(239 68 68 / 12%);
 }
 
-.board-grid {
-  display: grid;
-  gap: 18px;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-}
-
-.surface {
-  display: grid;
-  gap: 18px;
-  grid-column: span 4;
-  padding: 22px;
-}
-
-.surface--trend {
-  color: #fff;
-  background:
-    radial-gradient(circle at top left, rgb(20 184 166 / 18%), transparent 32%),
-    linear-gradient(160deg, #071827 0%, #0f2435 100%);
-  grid-column: span 8;
-}
-
-.surface--command {
-  grid-column: span 4;
-}
-
-.surface--table {
-  grid-column: 1 / -1;
-}
-
-.surface-head h3 {
-  margin: 0;
-  font-size: 20px;
-  color: inherit;
-}
-
-.surface-head p {
-  margin: 6px 0 0;
-  font-size: 13px;
-  color: inherit;
-  opacity: 0.7;
-}
-
-.surface:not(.surface--trend) .surface-head h3 {
-  color: #0f172a;
-}
-
-.surface:not(.surface--trend) .surface-head p {
-  color: #64748b;
-}
-
-.priority-list,
-.queue-stack {
-  display: grid;
-  gap: 12px;
-}
-
-.priority-item,
-.action-card {
-  display: flex;
-  padding: 16px 18px;
-  text-align: left;
-  cursor: pointer;
-  background: rgb(15 23 42 / 3%);
-  border: 1px solid rgb(148 163 184 / 18%);
-  border-radius: 18px;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.priority-item:hover,
-.action-card:hover {
-  border-color: rgb(14 165 233 / 32%);
-  transform: translateY(-1px);
-  box-shadow: 0 12px 28px rgb(15 23 42 / 8%);
-}
-
-.priority-item p,
-.action-card small,
-.pulse-line small {
-  margin: 6px 0 0;
-  color: #64748b;
-}
-
-.priority-item strong {
-  font-family: Bahnschrift, 'Segoe UI', 'PingFang SC', sans-serif;
-  font-size: 30px;
-  color: #0f172a;
-}
-
-.action-grid {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.action-card {
-  align-items: flex-start;
-  gap: 12px;
-  justify-content: flex-start;
-  min-height: 102px;
-}
-
-.action-card span {
-  display: block;
-  font-size: 15px;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.action-icon {
-  margin-top: 2px;
-  font-size: 22px;
-  color: #0f766e;
-}
-
-.queue-item {
-  display: grid;
-  gap: 8px;
-}
-
-.queue-meta span {
-  color: #475569;
-}
-
-.queue-meta strong,
-.pulse-line strong {
-  font-family: Bahnschrift, 'Segoe UI', 'PingFang SC', sans-serif;
-  font-size: 18px;
-  color: #0f172a;
-}
-
-.mini-summary,
 .pulse-grid {
-  display: grid;
-  gap: 12px;
-}
-
-.mini-summary {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.mini-summary__item,
 .pulse-card {
+  display: flex;
+  gap: 18px;
+  align-items: center;
   padding: 16px;
   background: rgb(15 23 42 / 3%);
   border: 1px solid rgb(148 163 184 / 16%);
   border-radius: 18px;
 }
 
-.mini-summary__item span,
 .pulse-card__copy span,
 .pulse-line span {
   display: block;
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-soft);
 }
 
-.mini-summary__item strong,
-.pulse-card__copy strong {
-  display: block;
-  margin-top: 10px;
-  font-family: Bahnschrift, 'Segoe UI', 'PingFang SC', sans-serif;
-  font-size: 24px;
-  color: #0f172a;
-}
-
-.pulse-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.pulse-card {
-  align-items: center;
-  display: flex;
-  gap: 18px;
-}
-
-.pulse-card__copy small {
+.pulse-card__copy strong,
+.pulse-line strong {
   display: block;
   margin-top: 8px;
-  color: #94a3b8;
+  font-family: Bahnschrift, 'Segoe UI', 'PingFang SC', sans-serif;
+  font-size: 24px;
+  color: var(--text-main);
+}
+
+.pulse-card__copy small,
+.pulse-line small {
+  display: block;
+  margin-top: 8px;
+  color: #96a3b8;
 }
 
 .pulse-card--stack {
   display: grid;
-  gap: 16px;
+  gap: 14px;
 }
 
 .pulse-line {
@@ -1459,69 +1845,91 @@ onMounted(() => {
   gap: 8px;
 }
 
-@media (width <= 1400px) {
-  .metric-grid {
+.table-shell {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table-shell :deep(.el-table) {
+  min-width: 760px;
+}
+
+@media (width <= 1280px) {
+  .overview-grid,
+  .signal-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .head-strip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .surface--trend,
-  .surface--command {
-    grid-column: span 6;
-  }
-
-  .surface {
-    grid-column: span 6;
-  }
-}
-
-@media (width <= 1080px) {
-  .head-top {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .head-strip,
-  .pulse-grid,
-  .mini-summary,
-  .metric-grid,
-  .action-grid {
+  .command-layout,
+  .insight-layout,
+  .chart-layout,
+  .signal-layout {
     grid-template-columns: 1fr;
   }
 
-  .board-grid {
-    grid-template-columns: 1fr;
+  .command-item {
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
 
-  .surface--trend,
-  .surface--command,
-  .surface--table,
-  .surface {
-    grid-column: auto;
+  .command-item__badge,
+  .command-item__arrow {
+    display: none;
   }
 }
 
-@media (width <= 720px) {
-  .dashboard-head,
+@media (width <= 900px) {
+  .linbang-dashboard {
+    gap: 14px;
+  }
+
+  .overview-section,
   .surface,
-  .metric-card {
+  .signal-card {
     padding: 18px;
     border-radius: 20px;
   }
 
-  .toolbar-card,
+  .section-title,
+  .surface-head,
+  .overview-toolbar,
+  .command-item,
   .pulse-card,
-  .priority-item,
-  .action-card {
+  .pressure-footer {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .toolbar-card {
-    gap: 12px;
+  .overview-grid,
+  .signal-grid,
+  .health-grid,
+  .pulse-grid,
+  .signal-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .command-item {
+    grid-template-columns: 1fr;
+  }
+
+  .command-item__meta {
+    text-align: left;
+  }
+
+  .health-item {
+    justify-items: flex-start;
+  }
+
+  .signal-rail__item,
+  .signal-rail__value {
+    align-items: flex-start;
+  }
+
+  .signal-rail__item {
+    flex-direction: column;
+  }
+
+  .table-shell {
+    margin: 0 -4px;
   }
 }
 </style>

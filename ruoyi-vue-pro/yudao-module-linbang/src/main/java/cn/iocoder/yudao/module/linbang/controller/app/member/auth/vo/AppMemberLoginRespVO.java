@@ -41,4 +41,7 @@ public class AppMemberLoginRespVO {
 
     @Schema(description = "第三方用户头像，仅在第三方登录链路返回。")
     private String socialAvatar;
+
+    @Schema(description = "未注册提醒，仅在需要先完成注册的场景返回。")
+    private AppRegisterReminderRespVO registerReminder;
 }

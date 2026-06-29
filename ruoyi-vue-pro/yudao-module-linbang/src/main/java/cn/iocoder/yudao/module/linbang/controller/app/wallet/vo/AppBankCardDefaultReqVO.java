@@ -9,7 +9,7 @@ import javax.validation.constraints.NotNull;
 @Data
 public class AppBankCardDefaultReqVO {
 
-    @Schema(description = "银行卡 ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = "需要设为默认的银行卡 ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     @NotNull(message = "银行卡 ID 不能为空")
     private Long id;
 

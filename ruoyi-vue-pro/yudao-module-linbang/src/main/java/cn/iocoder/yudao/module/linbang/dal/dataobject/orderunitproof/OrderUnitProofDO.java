@@ -28,14 +28,22 @@ public class OrderUnitProofDO {
 
     private Long fileId;
 
+    private String fileUrl;
+
+    private String fileHash;
+
     private String proofType;
 
     private String proofDesc;
 
     private LocalDateTime proofTime;
 
+    private LocalDateTime deviceTime;
+
     private BigDecimal longitude;
 
     private BigDecimal latitude;
+
+    private String addressText;
 
 }

@@ -1,9 +1,6 @@
 package cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategory;
 
 import lombok.*;
-import java.util.*;
-import java.time.LocalDateTime;
-import java.time.LocalDateTime;
 import com.baomidou.mybatisplus.annotation.*;
 import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
 
@@ -52,6 +49,10 @@ public class MerchantServiceCategoryDO extends BaseDO {
      */
     private String defaultPricingMode;
     /**
+     * 支持计价方式 JSON
+     */
+    private String supportedPricingModes;
+    /**
      * 是否支持拆单
      */
     private Boolean supportSplit;
@@ -64,9 +65,19 @@ public class MerchantServiceCategoryDO extends BaseDO {
      */
     private String riskLevel;
     /**
+     * 是否用工类
+     */
+    private Boolean laborCategoryFlag;
+    /**
+     * 强制协议类型
+     */
+    private String forceAgreementType;
+    /**
+     * 开票影响接单率提醒文案
+     */
+    private String invoiceRateReminderText;
+    /**
      * 状态
      */
     private String status;
-
-
 }

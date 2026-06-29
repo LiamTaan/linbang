@@ -201,6 +201,9 @@
       <el-descriptions-item label="支付订单">
         {{ detailData?.payRecord?.merchantOrderId || (detailData?.payOrderId ? '支付订单信息缺失' : '-') }}
       </el-descriptions-item>
+      <el-descriptions-item label="价格明细展示">
+        {{ formatBooleanYesNo(detailData?.priceDetailEnabled) }}
+      </el-descriptions-item>
       <el-descriptions-item label="是否开票">{{ formatBooleanYesNo(detailData?.needInvoice) }}</el-descriptions-item>
       <el-descriptions-item label="是否拆单">{{ formatBooleanYesNo(detailData?.needSplit) }}</el-descriptions-item>
       <el-descriptions-item label="协议确认">{{ detailData?.agreementConfirmed ? '已确认' : '未确认' }}</el-descriptions-item>
@@ -210,6 +213,40 @@
         {{ [detailData?.province, detailData?.city, detailData?.district, detailData?.street, detailData?.detailAddress].filter(Boolean).join(' / ') || '-' }}
       </el-descriptions-item>
     </el-descriptions>
+
+    <el-divider content-position="left">商城关联与推广抵扣</el-divider>
+    <el-row :gutter="12" class="mb-16px">
+      <el-col :span="8">
+        <el-card shadow="never">
+          <div class="text-14px text-[var(--el-text-color-secondary)]">商城入口</div>
+          <div class="mt-8px text-16px font-600">
+            {{ detailData?.mallEntry?.enabled ? (detailData?.mallEntry?.title || '已开启') : '未开启' }}
+          </div>
+          <div class="mt-6px text-13px break-all">{{ detailData?.mallEntry?.url || '-' }}</div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="never">
+          <div class="text-14px text-[var(--el-text-color-secondary)]">商城消费关联</div>
+          <div class="mt-8px text-16px font-600">{{ detailData?.mallConsumeRelation?.consumeRecordNo || '-' }}</div>
+          <div class="mt-6px text-13px">
+            {{ detailData?.mallConsumeRelation?.consumeAmount ?? '-' }} / {{ detailData?.mallConsumeRelation?.consumeStatus || '-' }}
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="never">
+          <div class="text-14px text-[var(--el-text-color-secondary)]">推广抵扣</div>
+          <div class="mt-8px text-16px font-600">{{ detailData?.promoteDeduct?.deductAmount ?? '-' }}</div>
+          <div class="mt-6px text-13px">
+            {{ [detailData?.promoteDeduct?.sourceType, detailData?.promoteDeduct?.sourceNo].filter(Boolean).join(' / ') || '-' }}
+          </div>
+          <div class="mt-6px text-13px text-[var(--el-text-color-secondary)]">
+            抵扣后应付：{{ detailData?.promoteDeduct?.payableAmountAfterDeduct ?? '-' }}
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
 
     <el-divider content-position="left">支付与单元概览</el-divider>
     <el-row :gutter="12" class="mb-16px">
@@ -268,11 +305,37 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
+      <el-table-column label="核销状态" prop="verifyStatus" width="120">
+        <template #default="{ row }">
+          <span>{{ row.verifyStatus || '-' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="核销码" prop="verifyCode" width="120" />
+      <el-table-column label="核销时间" prop="verifyTime" width="180">
+        <template #default="{ row }">{{ formatDate(row.verifyTime) }}</template>
+      </el-table-column>
       <el-table-column label="截止时间" prop="acceptDeadlineTime" width="180">
         <template #default="{ row }">{{ formatDate(row.acceptDeadlineTime) }}</template>
       </el-table-column>
     </el-table>
     <el-empty v-else description="暂无拆分单元" :image-size="80" />
+
+    <el-divider content-position="left">订单时间线</el-divider>
+    <el-timeline v-if="detailData?.timeline?.length">
+      <el-timeline-item
+        v-for="item in detailData.timeline"
+        :key="`${item.timelineType}-${item.bizId}-${item.eventTime}`"
+        :timestamp="formatDate(item.eventTime)"
+        placement="top"
+      >
+        <div class="font-600">{{ item.title || '-' }}</div>
+        <div class="mt-4px text-[var(--el-text-color-secondary)]">
+          {{ [item.timelineType, item.status].filter(Boolean).join(' / ') || '-' }}
+        </div>
+        <div class="mt-4px">{{ item.content || '-' }}</div>
+      </el-timeline-item>
+    </el-timeline>
+    <el-empty v-else description="暂无订单时间线" :image-size="80" />
 
     <el-divider content-position="left">抢单记录</el-divider>
     <el-table v-if="detailData?.acceptRecords?.length" :data="detailData.acceptRecords" size="small" border max-height="220">

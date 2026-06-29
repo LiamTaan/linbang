@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.appeal.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -31,10 +32,10 @@ public class AppealPageReqVO extends PageParam {
     @Schema(description = "申诉内容")
     private String content;
 
-    @Schema(description = "状态", example = "1")
+    @Schema(description = OpenApiSchemaConstants.APPEAL_STATUS, example = "PENDING")
     private String status;
 
-    @Schema(description = "审核状态", example = "2")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, example = "PENDING")
     private String auditStatus;
 
     @Schema(description = "审核人")

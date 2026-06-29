@@ -23,6 +23,7 @@ final class SensitiveWordDetailAssembler {
             respVO.setWordType(word.getWordType());
             respVO.setMatchType(word.getMatchType());
             respVO.setBlockLevel(word.getBlockLevel());
+            respVO.setSceneType(word.getSceneType());
             respVO.setStatus(word.getStatus());
             respVO.setCreateTime(word.getCreateTime());
             return respVO;

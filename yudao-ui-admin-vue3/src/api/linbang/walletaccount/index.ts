@@ -56,6 +56,18 @@ export interface WalletAccountDetail extends WalletAccount {
     remark?: string
     createTime?: string
   }[]
+  recentBills?: {
+    id?: number
+    billType?: string
+    billTitle?: string
+    bizStatus?: string
+    amount?: number
+    amountDirection?: string
+    relatedOrderId?: number
+    relatedUnitId?: number
+    remark?: string
+    createTime?: string
+  }[]
   recentWithdraws?: {
     id?: number
     withdrawNo?: string

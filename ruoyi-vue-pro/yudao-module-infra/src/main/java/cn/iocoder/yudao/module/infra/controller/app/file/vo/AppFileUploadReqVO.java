@@ -13,11 +13,11 @@ import javax.validation.constraints.NotNull;
 @Data
 public class AppFileUploadReqVO {
 
-    @Schema(description = "文件附件", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "文件附件。该接口上传成功后会直接返回 fileId 和 url", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "文件附件不能为空")
     private MultipartFile file;
 
-    @Schema(description = "文件目录", example = "XXX/YYY")
+    @Schema(description = "文件目录，例如 linbang/order。仅支持字母、数字、下划线、中划线和斜杠", example = "linbang/order")
     private String directory;
 
     @AssertTrue(message = "文件目录不正确")

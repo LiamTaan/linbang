@@ -1,14 +1,26 @@
 package cn.iocoder.yudao.module.linbang.controller.app.member.auth;
 
 import cn.hutool.core.util.StrUtil;
+import cn.iocoder.yudao.framework.common.biz.system.oauth2.OAuth2TokenCommonApi;
+import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2SceneTicketCreateReqDTO;
+import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2SceneTicketRespDTO;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.framework.security.config.SecurityProperties;
 import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
+import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberAccountLoginReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberAccountRegisterReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberLoginReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberLoginRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberRefreshTokenReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppRegisterReminderAckReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppRegisterReminderRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSendSmsCodeReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSceneTicketCreateReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSceneTicketRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSocialBindMobileReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSocialLoginReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.platformconfig.vo.AppAgreementRespVO;
 import cn.iocoder.yudao.module.linbang.service.app.auth.AppMemberAuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -34,12 +46,52 @@ public class AppMemberAuthController {
     private AppMemberAuthService appMemberAuthService;
     @Resource
     private SecurityProperties securityProperties;
+    @Resource
+    private OAuth2TokenCommonApi oauth2TokenApi;
 
     @PostMapping("/login")
     @Operation(summary = "手机号验证码登录", description = "登录页和注册页共用本接口。入参为手机号和短信验证码；若手机号未注册，则校验验证码成功后自动完成注册并返回正式登录态。")
     @PermitAll
     public CommonResult<AppMemberLoginRespVO> login(@Valid @RequestBody AppMemberLoginReqVO reqVO) {
         return success(appMemberAuthService.login(reqVO));
+    }
+
+    @PostMapping("/account-login")
+    @Operation(summary = "账号密码登录")
+    @PermitAll
+    public CommonResult<AppMemberLoginRespVO> accountLogin(@Valid @RequestBody AppMemberAccountLoginReqVO reqVO) {
+        return success(appMemberAuthService.accountLogin(reqVO));
+    }
+
+    @PostMapping("/account-register")
+    @Operation(summary = "账号注册")
+    @PermitAll
+    public CommonResult<AppMemberLoginRespVO> accountRegister(@Valid @RequestBody AppMemberAccountRegisterReqVO reqVO) {
+        return success(appMemberAuthService.accountRegister(reqVO));
+    }
+
+    @GetMapping("/register-agreement/get")
+    @Operation(summary = "获取注册协议")
+    @PermitAll
+    public CommonResult<AppAgreementRespVO> getRegisterAgreement() {
+        return success(appMemberAuthService.getRegisterAgreement());
+    }
+
+    @GetMapping("/register-reminder/get")
+    @Operation(summary = "获取未注册提醒")
+    @PermitAll
+    public CommonResult<AppRegisterReminderRespVO> getRegisterReminder(@RequestParam(value = "socialType", required = false) Integer socialType,
+                                                                       @RequestParam(value = "socialOpenid", required = false) String socialOpenid,
+                                                                       @RequestParam(value = "deviceId", required = false) String deviceId) {
+        return success(appMemberAuthService.getRegisterReminder(socialType, socialOpenid, deviceId));
+    }
+
+    @PostMapping("/register-reminder/ack")
+    @Operation(summary = "确认未注册提醒")
+    @PermitAll
+    public CommonResult<Boolean> ackRegisterReminder(@Valid @RequestBody AppRegisterReminderAckReqVO reqVO) {
+        appMemberAuthService.ackRegisterReminder(reqVO);
+        return success(Boolean.TRUE);
     }
 
     @GetMapping("/social-auth-redirect")
@@ -94,9 +146,22 @@ public class AppMemberAuthController {
 
     @PostMapping("/refresh-token")
     @Operation(summary = "刷新令牌", description = "使用 refreshToken 换取新的正式登录态。仅在已获取正式登录态后可调用。")
-    @Parameter(name = "refreshToken", description = "刷新令牌，仅在已拿到正式登录态后存在", required = true)
     @PermitAll
-    public CommonResult<AppMemberLoginRespVO> refreshToken(@RequestParam("refreshToken") String refreshToken) {
-        return success(appMemberAuthService.refreshToken(refreshToken));
+    public CommonResult<AppMemberLoginRespVO> refreshToken(@RequestBody(required = false) AppMemberRefreshTokenReqVO body,
+                                                           @RequestParam(value = "refreshToken", required = false) String refreshToken) {
+        return success(appMemberAuthService.refreshToken(StrUtil.blankToDefault(
+                body != null ? body.getRefreshToken() : null, refreshToken)));
+    }
+
+    @PostMapping("/scene-ticket")
+    @Operation(summary = "创建 App 场景票据")
+    public CommonResult<AppMemberSceneTicketRespVO> createSceneTicket(@RequestBody @Valid AppMemberSceneTicketCreateReqVO reqVO) {
+        OAuth2SceneTicketCreateReqDTO createReqDTO = new OAuth2SceneTicketCreateReqDTO();
+        createReqDTO.setScene(reqVO.getScene());
+        createReqDTO.setUserId(SecurityFrameworkUtils.getLoginUserId());
+        createReqDTO.setUserType(SecurityFrameworkUtils.getLoginUser() != null ? SecurityFrameworkUtils.getLoginUser().getUserType() : null);
+        createReqDTO.setTenantId(SecurityFrameworkUtils.getLoginUser() != null ? SecurityFrameworkUtils.getLoginUser().getTenantId() : null);
+        OAuth2SceneTicketRespDTO ticket = oauth2TokenApi.createSceneTicket(createReqDTO);
+        return success(BeanUtils.toBean(ticket, AppMemberSceneTicketRespVO.class));
     }
 }

@@ -4,6 +4,8 @@ import cn.iocoder.yudao.module.linbang.controller.app.merchant.info.vo.AppMercha
 import cn.iocoder.yudao.module.linbang.controller.app.merchant.info.vo.AppMerchantProfileRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.merchant.info.vo.AppMerchantAcceptStatusUpdateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.merchant.info.vo.AppMerchantProfileUpdateReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.merchant.dispatchsetting.vo.AppMerchantDispatchSettingRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.merchant.dispatchsetting.vo.AppMerchantDispatchSettingUpdateReqVO;
 
 import javax.validation.Valid;
 
@@ -16,5 +18,9 @@ public interface AppMerchantInfoService {
     AppMerchantAcceptStatusRespVO getAcceptStatus(Long authUserId);
 
     void updateAcceptStatus(Long authUserId, @Valid AppMerchantAcceptStatusUpdateReqVO reqVO);
+
+    AppMerchantDispatchSettingRespVO getDispatchSetting(Long authUserId);
+
+    void updateDispatchSetting(Long authUserId, @Valid AppMerchantDispatchSettingUpdateReqVO reqVO);
 
 }

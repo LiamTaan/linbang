@@ -1,7 +1,7 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.merchantcategory.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import lombok.*;
-import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import cn.iocoder.yudao.framework.common.pojo.PageParam;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -16,7 +16,7 @@ public class MerchantServiceCategoryPageReqVO extends PageParam {
     @Schema(description = "父级ID", example = "13001")
     private Long parentId;
 
-    @Schema(description = "类目名称", example = "??")
+    @Schema(description = "类目名称", example = "家电清洗")
     private String categoryName;
 
     @Schema(description = "层级")
@@ -28,8 +28,11 @@ public class MerchantServiceCategoryPageReqVO extends PageParam {
     @Schema(description = "图标")
     private String icon;
 
-    @Schema(description = "默认计价方式")
+    @Schema(description = OpenApiSchemaConstants.PRICING_MODE, example = "FIXED_PRICE")
     private String defaultPricingMode;
+
+    @Schema(description = OpenApiSchemaConstants.PRICING_MODE)
+    private String supportedPricingMode;
 
     @Schema(description = "是否支持拆单")
     private Boolean supportSplit;
@@ -40,7 +43,13 @@ public class MerchantServiceCategoryPageReqVO extends PageParam {
     @Schema(description = "风险等级")
     private String riskLevel;
 
-    @Schema(description = "状态", example = "2")
+    @Schema(description = "是否用工类")
+    private Boolean laborCategoryFlag;
+
+    @Schema(description = OpenApiSchemaConstants.AGREEMENT_TYPE)
+    private String forceAgreementType;
+
+    @Schema(description = OpenApiSchemaConstants.ENABLE_DISABLE_STATUS, example = "ENABLE")
     private String status;
 
     @Schema(description = "创建时间")

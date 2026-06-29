@@ -16,4 +16,8 @@ public class AppOrderAcceptCreateReqVO {
     @Schema(description = "单元 ID")
     private Long unitId;
 
+    @Schema(description = "是否确认防逃单提醒。接单前必须传 true", requiredMode = Schema.RequiredMode.REQUIRED, example = "true")
+    @NotNull(message = "请确认防逃单提醒")
+    private Boolean antiEscapeConfirmed;
+
 }

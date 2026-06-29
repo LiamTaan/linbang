@@ -4,6 +4,10 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.iocoder.yudao.module.infra.service.config.ConfigService;
+import cn.iocoder.yudao.module.infra.dal.dataobject.file.FileDO;
+import cn.iocoder.yudao.module.infra.service.file.FileService;
+import cn.iocoder.yudao.module.linbang.constants.PlatformConfigKeyConstants;
 import cn.iocoder.yudao.module.linbang.controller.admin.orderinfo.vo.OrderInfoDetailRespVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.orderinfo.vo.OrderInfoRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.appeal.AppealDO;
@@ -18,6 +22,7 @@ import javax.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import cn.iocoder.yudao.module.linbang.controller.admin.orderinfo.vo.*;
@@ -89,6 +94,12 @@ public class OrderInfoServiceImpl implements OrderInfoService {
     private PayOrderMapper payOrderMapper;
     @Resource
     private MemberUserMapper memberUserMapper;
+    @Resource
+    private FileService fileService;
+    @Resource
+    private ConfigService configService;
+    @Resource
+    private OrderDetailAggregateService orderDetailAggregateService;
 
     @Override
     public Long createOrderInfo(OrderInfoSaveReqVO createReqVO) {
@@ -141,41 +152,21 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         if (order == null) {
             throw exception(ORDER_INFO_NOT_EXISTS);
         }
-        MerchantServiceCategoryDO category = merchantServiceCategoryMapper.selectById(order.getCategoryId());
-        MerchantInfoDO merchant = order.getMerchantId() == null ? null : merchantInfoMapper.selectById(order.getMerchantId());
-        List<OrderPriceItemDO> priceItems = orderPriceItemMapper.selectList(new LambdaQueryWrapperX<OrderPriceItemDO>()
-                .eq(OrderPriceItemDO::getOrderId, id)
-                .orderByAsc(OrderPriceItemDO::getSortNo, OrderPriceItemDO::getId));
-        List<OrderAttachmentDO> attachments = orderAttachmentMapper.selectList(new LambdaQueryWrapperX<OrderAttachmentDO>()
-                .eq(OrderAttachmentDO::getOrderId, id)
-                .orderByAsc(OrderAttachmentDO::getSortNo, OrderAttachmentDO::getId));
-        List<OrderUnitDO> units = orderUnitMapper.selectList(new LambdaQueryWrapperX<OrderUnitDO>()
-                .eq(OrderUnitDO::getOrderId, id)
-                .orderByAsc(OrderUnitDO::getUnitSeq, OrderUnitDO::getId));
-        List<OrderUnitProofDO> proofs = orderUnitProofMapper.selectList(new LambdaQueryWrapperX<OrderUnitProofDO>()
-                .eq(OrderUnitProofDO::getOrderId, id)
-                .orderByDesc(OrderUnitProofDO::getProofTime, OrderUnitProofDO::getId));
-        List<OrderAcceptRecordDO> acceptRecords = orderAcceptRecordMapper.selectList(new LambdaQueryWrapperX<OrderAcceptRecordDO>()
-                .eq(OrderAcceptRecordDO::getOrderId, id)
-                .orderByDesc(OrderAcceptRecordDO::getAcceptTime, OrderAcceptRecordDO::getId));
-        List<ComplaintDO> complaints = complaintMapper.selectList(new LambdaQueryWrapperX<ComplaintDO>()
-                .eq(ComplaintDO::getOrderId, id)
-                .orderByDesc(ComplaintDO::getCreateTime, ComplaintDO::getId));
-        List<AppealDO> appeals = appealMapper.selectList(new LambdaQueryWrapperX<AppealDO>()
-                .eq(AppealDO::getOrderId, id)
-                .orderByDesc(AppealDO::getCreateTime, AppealDO::getId));
-        PayOrderDO payOrder = order.getPayOrderId() == null ? null : payOrderMapper.selectById(order.getPayOrderId());
-        List<PayRefundDO> refunds = order.getPayOrderId() == null ? Collections.emptyList()
-                : payRefundMapper.selectList(new LambdaQueryWrapperX<PayRefundDO>()
-                .eq(PayRefundDO::getOrderId, order.getPayOrderId())
-                .orderByDesc(PayRefundDO::getCreateTime, PayRefundDO::getId));
-        List<OrderOperateLogDO> operateLogs = orderOperateLogMapper.selectList(new LambdaQueryWrapperX<OrderOperateLogDO>()
-                .eq(OrderOperateLogDO::getOrderId, id)
-                .orderByDesc(OrderOperateLogDO::getOperateTime, OrderOperateLogDO::getId));
-        Set<Long> acceptMerchantIds = convertSet(acceptRecords, OrderAcceptRecordDO::getMerchantId,
-                item -> item.getMerchantId() != null);
-        Map<Long, MerchantInfoDO> acceptRecordMerchantMap = acceptMerchantIds.isEmpty() ? Collections.emptyMap()
-                : convertMap(merchantInfoMapper.selectBatchIds(acceptMerchantIds), MerchantInfoDO::getId);
+        OrderDetailAggregateService.OrderDetailAggregate aggregate = orderDetailAggregateService.aggregate(order, false);
+        MerchantServiceCategoryDO category = aggregate.getCategory();
+        MerchantInfoDO merchant = aggregate.getMerchant();
+        List<OrderPriceItemDO> priceItems = aggregate.getPriceItems();
+        List<OrderAttachmentDO> attachments = aggregate.getAttachments();
+        List<OrderUnitDO> units = aggregate.getUnits();
+        List<OrderUnitProofDO> proofs = aggregate.getProofs();
+        List<OrderAcceptRecordDO> acceptRecords = aggregate.getAcceptRecords();
+        List<ComplaintDO> complaints = aggregate.getComplaints();
+        List<AppealDO> appeals = aggregate.getAppeals();
+        PayOrderDO payOrder = aggregate.getPayOrder();
+        List<PayRefundDO> refunds = aggregate.getRefunds();
+        List<OrderOperateLogDO> operateLogs = aggregate.getOperateLogs();
+        Map<Long, FileDO> fileMap = aggregate.getFileMap();
+        Map<Long, MerchantInfoDO> acceptRecordMerchantMap = aggregate.getAcceptRecordMerchantMap();
 
         OrderInfoDetailRespVO respVO = BeanUtils.toBean(order, OrderInfoDetailRespVO.class);
         respVO.setCategoryName(category != null ? category.getCategoryName() : null);
@@ -197,6 +188,10 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             payRecordResp.setCreateTime(payOrder.getCreateTime());
             respVO.setPayRecord(payRecordResp);
         }
+        respVO.setPriceDetailEnabled(getBooleanConfigValue(PlatformConfigKeyConstants.APP_ORDER_PRICE_DETAIL_ENABLED, true));
+        respVO.setMallEntry(buildMallEntryResp());
+        respVO.setMallConsumeRelation(buildMallConsumeRelationResp(order));
+        respVO.setPromoteDeduct(buildPromoteDeductResp(order));
         respVO.setPriceItems(priceItems.stream().map(item -> {
             OrderInfoDetailRespVO.OrderPriceItemRespVO itemResp = new OrderInfoDetailRespVO.OrderPriceItemRespVO();
             itemResp.setItemType(item.getItemType());
@@ -209,7 +204,7 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             OrderInfoDetailRespVO.OrderAttachmentRespVO itemResp = new OrderInfoDetailRespVO.OrderAttachmentRespVO();
             itemResp.setFileId(item.getFileId());
             itemResp.setFileType(item.getFileType());
-            itemResp.setFileUrl(null);
+            itemResp.setFileUrl(Optional.ofNullable(fileMap.get(item.getFileId())).map(FileDO::getUrl).orElse(null));
             itemResp.setSortNo(item.getSortNo());
             return itemResp;
         }).collect(Collectors.toList()));
@@ -219,8 +214,13 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             unitResp.setUnitNo(unit.getUnitNo());
             unitResp.setUnitSeq(unit.getUnitSeq());
             unitResp.setUnitTitle(unit.getUnitTitle());
+            unitResp.setUnitType(unit.getUnitType());
             unitResp.setUnitAmount(unit.getUnitAmount());
             unitResp.setSplitMode(unit.getSplitMode());
+            unitResp.setUnitContent(unit.getUnitContent());
+            unitResp.setUnitProgress(unit.getUnitProgress());
+            unitResp.setWorkerCount(unit.getWorkerCount());
+            unitResp.setMaxAmountLimit(unit.getMaxAmountLimit());
             unitResp.setPrevUnitId(unit.getPrevUnitId());
             unitResp.setIsLocked(unit.getIsLocked());
             unitResp.setLockReason(unit.getLockReason());
@@ -228,6 +228,12 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             unitResp.setStatus(unit.getStatus());
             unitResp.setAcceptDeadlineTime(unit.getAcceptDeadlineTime());
             unitResp.setFinishTime(unit.getFinishTime());
+            unitResp.setAppealExpireTime(unit.getAppealExpireTime());
+            unitResp.setVerifyStatus(unit.getVerifyStatus());
+            unitResp.setVerifyCode(unit.getVerifyCode());
+            unitResp.setVerifyTime(unit.getVerifyTime());
+            unitResp.setVerifyBy(unit.getVerifyBy());
+            unitResp.setVerifyRemark(unit.getVerifyRemark());
             unitResp.setCreateTime(unit.getCreateTime());
             return unitResp;
         }).collect(Collectors.toList()));
@@ -237,11 +243,15 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             proofResp.setUnitId(proof.getUnitId());
             proofResp.setMerchantId(proof.getMerchantId());
             proofResp.setFileId(proof.getFileId());
+            proofResp.setFileUrl(Optional.ofNullable(fileMap.get(proof.getFileId())).map(FileDO::getUrl).orElse(proof.getFileUrl()));
+            proofResp.setFileHash(proof.getFileHash());
             proofResp.setProofType(proof.getProofType());
             proofResp.setProofDesc(proof.getProofDesc());
             proofResp.setProofTime(proof.getProofTime());
+            proofResp.setDeviceTime(proof.getDeviceTime());
             proofResp.setLongitude(proof.getLongitude());
             proofResp.setLatitude(proof.getLatitude());
+            proofResp.setAddressText(proof.getAddressText());
             return proofResp;
         }).collect(Collectors.toList()));
         respVO.setAcceptRecords(acceptRecords.stream().map(record -> {
@@ -306,6 +316,7 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             appealResp.setAuditRemark(appeal.getAuditRemark());
             appealResp.setRejectReason(appeal.getRejectReason());
             appealResp.setAuditTime(appeal.getAuditTime());
+            appealResp.setAppealExpireTime(appeal.getAppealExpireTime());
             appealResp.setCreateTime(appeal.getCreateTime());
             return appealResp;
         }).collect(Collectors.toList()));
@@ -322,6 +333,7 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             logResp.setOperateTime(log.getOperateTime());
             return logResp;
         }).collect(Collectors.toList()));
+        respVO.setTimeline(buildTimeline(order, units, payOrder, refunds, complaints, appeals, operateLogs));
         return respVO;
     }
 
@@ -352,6 +364,20 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             return null;
         }
         return convertList(memberUserMapper.selectListByKeyword(userKeyword), MemberUserDO::getId);
+    }
+
+    private Map<Long, FileDO> buildFileMap(Set<Long> fileIds) {
+        Map<Long, FileDO> fileMap = new HashMap<>();
+        for (Long fileId : fileIds) {
+            if (fileId == null || fileMap.containsKey(fileId)) {
+                continue;
+            }
+            try {
+                fileMap.put(fileId, fileService.getFile(fileId));
+            } catch (Exception ignored) {
+            }
+        }
+        return fileMap;
     }
 
     private void fillUserDisplayInfo(List<OrderInfoRespVO> list) {
@@ -386,6 +412,96 @@ public class OrderInfoServiceImpl implements OrderInfoService {
                 item.setCategoryName(category.getCategoryName());
             }
         });
+    }
+
+    private List<OrderInfoDetailRespVO.OrderTimelineRespVO> buildTimeline(OrderInfoDO order,
+                                                                          List<OrderUnitDO> units,
+                                                                          PayOrderDO payOrder,
+                                                                          List<PayRefundDO> refunds,
+                                                                          List<ComplaintDO> complaints,
+                                                                          List<AppealDO> appeals,
+                                                                          List<OrderOperateLogDO> operateLogs) {
+        List<OrderInfoDetailRespVO.OrderTimelineRespVO> timeline = new ArrayList<>();
+        timeline.add(buildTimelineItem("ORDER", order.getId(), null, "订单创建", order.getRequireDesc(), order.getStatus(), order.getCreateTime()));
+        if (payOrder != null) {
+            timeline.add(buildTimelineItem("PAY", payOrder.getId(), null, "支付创建", payOrder.getSubject(), String.valueOf(payOrder.getStatus()), payOrder.getCreateTime()));
+        }
+        for (OrderUnitDO unit : units) {
+            timeline.add(buildTimelineItem("UNIT", unit.getId(), unit.getId(), "单元创建", unit.getUnitTitle(), unit.getStatus(), unit.getCreateTime()));
+            if (unit.getVerifyTime() != null) {
+                timeline.add(buildTimelineItem("VERIFY", unit.getId(), unit.getId(), "单元核销", unit.getVerifyRemark(), unit.getVerifyStatus(), unit.getVerifyTime()));
+            }
+        }
+        for (PayRefundDO refund : refunds) {
+            timeline.add(buildTimelineItem("REFUND", refund.getId(), null, "退款申请", refund.getReason(), refund.getAuditStatus(), refund.getCreateTime()));
+        }
+        for (ComplaintDO complaint : complaints) {
+            timeline.add(buildTimelineItem("COMPLAINT", complaint.getId(), complaint.getUnitId(), "投诉提交", complaint.getContent(), complaint.getStatus(), complaint.getCreateTime()));
+        }
+        for (AppealDO appeal : appeals) {
+            timeline.add(buildTimelineItem("APPEAL", appeal.getId(), appeal.getUnitId(), "申诉提交", appeal.getContent(), appeal.getStatus(), appeal.getCreateTime()));
+        }
+        for (OrderOperateLogDO log : operateLogs) {
+            timeline.add(buildTimelineItem("LOG", log.getId(), log.getUnitId(), log.getOperateType(), log.getRemark(), log.getAfterStatus(), log.getOperateTime()));
+        }
+        timeline.sort(Comparator.comparing(OrderInfoDetailRespVO.OrderTimelineRespVO::getEventTime,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+        return timeline;
+    }
+
+    private OrderInfoDetailRespVO.OrderTimelineRespVO buildTimelineItem(String type, Long bizId, Long unitId,
+                                                                        String title, String content, String status,
+                                                                        LocalDateTime eventTime) {
+        OrderInfoDetailRespVO.OrderTimelineRespVO item = new OrderInfoDetailRespVO.OrderTimelineRespVO();
+        item.setTimelineType(type);
+        item.setBizId(bizId);
+        item.setUnitId(unitId);
+        item.setTitle(title);
+        item.setContent(content);
+        item.setStatus(status);
+        item.setEventTime(eventTime);
+        return item;
+    }
+
+    private OrderInfoDetailRespVO.MallEntryRespVO buildMallEntryResp() {
+        OrderInfoDetailRespVO.MallEntryRespVO respVO = new OrderInfoDetailRespVO.MallEntryRespVO();
+        respVO.setEnabled(getBooleanConfigValue(PlatformConfigKeyConstants.APP_MALL_ENTRY_ENABLED, false));
+        respVO.setTitle(getConfigValue(PlatformConfigKeyConstants.APP_MALL_ENTRY_TITLE));
+        respVO.setUrl(getConfigValue(PlatformConfigKeyConstants.APP_MALL_ENTRY_URL));
+        return respVO;
+    }
+
+    private OrderInfoDetailRespVO.MallConsumeRelationRespVO buildMallConsumeRelationResp(OrderInfoDO order) {
+        OrderInfoDetailRespVO.MallConsumeRelationRespVO respVO = new OrderInfoDetailRespVO.MallConsumeRelationRespVO();
+        respVO.setConsumeRecordId(order.getMallConsumeRecordId());
+        respVO.setConsumeRecordNo(order.getMallConsumeRecordNo());
+        respVO.setConsumeAmount(order.getMallConsumeAmount());
+        respVO.setConsumeStatus(order.getMallConsumeStatus());
+        return respVO;
+    }
+
+    private OrderInfoDetailRespVO.PromoteDeductRespVO buildPromoteDeductResp(OrderInfoDO order) {
+        OrderInfoDetailRespVO.PromoteDeductRespVO respVO = new OrderInfoDetailRespVO.PromoteDeductRespVO();
+        respVO.setDeductAmount(order.getPromoteDeductAmount());
+        respVO.setSourceType(order.getPromoteDeductSourceType());
+        respVO.setSourceId(order.getPromoteDeductSourceId());
+        respVO.setSourceNo(order.getPromoteDeductSourceNo());
+        respVO.setPayableAmountAfterDeduct(order.getPayableAmountAfterDeduct());
+        return respVO;
+    }
+
+    private String getConfigValue(String key) {
+        return Optional.ofNullable(configService.getConfigByKey(key))
+                .map(config -> config.getValue())
+                .orElse("");
+    }
+
+    private Boolean getBooleanConfigValue(String key, boolean defaultValue) {
+        String value = getConfigValue(key);
+        if (StrUtil.isBlank(value)) {
+            return defaultValue;
+        }
+        return Boolean.parseBoolean(value.trim());
     }
 
 }

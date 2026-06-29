@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.memberroleapply.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -14,7 +15,7 @@ public class MemberRoleApplyAuditReqVO {
     @NotNull(message = "申请编号不能为空")
     private Long id;
 
-    @Schema(description = "审核状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "APPROVED")
+    @Schema(description = OpenApiSchemaConstants.ROLE_APPLY_AUDIT_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "APPROVED")
     @NotBlank(message = "审核状态不能为空")
     private String auditStatus;
 

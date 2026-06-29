@@ -150,6 +150,14 @@
           <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
           <el-button
             link
+            type="warning"
+            v-hasPermi="['linbang:member-user:restrict']"
+            @click="openRestrictDialog(row)"
+          >
+            限制
+          </el-button>
+          <el-button
+            link
             type="primary"
             v-hasPermi="['linbang:member-user:update']"
             @click="openForm('update', row.id)"
@@ -265,7 +273,16 @@
       border
       max-height="240"
     >
-      <el-table-column label="资质类型" prop="qualificationType" width="120" />
+      <el-table-column label="资质类型" prop="qualificationType" width="120">
+        <template #default="{ row }">
+          <dict-tag
+            v-if="row.qualificationType"
+            :type="DICT_TYPE.LB_QUALIFICATION_TYPE"
+            :value="row.qualificationType"
+          />
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="资质名称" prop="qualificationName" min-width="160" />
       <el-table-column label="资质编号" prop="qualificationNo" width="160" />
       <el-table-column label="审核状态" prop="auditStatus" width="110">
@@ -335,18 +352,65 @@
     <el-empty v-else description="暂无信用记录" :image-size="80" />
   </Dialog>
 
+  <Dialog v-model="restrictVisible" title="账号限制与处置" width="560px">
+    <el-form ref="restrictFormRef" :model="restrictFormData" :rules="restrictFormRules" label-width="100px">
+      <el-form-item label="目标用户">
+        <el-input :model-value="currentRow ? `${currentRow.nickname || '-'} / ${currentRow.mobile || '-'}` : ''" disabled />
+      </el-form-item>
+      <el-form-item label="动作类型" prop="actionType">
+        <el-radio-group v-model="restrictFormData.actionType">
+          <el-radio value="RESTRICT">限制</el-radio>
+          <el-radio value="BAN">封禁</el-radio>
+          <el-radio value="BLACKLIST">拉黑</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item label="限制类型" prop="restrictType">
+        <el-input v-model="restrictFormData.restrictType" placeholder="如 LOGIN / ORDER / COMMENT" />
+      </el-form-item>
+      <el-form-item label="结束时间" prop="endTime">
+        <el-date-picker
+          v-model="restrictFormData.endTime"
+          type="datetime"
+          value-format="YYYY-MM-DD HH:mm:ss"
+          placeholder="不填表示长期生效"
+          class="!w-full"
+        />
+      </el-form-item>
+      <el-form-item label="限制原因" prop="reason">
+        <el-input
+          v-model="restrictFormData.reason"
+          type="textarea"
+          :rows="4"
+          maxlength="255"
+          show-word-limit
+          placeholder="请输入限制原因"
+        />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="restrictVisible = false">取消</el-button>
+      <el-button type="primary" :loading="restrictLoading" @click="submitRestrict">提交</el-button>
+    </template>
+  </Dialog>
+
   <MemberUserForm ref="formRef" @success="getList" />
 </template>
 
 <script setup lang="ts">
 import type { FormInstance } from 'element-plus'
+import type { FormRules } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 import { getStrDictOptions, DICT_TYPE } from '@/utils/dict'
 import { dateFormatter, formatDate } from '@/utils/formatTime'
 import download from '@/utils/download'
 import { useI18n } from '@/hooks/web/useI18n'
 import { useMessage } from '@/hooks/web/useMessage'
-import { MemberUserApi, type MemberUser, type MemberUserDetail } from '@/api/linbang/memberuser'
+import {
+  MemberUserApi,
+  type MemberUser,
+  type MemberUserDetail,
+  type MemberUserRestrictReqVO
+} from '@/api/linbang/memberuser'
 import {
   ENABLE_STATUS_OPTIONS,
   formatAcceptStatus,
@@ -357,6 +421,7 @@ import {
   formatTriggerType
 } from '../utils/display'
 import MemberUserForm from './MemberUserForm.vue'
+import { requestDynamicKeyToken } from '../shared/dynamic-key'
 
 defineOptions({ name: 'MemberUser' })
 
@@ -372,6 +437,22 @@ const total = ref(0)
 const queryFormRef = ref<FormInstance>()
 const formRef = ref()
 const checkedIds = ref<number[]>([])
+const currentRow = ref<MemberUser>()
+const restrictVisible = ref(false)
+const restrictLoading = ref(false)
+const restrictFormRef = ref<FormInstance>()
+const restrictFormData = reactive<MemberUserRestrictReqVO & { endTime?: string }>({
+  userId: 0,
+  actionType: 'RESTRICT',
+  restrictType: '',
+  reason: '',
+  endTime: undefined
+})
+const restrictFormRules = reactive<FormRules>({
+  actionType: [{ required: true, message: '请选择动作类型', trigger: 'change' }],
+  restrictType: [{ required: true, message: '请输入限制类型', trigger: 'blur' }],
+  reason: [{ required: true, message: '请输入限制原因', trigger: 'blur' }]
+})
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
@@ -407,6 +488,16 @@ const resetQuery = () => {
 
 const openForm = (type: string, id?: number) => {
   formRef.value.open(type, id)
+}
+
+const openRestrictDialog = (row: MemberUser) => {
+  currentRow.value = row
+  restrictFormData.userId = row.id
+  restrictFormData.actionType = 'RESTRICT'
+  restrictFormData.restrictType = ''
+  restrictFormData.reason = ''
+  restrictFormData.endTime = undefined
+  restrictVisible.value = true
 }
 
 const openDetail = async (id: number) => {
@@ -450,6 +541,20 @@ const handleExport = async () => {
     download.excel(data, '用户列表.xls')
   } finally {
     exportLoading.value = false
+  }
+}
+
+const submitRestrict = async () => {
+  await restrictFormRef.value?.validate()
+  try {
+    const verifyToken = await requestDynamicKeyToken('账号限制处置')
+    restrictLoading.value = true
+    await MemberUserApi.restrictMemberUser({ ...restrictFormData }, verifyToken)
+    message.success('账号处置成功')
+    restrictVisible.value = false
+    await getList()
+  } finally {
+    restrictLoading.value = false
   }
 }
 

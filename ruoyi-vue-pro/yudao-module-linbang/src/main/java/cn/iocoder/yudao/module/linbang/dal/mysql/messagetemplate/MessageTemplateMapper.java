@@ -14,6 +14,8 @@ public interface MessageTemplateMapper extends BaseMapperX<MessageTemplateDO> {
         return selectPage(reqVO, new LambdaQueryWrapperX<MessageTemplateDO>()
                 .likeIfPresent(MessageTemplateDO::getTemplateCode, reqVO.getTemplateCode())
                 .likeIfPresent(MessageTemplateDO::getTemplateName, reqVO.getTemplateName())
+                .eqIfPresent(MessageTemplateDO::getSceneCode, reqVO.getSceneCode())
+                .eqIfPresent(MessageTemplateDO::getMessageCategory, reqVO.getMessageCategory())
                 .eqIfPresent(MessageTemplateDO::getTemplateType, reqVO.getTemplateType())
                 .eqIfPresent(MessageTemplateDO::getChannelType, reqVO.getChannelType())
                 .eqIfPresent(MessageTemplateDO::getStatus, reqVO.getStatus())

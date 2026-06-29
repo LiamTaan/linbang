@@ -8,8 +8,12 @@ import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppCommissionPa
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppInviteCodeRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteInviteCodeBindReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteCenterRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteTemplatePageReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteTemplateRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteTeamStatsRespVO;
 import cn.iocoder.yudao.module.linbang.service.app.promote.AppPromoteService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -49,6 +53,25 @@ public class AppPromoteController {
     @Operation(summary = "获取邀请码")
     public CommonResult<AppInviteCodeRespVO> getInviteCode() {
         return success(appPromoteService.getInviteCode(getLoginUserId()));
+    }
+
+    @GetMapping("/team-stats/get")
+    @Operation(summary = "获取两级分销统计")
+    public CommonResult<AppPromoteTeamStatsRespVO> getTeamStats() {
+        return success(appPromoteService.getTeamStats(getLoginUserId()));
+    }
+
+    @GetMapping("/template/page")
+    @Operation(summary = "获取推广模板分页")
+    public CommonResult<PageResult<AppPromoteTemplateRespVO>> getTemplatePage(@Valid AppPromoteTemplatePageReqVO reqVO) {
+        return success(appPromoteService.getTemplatePage(getLoginUserId(), reqVO));
+    }
+
+    @GetMapping("/template/get")
+    @Operation(summary = "获取推广模板详情")
+    @Parameter(name = "id", required = true)
+    public CommonResult<AppPromoteTemplateRespVO> getTemplate(Long id) {
+        return success(appPromoteService.getTemplate(getLoginUserId(), id));
     }
 
     @PostMapping("/invite-code/bind")

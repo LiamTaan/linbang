@@ -1,11 +1,16 @@
 package cn.iocoder.yudao.framework.websocket.core.security;
 
+import cn.hutool.core.util.StrUtil;
+import cn.iocoder.yudao.framework.common.biz.system.oauth2.OAuth2TokenCommonApi;
+import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2AccessTokenCheckRespDTO;
 import cn.iocoder.yudao.framework.security.core.LoginUser;
 import cn.iocoder.yudao.framework.security.core.filter.TokenAuthenticationFilter;
 import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
 import cn.iocoder.yudao.framework.websocket.core.util.WebSocketFrameworkUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.server.HandshakeInterceptor;
@@ -21,12 +26,26 @@ import java.util.Map;
  *
  * @author 芋道源码
  */
+@RequiredArgsConstructor
 public class LoginUserHandshakeInterceptor implements HandshakeInterceptor {
+
+    private static final String SCENE_WEBSOCKET = "WEBSOCKET";
+
+    private final OAuth2TokenCommonApi oauth2TokenApi;
 
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                    WebSocketHandler wsHandler, Map<String, Object> attributes) {
         LoginUser loginUser = SecurityFrameworkUtils.getLoginUser();
+        if (request instanceof ServletServerHttpRequest) {
+            String token = ((ServletServerHttpRequest) request).getServletRequest().getParameter("token");
+            if (StrUtil.isNotBlank(token)) {
+                OAuth2AccessTokenCheckRespDTO ticket = oauth2TokenApi.consumeSceneTicket(token, SCENE_WEBSOCKET);
+                loginUser = new LoginUser().setId(ticket.getUserId()).setUserType(ticket.getUserType())
+                        .setInfo(ticket.getUserInfo()).setTenantId(ticket.getTenantId())
+                        .setScopes(ticket.getScopes()).setExpiresTime(ticket.getExpiresTime());
+            }
+        }
         if (loginUser == null) {
             return false;
         }

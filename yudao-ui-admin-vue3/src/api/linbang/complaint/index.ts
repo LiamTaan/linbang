@@ -1,5 +1,6 @@
 import request from '@/config/axios'
 import type { Dayjs } from 'dayjs'
+import { buildDynamicKeyHeaders } from '@/api/linbang/security'
 
 export interface Complaint {
   id: number
@@ -106,6 +107,17 @@ export interface ComplaintDetail extends Complaint {
     handleTime?: string | Dayjs
     createTime?: string | Dayjs
   }>
+  coordinationRecords?: Array<{
+    id?: number
+    partnerId?: number
+    status?: string
+    coordinationRemark?: string
+    escalateRemark?: string
+    initiatedBy?: number
+    initiatedTime?: string | Dayjs
+    finishedBy?: number
+    finishedTime?: string | Dayjs
+  }>
   operateLogs?: Array<{
     id?: number
     unitId?: number
@@ -142,8 +154,12 @@ export const ComplaintApi = {
     return await request.put({ url: `/review/complaint/update`, data })
   },
 
-  processComplaint: async (data: ComplaintProcessReqVO) => {
-    return await request.post({ url: `/review/complaint/process`, data })
+  processComplaint: async (data: ComplaintProcessReqVO, verifyToken?: string) => {
+    return await request.post({
+      url: `/review/complaint/process`,
+      data,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   },
 
   exportComplaint: async (params: any) => {

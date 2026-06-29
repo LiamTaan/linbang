@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.ordermatchrecord.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -42,7 +43,8 @@ public class OrderMatchRecordSaveReqVO {
     @Schema(description = "接单截止时间")
     private LocalDateTime acceptDeadlineTime;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.MATCH_RECORD_STATUS, requiredMode = Schema.RequiredMode.REQUIRED,
+            example = "PUSHED")
     @NotEmpty(message = "状态不能为空")
     private String status;
 

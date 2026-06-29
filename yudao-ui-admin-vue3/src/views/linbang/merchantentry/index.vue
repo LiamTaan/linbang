@@ -183,6 +183,9 @@
         <dict-tag v-if="detailData?.status" :type="DICT_TYPE.LB_MERCHANT_ENTRY_STATUS" :value="detailData.status" />
         <span v-else>-</span>
       </el-descriptions-item>
+      <el-descriptions-item label="进度状态">{{ detailData?.progressStatus || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="当前阶段">{{ detailData?.currentStageName || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="阶段时间">{{ formatDate(detailData?.currentStageTime) }}</el-descriptions-item>
       <el-descriptions-item label="初审状态">
         <dict-tag
           v-if="detailData?.firstAuditStatus"
@@ -201,6 +204,10 @@
       </el-descriptions-item>
       <el-descriptions-item label="初审时间">{{ formatDate(detailData?.firstAuditTime) }}</el-descriptions-item>
       <el-descriptions-item label="终审时间">{{ formatDate(detailData?.finalAuditTime) }}</el-descriptions-item>
+      <el-descriptions-item label="接单权限">{{ detailData?.acceptEnabled ? '已开通' : '未开通' }}</el-descriptions-item>
+      <el-descriptions-item label="绑卡阻塞">{{ detailData?.bankCardRequired ? '需要先绑卡' : '否' }}</el-descriptions-item>
+      <el-descriptions-item label="阻塞原因" :span="2">{{ detailData?.onboardingBlockedReason || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="驳回原因" :span="2">{{ detailData?.rejectReason || '-' }}</el-descriptions-item>
       <el-descriptions-item label="备注" :span="2">{{ detailData?.remark || '-' }}</el-descriptions-item>
     </el-descriptions>
 
@@ -272,6 +279,8 @@
       </el-descriptions-item>
       <el-descriptions-item label="身份证号">{{ detailData?.realName?.idCardNo || '-' }}</el-descriptions-item>
       <el-descriptions-item label="实名审核时间">{{ formatDate(detailData?.realName?.auditTime) }}</el-descriptions-item>
+      <el-descriptions-item label="营业执照已上传">{{ detailData?.summary?.businessLicenseUploaded ? '是' : '否' }}</el-descriptions-item>
+      <el-descriptions-item label="保险已上传">{{ detailData?.summary?.insuranceUploaded ? '是' : '否' }}</el-descriptions-item>
       <el-descriptions-item label="实名审核备注" :span="2">
         {{ detailData?.realName?.auditRemark || detailData?.realName?.rejectReason || '-' }}
       </el-descriptions-item>
@@ -313,7 +322,16 @@
       max-height="240"
     >
       <el-table-column label="ID" prop="id" width="90" />
-      <el-table-column label="资质类型" prop="qualificationType" width="120" />
+      <el-table-column label="资质类型" prop="qualificationType" width="120">
+        <template #default="{ row }">
+          <dict-tag
+            v-if="row.qualificationType"
+            :type="DICT_TYPE.LB_QUALIFICATION_TYPE"
+            :value="row.qualificationType"
+          />
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="资质名称" prop="qualificationName" min-width="160" />
       <el-table-column label="资质编号" prop="qualificationNo" width="160" />
       <el-table-column label="审核状态" prop="auditStatus" width="110">

@@ -28,7 +28,6 @@ public class PayRefundBizContextRespVO {
         private String orderNo;
         private Long userId;
         private Long merchantId;
-        private String title;
         private String pricingMode;
         private BigDecimal orderAmount;
         private String splitStatus;

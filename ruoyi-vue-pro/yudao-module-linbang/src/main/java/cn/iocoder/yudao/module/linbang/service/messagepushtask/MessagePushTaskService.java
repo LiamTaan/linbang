@@ -15,4 +15,6 @@ public interface MessagePushTaskService {
     Long createTask(MessagePushTaskDO taskDO);
 
     void updateTaskResult(Long id, String status, int successCount, int failCount);
+
+    void markRetrying(Long id);
 }

@@ -3,6 +3,7 @@ package cn.iocoder.yudao.module.linbang.dal.mysql.merchantentry;
 import java.util.*;
 
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.iocoder.yudao.framework.common.pojo.PageParam;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantentry.MerchantEntryDO;
@@ -33,6 +34,10 @@ public interface MerchantEntryMapper extends BaseMapperX<MerchantEntryDO> {
                 .eqIfPresent(MerchantEntryDO::getRemark, reqVO.getRemark())
                 .betweenIfPresent(MerchantEntryDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(MerchantEntryDO::getId));
+    }
+
+    default PageResult<MerchantEntryDO> selectPage(PageParam pageParam, LambdaQueryWrapperX<MerchantEntryDO> queryWrapper) {
+        return BaseMapperX.super.selectPage(pageParam, queryWrapper);
     }
 
 }

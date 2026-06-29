@@ -20,6 +20,10 @@ export interface ReviewComment {
           starLevel?: number; // 星级
           content: string; // 评价内容
           isAutoReview?: boolean; // 是否自动评价
+          isContentSupplemented?: boolean; // 自动评价文字是否已补充
+          editDeadlineTime?: string | Dayjs; // 可编辑截止时间
+          lastEditTime?: string | Dayjs; // 最后编辑时间
+          editCount?: number; // 编辑次数
           status?: string; // 状态
           createTime?: string | Dayjs
   }

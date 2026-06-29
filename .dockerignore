@@ -1,0 +1,14 @@
+.git
+.idea
+.vscode
+node_modules
+dist
+dist-*
+target
+**/node_modules
+**/dist
+**/dist-*
+**/target
+**/.git
+**/.idea
+**/.vscode

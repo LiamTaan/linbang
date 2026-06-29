@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.merchantentry.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -28,7 +29,7 @@ public class MerchantEntrySaveReqVO {
     @Schema(description = "区域编码")
     private String regionCode;
 
-    @Schema(description = "初审状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "PENDING")
     @NotEmpty(message = "初审状态不能为空")
     private String firstAuditStatus;
 
@@ -38,7 +39,7 @@ public class MerchantEntrySaveReqVO {
     @Schema(description = "初审时间")
     private LocalDateTime firstAuditTime;
 
-    @Schema(description = "终审状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "PENDING")
     @NotEmpty(message = "终审状态不能为空")
     private String finalAuditStatus;
 
@@ -48,7 +49,7 @@ public class MerchantEntrySaveReqVO {
     @Schema(description = "终审时间")
     private LocalDateTime finalAuditTime;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.MERCHANT_ENTRY_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "PENDING")
     @NotEmpty(message = "状态不能为空")
     private String status;
 

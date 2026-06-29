@@ -47,6 +47,14 @@ public class SensitiveWordDO extends BaseDO {
      * 状态
      */
     private String status;
+    /**
+     * 生效场景
+     */
+    private String sceneType;
+    /**
+     * 替换文本
+     */
+    private String replaceText;
 
 
 }

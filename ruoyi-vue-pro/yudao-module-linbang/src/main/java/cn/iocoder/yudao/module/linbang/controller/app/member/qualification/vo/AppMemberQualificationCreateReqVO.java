@@ -1,6 +1,7 @@
 package cn.iocoder.yudao.module.linbang.controller.app.member.qualification.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -14,7 +15,7 @@ import static cn.iocoder.yudao.framework.common.util.date.DateUtils.FORMAT_YEAR_
 @Data
 public class AppMemberQualificationCreateReqVO {
 
-    @Schema(description = "资质类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "ELECTRICIAN")
+    @Schema(description = OpenApiSchemaConstants.QUALIFICATION_TYPE, requiredMode = Schema.RequiredMode.REQUIRED, example = "ELECTRICIAN")
     @NotBlank(message = "资质类型不能为空")
     private String qualificationType;
 
@@ -29,6 +30,12 @@ public class AppMemberQualificationCreateReqVO {
     @NotNull(message = "资质附件不能为空")
     private Long fileId;
 
+    @Schema(description = "补充图片凭证文件 ID 列表 JSON", example = "[11,12]")
+    private String evidenceFileIdsJson;
+
+    @Schema(description = "补充视频凭证文件 ID", example = "13")
+    private Long videoFileId;
+
     @Schema(description = "有效开始日期", example = "2026-01-01")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY)
     private LocalDate validStartDate;
@@ -36,5 +43,8 @@ public class AppMemberQualificationCreateReqVO {
     @Schema(description = "有效结束日期", example = "2028-12-31")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY)
     private LocalDate validEndDate;
+
+    @Schema(description = "是否申请优先权益")
+    private Boolean priorityEnabled;
 
 }

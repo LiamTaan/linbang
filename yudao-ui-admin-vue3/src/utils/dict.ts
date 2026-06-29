@@ -176,6 +176,7 @@ export enum DICT_TYPE {
   // ========== LinBang 邻里互助模块 ==========
   LB_PRICING_MODE = 'lb_pricing_mode', // 邻里互助计价方式
   LB_ROLE_CODE = 'lb_role_code', // 邻里互助角色编码
+  LB_QUALIFICATION_TYPE = 'lb_qualification_type', // 邻里互助资质类型
   LB_AUDIT_STATUS = 'lb_audit_status', // 邻里互助审核状态
   LB_MERCHANT_ENTRY_STATUS = 'lb_merchant_entry_status', // 邻里互助入驻状态
   LB_ORDER_STATUS = 'lb_order_status', // 邻里互助订单状态

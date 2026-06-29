@@ -1,5 +1,5 @@
 import type { RouteLocationRaw } from 'vue-router'
-import qs from 'qs'
+import { parseQuery } from '@/utils/query'
 
 type RouteMetaLike = {
   hash?: string
@@ -20,7 +20,7 @@ const ROUTE_IFRAME_QUERY_KEY = '_iframe'
 const EXTERNAL_LINK_ROUTE_PREFIX = '/external-link'
 
 export const parseQueryString = (queryString = ''): Record<string, any> => {
-  return qs.parse(queryString.replace(/^\?/, '')) as Record<string, any>
+  return parseQuery(queryString) as Record<string, any>
 }
 
 export const splitRoutePath = (rawPath: string | null | undefined): ParsedRouteLocation => {

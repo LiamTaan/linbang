@@ -17,13 +17,19 @@
         />
       </el-form-item>
       <el-form-item label="资质类型" prop="qualificationType">
-        <el-input
+        <el-select
           v-model="queryParams.qualificationType"
-          placeholder="请输入资质类型"
+          placeholder="请选择资质类型"
           clearable
           class="!w-220px"
-          @keyup.enter="handleQuery"
-        />
+        >
+          <el-option
+            v-for="dict in getStrDictOptions(DICT_TYPE.LB_QUALIFICATION_TYPE)"
+            :key="dict.value"
+            :label="dict.label"
+            :value="dict.value"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item label="资质名称" prop="qualificationName">
         <el-input
@@ -82,7 +88,16 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="资质类型" align="center" prop="qualificationType" width="140" />
+      <el-table-column label="资质类型" align="center" prop="qualificationType" width="140">
+        <template #default="{ row }">
+          <dict-tag
+            v-if="row.qualificationType"
+            :type="DICT_TYPE.LB_QUALIFICATION_TYPE"
+            :value="row.qualificationType"
+          />
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="资质名称" align="center" prop="qualificationName" min-width="150" />
       <el-table-column label="资质编号" align="center" prop="qualificationNo" min-width="160" />
       <el-table-column label="资质附件" align="center" min-width="200">
@@ -97,6 +112,11 @@
             {{ formatQualificationFile(row.fileId) }}
           </el-link>
           <span v-else>{{ formatQualificationFile(row.fileId) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="优先权益" align="center" width="100">
+        <template #default="{ row }">
+          {{ row.priorityEnabled ? '生效中' : '未生效' }}
         </template>
       </el-table-column>
       <el-table-column label="开始日期" align="center" prop="validStartDate" width="120" />
@@ -138,7 +158,14 @@
   <Dialog v-model="detailVisible" title="用户资质详情" width="920px">
     <el-descriptions v-loading="detailLoading" :column="2" border>
       <el-descriptions-item label="用户">{{ formatDetailUserDisplay() }}</el-descriptions-item>
-      <el-descriptions-item label="资质类型">{{ detailData?.qualificationType || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="资质类型">
+        <dict-tag
+          v-if="detailData?.qualificationType"
+          :type="DICT_TYPE.LB_QUALIFICATION_TYPE"
+          :value="detailData.qualificationType"
+        />
+        <span v-else>-</span>
+      </el-descriptions-item>
       <el-descriptions-item label="资质名称">{{ detailData?.qualificationName || '-' }}</el-descriptions-item>
       <el-descriptions-item label="资质编号">{{ detailData?.qualificationNo || '-' }}</el-descriptions-item>
       <el-descriptions-item label="资质附件">
@@ -153,13 +180,16 @@
         </el-link>
         <span v-else>{{ formatQualificationFile(detailData?.fileId) }}</span>
       </el-descriptions-item>
+      <el-descriptions-item label="视频凭证">{{ detailData?.videoFileId || '-' }}</el-descriptions-item>
       <el-descriptions-item label="审核状态">
         <dict-tag v-if="detailData?.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="detailData.auditStatus" />
         <span v-else>-</span>
       </el-descriptions-item>
       <el-descriptions-item label="审核时间">{{ formatDate(detailData?.auditTime) }}</el-descriptions-item>
+      <el-descriptions-item label="优先权益">{{ detailData?.priorityEnabled ? '生效中' : '未生效' }}</el-descriptions-item>
       <el-descriptions-item label="有效开始">{{ detailData?.validStartDate || '-' }}</el-descriptions-item>
       <el-descriptions-item label="有效结束">{{ detailData?.validEndDate || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="已批准豁免数">{{ detailData?.summary?.approvedExemptionCount ?? 0 }}</el-descriptions-item>
       <el-descriptions-item label="审核备注" :span="2">{{ detailData?.auditRemark || '-' }}</el-descriptions-item>
       <el-descriptions-item label="驳回原因" :span="2">{{ detailData?.rejectReason || '-' }}</el-descriptions-item>
     </el-descriptions>
@@ -258,7 +288,16 @@
       border
       max-height="240"
     >
-      <el-table-column label="资质类型" prop="qualificationType" width="120" />
+      <el-table-column label="资质类型" prop="qualificationType" width="120">
+        <template #default="{ row }">
+          <dict-tag
+            v-if="row.qualificationType"
+            :type="DICT_TYPE.LB_QUALIFICATION_TYPE"
+            :value="row.qualificationType"
+          />
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="资质名称" prop="qualificationName" min-width="160" />
       <el-table-column label="资质编号" prop="qualificationNo" width="160" />
       <el-table-column label="审核状态" prop="auditStatus" width="110">
@@ -272,6 +311,29 @@
       </el-table-column>
     </el-table>
     <el-empty v-else description="暂无其他资质" :image-size="80" />
+
+    <el-divider content-position="left">证件豁免记录</el-divider>
+    <el-table
+      v-if="detailData?.certExemptions?.length"
+      :data="detailData.certExemptions"
+      size="small"
+      border
+      max-height="220"
+    >
+      <el-table-column label="豁免类型" prop="exemptionType" width="140" />
+      <el-table-column label="审核状态" prop="auditStatus" width="110">
+        <template #default="{ row }">
+          <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="生效时间" min-width="220">
+        <template #default="{ row }">{{ formatDate(row.effectiveStartTime) }} ~ {{ formatDate(row.effectiveEndTime) }}</template>
+      </el-table-column>
+      <el-table-column label="驳回原因" prop="rejectReason" min-width="180" />
+      <el-table-column label="申请原因" prop="reason" min-width="220" />
+    </el-table>
+    <el-empty v-else description="暂无证件豁免记录" :image-size="80" />
 
     <el-divider content-position="left">信用记录</el-divider>
     <el-table

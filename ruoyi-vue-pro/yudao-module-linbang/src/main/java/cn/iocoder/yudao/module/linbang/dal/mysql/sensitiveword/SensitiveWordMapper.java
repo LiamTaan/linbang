@@ -19,10 +19,11 @@ public interface SensitiveWordMapper extends BaseMapperX<SensitiveWordDO> {
 
     default PageResult<SensitiveWordDO> selectPage(SensitiveWordPageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<SensitiveWordDO>()
-                .eqIfPresent(SensitiveWordDO::getWord, reqVO.getWord())
+                .likeIfPresent(SensitiveWordDO::getWord, reqVO.getWord())
                 .eqIfPresent(SensitiveWordDO::getWordType, reqVO.getWordType())
                 .eqIfPresent(SensitiveWordDO::getMatchType, reqVO.getMatchType())
                 .eqIfPresent(SensitiveWordDO::getBlockLevel, reqVO.getBlockLevel())
+                .likeIfPresent(SensitiveWordDO::getSceneType, reqVO.getSceneType())
                 .eqIfPresent(SensitiveWordDO::getStatus, reqVO.getStatus())
                 .betweenIfPresent(SensitiveWordDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(SensitiveWordDO::getId));

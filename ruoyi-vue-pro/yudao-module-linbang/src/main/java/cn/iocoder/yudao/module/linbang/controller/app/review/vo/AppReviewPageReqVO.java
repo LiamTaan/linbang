@@ -15,6 +15,9 @@ import static cn.iocoder.yudao.framework.common.util.date.DateUtils.FORMAT_YEAR_
 @EqualsAndHashCode(callSuper = true)
 public class AppReviewPageReqVO extends PageParam {
 
+    @Schema(description = "评价方向：SENT 我发出的、RECEIVED 我收到的", example = "SENT")
+    private String direction;
+
     @Schema(description = "评价状态筛选，按评价业务字典展示；常见值由前后端统一字典决定", example = "ENABLE")
     private String status;
 

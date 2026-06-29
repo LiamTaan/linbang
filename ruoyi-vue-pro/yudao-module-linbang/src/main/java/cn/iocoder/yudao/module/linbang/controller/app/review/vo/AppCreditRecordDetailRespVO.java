@@ -30,19 +30,19 @@ public class AppCreditRecordDetailRespVO {
     @Schema(description = "当前信用分", example = "110")
     private Integer currentScore;
 
-    @Schema(description = "当前信用等级，按信用等级业务字典展示，例如 NORMAL、GOOD、EXCELLENT", example = "NORMAL")
+    @Schema(description = "当前信用等级，按信用等级业务字典展示，例如 WARNING、NORMAL、EXCELLENT、DISABLED", example = "NORMAL")
     private String creditLevel;
 
-    @Schema(description = "触发类型", example = "AUTO")
+    @Schema(description = "触发类型，例如 AUTO 系统自动触发、MANUAL 人工调整", example = "AUTO")
     private String triggerType;
 
-    @Schema(description = "业务类型", example = "REVIEW")
+    @Schema(description = "业务类型，例如 ORDER 订单、REVIEW 评价、APPEAL 申诉、COMPLAINT 投诉", example = "REVIEW")
     private String bizType;
 
-    @Schema(description = "业务 ID", example = "1024")
+    @Schema(description = "业务 ID，关联触发信用变动的订单、评价或申诉记录", example = "1024")
     private Long bizId;
 
-    @Schema(description = "备注")
+    @Schema(description = "备注，记录加减分原因说明")
     private String remark;
 
     @Schema(description = "创建时间")

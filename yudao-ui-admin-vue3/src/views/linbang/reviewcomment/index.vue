@@ -149,6 +149,15 @@
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="内容已补充" align="center" width="110">
+        <template #default="{ row }">
+          {{ formatBooleanYesNo(row.isContentSupplemented) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="编辑次数" align="center" prop="editCount" width="90" />
+      <el-table-column label="编辑截止" align="center" width="180">
+        <template #default="{ row }">{{ formatDate(row.editDeadlineTime) }}</template>
+      </el-table-column>
       <el-table-column label="状态" align="center" prop="status" min-width="120">
         <template #default="{ row }">
           {{ formatEnableStatus(row.status) }}
@@ -205,6 +214,12 @@
         </el-tag>
         <span v-else>-</span>
       </el-descriptions-item>
+      <el-descriptions-item label="内容已补充">
+        {{ formatBooleanYesNo(detailData?.isContentSupplemented) }}
+      </el-descriptions-item>
+      <el-descriptions-item label="编辑次数">{{ detailData?.editCount ?? '-' }}</el-descriptions-item>
+      <el-descriptions-item label="编辑截止时间">{{ formatDate(detailData?.editDeadlineTime) }}</el-descriptions-item>
+      <el-descriptions-item label="最后编辑时间">{{ formatDate(detailData?.lastEditTime) }}</el-descriptions-item>
       <el-descriptions-item label="创建时间">{{ formatDate(detailData?.createTime) }}</el-descriptions-item>
       <el-descriptions-item label="目标服务商">
         {{ detailData?.toMerchant?.merchantName || '-' }}
@@ -277,7 +292,7 @@
       <el-descriptions-item label="接单截止">{{ formatDate(detailData?.unit?.acceptDeadlineTime) }}</el-descriptions-item>
       <el-descriptions-item label="完工时间">{{ formatDate(detailData?.unit?.finishTime) }}</el-descriptions-item>
       <el-descriptions-item label="信用分 / 等级">
-        {{ detailData?.toMerchant?.creditScore ?? '-' }} / {{ detailData?.toMerchant?.creditLevel || '-' }}
+        {{ detailData?.toMerchant?.creditScore ?? '-' }} / {{ formatCreditLevel(detailData?.toMerchant?.creditLevel) }}
       </el-descriptions-item>
       <el-descriptions-item label="接单状态">{{ formatAcceptStatus(detailData?.toMerchant?.acceptStatus) }}</el-descriptions-item>
     </el-descriptions>
@@ -414,6 +429,7 @@ import {
   formatAutoReviewLabel,
   formatBizType,
   formatBooleanYesNo,
+  formatCreditLevel,
   formatEnableStatus,
   formatTriggerType
 } from '../utils/display'

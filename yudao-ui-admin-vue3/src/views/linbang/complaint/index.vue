@@ -262,6 +262,25 @@
     </el-table>
     <el-empty v-else description="暂无关联投诉记录" :image-size="80" />
 
+    <el-divider content-position="left">合作商协调记录</el-divider>
+    <el-table
+      v-if="detailData?.coordinationRecords?.length"
+      :data="detailData.coordinationRecords"
+      size="small"
+      border
+      max-height="240"
+    >
+      <el-table-column label="合作商ID" prop="partnerId" width="110" />
+      <el-table-column label="协调状态" prop="status" width="120" />
+      <el-table-column label="协调意见" prop="coordinationRemark" min-width="220" />
+      <el-table-column label="升级说明" prop="escalateRemark" min-width="180" />
+      <el-table-column label="发起人" prop="initiatedBy" width="100" />
+      <el-table-column label="发起时间" prop="initiatedTime" width="180">
+        <template #default="{ row }">{{ formatDate(row.initiatedTime) }}</template>
+      </el-table-column>
+    </el-table>
+    <el-empty v-else description="暂无合作商协调记录" :image-size="80" />
+
     <el-divider content-position="left">订单操作日志</el-divider>
     <el-table
       v-if="detailData?.operateLogs?.length"
@@ -337,6 +356,7 @@ import { getStrDictOptions, DICT_TYPE } from '@/utils/dict'
 import { dateFormatter, formatDate } from '@/utils/formatTime'
 import download from '@/utils/download'
 import { useMessage } from '@/hooks/web/useMessage'
+import { requestDynamicKeyToken } from '../shared/dynamic-key'
 import {
   formatComplaintType,
   formatEnableStatus,
@@ -473,9 +493,9 @@ const openProcessDialog = (row: Complaint) => {
 const submitProcess = async () => {
   await processFormRef.value?.validate()
   try {
-    await message.confirm('确认提交投诉处理结果？')
+    const verifyToken = await requestDynamicKeyToken('投诉处理')
     processLoading.value = true
-    await ComplaintApi.processComplaint({ ...processFormData })
+    await ComplaintApi.processComplaint({ ...processFormData }, verifyToken)
     message.success('投诉处理成功')
     processDialogVisible.value = false
     await getList()

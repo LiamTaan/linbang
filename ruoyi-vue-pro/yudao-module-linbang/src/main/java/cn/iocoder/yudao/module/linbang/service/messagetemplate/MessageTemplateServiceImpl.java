@@ -3,6 +3,7 @@ package cn.iocoder.yudao.module.linbang.service.messagetemplate;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.iocoder.yudao.module.linbang.constants.MessageCenterConstants;
 import cn.iocoder.yudao.module.linbang.controller.admin.messagetemplate.vo.MessageTemplateDetailRespVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.messagetemplate.vo.MessageTemplatePageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.messagetemplate.vo.MessageTemplateSaveReqVO;
@@ -44,6 +45,7 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
 
     @Override
     public Long createMessageTemplate(MessageTemplateSaveReqVO reqVO) {
+        validateTemplateBusinessRules(reqVO);
         MessageTemplateDO template = BeanUtils.toBean(reqVO, MessageTemplateDO.class);
         messageTemplateMapper.insert(template);
         return template.getId();
@@ -52,6 +54,7 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
     @Override
     public void updateMessageTemplate(MessageTemplateSaveReqVO reqVO) {
         validateMessageTemplateExists(reqVO.getId());
+        validateTemplateBusinessRules(reqVO);
         messageTemplateMapper.updateById(BeanUtils.toBean(reqVO, MessageTemplateDO.class));
     }
 
@@ -108,6 +111,27 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
     private void validateMessageTemplateExists(Long id) {
         if (id == null || messageTemplateMapper.selectById(id) == null) {
             throw exception(MESSAGE_TEMPLATE_NOT_EXISTS);
+        }
+    }
+
+    private void validateTemplateBusinessRules(MessageTemplateSaveReqVO reqVO) {
+        if (reqVO.getSceneCode() == null || !MessageCenterConstants.FINANCE_SCENES.contains(reqVO.getSceneCode())) {
+            return;
+        }
+        if (MessageCenterConstants.CHANNEL_SMS.equals(reqVO.getChannelType())
+                && "DISABLE".equalsIgnoreCase(reqVO.getStatus())) {
+            throw exception(cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MESSAGE_FINANCE_SMS_REQUIRED);
+        }
+        if (!MessageCenterConstants.CHANNEL_SMS.equals(reqVO.getChannelType())) {
+            List<MessageTemplateDO> siblings = messageTemplateMapper.selectList(new LambdaQueryWrapperX<MessageTemplateDO>()
+                    .eq(MessageTemplateDO::getSceneCode, reqVO.getSceneCode())
+                    .eq(MessageTemplateDO::getStatus, "ENABLE"));
+            boolean hasSms = siblings.stream().anyMatch(item ->
+                    !java.util.Objects.equals(item.getId(), reqVO.getId())
+                            && MessageCenterConstants.CHANNEL_SMS.equals(item.getChannelType()));
+            if (!hasSms) {
+                throw exception(cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MESSAGE_FINANCE_SMS_REQUIRED);
+            }
         }
     }
 }

@@ -20,4 +20,11 @@ public interface BlacklistMapper extends BaseMapperX<BlacklistDO> {
                 .betweenIfPresent(BlacklistDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(BlacklistDO::getId));
     }
+
+    default java.util.List<BlacklistDO> selectBatchByMinId(Long minId, int limit) {
+        return selectList(new LambdaQueryWrapperX<BlacklistDO>()
+                .gtIfPresent(BlacklistDO::getId, minId)
+                .orderByAsc(BlacklistDO::getId)
+                .last("LIMIT " + limit));
+    }
 }

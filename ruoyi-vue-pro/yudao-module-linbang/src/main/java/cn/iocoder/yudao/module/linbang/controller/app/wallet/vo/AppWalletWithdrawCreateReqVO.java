@@ -15,9 +15,9 @@ public class AppWalletWithdrawCreateReqVO {
     @NotNull(message = "银行卡不能为空")
     private Long bankCardId;
 
-    @Schema(description = "提现金额", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "提现金额，单位元，最低 10 元", requiredMode = Schema.RequiredMode.REQUIRED, example = "100.00")
     @NotNull(message = "提现金额不能为空")
-    @DecimalMin(value = "0.01", message = "提现金额必须大于 0")
+    @DecimalMin(value = "10.00", message = "提现金额不能低于 10 元")
     private BigDecimal applyAmount;
 
 }

@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.app.merchant.entry.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -43,14 +44,35 @@ public class AppMerchantEntryRespVO {
     @Schema(description = "资质 ID 列表")
     private List<Long> qualificationIds;
 
-    @Schema(description = "初审状态：PENDING 待审核、APPROVED 已通过、REJECTED 已驳回", example = "PENDING")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, example = "PENDING")
     private String firstAuditStatus;
 
-    @Schema(description = "终审状态：PENDING 待审核、APPROVED 已通过、REJECTED 已驳回", example = "PENDING")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, example = "PENDING")
     private String finalAuditStatus;
 
     @Schema(description = "入驻状态：PENDING 待审核、FIRST_APPROVED 初审通过、APPROVED 终审通过、REJECTED 已驳回", example = "PENDING")
     private String status;
+
+    @Schema(description = "统一进度状态：PENDING_FIRST_AUDIT、PENDING_FINAL_AUDIT、APPROVED_WAIT_BANK_CARD、APPROVED_ENABLED、REJECTED", example = "PENDING_FIRST_AUDIT")
+    private String progressStatus;
+
+    @Schema(description = "当前阶段名称", example = "待平台初审")
+    private String currentStageName;
+
+    @Schema(description = "当前阶段时间")
+    private LocalDateTime currentStageTime;
+
+    @Schema(description = "驳回原因")
+    private String rejectReason;
+
+    @Schema(description = "当前阻塞原因")
+    private String onboardingBlockedReason;
+
+    @Schema(description = "是否已开通接单", example = "false")
+    private Boolean acceptEnabled;
+
+    @Schema(description = "终审后是否必须先绑卡", example = "true")
+    private Boolean bankCardRequired;
 
     @Schema(description = "接单状态：ENABLE 可接单、DISABLE 暂停接单", example = "DISABLE")
     private String acceptStatus;

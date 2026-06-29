@@ -1,0 +1,36 @@
+package cn.iocoder.yudao.module.linbang.controller.admin.merchantsubaccount.vo;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import java.util.List;
+
+@Schema(description = "管理后台 - 商户子账号新增/修改 Request VO")
+@Data
+public class MerchantSubAccountSaveReqVO {
+
+    @Schema(description = "子账号 ID，修改时必填", example = "1")
+    private Long id;
+
+    @Schema(description = "商户 ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @NotNull(message = "商户 ID 不能为空")
+    private Long merchantId;
+
+    @Schema(description = "子账号用户 ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1001")
+    @NotNull(message = "子账号用户 ID 不能为空")
+    private Long userId;
+
+    @Schema(description = "子账号手机号", requiredMode = Schema.RequiredMode.REQUIRED, example = "13800138000")
+    @NotBlank(message = "子账号手机号不能为空")
+    private String mobile;
+
+    @Schema(description = "权限编码列表：ORDER_ACCEPT、MERCHANT_MANAGE、SERVICE_POINT_MANAGE", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotEmpty(message = "权限编码不能为空")
+    private List<String> permissionCodes;
+
+    @Schema(description = "备注")
+    private String remark;
+}

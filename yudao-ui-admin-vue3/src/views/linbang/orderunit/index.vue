@@ -222,6 +222,9 @@
           <dict-tag :type="DICT_TYPE.LB_ORDER_UNIT_STATUS" :value="row.status" />
         </template>
       </el-table-column>
+      <el-table-column label="核销状态" align="center" prop="verifyStatus" width="120" />
+      <el-table-column label="核销码" align="center" prop="verifyCode" width="120" />
+      <el-table-column label="核销时间" align="center" prop="verifyTime" :formatter="dateFormatter" width="180" />
       <el-table-column
         label="接单截止时间"
         align="center"
@@ -290,6 +293,11 @@
       <el-descriptions-item label="服务商">{{ formatMerchantSummary() }}</el-descriptions-item>
       <el-descriptions-item label="接单截止时间">{{ formatDate(detailData?.acceptDeadlineTime) }}</el-descriptions-item>
       <el-descriptions-item label="完成时间">{{ formatDate(detailData?.finishTime) }}</el-descriptions-item>
+      <el-descriptions-item label="核销状态">{{ detailData?.verifyStatus || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="核销码">{{ detailData?.verifyCode || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="核销时间">{{ formatDate(detailData?.verifyTime) }}</el-descriptions-item>
+      <el-descriptions-item label="核销人">{{ detailData?.verifyBy || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="核销备注" :span="2">{{ detailData?.verifyRemark || '-' }}</el-descriptions-item>
       <el-descriptions-item label="创建时间">{{ formatDate(detailData?.createTime) }}</el-descriptions-item>
     </el-descriptions>
 
@@ -460,6 +468,23 @@
       </el-table-column>
     </el-table>
     <el-empty v-else description="暂无操作日志" :image-size="80" />
+
+    <el-divider content-position="left">单元时间线</el-divider>
+    <el-timeline v-if="detailData?.timeline?.length">
+      <el-timeline-item
+        v-for="item in detailData.timeline"
+        :key="`${item.timelineType}-${item.bizId}-${item.eventTime}`"
+        :timestamp="formatDate(item.eventTime)"
+        placement="top"
+      >
+        <div class="font-600">{{ item.title || '-' }}</div>
+        <div class="mt-4px text-[var(--el-text-color-secondary)]">
+          {{ [item.timelineType, item.status].filter(Boolean).join(' / ') || '-' }}
+        </div>
+        <div class="mt-4px">{{ item.content || '-' }}</div>
+      </el-timeline-item>
+    </el-timeline>
+    <el-empty v-else description="暂无单元时间线" :image-size="80" />
   </Dialog>
 
   <OrderUnitForm ref="formRef" @success="getList" />

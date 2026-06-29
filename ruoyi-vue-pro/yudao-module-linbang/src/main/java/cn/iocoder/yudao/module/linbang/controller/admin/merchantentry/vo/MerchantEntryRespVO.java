@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.merchantentry.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -56,7 +57,7 @@ public class MerchantEntryRespVO {
     @ExcelProperty("区域编码")
     private String regionCode;
 
-    @Schema(description = "初审状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "PENDING")
     @ExcelProperty("初审状态")
     private String firstAuditStatus;
 
@@ -68,7 +69,7 @@ public class MerchantEntryRespVO {
     @ExcelProperty("初审时间")
     private LocalDateTime firstAuditTime;
 
-    @Schema(description = "终审状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "PENDING")
     @ExcelProperty("终审状态")
     private String finalAuditStatus;
 
@@ -80,7 +81,7 @@ public class MerchantEntryRespVO {
     @ExcelProperty("终审时间")
     private LocalDateTime finalAuditTime;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.MERCHANT_ENTRY_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "PENDING")
     @ExcelProperty("状态")
     private String status;
 

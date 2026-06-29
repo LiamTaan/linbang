@@ -72,7 +72,7 @@
 </template>
 <script lang="ts" setup>
 import * as BrokerageUserApi from '@/api/mall/trade/brokerage/user'
-import * as UserApi from '@/api/member/user'
+import { MemberUserApi, type MemberUser } from '@/api/linbang/memberuser'
 import { formatDate } from '@/utils/formatTime'
 
 defineOptions({ name: 'BrokerageUserCreateForm' })
@@ -138,7 +138,7 @@ const resetForm = () => {
 /** 查询推广员和分销员 */
 const userInfo = reactive<{
   bindUser: BrokerageUserApi.BrokerageUserVO | undefined
-  user: UserApi.UserVO | undefined
+  user: MemberUser | undefined
 }>({
   bindUser: undefined,
   user: undefined
@@ -153,11 +153,11 @@ const handleGetUser = async (id: any, userType: string) => {
     return
   }
   const user =
-    userType === '推广员' ? await BrokerageUserApi.getBrokerageUser(id) : await UserApi.getUser(id)
+    userType === '推广员' ? await BrokerageUserApi.getBrokerageUser(id) : await MemberUserApi.getMemberUser(id)
   if (userType === '推广员') {
     userInfo.bindUser = user as BrokerageUserApi.BrokerageUserVO
   } else {
-    userInfo.user = user as UserApi.UserVO
+    userInfo.user = user as MemberUser
   }
   if (!user) {
     message.warning(`${userType}不存在`)

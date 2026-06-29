@@ -10,25 +10,25 @@ import javax.validation.constraints.NotNull;
 @Data
 public class AppBankCardCreateReqVO {
 
-    @Schema(description = "银行名称", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "银行名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "中国工商银行")
     @NotBlank(message = "银行名称不能为空")
     private String bankName;
 
-    @Schema(description = "银行编码")
+    @Schema(description = "银行编码", example = "ICBC")
     private String bankCode;
 
-    @Schema(description = "银行卡号", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "银行卡号", requiredMode = Schema.RequiredMode.REQUIRED, example = "6222020202020202020")
     @NotBlank(message = "银行卡号不能为空")
     private String cardNo;
 
-    @Schema(description = "开户名", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "开户名", requiredMode = Schema.RequiredMode.REQUIRED, example = "张三")
     @NotBlank(message = "开户名不能为空")
     private String accountName;
 
-    @Schema(description = "预留手机号")
+    @Schema(description = "预留手机号", example = "13800138000")
     private String reservedMobile;
 
-    @Schema(description = "是否默认卡", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "是否默认卡", requiredMode = Schema.RequiredMode.REQUIRED, example = "true")
     @NotNull(message = "是否默认卡不能为空")
     private Boolean isDefault;
 

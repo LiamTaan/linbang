@@ -8,6 +8,8 @@ import cn.iocoder.yudao.module.system.controller.admin.logger.vo.operatelog.Oper
 import cn.iocoder.yudao.module.system.dal.dataobject.logger.OperateLogDO;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.time.LocalDateTime;
+
 @Mapper
 public interface OperateLogMapper extends BaseMapperX<OperateLogDO> {
 
@@ -28,6 +30,11 @@ public interface OperateLogMapper extends BaseMapperX<OperateLogDO> {
                 .eqIfPresent(OperateLogDO::getBizId, pageReqDTO.getBizId())
                 .eqIfPresent(OperateLogDO::getUserId, pageReqDTO.getUserId())
                 .orderByDesc(OperateLogDO::getId));
+    }
+
+    default int deleteByCreateTimeBefore(LocalDateTime expireTime) {
+        return delete(new LambdaQueryWrapperX<OperateLogDO>()
+                .lt(OperateLogDO::getCreateTime, expireTime));
     }
 
 }

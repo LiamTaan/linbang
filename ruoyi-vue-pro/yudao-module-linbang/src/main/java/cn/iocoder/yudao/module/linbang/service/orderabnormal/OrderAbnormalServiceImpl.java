@@ -17,6 +17,7 @@ import javax.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.*;
+import java.time.LocalDateTime;
 import cn.iocoder.yudao.module.linbang.controller.admin.orderinfo.vo.OrderMarkAbnormalReqVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.orderabnormal.vo.*;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderabnormal.OrderAbnormalDO;
@@ -135,6 +136,38 @@ public class OrderAbnormalServiceImpl implements OrderAbnormalService {
         orderAbnormal.setHandleBy(SecurityFrameworkUtils.getLoginUserId());
         orderAbnormalMapper.insert(orderAbnormal);
         return orderAbnormal.getId();
+    }
+
+    @Override
+    public void finalAuditOrderAbnormal(OrderAbnormalFinalAuditReqVO reqVO) {
+        OrderAbnormalDO abnormal = orderAbnormalMapper.selectById(reqVO.getId());
+        if (abnormal == null) {
+            throw exception(ORDER_ABNORMAL_NOT_EXISTS);
+        }
+        Long loginUserId = SecurityFrameworkUtils.getLoginUserId();
+        LocalDateTime now = LocalDateTime.now();
+        orderAbnormalMapper.updateById(OrderAbnormalDO.builder()
+                .id(abnormal.getId())
+                .finalAuditStatus(reqVO.getFinalAuditStatus())
+                .finalAuditBy(loginUserId)
+                .finalAuditTime(now)
+                .finalAuditRemark(reqVO.getFinalAuditRemark())
+                .handleStatus("APPROVED".equalsIgnoreCase(reqVO.getFinalAuditStatus()) ? "FINISHED" : "PROCESSING")
+                .handleBy(loginUserId)
+                .handleTime(now)
+                .remark(reqVO.getFinalAuditRemark())
+                .build());
+        orderOperateLogMapper.insert(OrderOperateLogDO.builder()
+                .orderId(abnormal.getOrderId())
+                .unitId(abnormal.getUnitId())
+                .operateType("FINAL_AUDIT_ABNORMAL")
+                .operateRole("ADMIN")
+                .operateBy(loginUserId)
+                .beforeStatus(abnormal.getHandleStatus())
+                .afterStatus("APPROVED".equalsIgnoreCase(reqVO.getFinalAuditStatus()) ? "FINISHED" : "PROCESSING")
+                .remark(reqVO.getFinalAuditRemark())
+                .operateTime(now)
+                .build());
     }
 
     @Override

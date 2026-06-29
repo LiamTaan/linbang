@@ -10,6 +10,7 @@ import cn.iocoder.yudao.module.linbang.controller.admin.memberqualification.vo.M
 import cn.iocoder.yudao.module.linbang.controller.admin.memberqualification.vo.MemberQualificationAuditReqVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.memberqualification.vo.MemberQualificationPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.memberqualification.vo.MemberQualificationRespVO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.certexemption.CertExemptionApplyDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.creditrecord.CreditRecordDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberqualification.MemberUserQualificationDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberrealname.MemberUserRealNameDO;
@@ -17,19 +18,24 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantentry.MerchantEntryDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.creditrecord.CreditRecordMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.certexemption.CertExemptionApplyMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberqualification.MemberUserQualificationMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberrealname.MemberUserRealNameMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantentry.MerchantEntryMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper;
+import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
@@ -53,6 +59,10 @@ public class MemberQualificationServiceImpl implements MemberQualificationServic
     private MerchantEntryMapper merchantEntryMapper;
     @Resource
     private CreditRecordMapper creditRecordMapper;
+    @Resource
+    private CertExemptionApplyMapper certExemptionApplyMapper;
+    @Resource
+    private MessagePushDispatchService messagePushDispatchService;
 
     @Override
     public PageResult<MemberQualificationRespVO> getQualificationPage(MemberQualificationPageReqVO pageReqVO) {
@@ -85,15 +95,20 @@ public class MemberQualificationServiceImpl implements MemberQualificationServic
                         .last("LIMIT 1"));
         List<MemberUserQualificationDO> relatedQualifications = qualification.getUserId() == null ? Collections.emptyList()
                 : memberUserQualificationMapper.selectListByUserId(qualification.getUserId());
+        List<CertExemptionApplyDO> certExemptions = qualification.getUserId() == null ? Collections.emptyList()
+                : certExemptionApplyMapper.selectListByUserId(qualification.getUserId()).stream()
+                .filter(item -> Objects.equals(item.getQualificationId(), qualification.getId()))
+                .collect(java.util.stream.Collectors.toList());
         List<CreditRecordDO> creditRecords = qualification.getUserId() == null ? Collections.emptyList()
                 : creditRecordMapper.selectList(new LambdaQueryWrapperX<CreditRecordDO>()
                 .eq(CreditRecordDO::getUserId, qualification.getUserId())
                 .orderByDesc(CreditRecordDO::getCreateTime, CreditRecordDO::getId));
         return MemberQualificationDetailAssembler.build(qualification, user, realName, merchant, latestEntry,
-                relatedQualifications, creditRecords);
+                relatedQualifications, certExemptions, creditRecords);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void auditQualification(MemberQualificationAuditReqVO reqVO) {
         MemberUserQualificationDO qualification = memberUserQualificationMapper.selectById(reqVO.getId());
         if (qualification == null) {
@@ -106,7 +121,27 @@ public class MemberQualificationServiceImpl implements MemberQualificationServic
         updateObj.setRejectReason(reqVO.getRejectReason());
         updateObj.setAuditBy(SecurityFrameworkUtils.getLoginUserId());
         updateObj.setAuditTime(LocalDateTime.now());
+        updateObj.setPriorityEnabled(Objects.equals(reqVO.getAuditStatus(), "APPROVED")
+                && Arrays.asList("PLATFORM_CLOTHING", "TOOLBOX").contains(qualification.getQualificationType()));
         memberUserQualificationMapper.updateById(updateObj);
+        messagePushDispatchService.dispatchSingleIdempotent("lb_special_cert_audited", "专项资质审核结果通知",
+                "MEMBER_QUALIFICATION", qualification.getId(), qualification.getUserId(), "专项资质审核通知",
+                "lb_special_cert_audited:" + qualification.getId() + ":" + reqVO.getAuditStatus());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void recomputePriorityEnabled(Long id) {
+        MemberUserQualificationDO qualification = memberUserQualificationMapper.selectById(id);
+        if (qualification == null) {
+            throw exception(MEMBER_USER_QUALIFICATION_NOT_EXISTS);
+        }
+        boolean enabled = Objects.equals(qualification.getAuditStatus(), "APPROVED")
+                && Arrays.asList("PLATFORM_CLOTHING", "TOOLBOX").contains(qualification.getQualificationType());
+        memberUserQualificationMapper.updateById(MemberUserQualificationDO.builder()
+                .id(id)
+                .priorityEnabled(enabled)
+                .build());
     }
 
     private List<Long> resolveMatchedUserIds(String userKeyword) {

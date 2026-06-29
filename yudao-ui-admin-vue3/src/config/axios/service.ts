@@ -1,7 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 
 import { ElMessage, ElMessageBox, ElNotification } from 'element-plus'
-import qs from 'qs'
 import { config } from '@/config/axios/config'
 import {
   getAccessToken,
@@ -16,6 +15,7 @@ import errorCode from './errorCode'
 import { resetRouter } from '@/router'
 import { deleteUserCache } from '@/hooks/web/useCache'
 import { ApiEncrypt } from '@/utils/encrypt'
+import { stringifyQuery } from '@/utils/query'
 
 const tenantEnable = import.meta.env.VITE_APP_TENANT_ENABLE
 const { result_code, base_url, request_timeout } = config
@@ -42,7 +42,7 @@ const service: AxiosInstance = axios.create({
   withCredentials: false, // 禁用 Cookie 等信息
   // 自定义参数序列化函数
   paramsSerializer: (params) => {
-    return qs.stringify(params, { allowDots: true })
+    return stringifyQuery(params, { allowDots: true })
   }
 })
 
@@ -78,7 +78,7 @@ service.interceptors.request.use(
       const contentType = config.headers['Content-Type'] || config.headers['content-type']
       if (contentType === 'application/x-www-form-urlencoded') {
         if (config.data && typeof config.data !== 'string') {
-          config.data = qs.stringify(config.data)
+          config.data = stringifyQuery(config.data)
         }
       }
     }
@@ -238,7 +238,9 @@ service.interceptors.response.use(
 
 const refreshToken = async () => {
   axios.defaults.headers.common['tenant-id'] = getTenantId()
-  return await axios.post(base_url + '/system/auth/refresh-token?refreshToken=' + getRefreshToken())
+  return await axios.post(base_url + '/system/auth/refresh-token', {
+    refreshToken: getRefreshToken()
+  })
 }
 const handleAuthorized = () => {
   const { t } = useI18n()

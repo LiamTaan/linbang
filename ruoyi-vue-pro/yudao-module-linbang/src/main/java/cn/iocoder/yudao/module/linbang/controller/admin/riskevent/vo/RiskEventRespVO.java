@@ -36,6 +36,12 @@ public class RiskEventRespVO {
     @ExcelProperty("状态")
     private String status;
 
+    @ExcelProperty("处置状态")
+    private String disposeStatus;
+
+    @ExcelProperty("处置动作")
+    private String disposeAction;
+
     @ExcelProperty("处理人")
     private Long handleBy;
 
@@ -44,6 +50,12 @@ public class RiskEventRespVO {
 
     @ExcelProperty("备注")
     private String remark;
+
+    @ExcelProperty("处置备注")
+    private String disposeRemark;
+
+    @ExcelProperty("关联用户")
+    private String relatedUserIds;
 
     @ExcelProperty("创建时间")
     private LocalDateTime createTime;

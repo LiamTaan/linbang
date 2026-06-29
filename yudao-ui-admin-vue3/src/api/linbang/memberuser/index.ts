@@ -1,5 +1,6 @@
 import request from '@/config/axios'
 import type { Dayjs } from 'dayjs';
+import { buildDynamicKeyHeaders } from '@/api/linbang/security'
 
 /** 用户主表信息 */
 export interface MemberUser {
@@ -15,6 +16,7 @@ export interface MemberUser {
           status?: string; // 状态
           lastLoginTime?: string | Dayjs; // 最后登录时间
           lastLoginIp?: string; // 最后登录IP
+          pointBalance?: number; // 当前积分余额
           remark?: string; // 备注
           createTime?: string | Dayjs
   }
@@ -112,6 +114,19 @@ export interface MemberUserDetail extends MemberUser {
   }>
   }
 
+export interface MemberUserRestrictReqVO {
+  userId: number
+  actionType: 'RESTRICT' | 'BAN' | 'BLACKLIST'
+  restrictType: string
+  reason: string
+  endTime?: string | Dayjs
+}
+
+export interface MemberUserReleaseRestrictReqVO {
+  restrictRecordId: number
+  releaseRemark: string
+}
+
 // 用户主表 API
 export const MemberUserApi = {
   // 查询用户主表分页
@@ -147,5 +162,23 @@ export const MemberUserApi = {
   // 导出用户主表 Excel
   exportMemberUser: async (params) => {
     return await request.download({ url: `/linbang/member-user/export-excel`, params })
+  },
+
+  // 限制/封禁/拉黑用户
+  restrictMemberUser: async (data: MemberUserRestrictReqVO, verifyToken?: string) => {
+    return await request.post({
+      url: `/linbang/member-user/restrict`,
+      data,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
+  },
+
+  // 解除限制/封禁
+  releaseMemberUserRestrict: async (data: MemberUserReleaseRestrictReqVO, verifyToken?: string) => {
+    return await request.post({
+      url: `/linbang/member-user/restrict/release`,
+      data,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   }
 }

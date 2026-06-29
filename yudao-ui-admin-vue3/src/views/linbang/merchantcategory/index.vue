@@ -7,15 +7,6 @@
       :inline="true"
       label-width="84px"
     >
-      <el-form-item label="上级类目" prop="parentName">
-        <el-input
-          v-model="queryParams.parentName"
-          placeholder="请输入上级类目名称"
-          clearable
-          @keyup.enter="handleQuery"
-          class="!w-240px"
-        />
-      </el-form-item>
       <el-form-item label="类目名称" prop="categoryName">
         <el-input
           v-model="queryParams.categoryName"
@@ -79,6 +70,32 @@
           />
         </el-select>
       </el-form-item>
+      <el-form-item label="是否用工类" prop="laborCategoryFlag">
+        <el-select
+          v-model="queryParams.laborCategoryFlag"
+          placeholder="请选择是否用工类"
+          clearable
+          class="!w-240px"
+        >
+          <el-option
+            v-for="item in BOOLEAN_YES_NO_OPTIONS"
+            :key="`labor-${String(item.value)}`"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="协议类型" prop="forceAgreementType">
+        <el-select
+          v-model="queryParams.forceAgreementType"
+          placeholder="请选择协议类型"
+          clearable
+          class="!w-240px"
+        >
+          <el-option label="通用交易保障协议" value="TRADE_GUARANTEE" />
+          <el-option label="工程托管协议" value="PROJECT_ESCROW" />
+        </el-select>
+      </el-form-item>
       <el-form-item label="风险等级" prop="riskLevel">
         <el-input
           v-model="queryParams.riskLevel"
@@ -134,14 +151,8 @@
         >
           <Icon icon="ep:download" class="mr-5px" /> 导出
         </el-button>
-        <el-button
-          type="danger"
-          plain
-          :disabled="isEmpty(checkedIds)"
-          @click="handleDeleteBatch"
-          v-hasPermi="['linbang:merchant-service-category:delete']"
-        >
-          <Icon icon="ep:delete" class="mr-5px" /> 批量删除
+        <el-button type="danger" plain @click="toggleExpandAll">
+          <Icon icon="ep:sort" class="mr-5px" /> 展开/折叠
         </el-button>
       </el-form-item>
     </el-form>
@@ -149,20 +160,15 @@
 
   <ContentWrap>
     <el-table
-      row-key="id"
       v-loading="loading"
+      v-if="refreshTable"
       :data="list"
+      row-key="id"
       :stripe="true"
       :show-overflow-tooltip="true"
-      @selection-change="handleRowCheckboxChange"
+      :default-expand-all="isExpandAll"
     >
-      <el-table-column type="selection" width="55" />
-      <el-table-column label="上级类目" align="center" min-width="180">
-        <template #default="{ row }">
-          {{ formatParentCategoryName(row.parentId) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="类目名称" align="center" prop="categoryName" min-width="160" />
+      <el-table-column label="类目名称" align="left" prop="categoryName" min-width="220" />
       <el-table-column label="层级" align="center" prop="categoryLevel" width="90" />
       <el-table-column label="排序" align="center" prop="sortNo" width="90" />
       <el-table-column label="图标" align="center" prop="icon" min-width="140" />
@@ -181,42 +187,77 @@
           {{ formatBooleanYesNo(scope.row.supportSplit) }}
         </template>
       </el-table-column>
+      <el-table-column label="支持计价方式" align="center" min-width="180">
+        <template #default="{ row }">
+          <span>{{ (row.supportedPricingModes || []).join(' / ') || '-' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="是否支持开票" align="center" prop="supportInvoice" width="120">
         <template #default="scope">
           {{ formatBooleanYesNo(scope.row.supportInvoice) }}
         </template>
       </el-table-column>
+      <el-table-column label="是否用工类" align="center" prop="laborCategoryFlag" width="120">
+        <template #default="{ row }">
+          {{ formatBooleanYesNo(row.laborCategoryFlag) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="协议类型" align="center" prop="forceAgreementType" width="150" />
       <el-table-column label="风险等级" align="center" prop="riskLevel" width="120">
         <template #default="{ row }">
           {{ formatRiskLevel(row.riskLevel) }}
         </template>
       </el-table-column>
       <el-table-column label="状态" align="center" prop="status" width="100">
-        <template #default="scope">
-          {{ formatEnableStatus(scope.row.status) }}
+        <template #default="{ row }">
+          <el-switch
+            v-if="checkPermi(['linbang:merchant-service-category:update'])"
+            v-model="row.status"
+            active-value="ENABLE"
+            inactive-value="DISABLE"
+            :loading="statusUpdating[row.id!]"
+            @change="(value) => handleStatusChanged(row, value)"
+          />
+          <span v-else>{{ formatEnableStatus(row.status) }}</span>
         </template>
       </el-table-column>
       <el-table-column
-        label="创建时间"
+        label="更新时间"
         align="center"
-        prop="createTime"
+        prop="updateTime"
         :formatter="dateFormatter"
         width="180px"
       />
-      <el-table-column label="操作" align="center" min-width="120px">
-        <template #default="scope">
+      <el-table-column label="操作" align="center" min-width="240">
+        <template #default="{ row }">
           <el-button
             link
             type="primary"
-            @click="openForm('update', scope.row.id)"
+            @click="openForm('update', row.id)"
             v-hasPermi="['linbang:merchant-service-category:update']"
           >
             编辑
           </el-button>
           <el-button
             link
+            type="primary"
+            @click="openForm('create', undefined, row.parentId ?? 0)"
+            v-hasPermi="['linbang:merchant-service-category:create']"
+          >
+            新增同级
+          </el-button>
+          <el-button
+            link
+            type="primary"
+            @click="openForm('create', undefined, row.id)"
+            v-hasPermi="['linbang:merchant-service-category:create']"
+          >
+            新增子级
+          </el-button>
+          <el-button
+            link
             type="danger"
-            @click="handleDelete(scope.row.id)"
+            @click="handleDelete(row.id!)"
             v-hasPermi="['linbang:merchant-service-category:delete']"
           >
             删除
@@ -224,26 +265,22 @@
         </template>
       </el-table-column>
     </el-table>
-    <Pagination
-      :total="total"
-      v-model:page="queryParams.pageNo"
-      v-model:limit="queryParams.pageSize"
-      @pagination="getList"
-    />
   </ContentWrap>
 
   <MerchantServiceCategoryForm ref="formRef" @success="getList" />
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { isEmpty } from '@/utils/is'
+import { nextTick, onMounted, reactive, ref } from 'vue'
 import { getStrDictOptions, DICT_TYPE } from '@/utils/dict'
 import { dateFormatter } from '@/utils/formatTime'
+import { handleTree } from '@/utils/tree'
 import download from '@/utils/download'
 import { useI18n } from '@/hooks/web/useI18n'
 import { useMessage } from '@/hooks/web/useMessage'
 import { MerchantServiceCategoryApi, MerchantServiceCategory } from '@/api/linbang/merchantcategory'
+import { Icon } from '@/components/Icon'
+import { checkPermi } from '@/utils/permission'
 import {
   BOOLEAN_YES_NO_OPTIONS,
   ENABLE_STATUS_OPTIONS,
@@ -260,63 +297,35 @@ const { t } = useI18n()
 
 const loading = ref(true)
 const list = ref<MerchantServiceCategory[]>([])
-const allCategories = ref<MerchantServiceCategory[]>([])
-const total = ref(0)
 const queryParams = reactive({
-  pageNo: 1,
-  pageSize: 10,
-  parentName: undefined as string | undefined,
   categoryName: undefined as string | undefined,
   categoryLevel: undefined as number | undefined,
   defaultPricingMode: undefined as string | undefined,
   supportSplit: undefined as boolean | undefined,
   supportInvoice: undefined as boolean | undefined,
   riskLevel: undefined as string | undefined,
+  laborCategoryFlag: undefined as boolean | undefined,
+  forceAgreementType: undefined as string | undefined,
   status: undefined as string | undefined,
   createTime: [] as string[]
 })
 const queryFormRef = ref()
 const exportLoading = ref(false)
-
-const formatParentCategoryName = (parentId?: number) => {
-  if (parentId === undefined || parentId === null || parentId === 0) {
-    return '顶级类目'
-  }
-  const parent = allCategories.value.find((item) => item.id === parentId)
-  return parent?.categoryName || '上级类目信息缺失'
-}
+const refreshTable = ref(true)
+const isExpandAll = ref(true)
+const statusUpdating = ref<Record<number, boolean>>({})
 
 const getList = async () => {
   loading.value = true
   try {
-    const categories = await MerchantServiceCategoryApi.getMerchantServiceCategoryAllList({
-      categoryName: queryParams.categoryName,
-      categoryLevel: queryParams.categoryLevel,
-      defaultPricingMode: queryParams.defaultPricingMode,
-      supportSplit: queryParams.supportSplit,
-      supportInvoice: queryParams.supportInvoice,
-      riskLevel: queryParams.riskLevel,
-      status: queryParams.status,
-      createTime: queryParams.createTime
-    })
-    allCategories.value = categories
-    const filteredList = categories.filter((item) => {
-      if (!queryParams.parentName) {
-        return true
-      }
-      return formatParentCategoryName(item.parentId).includes(queryParams.parentName)
-    })
-    total.value = filteredList.length
-    const start = (queryParams.pageNo - 1) * queryParams.pageSize
-    const end = start + queryParams.pageSize
-    list.value = filteredList.slice(start, end)
+    const data = await MerchantServiceCategoryApi.getMerchantServiceCategoryList(queryParams)
+    list.value = handleTree(data, 'id', 'parentId')
   } finally {
     loading.value = false
   }
 }
 
 const handleQuery = () => {
-  queryParams.pageNo = 1
   getList()
 }
 
@@ -326,8 +335,8 @@ const resetQuery = () => {
 }
 
 const formRef = ref()
-const openForm = (type: string, id?: number) => {
-  formRef.value.open(type, id)
+const openForm = (type: string, id?: number, parentId?: number) => {
+  formRef.value.open(type, id, parentId)
 }
 
 const handleDelete = async (id: number) => {
@@ -337,21 +346,6 @@ const handleDelete = async (id: number) => {
     message.success(t('common.delSuccess'))
     await getList()
   } catch {}
-}
-
-const checkedIds = ref<number[]>([])
-const handleDeleteBatch = async () => {
-  try {
-    await message.delConfirm()
-    await MerchantServiceCategoryApi.deleteMerchantServiceCategoryList(checkedIds.value)
-    checkedIds.value = []
-    message.success(t('common.delSuccess'))
-    await getList()
-  } catch {}
-}
-
-const handleRowCheckboxChange = (records: MerchantServiceCategory[]) => {
-  checkedIds.value = records.map((item) => item.id!)
 }
 
 const handleExport = async () => {
@@ -365,6 +359,8 @@ const handleExport = async () => {
       supportSplit: queryParams.supportSplit,
       supportInvoice: queryParams.supportInvoice,
       riskLevel: queryParams.riskLevel,
+      laborCategoryFlag: queryParams.laborCategoryFlag,
+      forceAgreementType: queryParams.forceAgreementType,
       status: queryParams.status,
       createTime: queryParams.createTime
     })
@@ -372,6 +368,47 @@ const handleExport = async () => {
   } finally {
     exportLoading.value = false
   }
+}
+
+const handleStatusChanged = async (row: MerchantServiceCategory, value: string | number | boolean) => {
+  const id = row.id
+  if (!id) {
+    return
+  }
+  const previousStatus = value === 'ENABLE' ? 'DISABLE' : 'ENABLE'
+  statusUpdating.value[id] = true
+  try {
+    row.status = value as string
+    await MerchantServiceCategoryApi.updateMerchantServiceCategory({
+      id: row.id,
+      parentId: row.parentId,
+      categoryName: row.categoryName,
+      categoryLevel: row.categoryLevel,
+      sortNo: row.sortNo,
+      icon: row.icon,
+      defaultPricingMode: row.defaultPricingMode,
+      supportedPricingModes: row.supportedPricingModes,
+      supportSplit: row.supportSplit,
+      supportInvoice: row.supportInvoice,
+      riskLevel: row.riskLevel,
+      laborCategoryFlag: row.laborCategoryFlag,
+      forceAgreementType: row.forceAgreementType,
+      invoiceRateReminderText: row.invoiceRateReminderText,
+      status: row.status
+    })
+    message.success(t('common.updateSuccess'))
+  } catch {
+    row.status = previousStatus
+  } finally {
+    statusUpdating.value[id] = false
+  }
+}
+
+const toggleExpandAll = async () => {
+  refreshTable.value = false
+  isExpandAll.value = !isExpandAll.value
+  await nextTick()
+  refreshTable.value = true
 }
 
 onMounted(() => {

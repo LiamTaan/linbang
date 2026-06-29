@@ -100,13 +100,16 @@
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="处置状态" align="center" prop="disposeStatus" width="110" />
+      <el-table-column label="处置动作" align="center" prop="disposeAction" min-width="140" />
       <el-table-column label="处理人" align="center" prop="handleBy" width="100" />
       <el-table-column label="处理时间" align="center" prop="handleTime" :formatter="dateFormatter" width="180" />
       <el-table-column label="备注" align="center" prop="remark" min-width="200" />
       <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="操作" align="center" fixed="right" width="100">
+      <el-table-column label="操作" align="center" fixed="right" width="240">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
+          <el-button link type="warning" @click="openDispose(row)">处置</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -126,10 +129,14 @@
       <el-descriptions-item label="风险等级">{{ formatRiskLevel(detailData?.riskLevel) }}</el-descriptions-item>
       <el-descriptions-item label="命中规则编码">{{ detailData?.hitRuleCode || '-' }}</el-descriptions-item>
       <el-descriptions-item label="处理状态">{{ formatRiskEventStatus(detailData?.status) }}</el-descriptions-item>
+      <el-descriptions-item label="处置状态">{{ detailData?.disposeStatus || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="处置动作">{{ detailData?.disposeAction || '-' }}</el-descriptions-item>
       <el-descriptions-item label="处理人">{{ detailData?.handleBy || '-' }}</el-descriptions-item>
       <el-descriptions-item label="处理时间">{{ formatDate(detailData?.handleTime) }}</el-descriptions-item>
       <el-descriptions-item label="创建时间">{{ formatDate(detailData?.createTime) }}</el-descriptions-item>
       <el-descriptions-item label="备注" :span="2">{{ detailData?.remark || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="处置备注" :span="2">{{ detailData?.disposeRemark || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="关联账号" :span="2">{{ detailData?.relatedUserIds || '-' }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">命中规则</el-divider>
@@ -295,11 +302,36 @@
     </el-table>
     <el-empty v-else description="暂无操作日志" :image-size="80" />
   </Dialog>
+
+  <Dialog v-model="disposeVisible" title="风险事件处置" width="520px">
+    <el-form ref="disposeFormRef" :model="disposeForm" label-width="88px">
+      <el-form-item label="处置动作" prop="disposeAction">
+        <el-select v-model="disposeForm.disposeAction" placeholder="请选择处置动作" class="!w-full">
+          <el-option label="确认违规" value="CONFIRM_VIOLATION" />
+          <el-option label="解除误判" value="RELEASE_FALSE_POSITIVE" />
+          <el-option label="冻结资金" value="FREEZE_FUNDS" />
+          <el-option label="解冻资金" value="UNFREEZE_FUNDS" />
+          <el-option label="加入黑名单" value="ADD_BLACKLIST" />
+          <el-option label="封禁账号" value="BAN_USER" />
+          <el-option label="限制发单" value="RESTRICT_PUBLISH" />
+          <el-option label="限制接单" value="RESTRICT_ACCEPT" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="处置备注" prop="disposeRemark">
+        <el-input v-model="disposeForm.disposeRemark" type="textarea" :rows="4" placeholder="请输入人工复核结论或处置说明" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="disposeVisible = false">取消</el-button>
+      <el-button type="primary" :loading="disposeLoading" @click="submitDispose">确认</el-button>
+    </template>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import type { FormInstance } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
+import { useMessage } from '@/hooks/web/useMessage'
 import { DICT_TYPE } from '@/utils/dict'
 import { dateFormatter, formatDate } from '@/utils/formatTime'
 import { RiskEventApi, type RiskEvent, type RiskEventDetail } from '@/api/linbang/riskevent'
@@ -325,10 +357,13 @@ defineOptions({ name: 'RiskEvent' })
 const loading = ref(false)
 const detailVisible = ref(false)
 const detailLoading = ref(false)
+const disposeVisible = ref(false)
+const disposeLoading = ref(false)
 const list = ref<RiskEvent[]>([])
 const detailData = ref<RiskEventDetail>()
 const total = ref(0)
 const queryFormRef = ref<FormInstance>()
+const message = useMessage()
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
@@ -339,6 +374,11 @@ const queryParams = reactive({
   hitRuleCode: undefined as string | undefined,
   status: undefined as string | undefined,
   createTime: [] as string[]
+})
+const disposeForm = reactive({
+  id: undefined as number | undefined,
+  disposeAction: undefined as string | undefined,
+  disposeRemark: undefined as string | undefined
 })
 
 const formatComplaintStatus = (value?: string) => {
@@ -440,6 +480,36 @@ const openDetail = async (id: number) => {
     detailData.value = await RiskEventApi.getRiskEvent(id)
   } finally {
     detailLoading.value = false
+  }
+}
+
+const openDispose = (row: RiskEvent) => {
+  disposeForm.id = row.id
+  disposeForm.disposeAction = row.disposeAction || undefined
+  disposeForm.disposeRemark = row.disposeRemark || undefined
+  disposeVisible.value = true
+}
+
+const submitDispose = async () => {
+  if (!disposeForm.id || !disposeForm.disposeAction) {
+    await message.warning('请选择处置动作')
+    return
+  }
+  disposeLoading.value = true
+  try {
+    await RiskEventApi.disposeRiskEvent({
+      id: disposeForm.id,
+      disposeAction: disposeForm.disposeAction,
+      disposeRemark: disposeForm.disposeRemark
+    })
+    disposeVisible.value = false
+    await message.success('风险事件已处置')
+    await getList()
+    if (detailVisible.value && detailData.value?.id === disposeForm.id) {
+      detailData.value = await RiskEventApi.getRiskEvent(disposeForm.id)
+    }
+  } finally {
+    disposeLoading.value = false
   }
 }
 

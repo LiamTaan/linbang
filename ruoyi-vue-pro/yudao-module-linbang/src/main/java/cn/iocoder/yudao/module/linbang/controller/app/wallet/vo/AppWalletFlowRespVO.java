@@ -16,10 +16,10 @@ public class AppWalletFlowRespVO {
     @Schema(description = "流水号")
     private String flowNo;
 
-    @Schema(description = "业务类型")
+    @Schema(description = "业务类型，例如 ORDER_PAY 支付、WITHDRAW_APPLY 提现申请、WITHDRAW_SUCCESS 提现成功、REFUND 退款")
     private String bizType;
 
-    @Schema(description = "流水类型")
+    @Schema(description = "流水类型：IN 入账、OUT 出账、FREEZE 冻结、UNFREEZE 解冻", example = "OUT")
     private String flowType;
 
     @Schema(description = "变动金额")
@@ -45,6 +45,12 @@ public class AppWalletFlowRespVO {
 
     @Schema(description = "备注")
     private String remark;
+
+    @Schema(description = "税务扣减金额，单位元")
+    private BigDecimal taxAmount;
+
+    @Schema(description = "业务标签", example = "托管锁定")
+    private String bizLabel;
 
     @Schema(description = "创建时间")
     private LocalDateTime createTime;

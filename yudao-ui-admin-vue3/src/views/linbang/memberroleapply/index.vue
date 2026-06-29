@@ -71,6 +71,9 @@
       </el-table-column>
       <el-table-column label="申请说明" align="center" prop="applyReason" min-width="200" />
       <el-table-column label="资源说明" align="center" prop="resourceDesc" min-width="200" />
+      <el-table-column label="预期转化" align="center" prop="expectedConversionDesc" min-width="180" />
+      <el-table-column label="能力说明" align="center" prop="abilityDesc" min-width="180" />
+      <el-table-column label="可投入时间" align="center" prop="availableTimeDesc" min-width="160" />
       <el-table-column label="审核状态" align="center" prop="auditStatus" width="110">
         <template #default="{ row }">
           <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_ROLE_APPLY_STATUS" :value="row.auditStatus" />
@@ -124,6 +127,9 @@
       </el-descriptions-item>
       <el-descriptions-item label="申请说明" :span="2">{{ detailData?.applyReason || '-' }}</el-descriptions-item>
       <el-descriptions-item label="资源说明" :span="2">{{ detailData?.resourceDesc || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="预期转化说明" :span="2">{{ detailData?.expectedConversionDesc || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="能力说明" :span="2">{{ detailData?.abilityDesc || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="可投入时间说明" :span="2">{{ detailData?.availableTimeDesc || '-' }}</el-descriptions-item>
       <el-descriptions-item label="审核备注" :span="2">{{ detailData?.auditRemark || '-' }}</el-descriptions-item>
       <el-descriptions-item label="驳回原因" :span="2">{{ detailData?.rejectReason || '-' }}</el-descriptions-item>
       <el-descriptions-item label="审核时间">{{ formatDate(detailData?.auditTime) }}</el-descriptions-item>
@@ -162,7 +168,12 @@
         {{ detailData?.latestQualification?.qualificationName || '-' }}
       </el-descriptions-item>
       <el-descriptions-item label="资质类型">
-        {{ detailData?.latestQualification?.qualificationType || '-' }}
+        <dict-tag
+          v-if="detailData?.latestQualification?.qualificationType"
+          :type="DICT_TYPE.LB_QUALIFICATION_TYPE"
+          :value="detailData.latestQualification.qualificationType"
+        />
+        <span v-else>-</span>
       </el-descriptions-item>
       <el-descriptions-item label="资质到期日">
         {{ detailData?.latestQualification?.validEndDate || '-' }}
@@ -175,6 +186,13 @@
       <el-descriptions-item label="邀请码">{{ detailData?.promoter?.inviteCode || '-' }}</el-descriptions-item>
       <el-descriptions-item label="等级">{{ detailData?.promoter?.levelCode || '-' }}</el-descriptions-item>
       <el-descriptions-item label="状态">{{ formatEnableStatus(detailData?.promoter?.status) }}</el-descriptions-item>
+    </el-descriptions>
+
+    <el-divider content-position="left">角色申请重点</el-divider>
+    <el-descriptions :column="1" border>
+      <el-descriptions-item label="审核参考">
+        {{ formatRoleApplyFocus(detailData) }}
+      </el-descriptions-item>
     </el-descriptions>
   </Dialog>
 
@@ -296,6 +314,24 @@ const formatUserDisplay = (
 }
 
 const formatRoleDisplay = (value?: string) => getDictLabel(DICT_TYPE.LB_ROLE_CODE, value) || '-'
+
+const formatRoleApplyFocus = (detail?: MemberRoleApplyDetail) => {
+  if (!detail?.applyRoleCode) {
+    return '-'
+  }
+  if (detail.applyRoleCode === 'PROMOTER') {
+    return detail.expectedConversionDesc || detail.resourceDesc || '重点核对推广资源和预期转化能力'
+  }
+  if (detail.applyRoleCode === 'PARTNER') {
+    return detail.resourceDesc || '重点核对代理资质与本地资源覆盖情况'
+  }
+  if (detail.applyRoleCode === 'PLATFORM_OPERATOR') {
+    return [detail.abilityDesc, detail.availableTimeDesc].filter(Boolean).join(' / ') || '重点核对平台运营能力与可投入时间'
+  }
+  return [detail.resourceDesc, detail.expectedConversionDesc, detail.abilityDesc, detail.availableTimeDesc]
+    .filter(Boolean)
+    .join(' / ') || '-'
+}
 
 const auditDialogVisible = ref(false)
 const auditLoading = ref(false)

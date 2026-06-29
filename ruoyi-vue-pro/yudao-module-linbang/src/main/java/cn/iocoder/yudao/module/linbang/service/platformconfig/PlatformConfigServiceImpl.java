@@ -45,6 +45,14 @@ public class PlatformConfigServiceImpl implements PlatformConfigService {
         respVO.setAndroidDownloadUrl(getValue(PlatformConfigKeyConstants.APP_ANDROID_DOWNLOAD_URL));
         respVO.setMessageNotice(getValue(PlatformConfigKeyConstants.APP_MESSAGE_NOTICE));
         respVO.setFeedbackTypes(splitValues(getValue(PlatformConfigKeyConstants.APP_FEEDBACK_TYPES)));
+        respVO.setTaxReminder(getValue(PlatformConfigKeyConstants.APP_TAX_REMINDER));
+        respVO.setLicenseAgentEntryTitle(getValue(PlatformConfigKeyConstants.APP_LICENSE_AGENT_ENTRY_TITLE));
+        respVO.setLicenseAgentEntryUrl(getValue(PlatformConfigKeyConstants.APP_LICENSE_AGENT_ENTRY_URL));
+        respVO.setOrderPriceDetailEnabled(getBooleanValue(PlatformConfigKeyConstants.APP_ORDER_PRICE_DETAIL_ENABLED, true));
+        respVO.setMallEntryEnabled(getBooleanValue(PlatformConfigKeyConstants.APP_MALL_ENTRY_ENABLED, false));
+        respVO.setMallEntryTitle(getValue(PlatformConfigKeyConstants.APP_MALL_ENTRY_TITLE));
+        respVO.setMallEntryUrl(getValue(PlatformConfigKeyConstants.APP_MALL_ENTRY_URL));
+        respVO.setWithdrawNotice(getValue(PlatformConfigKeyConstants.APP_WITHDRAW_NOTICE));
         return respVO;
     }
 
@@ -53,6 +61,10 @@ public class PlatformConfigServiceImpl implements PlatformConfigService {
         AppAgreementRespVO respVO = new AppAgreementRespVO();
         respVO.setServiceAgreement(getValue(PlatformConfigKeyConstants.AGREEMENT_SERVICE));
         respVO.setPrivacyAgreement(getValue(PlatformConfigKeyConstants.AGREEMENT_PRIVACY));
+        respVO.setRegisterAgreementVersion(getValue(PlatformConfigKeyConstants.AGREEMENT_REGISTER_VERSION));
+        respVO.setRegisterAgreementTitle(getValue(PlatformConfigKeyConstants.AGREEMENT_REGISTER_TITLE));
+        respVO.setRegisterAgreementContent(getValue(PlatformConfigKeyConstants.AGREEMENT_REGISTER_CONTENT));
+        respVO.setBeneficiaryLiabilityNotice(getValue(PlatformConfigKeyConstants.AGREEMENT_BENEFICIARY_NOTICE));
         return respVO;
     }
 
@@ -126,6 +138,14 @@ public class PlatformConfigServiceImpl implements PlatformConfigService {
     private String getValue(String key) {
         ConfigDO config = configService.getConfigByKey(key);
         return config == null || config.getValue() == null ? "" : config.getValue();
+    }
+
+    private Boolean getBooleanValue(String key, boolean defaultValue) {
+        String value = getValue(key);
+        if (value == null || value.trim().isEmpty()) {
+            return defaultValue;
+        }
+        return Boolean.parseBoolean(value.trim());
     }
 
     private List<String> splitValues(String value) {

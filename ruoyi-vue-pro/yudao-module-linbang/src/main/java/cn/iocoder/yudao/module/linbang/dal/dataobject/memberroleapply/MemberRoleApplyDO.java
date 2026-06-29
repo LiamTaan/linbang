@@ -34,6 +34,12 @@ public class MemberRoleApplyDO extends BaseDO {
 
     private String resourceDesc;
 
+    private String expectedConversionDesc;
+
+    private String abilityDesc;
+
+    private String availableTimeDesc;
+
     private String auditStatus;
 
     private String auditRemark;

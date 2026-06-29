@@ -33,9 +33,17 @@ public class RiskEventDO extends BaseDO {
 
     private String status;
 
+    private String disposeStatus;
+
+    private String disposeAction;
+
     private Long handleBy;
 
     private LocalDateTime handleTime;
 
     private String remark;
+
+    private String disposeRemark;
+
+    private String relatedUserIds;
 }

@@ -2,14 +2,18 @@
   <doc-alert title="报表设计器" url="https://doc.iocoder.cn/report/" />
 
   <ContentWrap :bodyStyle="{ padding: '0px' }" class="!mb-0">
-    <IFrame :src="src" />
+    <IFrame v-if="src" :src="src" />
   </ContentWrap>
 </template>
 <script lang="ts" setup>
-import { getRefreshToken } from '@/utils/auth'
+import { createAdminSceneTicket } from '@/api/login/sceneTicket'
 
 defineOptions({ name: 'JimuReport' })
 
-// 使用 getRefreshToken() 方法，而不使用 getAccessToken() 方法的原因：积木报表无法方便的刷新访问令牌
-const src = ref(import.meta.env.VITE_BASE_URL + '/jmreport/list?token=' + getRefreshToken())
+const src = ref('')
+
+onMounted(async () => {
+  const ticket = await createAdminSceneTicket({ scene: 'JMREPORT' })
+  src.value = `${import.meta.env.VITE_BASE_URL}/jmreport/list?token=${encodeURIComponent(ticket.token)}`
+})
 </script>

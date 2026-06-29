@@ -53,13 +53,41 @@ public class OrderMatchRecordDO {
      */
     private LocalDateTime pushTime;
     /**
+     * 推送阶段号
+     */
+    private Integer stageNo;
+    /**
+     * 推送批次号
+     */
+    private Integer pushBatchNo;
+    /**
+     * 优先层
+     */
+    private String priorityLayer;
+    /**
+     * 是否命中优先池
+     */
+    private Boolean priorityPoolFlag;
+    /**
+     * 品类命中等级
+     */
+    private String categoryMatchLevel;
+    /**
      * 接单截止时间
      */
     private LocalDateTime acceptDeadlineTime;
     /**
+     * 记录过期时间
+     */
+    private LocalDateTime expiredTime;
+    /**
      * 状态
      */
     private String status;
+    /**
+     * 最终结果
+     */
+    private String finalResult;
     /**
      * 租户编号
      */

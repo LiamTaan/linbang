@@ -1,0 +1,218 @@
+server:
+  port: ${SERVER_PORT:48080}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+knife4j:
+  enable: false
+
+--- #################### 数据库相关配置 ####################
+
+spring:
+  autoconfigure:
+    # noinspection SpringBootApplicationYaml
+    exclude:
+      - com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure
+      - org.springframework.ai.vectorstore.qdrant.autoconfigure.QdrantVectorStoreAutoConfiguration
+      - org.springframework.ai.vectorstore.milvus.autoconfigure.MilvusVectorStoreAutoConfiguration
+  datasource:
+    druid:
+      web-stat-filter:
+        enabled: true
+      stat-view-servlet:
+        enabled: true
+        allow:
+        url-pattern: /druid/*
+        login-username: ${DRUID_USERNAME:}
+        login-password: ${DRUID_PASSWORD:}
+      filter:
+        stat:
+          enabled: true
+          log-slow-sql: true
+          slow-sql-millis: 200
+          merge-sql: true
+        wall:
+          config:
+            multi-statement-allow: true
+    dynamic:
+      druid:
+        initial-size: ${DB_POOL_INITIAL_SIZE:5}
+        min-idle: ${DB_POOL_MIN_IDLE:5}
+        max-active: ${DB_POOL_MAX_ACTIVE:20}
+        max-wait: 60000
+        time-between-eviction-runs-millis: 60000
+        min-evictable-idle-time-millis: 600000
+        max-evictable-idle-time-millis: 1800000
+        validation-query: SELECT 1 FROM DUAL
+        test-while-idle: true
+        test-on-borrow: false
+        test-on-return: false
+        pool-prepared-statements: true
+        max-pool-prepared-statement-per-connection-size: 20
+      primary: master
+      datasource:
+        master:
+          url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/linbang?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true&useUnicode=true&characterEncoding=UTF-8}
+          username: ${DB_USERNAME:root}
+          password: ${DB_PASSWORD:change_me}
+        slave:
+          lazy: true
+          url: ${DB_SLAVE_URL:jdbc:mysql://127.0.0.1:3306/linbang?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true&useUnicode=true&characterEncoding=UTF-8}
+          username: ${DB_SLAVE_USERNAME:root}
+          password: ${DB_SLAVE_PASSWORD:change_me}
+
+  redis:
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    database: ${REDIS_DATABASE:11}
+    password: ${REDIS_PASSWORD:}
+
+--- #################### 定时任务相关配置 ####################
+
+spring:
+  quartz:
+    auto-startup: true
+    scheduler-name: schedulerName
+    job-store-type: jdbc
+    wait-for-jobs-to-complete-on-shutdown: true
+    properties:
+      org:
+        quartz:
+          scheduler:
+            instanceName: schedulerName
+            instanceId: AUTO
+          jobStore:
+            class: org.springframework.scheduling.quartz.LocalDataSourceJobStore
+            isClustered: true
+            clusterCheckinInterval: 15000
+            misfireThreshold: 60000
+          threadPool:
+            threadCount: 25
+            threadPriority: 5
+            class: org.quartz.simpl.SimpleThreadPool
+    jdbc:
+      initialize-schema: NEVER
+
+--- #################### 消息队列相关 ####################
+
+rocketmq:
+  name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:9876}
+
+spring:
+  rabbitmq:
+    host: ${RABBITMQ_HOST:127.0.0.1}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:127.0.0.1:9092}
+
+--- #################### 服务保障相关配置 ####################
+
+lock4j:
+  acquire-timeout: 3000
+  expire: 30000
+
+--- #################### 监控相关配置 ####################
+
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info
+
+spring:
+  boot:
+    admin:
+      client:
+        url: http://127.0.0.1:${server.port}/${spring.boot.admin.context-path}
+        instance:
+          service-host-type: IP
+        username: ${SPRING_BOOT_ADMIN_USERNAME:admin}
+        password: ${SPRING_BOOT_ADMIN_PASSWORD:admin}
+      context-path: /admin
+      frame-ancestors: "'self' ${ADMIN_UI_HOST:}"
+
+logging:
+  file:
+    name: ${LOG_FILE:/www/wwwlogs/linbang/yudao-server.log}
+
+--- #################### 微信公众号、小程序相关配置 ####################
+
+wx:
+  mp:
+    app-id: ${WX_MP_APP_ID:demo-wx-mp-app-id}
+    secret: ${WX_MP_SECRET:demo-wx-mp-secret}
+    config-storage:
+      type: RedisTemplate
+      key-prefix: wx
+      http-client-type: HttpClient
+  miniapp:
+    appid: ${WX_MINIAPP_APPID:demo-wx-miniapp-appid}
+    secret: ${WX_MINIAPP_SECRET:demo-wx-miniapp-secret}
+    config-storage:
+      type: RedisTemplate
+      key-prefix: wa
+      http-client-type: HttpClient
+
+--- #################### 芋道相关配置 ####################
+
+yudao:
+  web:
+    admin-ui:
+      url: ${ADMIN_UI_URL:https://admin.example.com}
+  captcha:
+    enable: ${YUDAO_CAPTCHA_ENABLE:false}
+  security:
+    mock-enable: false
+  api-encrypt:
+    enable: true
+  access-log:
+    enable: true
+  demo: false
+  pay:
+    order-notify-url: ${PUBLIC_BASE_URL:https://admin.example.com}/admin-api/pay/notify/order
+    refund-notify-url: ${PUBLIC_BASE_URL:https://admin.example.com}/admin-api/pay/notify/refund
+    transfer-notify-url: ${PUBLIC_BASE_URL:https://admin.example.com}/admin-api/pay/notify/transfer
+  map:
+    amap:
+      enabled: true
+      base-url: https://restapi.amap.com
+      key: ${AMAP_WEB_KEY:}
+
+justauth:
+  enabled: true
+  type:
+    DINGTALK:
+      client-id: ${JUSTAUTH_DINGTALK_CLIENT_ID:}
+      client-secret: ${JUSTAUTH_DINGTALK_CLIENT_SECRET:}
+      ignore-check-redirect-uri: true
+    WECHAT_ENTERPRISE:
+      client-id: ${JUSTAUTH_WECHAT_ENTERPRISE_CLIENT_ID:}
+      client-secret: ${JUSTAUTH_WECHAT_ENTERPRISE_CLIENT_SECRET:}
+      agent-id: ${JUSTAUTH_WECHAT_ENTERPRISE_AGENT_ID:}
+      ignore-check-redirect-uri: true
+    WECHAT_MINI_PROGRAM:
+      client-id: ${wx.miniapp.appid}
+      client-secret: ${wx.miniapp.secret}
+      ignore-check-redirect-uri: true
+      ignore-check-state: true
+    WECHAT_MP:
+      client-id: ${wx.mp.app-id}
+      client-secret: ${wx.mp.secret}
+      ignore-check-redirect-uri: true
+    ALIPAY:
+      client-id: ${JUSTAUTH_ALIPAY_CLIENT_ID:}
+      client-secret: ${JUSTAUTH_ALIPAY_CLIENT_SECRET:}
+      alipay-public-key: ${JUSTAUTH_ALIPAY_PUBLIC_KEY:}
+      ignore-check-redirect-uri: true
+      ignore-check-state: true
+  cache:
+    type: REDIS
+    prefix: 'social_auth_state:'
+    timeout: 24h

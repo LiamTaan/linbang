@@ -21,6 +21,9 @@ public class AppBankCardRespVO {
     @Schema(description = "脱敏卡号", example = "6222 **** **** 1234")
     private String cardNoMask;
 
+    @Schema(description = "是否可用于提现出款", example = "true")
+    private Boolean transferEnabled;
+
     @Schema(description = "开户名", example = "张三")
     private String accountName;
 

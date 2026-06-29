@@ -1,6 +1,7 @@
 package cn.iocoder.yudao.module.linbang.dal.mysql.merchantpricereport;
 
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.iocoder.yudao.framework.common.pojo.PageParam;
 import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.controller.admin.merchantpricereport.vo.MerchantPriceReportPageReqVO;
@@ -20,5 +21,9 @@ public interface MerchantPriceReportMapper extends BaseMapperX<MerchantPriceRepo
                 .eqIfPresent(MerchantPriceReportDO::getAuditStatus, reqVO.getAuditStatus())
                 .betweenIfPresent(MerchantPriceReportDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(MerchantPriceReportDO::getId));
+    }
+
+    default PageResult<MerchantPriceReportDO> selectPage(PageParam pageParam, LambdaQueryWrapperX<MerchantPriceReportDO> queryWrapper) {
+        return BaseMapperX.super.selectPage(pageParam, queryWrapper);
     }
 }

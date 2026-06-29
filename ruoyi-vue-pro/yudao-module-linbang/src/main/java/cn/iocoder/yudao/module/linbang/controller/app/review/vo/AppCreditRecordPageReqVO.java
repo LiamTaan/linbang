@@ -18,10 +18,10 @@ public class AppCreditRecordPageReqVO extends PageParam {
     @Schema(description = "规则编码", example = "ORDER_FINISHED_POSITIVE")
     private String ruleCode;
 
-    @Schema(description = "触发类型", example = "AUTO")
+    @Schema(description = "触发类型，例如 AUTO 系统自动触发、MANUAL 人工调整", example = "AUTO")
     private String triggerType;
 
-    @Schema(description = "业务类型", example = "REVIEW")
+    @Schema(description = "业务类型，例如 ORDER 订单、REVIEW 评价、APPEAL 申诉、COMPLAINT 投诉", example = "REVIEW")
     private String bizType;
 
     @Schema(description = "创建时间")

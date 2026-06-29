@@ -36,6 +36,12 @@
           <el-option label="人工复核" value="REVIEW" />
         </el-select>
       </el-form-item>
+      <el-form-item label="适用场景" prop="sceneType">
+        <el-input v-model="formData.sceneType" placeholder="例如 MESSAGE,COMMENT,PROMOTE" />
+      </el-form-item>
+      <el-form-item label="替换文案" prop="replaceText">
+        <el-input v-model="formData.replaceText" placeholder="过滤模式下的替换文案，例如 ***" />
+      </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-radio-group v-model="formData.status">
           <el-radio v-for="item in ENABLE_STATUS_OPTIONS" :key="item.value" :value="item.value">
@@ -77,6 +83,8 @@ type FormData = {
   wordType?: string
   matchType?: string
   blockLevel?: string
+  sceneType?: string
+  replaceText?: string
   status?: string
 }
 
@@ -86,6 +94,8 @@ const createEmptyFormData = (): FormData => ({
   wordType: undefined,
   matchType: undefined,
   blockLevel: undefined,
+  sceneType: undefined,
+  replaceText: undefined,
   status: undefined
 })
 const formData = ref<FormData>(createEmptyFormData())
@@ -153,6 +163,8 @@ const buildFormData = (data: SensitiveWordFormData): FormData => ({
   wordType: data.wordType,
   matchType: data.matchType,
   blockLevel: data.blockLevel,
+  sceneType: data.sceneType,
+  replaceText: data.replaceText,
   status: data.status
 })
 </script>

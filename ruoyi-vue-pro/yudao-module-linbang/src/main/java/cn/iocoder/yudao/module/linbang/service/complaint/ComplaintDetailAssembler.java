@@ -9,6 +9,7 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoD
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderinfo.OrderInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderoperatelog.OrderOperateLogDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderunit.OrderUnitDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.partnercoordination.PartnerCoordinationDO;
 
 import java.util.Collections;
 import java.util.List;
@@ -22,7 +23,8 @@ final class ComplaintDetailAssembler {
     static ComplaintDetailRespVO build(ComplaintDO complaint, OrderInfoDO order, OrderUnitDO unit,
                                        MemberUserDO complainantUser, MemberUserDO respondentUser, MemberUserDO orderUser,
                                        MerchantInfoDO respondentMerchant, List<ComplaintFileRelDO> fileRels,
-                                       List<ComplaintDO> relatedComplaints, List<OrderOperateLogDO> operateLogs) {
+                                       List<ComplaintDO> relatedComplaints, List<PartnerCoordinationDO> coordinationRecords,
+                                       List<OrderOperateLogDO> operateLogs) {
         ComplaintDetailRespVO respVO = BeanUtils.toBean(complaint, ComplaintDetailRespVO.class);
         if (order != null) {
             ComplaintDetailRespVO.OrderRespVO orderRespVO = BeanUtils.toBean(order, ComplaintDetailRespVO.OrderRespVO.class);
@@ -48,6 +50,7 @@ final class ComplaintDetailAssembler {
         respVO.setSummary(buildSummary(fileRels, relatedComplaints));
         respVO.setFiles(buildFiles(fileRels));
         respVO.setRelatedComplaints(buildRelatedComplaints(relatedComplaints, complaint.getId()));
+        respVO.setCoordinationRecords(buildCoordinationRecords(coordinationRecords));
         respVO.setOperateLogs(buildOperateLogs(operateLogs));
         return respVO;
     }
@@ -100,6 +103,17 @@ final class ComplaintDetailAssembler {
         return operateLogs.stream()
                 .limit(10)
                 .map(item -> BeanUtils.toBean(item, ComplaintDetailRespVO.OperateLogRespVO.class))
+                .collect(Collectors.toList());
+    }
+
+    private static List<ComplaintDetailRespVO.CoordinationRespVO> buildCoordinationRecords(
+            List<PartnerCoordinationDO> coordinationRecords) {
+        if (coordinationRecords == null || coordinationRecords.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return coordinationRecords.stream()
+                .limit(10)
+                .map(item -> BeanUtils.toBean(item, ComplaintDetailRespVO.CoordinationRespVO.class))
                 .collect(Collectors.toList());
     }
 }

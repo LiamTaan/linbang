@@ -4,8 +4,6 @@ import cn.hutool.core.date.format.FastDateFormat;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.crypto.SecureUtil;
-import cn.hutool.crypto.digest.DigestUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -22,6 +20,11 @@ import com.google.common.annotations.VisibleForTesting;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -137,7 +140,7 @@ public class AliyunSmsClient extends AbstractSmsClient {
 
         // 2. 请求 Body
         String requestBody = ""; // 短信 API 为 RPC 接口，query parameters 在 uri 中拼接，因此 request body 如果没有特殊要求，设置为空
-        String hashedRequestPayload = DigestUtil.sha256Hex(requestBody);
+        String hashedRequestPayload = sha256Hex(requestBody);
 
         // 3.1 请求 Header
         TreeMap<String, String> headers = new TreeMap<>();
@@ -168,9 +171,9 @@ public class AliyunSmsClient extends AbstractSmsClient {
                 canonicalHeaders + "\n" +
                 signedHeaders + "\n" +
                 hashedRequestPayload;
-        String hashedCanonicalRequest = DigestUtil.sha256Hex(canonicalRequest);
+        String hashedCanonicalRequest = sha256Hex(canonicalRequest);
         String stringToSign = "ACS3-HMAC-SHA256" + "\n" + hashedCanonicalRequest;
-        String signature = SecureUtil.hmacSha256(properties.getApiSecret()).digestHex(stringToSign); // 计算签名
+        String signature = hmacSha256Hex(properties.getApiSecret(), stringToSign); // 使用 JDK 原生实现，避免额外 Provider 依赖
         headers.put("Authorization", "ACS3-HMAC-SHA256" + " " + "Credential=" + properties.getApiKey()
                 + ", " + "SignedHeaders=" + signedHeaders + ", " + "Signature=" + signature);
 
@@ -192,6 +195,36 @@ public class AliyunSmsClient extends AbstractSmsClient {
                 .replace("+", "%20") // 加号 "+" 被替换为 "%20"
                 .replace("*", "%2A") // 星号 "*" 被替换为 "%2A"
                 .replace("%7E", "~"); // 波浪号 "%7E" 被替换为 "~"
+    }
+
+    private static String sha256Hex(String content) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return toHex(digest.digest(content.getBytes(StandardCharsets.UTF_8)));
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("SHA-256 计算失败", e);
+        }
+    }
+
+    private static String hmacSha256Hex(String secret, String content) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            return toHex(mac.doFinal(content.getBytes(StandardCharsets.UTF_8)));
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("HmacSHA256 计算失败", e);
+        }
+    }
+
+    private static String toHex(byte[] bytes) {
+        char[] hex = new char[bytes.length * 2];
+        final char[] digits = "0123456789abcdef".toCharArray();
+        for (int i = 0; i < bytes.length; i++) {
+            int value = bytes[i] & 0xFF;
+            hex[i * 2] = digits[value >>> 4];
+            hex[i * 2 + 1] = digits[value & 0x0F];
+        }
+        return new String(hex);
     }
 
 }

@@ -135,7 +135,24 @@
         </template>
       </el-table-column>
       <el-table-column label="信用分" align="center" prop="creditScore" width="100" />
-      <el-table-column label="信用等级" align="center" prop="creditLevel" width="120" />
+      <el-table-column label="信用等级" align="center" prop="creditLevel" width="120">
+        <template #default="{ row }">
+          {{ formatCreditLevel(row.creditLevel) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="综合评分" align="center" prop="compositeScore" width="110" />
+      <el-table-column label="好评率" align="center" width="110">
+        <template #default="{ row }">
+          {{ row.positiveRate !== undefined && row.positiveRate !== null ? `${row.positiveRate}%` : '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column label="好评优先池" align="center" width="120">
+        <template #default="{ row }">
+          <el-tag :type="row.inPositivePriorityPool ? 'success' : 'info'">
+            {{ formatBooleanYesNo(row.inPositivePriorityPool) }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
       <el-table-column label="操作" align="center" fixed="right" width="190">
         <template #default="{ row }">
@@ -176,7 +193,14 @@
       <el-descriptions-item label="服务商状态">{{ formatEnableStatus(detailData?.status) }}</el-descriptions-item>
       <el-descriptions-item label="接单状态">{{ formatAcceptStatus(detailData?.acceptStatus) }}</el-descriptions-item>
       <el-descriptions-item label="信用分 / 等级">
-        {{ detailData?.creditScore ?? '-' }} / {{ detailData?.creditLevel || '-' }}
+        {{ detailData?.creditScore ?? '-' }} / {{ formatCreditLevel(detailData?.creditLevel) }}
+      </el-descriptions-item>
+      <el-descriptions-item label="综合评分">{{ detailData?.compositeScore ?? '-' }}</el-descriptions-item>
+      <el-descriptions-item label="好评率">
+        {{ detailData?.positiveRate !== undefined && detailData?.positiveRate !== null ? `${detailData.positiveRate}%` : '-' }}
+      </el-descriptions-item>
+      <el-descriptions-item label="好评优先池">
+        {{ formatBooleanYesNo(detailData?.inPositivePriorityPool) }}
       </el-descriptions-item>
       <el-descriptions-item label="最近入驻单号">{{ detailData?.entryNo || '-' }}</el-descriptions-item>
       <el-descriptions-item label="最近入驻区域">{{ detailData?.regionCode || '-' }}</el-descriptions-item>
@@ -295,6 +319,7 @@ import {
   ENABLE_STATUS_OPTIONS,
   formatAcceptStatus,
   formatBooleanYesNo,
+  formatCreditLevel,
   formatEnableStatus
 } from '../utils/display'
 import MerchantInfoForm from './MerchantInfoForm.vue'

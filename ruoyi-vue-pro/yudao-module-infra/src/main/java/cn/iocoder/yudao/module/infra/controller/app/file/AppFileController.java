@@ -4,7 +4,10 @@ import cn.hutool.core.io.IoUtil;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.infra.controller.admin.file.vo.file.FileCreateReqVO;
 import cn.iocoder.yudao.module.infra.controller.admin.file.vo.file.FilePresignedUrlRespVO;
+import cn.iocoder.yudao.module.infra.controller.app.file.vo.AppFileCreateReqVO;
 import cn.iocoder.yudao.module.infra.controller.app.file.vo.AppFileUploadReqVO;
+import cn.iocoder.yudao.module.infra.controller.app.file.vo.AppFileUploadRespVO;
+import cn.iocoder.yudao.module.infra.dal.dataobject.file.FileDO;
 import cn.iocoder.yudao.module.infra.service.file.FileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -33,19 +36,25 @@ public class AppFileController {
     private FileService fileService;
 
     @PostMapping("/upload")
-    @Operation(summary = "上传文件")
+    @Operation(summary = "上传文件", description = "模式一：表单直传。接口会完成上传并落库，直接返回 fileId 和 url。"
+            + "首页发布需求等需要 attachmentFileIds 的场景，优先使用该接口即可。")
     @Parameter(name = "file", description = "文件附件", required = true,
             schema = @Schema(type = "string", format = "binary"))
     @PermitAll
-    public CommonResult<String> uploadFile(@Valid AppFileUploadReqVO uploadReqVO) throws Exception {
+    public CommonResult<AppFileUploadRespVO> uploadFile(@Valid AppFileUploadReqVO uploadReqVO) throws Exception {
         MultipartFile file = uploadReqVO.getFile();
         byte[] content = IoUtil.readBytes(file.getInputStream());
-        return success(fileService.createFile(content, file.getOriginalFilename(),
-                uploadReqVO.getDirectory(), file.getContentType()));
+        FileDO fileDO = fileService.createFileInfo(content, file.getOriginalFilename(),
+                uploadReqVO.getDirectory(), file.getContentType());
+        AppFileUploadRespVO respVO = new AppFileUploadRespVO();
+        respVO.setFileId(fileDO.getId());
+        respVO.setUrl(fileDO.getUrl());
+        return success(respVO);
     }
 
     @GetMapping("/presigned-url")
-    @Operation(summary = "获取文件预签名地址（上传）", description = "模式二：前端上传文件：用于前端直接上传七牛、阿里云 OSS 等文件存储器")
+    @Operation(summary = "获取文件预签名地址（上传）", description = "模式二第 1 步：获取前端直传文件存储的预签名地址。"
+            + "适用于七牛、阿里云 OSS 等对象存储。直传成功后，再调用 create 接口登记文件并获取 fileId。")
     @Parameters({
             @Parameter(name = "name", description = "文件名称", required = true),
             @Parameter(name = "directory", description = "文件目录")
@@ -57,10 +66,18 @@ public class AppFileController {
     }
 
     @PostMapping("/create")
-    @Operation(summary = "创建文件", description = "模式二：前端上传文件：配合 presigned-url 接口，记录上传了上传的文件")
+    @Operation(summary = "创建文件", description = "模式二第 2 步：前端直传成功后登记文件，接口返回 fileId。"
+            + "首页发布需求接口的 attachmentFileIds 就传这里返回的 fileId 列表。")
     @PermitAll
-    public CommonResult<Long> createFile(@Valid @RequestBody FileCreateReqVO createReqVO) {
-        return success(fileService.createFile(createReqVO));
+    public CommonResult<Long> createFile(@Valid @RequestBody AppFileCreateReqVO createReqVO) {
+        FileCreateReqVO serviceReqVO = new FileCreateReqVO();
+        serviceReqVO.setConfigId(createReqVO.getConfigId());
+        serviceReqVO.setPath(createReqVO.getPath());
+        serviceReqVO.setName(createReqVO.getName());
+        serviceReqVO.setUrl(createReqVO.getUrl());
+        serviceReqVO.setType(createReqVO.getType());
+        serviceReqVO.setSize(createReqVO.getSize());
+        return success(fileService.createFile(serviceReqVO));
     }
 
 }

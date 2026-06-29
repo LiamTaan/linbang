@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.walletwithdraw.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -79,12 +80,12 @@ public class WalletWithdrawRespVO {
     @ExcelProperty("实际到账金额")
     private BigDecimal realAmount;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.WITHDRAW_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "PENDING")
     @ExcelProperty(value = "状态", converter = DictConvert.class)
     @DictFormat("lb_withdraw_status") // TODO 代码优化：建议设置到对应的 DictTypeConstants 枚举类中
     private String status;
 
-    @Schema(description = "审核状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "PENDING")
     @ExcelProperty(value = "审核状态", converter = DictConvert.class)
     @DictFormat("lb_withdraw_status") // TODO 代码优化：建议设置到对应的 DictTypeConstants 枚举类中
     private String auditStatus;
@@ -108,6 +109,18 @@ public class WalletWithdrawRespVO {
     @Schema(description = "打款时间")
     @ExcelProperty("打款时间")
     private LocalDateTime payTime;
+
+    @Schema(description = "支付转账单 ID", example = "7001")
+    @ExcelProperty("支付转账单ID")
+    private Long payTransferId;
+
+    @Schema(description = "支付转账单号")
+    @ExcelProperty("支付转账单号")
+    private String payTransferNo;
+
+    @Schema(description = "出款失败原因")
+    @ExcelProperty("出款失败原因")
+    private String transferErrorMsg;
 
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("创建时间")

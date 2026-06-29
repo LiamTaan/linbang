@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.orderinfo.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -28,11 +29,7 @@ public class OrderInfoSaveReqVO {
     @NotNull(message = "类目ID不能为空")
     private Long categoryId;
 
-    @Schema(description = "订单标题", requiredMode = Schema.RequiredMode.REQUIRED)
-    @NotEmpty(message = "订单标题不能为空")
-    private String title;
-
-    @Schema(description = "计价方式", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = OpenApiSchemaConstants.PRICING_MODE, requiredMode = Schema.RequiredMode.REQUIRED, example = "FIXED_PRICE")
     @NotEmpty(message = "计价方式不能为空")
     private String pricingMode;
 
@@ -42,17 +39,15 @@ public class OrderInfoSaveReqVO {
     @Schema(description = "订单金额")
     private BigDecimal orderAmount;
 
-    @Schema(description = "工期描述")
+    @Schema(description = "服务时长说明，例如 1小时、半天、3天")
     private String serviceDurationDesc;
 
     @Schema(description = "数量")
     private BigDecimal quantity;
 
-    @Schema(description = "需求描述")
+    @Schema(description = "需求描述", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotEmpty(message = "需求描述不能为空")
     private String requireDesc;
-
-    @Schema(description = "地址ID", example = "30674")
-    private Long addressId;
 
     @Schema(description = "省")
     private String province;
@@ -83,7 +78,7 @@ public class OrderInfoSaveReqVO {
     @NotNull(message = "是否拆单不能为空")
     private Boolean needSplit;
 
-    @Schema(description = "拆单状态", example = "2")
+    @Schema(description = OpenApiSchemaConstants.ORDER_SPLIT_STATUS, example = "UNSPLIT")
     private String splitStatus;
 
     @Schema(description = "协议是否确认", requiredMode = Schema.RequiredMode.REQUIRED)
@@ -93,7 +88,34 @@ public class OrderInfoSaveReqVO {
     @Schema(description = "支付订单ID", example = "7048")
     private Long payOrderId;
 
-    @Schema(description = "订单状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = "关联商城消费记录 ID", example = "88001")
+    private Long mallConsumeRecordId;
+
+    @Schema(description = "关联商城消费记录编号", example = "MALL202606280001")
+    private String mallConsumeRecordNo;
+
+    @Schema(description = "关联商城消费金额，单位元", example = "88.80")
+    private BigDecimal mallConsumeAmount;
+
+    @Schema(description = "关联商城消费状态", example = "SUCCESS")
+    private String mallConsumeStatus;
+
+    @Schema(description = "推广抵扣金额，单位元", example = "12.50")
+    private BigDecimal promoteDeductAmount;
+
+    @Schema(description = "推广抵扣来源类型", example = "PROMOTER")
+    private String promoteDeductSourceType;
+
+    @Schema(description = "推广抵扣来源对象 ID", example = "9001")
+    private Long promoteDeductSourceId;
+
+    @Schema(description = "推广抵扣来源对象编号", example = "PROMO202606280001")
+    private String promoteDeductSourceNo;
+
+    @Schema(description = "抵扣后订单应付金额，单位元", example = "176.50")
+    private BigDecimal payableAmountAfterDeduct;
+
+    @Schema(description = OpenApiSchemaConstants.ORDER_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "PENDING_PAY")
     @NotEmpty(message = "订单状态不能为空")
     private String status;
 

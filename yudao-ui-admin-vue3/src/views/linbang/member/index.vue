@@ -218,7 +218,7 @@
               </el-col>
               <el-col :xs="24" :sm="12" :xl="6">
                 <el-card shadow="never" class="stat-card">
-                  <div class="stat-card__label">地址总数 / 默认地址</div>
+                  <div class="stat-card__label">地址数 / 默认地址</div>
                   <div class="stat-card__value">
                     {{ detailData.summary?.addressCount ?? 0 }} / {{ detailData.summary?.defaultAddressCount ?? 0 }}
                   </div>
@@ -332,7 +332,16 @@
               class="mb-16px"
             >
               <el-table-column label="ID" prop="id" width="90" />
-              <el-table-column label="资质类型" prop="qualificationType" width="120" />
+              <el-table-column label="资质类型" prop="qualificationType" width="120">
+                <template #default="{ row }">
+                  <dict-tag
+                    v-if="row.qualificationType"
+                    :type="DICT_TYPE.LB_QUALIFICATION_TYPE"
+                    :value="row.qualificationType"
+                  />
+                  <span v-else>-</span>
+                </template>
+              </el-table-column>
               <el-table-column label="资质名称" prop="qualificationName" min-width="160" />
               <el-table-column label="资质编号" prop="qualificationNo" width="160" />
               <el-table-column label="审核状态" prop="auditStatus" width="110">

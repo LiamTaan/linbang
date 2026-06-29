@@ -26,4 +26,10 @@ public class AppDictDataRespVO {
     @Schema(description = "字典类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "sys_common_sex")
     private String dictType;
 
+    @Schema(description = "颜色类型，default、primary、success、info、warning、danger", example = "primary")
+    private String colorType;
+
+    @Schema(description = "CSS 样式类名", example = "status-enable")
+    private String cssClass;
+
 }

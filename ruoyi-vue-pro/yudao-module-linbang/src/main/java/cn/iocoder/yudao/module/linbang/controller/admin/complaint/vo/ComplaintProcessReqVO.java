@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.complaint.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -14,7 +15,7 @@ public class ComplaintProcessReqVO {
     @NotNull(message = "投诉编号不能为空")
     private Long id;
 
-    @Schema(description = "处理状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "FINISHED")
+    @Schema(description = OpenApiSchemaConstants.COMPLAINT_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "FINISHED")
     @NotBlank(message = "处理状态不能为空")
     private String status;
 

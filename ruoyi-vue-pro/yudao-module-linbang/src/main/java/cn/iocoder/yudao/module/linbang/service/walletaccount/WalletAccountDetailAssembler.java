@@ -6,6 +6,7 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.walletaccount.WalletAccoun
 import cn.iocoder.yudao.module.linbang.dal.dataobject.walletbankcard.WalletBankCardDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.walletflow.WalletFlowDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.walletwithdraw.WalletWithdrawDO;
+import cn.hutool.core.util.StrUtil;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -93,6 +94,26 @@ final class WalletAccountDetailAssembler {
         }).collect(Collectors.toList());
     }
 
+    static List<WalletAccountDetailRespVO.WalletBillSimpleRespVO> buildBills(List<WalletFlowDO> flows) {
+        if (flows == null || flows.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return flows.stream().map(flow -> {
+            WalletAccountDetailRespVO.WalletBillSimpleRespVO respVO = new WalletAccountDetailRespVO.WalletBillSimpleRespVO();
+            respVO.setId(flow.getId());
+            respVO.setBillType(resolveBillType(flow.getBizType()));
+            respVO.setBillTitle(resolveBillTitle(flow.getBizType()));
+            respVO.setBizStatus(resolveBillBizStatus(flow.getBizType()));
+            respVO.setAmount(flow.getChangeAmount() == null ? BigDecimal.ZERO : flow.getChangeAmount().abs());
+            respVO.setAmountDirection(flow.getChangeAmount() != null && flow.getChangeAmount().compareTo(BigDecimal.ZERO) < 0 ? "OUT" : "IN");
+            respVO.setRelatedOrderId(flow.getRelatedOrderId());
+            respVO.setRelatedUnitId(flow.getRelatedUnitId());
+            respVO.setRemark(StrUtil.blankToDefault(flow.getRemark(), resolveBillTitle(flow.getBizType())));
+            respVO.setCreateTime(flow.getCreateTime());
+            return respVO;
+        }).collect(Collectors.toList());
+    }
+
     static List<WalletAccountDetailRespVO.WalletWithdrawSimpleRespVO> buildWithdraws(List<WalletWithdrawDO> withdraws) {
         if (withdraws == null || withdraws.isEmpty()) {
             return Collections.emptyList();
@@ -150,6 +171,56 @@ final class WalletAccountDetailAssembler {
             }
         }
         return total;
+    }
+
+    private static String resolveBillType(String bizType) {
+        if ("ORDER_PAY".equalsIgnoreCase(bizType)) {
+            return "ORDER";
+        }
+        if ("SETTLEMENT_UNLOCK".equalsIgnoreCase(bizType)) {
+            return "SETTLEMENT";
+        }
+        if ("WITHDRAW_APPLY".equalsIgnoreCase(bizType)
+                || "WITHDRAW_SUCCESS".equalsIgnoreCase(bizType)
+                || "WITHDRAW_FAILED".equalsIgnoreCase(bizType)) {
+            return "WITHDRAW";
+        }
+        if ("REFUND_SUCCESS".equalsIgnoreCase(bizType)) {
+            return "REFUND";
+        }
+        return "ADJUST";
+    }
+
+    private static String resolveBillTitle(String bizType) {
+        if ("ORDER_PAY".equalsIgnoreCase(bizType)) {
+            return "订单托管锁定";
+        }
+        if ("SETTLEMENT_UNLOCK".equalsIgnoreCase(bizType)) {
+            return "结算解锁";
+        }
+        if ("WITHDRAW_APPLY".equalsIgnoreCase(bizType)) {
+            return "提现冻结";
+        }
+        if ("WITHDRAW_SUCCESS".equalsIgnoreCase(bizType)) {
+            return "提现到账";
+        }
+        if ("WITHDRAW_FAILED".equalsIgnoreCase(bizType)) {
+            return "提现退回";
+        }
+        if ("REFUND_SUCCESS".equalsIgnoreCase(bizType)) {
+            return "退款冲减";
+        }
+        return bizType;
+    }
+
+    private static String resolveBillBizStatus(String bizType) {
+        if ("WITHDRAW_APPLY".equalsIgnoreCase(bizType)) {
+            return "PENDING";
+        }
+        if ("WITHDRAW_FAILED".equalsIgnoreCase(bizType)) {
+            return "FAILED";
+        }
+        return "SUCCESS";
     }
 
 }

@@ -69,5 +69,25 @@ public class OrderAbnormalDO extends BaseDO {
      */
     private String remark;
 
+    /**
+     * 终审状态
+     */
+    private String finalAuditStatus;
+
+    /**
+     * 终审人
+     */
+    private Long finalAuditBy;
+
+    /**
+     * 终审时间
+     */
+    private LocalDateTime finalAuditTime;
+
+    /**
+     * 终审意见
+     */
+    private String finalAuditRemark;
+
 
 }

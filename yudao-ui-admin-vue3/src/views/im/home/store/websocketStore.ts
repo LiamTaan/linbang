@@ -1,6 +1,7 @@
 import { defineStore, acceptHMRUpdate } from 'pinia'
 import { store } from '@/store'
-import { getCurrentUserId, getRefreshToken } from '@/utils/auth'
+import { getCurrentUserId } from '@/utils/auth'
+import { createAppSceneTicket } from '@/api/login/sceneTicket'
 
 import {
   ImWebSocketMessageType,
@@ -219,13 +220,7 @@ export const useImWebSocketStore = defineStore('imWebSocketStore', {
      * 调用契约：切账号 / token 刷新前必须先 `disconnect()` 再 `connect()`；
      * 本方法不感知 token 变化，旧 socket 在 CONNECTING / OPEN 状态会直接复用旧 token，可能拿到错误身份
      */
-    connect() {
-      // 鉴权用 refreshToken（生命周期更长；access token 过期后服务端会通过 frame 通知重登）
-      const refreshToken = getRefreshToken()
-      if (!refreshToken) {
-        console.warn('[IM WS] refreshToken 为空，跳过连接')
-        return
-      }
+    async connect() {
       // 旧 socket 还在 CONNECTING / OPEN 直接复用，避免叠加多份 onmessage 监听导致重复消息 / 提示音 / 已读上报
       const existingSocket = this.socket
       if (
@@ -243,7 +238,12 @@ export const useImWebSocketStore = defineStore('imWebSocketStore', {
         existingSocket.onclose = null
         this.socket = null
       }
-      const url = `${this.buildWsUrl()}/infra/ws?token=${refreshToken}`
+      const ticket = await createAppSceneTicket({ scene: 'WEBSOCKET' })
+      if (!ticket?.token) {
+        console.warn('[IM WS] websocket 场景票据为空，跳过连接')
+        return
+      }
+      const url = `${this.buildWsUrl()}/infra/ws?token=${encodeURIComponent(ticket.token)}`
       this.socket = new WebSocket(url)
 
       // 连接建立：标记上线 + 启动心跳保活；重连退避计数归零

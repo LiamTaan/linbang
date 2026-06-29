@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.creditrule.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -24,11 +25,11 @@ public class CreditRuleSaveReqVO {
     @NotNull(message = "分值变动不能为空")
     private Integer scoreChange;
 
-    @Schema(description = "触发类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.CREDIT_TRIGGER_TYPE, requiredMode = Schema.RequiredMode.REQUIRED, example = "AUTO")
     @NotEmpty(message = "触发类型不能为空")
     private String triggerType;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.CREDIT_RULE_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "ENABLE")
     @NotEmpty(message = "状态不能为空")
     private String status;
 

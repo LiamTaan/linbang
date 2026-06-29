@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.dividerule.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -19,7 +20,7 @@ public class DivideRuleSaveReqVO {
     @NotEmpty(message = "规则名称不能为空")
     private String ruleName;
 
-    @Schema(description = "城市等级")
+    @Schema(description = OpenApiSchemaConstants.CITY_LEVEL, example = "TIER_1")
     private String cityLevel;
 
     @Schema(description = "类目ID", example = "17167")
@@ -49,7 +50,8 @@ public class DivideRuleSaveReqVO {
     @NotNull(message = "最低提现金额不能为空")
     private BigDecimal minWithdrawAmount;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.ENABLE_DISABLE_STATUS, requiredMode = Schema.RequiredMode.REQUIRED,
+            example = "ENABLE")
     @NotEmpty(message = "状态不能为空")
     private String status;
 

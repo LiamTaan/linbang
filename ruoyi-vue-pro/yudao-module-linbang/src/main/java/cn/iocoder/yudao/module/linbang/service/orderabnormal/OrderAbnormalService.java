@@ -68,6 +68,13 @@ public interface OrderAbnormalService {
     Long markOrderAbnormal(@Valid OrderMarkAbnormalReqVO reqVO);
 
     /**
+     * 异常单终审
+     *
+     * @param reqVO 终审请求
+     */
+    void finalAuditOrderAbnormal(@Valid OrderAbnormalFinalAuditReqVO reqVO);
+
+    /**
      * 获得异常订单分页
      *
      * @param pageReqVO 分页查询

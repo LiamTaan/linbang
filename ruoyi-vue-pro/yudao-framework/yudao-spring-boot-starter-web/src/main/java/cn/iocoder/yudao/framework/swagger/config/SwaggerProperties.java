@@ -57,4 +57,20 @@ public class SwaggerProperties {
     @NotEmpty(message = "扫描的 license-url 不能为空")
     private String licenseUrl;
 
+    /**
+     * 是否在 OpenAPI 中导出全局安全方案。
+     *
+     * 关闭后，不再向文档写入 Authorization 的 security scheme，
+     * 可避免 Apifox 导入后为每个接口生成 Auth 配置。
+     */
+    private boolean enableSecurityScheme = true;
+
+    /**
+     * 是否为每个接口自动注入全局 Header 参数。
+     *
+     * 关闭后，不再为每个接口追加 tenant-id / Authorization 请求头参数，
+     * 可避免 Apifox 导入后重复生成局部 Header 配置。
+     */
+    private boolean enableGlobalHeaderParameters = true;
+
 }

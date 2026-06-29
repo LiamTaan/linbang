@@ -13,11 +13,19 @@ public class MessageRecordPageReqVO extends PageParam {
 
     private Long templateId;
 
+    private Long campaignId;
+
     private String receiverUserKeyword;
+
+    private String sceneCode;
+
+    private String messageCategory;
 
     private String channelType;
 
     private String bizType;
+
+    private String readStatus;
 
     private String sendStatus;
 

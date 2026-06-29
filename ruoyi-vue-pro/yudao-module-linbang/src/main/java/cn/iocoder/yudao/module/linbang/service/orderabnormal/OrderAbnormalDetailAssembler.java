@@ -22,7 +22,6 @@ final class OrderAbnormalDetailAssembler {
         OrderAbnormalDetailRespVO.OrderSimpleRespVO respVO = new OrderAbnormalDetailRespVO.OrderSimpleRespVO();
         respVO.setId(order.getId());
         respVO.setOrderNo(order.getOrderNo());
-        respVO.setTitle(order.getTitle());
         respVO.setStatus(order.getStatus());
         respVO.setUserId(order.getUserId());
         respVO.setMerchantId(order.getMerchantId());

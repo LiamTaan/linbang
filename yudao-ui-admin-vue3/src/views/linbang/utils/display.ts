@@ -1,7 +1,10 @@
 export const CHANNEL_TYPE_OPTIONS = [
+  { label: '站内弹窗/消息中心', value: 'APP_POPUP' },
+  { label: '公众号模板', value: 'WECHAT_MP_TEMPLATE' },
+  { label: '短信', value: 'SMS' },
+  { label: 'App 语音朗读', value: 'APP_VOICE' },
   { label: '站内信', value: 'IN_APP' },
   { label: '站内消息', value: 'INTERNAL_MESSAGE' },
-  { label: '短信', value: 'SMS' },
   { label: '微信订阅', value: 'WX_SUBSCRIBE' },
   { label: '支付宝消息', value: 'ALIPAY' }
 ]
@@ -133,6 +136,9 @@ export const MATCH_STATUS_OPTIONS = [
 ]
 
 const CHANNEL_TYPE_LABELS: Record<string, string> = {
+  APP_POPUP: '站内弹窗/消息中心',
+  WECHAT_MP_TEMPLATE: '公众号模板',
+  APP_VOICE: 'App 语音朗读',
   IN_APP: '站内信',
   INTERNAL_MESSAGE: '站内消息',
   SMS: '短信',
@@ -218,9 +224,60 @@ const ACCEPT_STATUS_LABELS: Record<string, string> = {
   DISABLE: '暂停接单'
 }
 
+const CREDIT_LEVEL_LABELS: Record<string, string> = {
+  EXCELLENT: '优秀',
+  NORMAL: '正常',
+  WARNING: '预警',
+  DISABLED: '禁用'
+}
+
 const TEMPLATE_TYPE_LABELS: Record<string, string> = {
   ORDER: '订单',
-  WALLET: '钱包'
+  WALLET: '钱包',
+  BIZ: '业务通知'
+}
+
+const MESSAGE_CATEGORY_LABELS: Record<string, string> = {
+  SYSTEM: '系统',
+  FINANCE: '资金',
+  ORDER: '订单',
+  COMPLIANCE: '合规',
+  DISPUTE: '纠纷',
+  MARKETING: '营销'
+}
+
+const CAMPAIGN_SOURCE_LABELS: Record<string, string> = {
+  USER_DIRECTED: '用户定向申请',
+  ADMIN_DIRECTED: '管理员定向',
+  SYSTEM_TRIGGER: '系统触发',
+  AD: '广告投放'
+}
+
+const CAMPAIGN_AUDIT_LABELS: Record<string, string> = {
+  PENDING: '待审核',
+  APPROVED: '已通过',
+  REJECTED: '已驳回',
+  CANCELLED: '已取消'
+}
+
+const CAMPAIGN_TARGET_MODE_LABELS: Record<string, string> = {
+  FULL_PLATFORM: '全平台',
+  JURISDICTION: '辖区',
+  CUSTOM_FILTER: '自定义筛选'
+}
+
+const EXECUTE_STATUS_LABELS: Record<string, string> = {
+  PENDING: '待执行',
+  PROCESSING: '执行中',
+  SUCCESS: '成功',
+  PARTIAL_FAILED: '部分失败',
+  FAILED: '失败',
+  CANCELLED: '已取消'
+}
+
+const OPTIMIZATION_REF_TYPE_LABELS: Record<string, string> = {
+  TEMPLATE: '模板',
+  CAMPAIGN: '活动'
 }
 
 const RISK_RULE_GROUP_LABELS: Record<string, string> = {
@@ -432,7 +489,26 @@ export const formatEnableStatus = (value?: string) => formatValueByMap(value, EN
 
 export const formatAcceptStatus = (value?: string) => formatValueByMap(value, ACCEPT_STATUS_LABELS)
 
+export const formatCreditLevel = (value?: string) => formatValueByMap(value, CREDIT_LEVEL_LABELS)
+
 export const formatTemplateType = (value?: string) => formatValueByMap(value, TEMPLATE_TYPE_LABELS)
+
+export const formatMessageCategory = (value?: string) => formatValueByMap(value, MESSAGE_CATEGORY_LABELS)
+
+export const formatCampaignSourceType = (value?: string) =>
+  formatValueByMap(value, CAMPAIGN_SOURCE_LABELS)
+
+export const formatCampaignAuditStatus = (value?: string) =>
+  formatValueByMap(value, CAMPAIGN_AUDIT_LABELS)
+
+export const formatCampaignTargetMode = (value?: string) =>
+  formatValueByMap(value, CAMPAIGN_TARGET_MODE_LABELS)
+
+export const formatExecuteStatus = (value?: string) =>
+  formatValueByMap(value, EXECUTE_STATUS_LABELS)
+
+export const formatOptimizationRefType = (value?: string) =>
+  formatValueByMap(value, OPTIMIZATION_REF_TYPE_LABELS)
 
 export const formatRiskRuleGroup = (value?: string) => formatValueByMap(value, RISK_RULE_GROUP_LABELS)
 
@@ -541,3 +617,10 @@ export const formatOrderStatus = (value?: string) => formatValueByMap(value, ORD
 
 export const formatOrderUnitStatus = (value?: string) =>
   formatValueByMap(value, ORDER_UNIT_STATUS_LABELS)
+
+export const formatPercent = (value?: number) => {
+  if (value === undefined || value === null) {
+    return '-'
+  }
+  return `${(value * 100).toFixed(2)}%`
+}

@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.framework.websocket.config;
 
+import cn.iocoder.yudao.framework.common.biz.system.oauth2.OAuth2TokenCommonApi;
 import cn.iocoder.yudao.framework.mq.redis.config.YudaoRedisMQConsumerAutoConfiguration;
 import cn.iocoder.yudao.framework.mq.redis.core.RedisMQTemplate;
 import cn.iocoder.yudao.framework.websocket.core.handler.JsonWebSocketMessageHandler;
@@ -59,8 +60,8 @@ public class YudaoWebSocketAutoConfiguration {
     }
 
     @Bean
-    public HandshakeInterceptor handshakeInterceptor() {
-        return new LoginUserHandshakeInterceptor();
+    public HandshakeInterceptor handshakeInterceptor(OAuth2TokenCommonApi oauth2TokenApi) {
+        return new LoginUserHandshakeInterceptor(oauth2TokenApi);
     }
 
     @Bean

@@ -16,6 +16,9 @@ export interface MerchantInfo {
   acceptStatus?: string
   creditScore?: number
   creditLevel: string
+  compositeScore?: number
+  positiveRate?: number
+  inPositivePriorityPool?: boolean
   createTime?: string | Dayjs
 }
 

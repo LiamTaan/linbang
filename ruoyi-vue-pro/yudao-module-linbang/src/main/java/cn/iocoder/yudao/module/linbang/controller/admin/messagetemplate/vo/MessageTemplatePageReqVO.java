@@ -15,6 +15,10 @@ public class MessageTemplatePageReqVO extends PageParam {
 
     private String templateName;
 
+    private String sceneCode;
+
+    private String messageCategory;
+
     private String templateType;
 
     private String channelType;

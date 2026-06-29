@@ -16,4 +16,6 @@ public interface MemberQualificationService {
 
     void auditQualification(@Valid MemberQualificationAuditReqVO reqVO);
 
+    void recomputePriorityEnabled(Long id);
+
 }

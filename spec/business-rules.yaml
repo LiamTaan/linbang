@@ -1,368 +1,153 @@
-meta:
-  project_name_cn: "邻里互助"
-  project_name_en: "LinBang"
-  project_type: "local-life-neighborhood-help"
-  architecture: "single-app"
-  backend_repo: "https://github.com/YunaiV/ruoyi-vue-pro"
-  admin_repo: "https://github.com/yudaocode/yudao-ui-admin-vue3"
-  notes:
-    - "禁止切换到 yudao-boot-mini"
-    - "禁止切换到 yudao-cloud-mini"
-    - "支付必须复用 yudao-module-pay"
-    - "地图统一使用高德"
+project: 邻里互助
+module: 用户中心与资金域
+version: 2026-06-28
 
-single_source_of_truth:
-  rules_file: "spec/business-rules.yaml"
-  api_file: "spec/openapi-structure.md"
-  requirement_file: "docs/邻里互助项目需求总稿.md"
-
-roles:
-  app_roles:
-    - code: "USER"
-      name: "普通用户"
-    - code: "MERCHANT"
-      name: "服务商"
-    - code: "PROMOTER"
-      name: "推广员"
-    - code: "PARTNER"
-      name: "区域合作商"
-  admin_roles:
-    - code: "SUPER_ADMIN"
-      name: "平台超级管理员"
-    - code: "OPERATOR"
-      name: "运营管理员"
-    - code: "FINANCE"
-      name: "财务管理员"
-    - code: "RISK_ADMIN"
-      name: "风控管理员"
-    - code: "AUDITOR"
-      name: "审核专员"
-    - code: "PARTNER_ADMIN"
-      name: "区域合作商后台角色"
-
-permissions:
-  dimensions:
-    - "menu"
-    - "button"
-    - "data"
-    - "region"
-  partner_constraints:
-    - "只能查看辖区内用户、订单、投诉、入驻申请"
-    - "可做入驻初审，不可做终审"
-    - "可查看辖区推广数据，不可查看全平台财务总账"
-
-objects:
-  core:
-    - "user"
-    - "merchant"
-    - "service_category"
-    - "address"
-    - "order"
-    - "order_unit"
-    - "pay_order"
-    - "pay_refund"
-    - "wallet_account"
-    - "wallet_flow"
-    - "withdraw_order"
-    - "bank_card"
-    - "complaint"
-    - "appeal"
-    - "review"
-    - "credit_record"
-    - "promoter"
-    - "commission_order"
-    - "partner"
-
-api:
-  app_prefix: "/app-api"
-  admin_prefix: "/admin-api"
-  naming:
-    list: "getXxxPage"
-    detail: "getXxx"
-    create: "createXxx"
-    update: "updateXxx"
-    delete: "deleteXxx"
-    export: "exportXxxExcel"
-    audit: "auditXxx"
-  response_rules:
-    - "普通接口返回 CommonResult<T>"
-    - "分页接口使用框架统一分页对象"
-    - "禁止自造另一套响应结构"
-
-field_rules:
-  conventions:
-    id_fields: "业务主键使用 XxxId 命名；通用主键在对象内部可用 id"
-    time_fields:
-      - "createTime"
-      - "updateTime"
-    status_fields: "统一使用 status"
-    audit_fields:
-      - "auditStatus"
-      - "auditRemark"
-      - "rejectReason"
-  address_fields:
-    - "province"
-    - "city"
-    - "district"
-    - "street"
-    - "detailAddress"
-    - "longitude"
-    - "latitude"
-    - "adcode"
-
-status_dict:
-  real_name_status:
-    - code: "PENDING"
-      label: "待审核"
-    - code: "APPROVED"
-      label: "已通过"
-    - code: "REJECTED"
-      label: "已驳回"
-  merchant_entry_status:
-    - code: "PENDING"
-      label: "待审核"
-    - code: "FIRST_APPROVED"
-      label: "初审通过"
-    - code: "APPROVED"
-      label: "终审通过"
-    - code: "REJECTED"
-      label: "已驳回"
-  order_status:
-    - code: "PENDING_PAY"
-      label: "待支付"
-    - code: "PENDING_ACCEPT"
-      label: "待接单"
-    - code: "ACCEPTED"
-      label: "已接单"
-    - code: "SERVING"
-      label: "服务中"
-    - code: "PENDING_CONFIRM"
-      label: "待确认"
-    - code: "AFTER_SALE"
-      label: "售后中"
-    - code: "FINISHED"
-      label: "已完成"
-    - code: "REFUNDED"
-      label: "已退款"
-    - code: "CLOSED"
-      label: "已关闭"
-  order_unit_status:
-    - code: "PENDING_CREATE"
-      label: "待生成"
-    - code: "PENDING_ACCEPT"
-      label: "待接单"
-    - code: "ACCEPTED"
-      label: "已接单"
-    - code: "SERVING"
-      label: "服务中"
-    - code: "PENDING_CONFIRM"
-      label: "待验收"
-    - code: "FINISHED"
-      label: "已完成"
-    - code: "APPEALING"
-      label: "申诉中"
-    - code: "REFUNDED"
-      label: "已退款"
-    - code: "CLOSED"
-      label: "已关闭"
-  pay_status:
-    - code: "WAITING"
-      label: "待支付"
-    - code: "SUCCESS"
-      label: "支付成功"
-    - code: "FAILED"
-      label: "支付失败"
-    - code: "CLOSED"
-      label: "已关闭"
-  refund_status:
-    - code: "PENDING"
-      label: "待审核"
-    - code: "APPROVED"
-      label: "已通过"
-    - code: "REJECTED"
-      label: "已驳回"
-    - code: "SUCCESS"
-      label: "退款成功"
-    - code: "FAILED"
-      label: "退款失败"
-  withdraw_status:
-    - code: "PENDING"
-      label: "待审核"
-    - code: "APPROVED"
-      label: "审核通过"
-    - code: "REJECTED"
-      label: "审核驳回"
-    - code: "SUCCESS"
-      label: "打款成功"
-    - code: "FAILED"
-      label: "打款失败"
-  complaint_status:
-    - code: "PENDING"
-      label: "待受理"
-    - code: "PROCESSING"
-      label: "处理中"
-    - code: "FINISHED"
-      label: "已完结"
-    - code: "REJECTED"
-      label: "已驳回"
-  appeal_status:
-    - code: "PENDING"
-      label: "待审核"
-    - code: "PROCESSING"
-      label: "处理中"
-    - code: "APPROVED"
-      label: "通过"
-    - code: "REJECTED"
-      label: "驳回"
-    - code: "FINISHED"
-      label: "已完结"
-  role_apply_status:
-    - code: "PENDING"
-      label: "待审核"
-    - code: "APPROVED"
-      label: "已通过"
-    - code: "REJECTED"
-      label: "已驳回"
-  price_report_audit_status:
-    - code: "PENDING"
-      label: "待审核"
-    - code: "APPROVED"
-      label: "已通过"
-    - code: "REJECTED"
-      label: "已驳回"
-  message_push_task_status:
-    - code: "PENDING"
-      label: "待执行"
-    - code: "PROCESSING"
-      label: "执行中"
-    - code: "SUCCESS"
-      label: "执行成功"
-    - code: "PARTIAL_FAILED"
-      label: "部分失败"
-    - code: "FAILED"
-      label: "执行失败"
-
-payment:
-  channels:
-    - "WECHAT_PAY"
-    - "ALIPAY"
-    - "BANK_CARD_WITHDRAW"
-  implementation:
-    module: "yudao-module-pay"
+rules:
+  user_center:
+    order_management:
+      business_categories:
+        WAIT_ACCEPT: "待接；主订单状态 PENDING_ACCEPT"
+        IN_SERVICE: "服务中；主订单状态 ACCEPTED、SERVING、PENDING_CONFIRM"
+        FINISHED: "已完成；主订单状态 FINISHED 且当前用户已评价"
+        AFTER_SALE: "售后；主订单状态 AFTER_SALE 或存在投诉/申诉处理中"
+        WAIT_REVIEW: "待评价；派生分类，主订单状态 FINISHED 且当前用户尚未提交评价"
+        WAIT_PAY: "待付款；主订单状态 PENDING_PAY"
+        REFUNDED: "已退款；主订单状态 REFUNDED"
+      update_rule: "仅允许在待付款、待接单阶段修改地址、预约说明、需求描述、附件、服务时长类字段"
+      cancel_rule: "仅允许在待付款、待接单阶段取消，必须记录取消原因和操作日志"
+      verify_rule:
+        scope: "订单单元级一次性核销，不提供主订单级核销"
+        status_flow:
+          - PENDING
+          - VERIFIED
+        allowed_unit_status:
+          - ACCEPTED
+          - SERVING
+          - PENDING_CONFIRM
+        effects:
+          - "核销成功后单元状态变更为 FINISHED"
+          - "如存在后续锁定单元，则自动解锁下一单元"
+          - "联动主订单状态重算、资金结算、推广收益结算"
+    account_management:
+      overview_fields:
+        - availableAmount
+        - frozenAmount
+        - escrowAmount
+        - totalPromoteIncome
+        - pendingPromoteIncome
+      wallet_bill_scope:
+        - ORDER_PAY
+        - SETTLEMENT_UNLOCK
+        - WITHDRAW_APPLY
+        - WITHDRAW_SUCCESS
+        - WITHDRAW_FAILED
+        - REFUND_SUCCESS
+      receiving_account_rule: "收款账户统一复用银行卡实体，对用户端语义展示为收款账户"
+      card_package_rule: "优惠券与积分复用既有 member / promotion 能力，不重复建模"
+    qualification_and_auth:
+      qualification_reminder_rule: "资质到期提醒写入站内消息记录，并对用户端开放提醒查询"
+      auth_summary_rule: "认证进度统一返回实名、资质、证件状态与即将到期标记"
+    reminder:
+      custom_reminder_rule: "用户自定义提醒独立落 lb_user_reminder，支持生日提醒、自定义事件提醒的真实 CRUD"
+      reminder_types:
+        - BIRTHDAY
+        - QUALIFICATION_EXPIRY
+        - CUSTOM_EVENT
+      repeat_types:
+        - NONE
+        - YEARLY
+      history_rule: "提醒触发历史复用站内消息记录 lb_message_record，不重复建提醒历史表"
+    reward_order:
+      minimum_scope_rule: "本轮我的悬赏最小闭环复用晒单悬赏申请 lb_showcase_reward，不额外新建平行悬赏主表"
+      publish_scope:
+        - MY_PUBLISHED
+      participate_scope:
+        - MY_PARTICIPATED
+        - PARTICIPATION_RECORD
+      audit_rule: "悬赏申请提交后进入 PENDING，后台审核通过后开启有限期优先展示资格"
+    role_apply:
+      role_codes:
+        - PROMOTER
+        - PARTNER
+        - PLATFORM_OPERATOR
+      promoter_fields:
+        - resourceDesc
+        - expectedConversionDesc
+      partner_fields:
+        - resourceDesc
+      platform_operator_fields:
+        - abilityDesc
+        - availableTimeDesc
+      team_stats_rule: "两级分销统计仅做直推一级与间推二级只读展示，不改动现有结算链路"
+  payment:
+    order_status_flow:
+      - PENDING_PAY
+      - PENDING_ACCEPT
+      - ACCEPTED
+      - SERVING
+      - PENDING_CONFIRM
+      - FINISHED
+      - AFTER_SALE
+      - REFUNDED
+      - CLOSED
+    pay_success:
+      wallet_effect: "订单金额进入托管金额 escrowAmount，不进入可提现金额"
+      order_effect: "订单进入待接单"
+  escrow:
+    states:
+      - LOCKED
+      - UNLOCKED
+      - REFUNDED
+    lock_rule: "用户支付成功后按订单/单元生成托管凭证"
+    unlock_rule: "单元完工且用户确认后，对应单元托管金额解锁进入可提现金额"
+  withdraw:
+    min_amount: 10.00
+    require_real_name: true
+    require_enabled_bank_card: true
+    status_flow:
+      - PENDING
+      - APPROVED
+      - SUCCESS
+      - REJECTED
+      - FAILED
     rules:
-      - "订单支付优先微信支付和支付宝支付"
-      - "银行卡用于绑卡与提现"
-      - "如需银行卡直付，单独评估支付通道"
-      - "支付成功回调必须幂等"
-      - "退款回调必须幂等"
-
-map:
-  provider: "AMAP"
-  frontend_api: "JS API"
-  backend_api: "Web Service API"
-  capabilities:
-    - "location"
-    - "geocode"
-    - "reverse_geocode"
-    - "distance"
-    - "nearby_search"
-    - "district_resolve"
-
-security:
-  dynamic_key:
-    required: true
-    mode: "admin-second-password-with-short-lived-token"
-    token_ttl_minutes: 5
-    token_bind_scope:
-      - "admin_user_id"
-    config_keys:
-      - "linbang.admin.dynamic-key.password"
-    protected_operations:
-      - "merchant_entry_audit"
-      - "wallet_withdraw_audit"
-      - "pay_refund_audit"
-      - "partner_price_report_audit"
-      - "divide_rule_create"
-      - "divide_rule_update"
-      - "risk_rule_create"
-      - "risk_rule_update"
-      - "risk_rule_delete"
-      - "platform_config_create"
-      - "platform_config_update"
-
-qualification_expiry:
-  reminder_days:
-    - 7
-    - 1
-  reminder_channel:
-    - "INTERNAL_MESSAGE"
-  expiry_action:
-    merchant_accept_status: "DISABLE"
-    require_operate_log: true
-    require_message_record: true
-  recovery_rule:
-    - "资质更新并审核通过后，允许人工或业务逻辑恢复接单状态"
-  runtime_validation:
-    - "抢单或接单前必须校验服务商资质未过期"
-    - "已过期服务商不得进入接单成功状态"
-
-split_engine:
-  required: true
-  triggers:
-    - "amount_threshold"
-    - "quantity_threshold"
-    - "forced_by_category"
-    - "forced_by_project_type"
-    - "user_selected"
-  rules:
-    max_unit_amount: 200
-    next_unit_locked_before_prev_finished: true
-    lock_release_requires_admin_or_prev_finished: true
-    record_hit_rule_log: true
-  modes:
-    - "by_process"
-    - "by_progress"
-    - "by_quantity"
-    - "by_content"
-    - "by_multi_person"
-  linkage:
-    - "所有单元完成后主订单才可完成"
-    - "任一单元申诉中则主订单进入售后中"
-    - "任一单元退款完成则主订单金额与状态需重算"
-
-risk_config:
-  configurable_items:
-    - "split_amount_threshold"
-    - "split_quantity_threshold"
-    - "max_unit_amount"
-    - "accept_countdown_seconds"
-    - "flow_timeout_minutes"
-    - "cancel_limit_count"
-    - "cancel_limit_duration"
-    - "large_order_deposit_threshold"
-    - "credit_score_deduct_rules"
-    - "good_review_add_rules"
-    - "auto_review_hours"
-    - "appeal_valid_days"
-
-delivery_gate:
-  page_done_definition:
-    - "接入真实接口"
-    - "使用真实字段渲染"
-    - "覆盖真实业务状态"
-    - "覆盖真实权限校验"
-    - "覆盖真实错误提示"
-    - "不依赖长期 mock 数据"
-  not_done_examples:
-    - "只有假数据表格"
-    - "只有按钮壳子"
-    - "详情字段与真实接口不一致"
-
-development_sequence:
-  - "business_rules"
-  - "database_schema"
-  - "api_contract"
-  - "backend_implementation"
-  - "frontend_integration"
-  - "joint_testing"
-  - "automated_testing"
+      - "申请时从 availableAmount 冻结到 frozenAmount"
+      - "审核通过后必须创建真实转账单"
+      - "转账成功后扣减 frozenAmount"
+      - "转账失败或审核驳回后退回 availableAmount"
+  refund:
+    allowed_order_status:
+      - PENDING_ACCEPT
+      - ACCEPTED
+    allowed_unit_status:
+      - PENDING_ACCEPT
+      - ACCEPTED
+    status_flow:
+      - PENDING
+      - APPROVED
+      - REJECTED
+      - SUCCESS
+      - FAILED
+    rules:
+      - "退款成功后优先冲减 escrowAmount，再同步订单/单元状态"
+      - "退款必须支持整单和单元维度"
+  divide:
+    rule_source: lb_divide_rule
+    dimensions:
+      - cityLevel
+      - categoryId
+    allocation_targets:
+      - merchant
+      - platform
+      - partner
+      - promoter
+      - tax
+    tax_rule:
+      licensed: "不额外代扣个税"
+      unlicensed: "按 taxWithholdRate 代扣"
+  app_config:
+    required_keys:
+      - linbang.app.tax-reminder
+      - linbang.app.license-agent-entry-url
+      - linbang.app.license-agent-entry-title
+      - linbang.app.withdraw-notice

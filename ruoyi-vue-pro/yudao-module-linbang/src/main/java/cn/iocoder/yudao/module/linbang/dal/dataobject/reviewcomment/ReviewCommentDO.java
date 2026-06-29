@@ -3,6 +3,7 @@ package cn.iocoder.yudao.module.linbang.dal.dataobject.reviewcomment;
 import lombok.*;
 import java.time.LocalDateTime;
 import com.baomidou.mybatisplus.annotation.*;
+import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
 
 /**
  * 评价 DO
@@ -12,10 +13,11 @@ import com.baomidou.mybatisplus.annotation.*;
 @TableName("lb_review")
 @KeySequence("lb_review_seq") // 用于 Oracle、PostgreSQL、Kingbase、DB2、H2 数据库的主键自增。如果是 MySQL 等数据库，可不写。
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReviewCommentDO {
+public class ReviewCommentDO extends BaseDO {
 
     /**
      * 主键
@@ -56,9 +58,21 @@ public class ReviewCommentDO {
     private String status;
 
     /**
-     * 创建时间
+     * 自动评价文字是否已补充
      */
-    private LocalDateTime createTime;
+    private Boolean isContentSupplemented;
+    /**
+     * 评价可编辑截止时间
+     */
+    private LocalDateTime editDeadlineTime;
+    /**
+     * 最后编辑时间
+     */
+    private LocalDateTime lastEditTime;
+    /**
+     * 编辑次数
+     */
+    private Integer editCount;
 
 
 }

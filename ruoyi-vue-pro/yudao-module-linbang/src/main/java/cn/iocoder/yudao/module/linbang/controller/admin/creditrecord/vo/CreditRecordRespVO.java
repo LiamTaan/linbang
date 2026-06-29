@@ -2,6 +2,7 @@ package cn.iocoder.yudao.module.linbang.controller.admin.creditrecord.vo;
 
 import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -72,23 +73,23 @@ public class CreditRecordRespVO {
     @ExcelProperty("变动后分值")
     private Integer afterScore;
 
-    @Schema(description = "触发类型")
+    @Schema(description = OpenApiSchemaConstants.CREDIT_TRIGGER_TYPE, example = "AUTO")
     @ExcelProperty("触发类型")
     private String triggerType;
 
-    @Schema(description = "业务类型")
+    @Schema(description = OpenApiSchemaConstants.CREDIT_BIZ_TYPE, example = "ORDER")
     @ExcelProperty("业务类型")
     private String bizType;
 
-    @Schema(description = "业务ID")
+    @Schema(description = "业务 ID，关联订单、单元、投诉、申诉或提现等业务主键", example = "1001")
     @ExcelProperty("业务ID")
     private Long bizId;
 
-    @Schema(description = "业务对象")
+    @Schema(description = "业务对象展示文案，例如订单号、单元号、投诉单号", example = "LB202606260001")
     @ExcelProperty("业务对象")
     private String bizDisplay;
 
-    @Schema(description = "备注")
+    @Schema(description = "备注，记录加减分原因说明")
     @ExcelProperty("备注")
     private String remark;
 

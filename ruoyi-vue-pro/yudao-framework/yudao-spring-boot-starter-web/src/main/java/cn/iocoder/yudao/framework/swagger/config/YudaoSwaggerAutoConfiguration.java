@@ -54,14 +54,15 @@ public class YudaoSwaggerAutoConfiguration {
 
     @Bean
     public OpenAPI createApi(SwaggerProperties properties) {
-        Map<String, SecurityScheme> securitySchemas = buildSecuritySchemes();
         OpenAPI openAPI = new OpenAPI()
-                // 接口信息
-                .info(buildInfo(properties))
-                // 接口安全配置
-                .components(new Components().securitySchemes(securitySchemas))
-                .addSecurityItem(new SecurityRequirement().addList(HttpHeaders.AUTHORIZATION));
-        securitySchemas.keySet().forEach(key -> openAPI.addSecurityItem(new SecurityRequirement().addList(key)));
+                .info(buildInfo(properties));
+        if (properties.isEnableSecurityScheme()) {
+            Map<String, SecurityScheme> securitySchemas = buildSecuritySchemes();
+            openAPI.components(new Components().securitySchemes(securitySchemas))
+                    .addSecurityItem(new SecurityRequirement().addList(HttpHeaders.AUTHORIZATION));
+            securitySchemas.keySet().forEach(key ->
+                    openAPI.addSecurityItem(new SecurityRequirement().addList(key)));
+        }
         return openAPI;
     }
 
@@ -131,9 +132,6 @@ public class YudaoSwaggerAutoConfiguration {
                                                      List<String> packagesToScan) {
         GroupedOpenApi.Builder builder = GroupedOpenApi.builder()
                 .group(group)
-                .addOperationCustomizer((operation, handlerMethod) -> operation
-                        .addParametersItem(buildTenantHeaderParameter())
-                        .addParametersItem(buildSecurityHeaderParameter()))
                 .addOperationCustomizer(buildOperationIdCustomizer());
         if (pathsToMatch != null && !pathsToMatch.isEmpty()) {
             builder.pathsToMatch(pathsToMatch.toArray(new String[0]));
@@ -142,6 +140,17 @@ public class YudaoSwaggerAutoConfiguration {
             builder.packagesToScan(packagesToScan.toArray(new String[0]));
         }
         return builder.build();
+    }
+
+    @Bean
+    public OperationCustomizer globalHeaderOperationCustomizer(SwaggerProperties properties) {
+        return (operation, handlerMethod) -> {
+            if (!properties.isEnableGlobalHeaderParameters()) {
+                return operation;
+            }
+            return operation.addParametersItem(buildTenantHeaderParameter())
+                    .addParametersItem(buildSecurityHeaderParameter());
+        };
     }
 
     /**

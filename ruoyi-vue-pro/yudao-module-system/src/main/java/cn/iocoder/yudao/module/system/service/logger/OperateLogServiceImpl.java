@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 
 /**
  * 操作日志 Service 实现类
@@ -45,6 +46,11 @@ public class OperateLogServiceImpl implements OperateLogService {
     @Override
     public PageResult<OperateLogDO> getOperateLogPage(OperateLogPageReqDTO pageReqDTO) {
         return operateLogMapper.selectPage(pageReqDTO);
+    }
+
+    @Override
+    public int cleanOperateLogsBefore(LocalDateTime expireTime) {
+        return operateLogMapper.deleteByCreateTimeBefore(expireTime);
     }
 
 }

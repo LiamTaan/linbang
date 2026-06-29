@@ -2,14 +2,18 @@
   <doc-alert title="大屏设计器" url="https://doc.iocoder.cn/screen/" />
 
   <ContentWrap :bodyStyle="{ padding: '0px' }" class="!mb-0">
-    <IFrame :src="src" />
+    <IFrame v-if="src" :src="src" />
   </ContentWrap>
 </template>
 <script lang="ts" setup>
-import { getRefreshToken } from '@/utils/auth'
+import { createAdminSceneTicket } from '@/api/login/sceneTicket'
 
 defineOptions({ name: 'JimuBI' })
 
-// 使用 getRefreshToken() 方法，而不使用 getAccessToken() 方法的原因：积木报表无法方便的刷新访问令牌
-const src = ref(import.meta.env.VITE_BASE_URL + '/drag/list?token=' + getRefreshToken())
+const src = ref('')
+
+onMounted(async () => {
+  const ticket = await createAdminSceneTicket({ scene: 'GOVIEW' })
+  src.value = `${import.meta.env.VITE_BASE_URL}/drag/list?token=${encodeURIComponent(ticket.token)}`
+})
 </script>

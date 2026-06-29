@@ -48,9 +48,15 @@
         </el-select>
       </el-form-item>
       <el-form-item label="拦截级别" prop="blockLevel">
+        <el-select v-model="queryParams.blockLevel" placeholder="请选择拦截级别" clearable class="!w-240px">
+          <el-option label="直接拦截" value="BLOCK" />
+          <el-option label="人工复核" value="REVIEW" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="适用场景" prop="sceneType">
         <el-input
-          v-model="queryParams.blockLevel"
-          placeholder="请输入拦截级别"
+          v-model="queryParams.sceneType"
+          placeholder="如 MESSAGE/COMMENT/PROMOTE"
           clearable
           @keyup.enter="handleQuery"
           class="!w-240px"
@@ -138,6 +144,8 @@
         </template>
       </el-table-column>
       <el-table-column label="拦截级别" align="center" prop="blockLevel" />
+      <el-table-column label="适用场景" align="center" prop="sceneType" min-width="180" />
+      <el-table-column label="替换文案" align="center" prop="replaceText" width="120" />
       <el-table-column label="状态" align="center" prop="status">
         <template #default="{ row }">
           {{ formatEnableStatus(row.status) }}
@@ -228,6 +236,7 @@ const queryParams = reactive({
   wordType: undefined,
   matchType: undefined,
   blockLevel: undefined,
+  sceneType: undefined,
   status: undefined,
   createTime: []
 })

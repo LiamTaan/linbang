@@ -8,11 +8,15 @@ import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppAppealRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppCreditRecordDetailRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppCreditRecordPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppCreditRecordRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppCreditBenefitsRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppComplaintCreateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppComplaintPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppComplaintRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppReviewCreditRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppReviewCreateReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppReviewUpdateReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppPendingReviewUnitRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppMerchantReviewSummaryRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppReviewPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppReviewRespVO;
 import cn.iocoder.yudao.module.linbang.service.app.review.AppReviewService;
@@ -23,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
+import java.util.List;
 
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
 import static cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
@@ -78,6 +83,13 @@ public class AppReviewController {
         return success(appReviewService.createReview(getLoginUserId(), reqVO));
     }
 
+    @PutMapping("/comment/update")
+    @Operation(summary = "编辑本人评价")
+    public CommonResult<Boolean> updateReview(@Valid @RequestBody AppReviewUpdateReqVO reqVO) {
+        appReviewService.updateReview(getLoginUserId(), reqVO);
+        return success(Boolean.TRUE);
+    }
+
     @GetMapping("/comment/page")
     @Operation(summary = "获取评价分页")
     public CommonResult<PageResult<AppReviewRespVO>> getReviewPage(@Valid AppReviewPageReqVO reqVO) {
@@ -90,10 +102,28 @@ public class AppReviewController {
         return success(appReviewService.getReview(getLoginUserId(), id));
     }
 
+    @GetMapping("/comment/pending-units")
+    @Operation(summary = "获取待评价单元列表")
+    public CommonResult<List<AppPendingReviewUnitRespVO>> getPendingReviewUnits() {
+        return success(appReviewService.getPendingReviewUnits(getLoginUserId()));
+    }
+
+    @GetMapping("/comment/merchant-summary")
+    @Operation(summary = "获取服务商评分摘要")
+    public CommonResult<AppMerchantReviewSummaryRespVO> getMerchantReviewSummary(@RequestParam("merchantId") Long merchantId) {
+        return success(appReviewService.getMerchantReviewSummary(merchantId));
+    }
+
     @GetMapping("/credit/get")
     @Operation(summary = "获取信用信息")
     public CommonResult<AppReviewCreditRespVO> getCredit() {
         return success(appReviewService.getCredit(getLoginUserId()));
+    }
+
+    @GetMapping("/credit/benefits")
+    @Operation(summary = "获取信用等级权益")
+    public CommonResult<AppCreditBenefitsRespVO> getCreditBenefits() {
+        return success(appReviewService.getCreditBenefits(getLoginUserId()));
     }
 
     @GetMapping("/credit-record/page")

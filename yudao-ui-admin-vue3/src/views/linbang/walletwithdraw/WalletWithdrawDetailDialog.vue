@@ -23,12 +23,15 @@
       <el-descriptions-item label="审核人">{{ detailData.auditBy ?? '-' }}</el-descriptions-item>
       <el-descriptions-item label="审核时间">{{ formatDate(detailData.auditTime) }}</el-descriptions-item>
       <el-descriptions-item label="打款时间">{{ formatDate(detailData.payTime) }}</el-descriptions-item>
+      <el-descriptions-item label="出款转账 ID">{{ detailData.payTransferId ?? '-' }}</el-descriptions-item>
+      <el-descriptions-item label="出款单号">{{ detailData.payTransferNo ?? '-' }}</el-descriptions-item>
       <el-descriptions-item label="创建时间">{{ formatDate(detailData.createTime) }}</el-descriptions-item>
     </el-descriptions>
     <el-divider />
     <el-descriptions :column="1" border direction="vertical">
       <el-descriptions-item label="审核备注">{{ detailData.auditRemark || '-' }}</el-descriptions-item>
       <el-descriptions-item label="驳回原因">{{ detailData.rejectReason || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="出款失败原因">{{ detailData.transferErrorMsg || '-' }}</el-descriptions-item>
     </el-descriptions>
     <el-divider />
     <el-descriptions :column="2" border>

@@ -152,6 +152,8 @@ public class MemberRoleApplyServiceImpl implements MemberRoleApplyService {
             promoterService.getOrCreatePromoter(apply.getUserId());
         } else if ("PARTNER".equals(apply.getApplyRoleCode())) {
             partnerInfoService.getOrCreatePartner(apply.getUserId());
+        } else if ("PLATFORM_OPERATOR".equals(apply.getApplyRoleCode())) {
+            // 当前轮次平台运营身份仅切换角色并保留审核材料，不额外生成独立档案。
         }
     }
 

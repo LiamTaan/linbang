@@ -51,6 +51,12 @@ public class MemberQualificationExpiryService {
     }
 
     public void validateMerchantCanAccept(Long userId) {
+        if (!canMerchantAccept(userId)) {
+            throw exception(MEMBER_QUALIFICATION_EXPIRED);
+        }
+    }
+
+    public boolean canMerchantAccept(Long userId) {
         MemberUserQualificationDO latestApproved = memberUserQualificationMapper.selectOne(
                 new LambdaQueryWrapperX<MemberUserQualificationDO>()
                         .eq(MemberUserQualificationDO::getUserId, userId)
@@ -58,9 +64,7 @@ public class MemberQualificationExpiryService {
                         .isNotNull(MemberUserQualificationDO::getValidEndDate)
                         .orderByDesc(MemberUserQualificationDO::getValidEndDate, MemberUserQualificationDO::getId)
                         .last("LIMIT 1"));
-        if (latestApproved != null && !latestApproved.getValidEndDate().isAfter(LocalDate.now())) {
-            throw exception(MEMBER_QUALIFICATION_EXPIRED);
-        }
+        return latestApproved == null || latestApproved.getValidEndDate().isAfter(LocalDate.now());
     }
 
     private void handleReminder(int daysBefore) {

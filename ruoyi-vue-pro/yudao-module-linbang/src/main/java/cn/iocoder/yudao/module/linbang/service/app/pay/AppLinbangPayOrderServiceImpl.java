@@ -4,15 +4,22 @@ import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
 import cn.iocoder.yudao.framework.common.util.servlet.ServletUtils;
+import cn.iocoder.yudao.module.linbang.constants.LinbangRiskConstants;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderCreateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppOrderDepositInfoRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppOrderDepositStatusRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderinfo.OrderInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderoperatelog.OrderOperateLogDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderinfo.OrderInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderoperatelog.OrderOperateLogMapper;
+import cn.iocoder.yudao.module.linbang.service.finance.LinbangFinanceService;
+import cn.iocoder.yudao.module.linbang.service.match.MatchDispatchService;
+import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
+import cn.iocoder.yudao.module.linbang.service.risk.LinbangRiskFacade;
 import cn.iocoder.yudao.module.pay.api.notify.dto.PayOrderNotifyReqDTO;
 import cn.iocoder.yudao.module.pay.api.order.PayOrderApi;
 import cn.iocoder.yudao.module.pay.api.order.dto.PayOrderCreateReqDTO;
@@ -36,6 +43,8 @@ import java.util.Objects;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_ACCESS_DENIED;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_DEPOSIT_PAY_STATUS_INVALID;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_DEPOSIT_REQUIRED;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_INFO_NOT_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_PAY_CALLBACK_INVALID;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_PAY_ORDER_ALREADY_EXISTS;
@@ -59,6 +68,14 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
     private PayOrderApi payOrderApi;
     @Resource
     private PayOrderService payOrderService;
+    @Resource
+    private MatchDispatchService matchDispatchService;
+    @Resource
+    private LinbangFinanceService linbangFinanceService;
+    @Resource
+    private MessagePushDispatchService messagePushDispatchService;
+    @Resource
+    private LinbangRiskFacade linbangRiskFacade;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -80,7 +97,7 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
                 .setUserType(UserTypeEnum.MEMBER.getValue())
                 .setMerchantOrderId(String.valueOf(order.getId()))
                 .setSubject(buildSubject(order))
-                .setBody(StrUtil.maxLength(StrUtil.blankToDefault(order.getRequireDesc(), order.getTitle()), 128))
+                .setBody(StrUtil.maxLength(StrUtil.blankToDefault(order.getRequireDesc(), "邻里互助订单"), 128))
                 .setPrice(toFen(order.getOrderAmount()))
                 .setExpireTime(LocalDateTime.now().plusMinutes(30)));
 
@@ -126,8 +143,89 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
     }
 
     @Override
+    public AppOrderDepositInfoRespVO getDepositInfo(Long authUserId, Long orderId) {
+        MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
+        OrderInfoDO order = validateAccessibleOrder(loginUser.getId(), orderId);
+        AppOrderDepositInfoRespVO respVO = new AppOrderDepositInfoRespVO();
+        respVO.setOrderId(order.getId());
+        respVO.setOrderNo(order.getOrderNo());
+        respVO.setDepositRequired(order.getDepositRequired());
+        respVO.setDepositAmount(order.getDepositAmount());
+        respVO.setDepositPayStatus(order.getDepositPayStatus());
+        respVO.setDepositPayOrderId(order.getDepositPayOrderId());
+        respVO.setDepositPaidTime(order.getDepositPaidTime());
+        respVO.setCanCreateDepositPayOrder(canCreateDepositPayOrder(order));
+        return respVO;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long createDepositPayOrder(Long authUserId, Long orderId) {
+        MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
+        OrderInfoDO order = validateAccessibleOrder(loginUser.getId(), orderId);
+        if (!Boolean.TRUE.equals(order.getDepositRequired())) {
+            throw exception(ORDER_DEPOSIT_REQUIRED);
+        }
+        if (!canCreateDepositPayOrder(order)) {
+            throw exception(ORDER_DEPOSIT_PAY_STATUS_INVALID);
+        }
+        if (order.getDepositPayOrderId() != null) {
+            PayOrderDO oldOrder = payOrderService.getOrder(order.getDepositPayOrderId());
+            if (oldOrder != null && PayOrderStatusEnum.isWaiting(oldOrder.getStatus())) {
+                return oldOrder.getId();
+            }
+        }
+
+        PayAppDO payApp = getEnabledPayApp();
+        Long payOrderId = payOrderApi.createOrder(new PayOrderCreateReqDTO()
+                .setAppKey(payApp.getAppKey())
+                .setUserIp(ServletUtils.getClientIP())
+                .setUserId(loginUser.getId())
+                .setUserType(UserTypeEnum.MEMBER.getValue())
+                .setMerchantOrderId(buildDepositMerchantOrderId(order.getId()))
+                .setSubject(buildDepositSubject(order))
+                .setBody(StrUtil.maxLength("邻里互助大额订单保证金", 128))
+                .setPrice(toFen(order.getDepositAmount()))
+                .setExpireTime(LocalDateTime.now().plusMinutes(30)));
+        orderInfoMapper.updateById(OrderInfoDO.builder()
+                .id(order.getId())
+                .depositPayOrderId(payOrderId)
+                .depositPayStatus(LinbangRiskConstants.DEPOSIT_PAY_STATUS_UNPAID)
+                .build());
+        saveOperateLog(order.getId(), null, "CREATE_DEPOSIT_PAY_ORDER", "USER", loginUser.getId(),
+                order.getDepositPayStatus(), LinbangRiskConstants.DEPOSIT_PAY_STATUS_UNPAID, "用户创建保证金支付单");
+        return payOrderId;
+    }
+
+    @Override
+    public AppOrderDepositStatusRespVO getDepositStatus(Long authUserId, Long orderId, Boolean sync) {
+        MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
+        OrderInfoDO order = validateAccessibleOrder(loginUser.getId(), orderId);
+        AppOrderDepositStatusRespVO respVO = new AppOrderDepositStatusRespVO();
+        respVO.setOrderId(order.getId());
+        respVO.setDepositPayStatus(order.getDepositPayStatus());
+        respVO.setDepositPayOrderId(order.getDepositPayOrderId());
+        respVO.setDepositPaidTime(order.getDepositPaidTime());
+        if (order.getDepositPayOrderId() == null) {
+            respVO.setPayStatusName(resolveDepositStatusName(order.getDepositPayStatus()));
+            return respVO;
+        }
+        PayOrderDO payOrder = payOrderService.getOrder(order.getDepositPayOrderId());
+        if (payOrder != null && Boolean.TRUE.equals(sync) && PayOrderStatusEnum.isWaiting(payOrder.getStatus())) {
+            payOrderService.syncOrderQuietly(payOrder.getId());
+            payOrder = payOrderService.getOrder(payOrder.getId());
+        }
+        respVO.setPayStatusName(payOrder == null ? resolveDepositStatusName(order.getDepositPayStatus())
+                : resolvePayOrderStatusName(payOrder.getStatus()));
+        return respVO;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void updatePaid(@Valid PayOrderNotifyReqDTO notifyReqDTO) {
+        if (linbangRiskFacade.markDepositPaid(notifyReqDTO)) {
+            return;
+        }
         Long orderId = parseOrderId(notifyReqDTO.getMerchantOrderId());
         OrderInfoDO order = orderInfoMapper.selectById(orderId);
         if (order == null) {
@@ -160,8 +258,12 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
                 .payOrderId(notifyReqDTO.getPayOrderId())
                 .status("PENDING_ACCEPT")
                 .build());
+        linbangFinanceService.handleOrderPaid(order, notifyReqDTO.getPayOrderId());
         saveOperateLog(order.getId(), null, "PAY_SUCCESS", "SYSTEM", 0L,
                 order.getStatus(), "PENDING_ACCEPT", "支付成功，订单进入待接单");
+        notifyPaymentSuccess(order);
+        notifyOrderStatusChanged(order, "PENDING_ACCEPT", "支付成功，订单已进入待接单");
+        matchDispatchService.startInitialDispatch(order.getId());
     }
 
     private OrderInfoDO validateAccessibleOrder(Long lbUserId, Long orderId) {
@@ -184,7 +286,11 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
     }
 
     private String buildSubject(OrderInfoDO order) {
-        return StrUtil.maxLength(StrUtil.blankToDefault(order.getTitle(), "邻里互助订单支付"), 32);
+        return StrUtil.maxLength(StrUtil.blankToDefault(order.getRequireDesc(), "邻里互助订单支付"), 32);
+    }
+
+    private String buildDepositSubject(OrderInfoDO order) {
+        return StrUtil.maxLength("订单保证金-" + StrUtil.blankToDefault(order.getOrderNo(), String.valueOf(order.getId())), 32);
     }
 
     private int toFen(BigDecimal amount) {
@@ -196,6 +302,41 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
             throw exception(ORDER_PAY_CALLBACK_INVALID);
         }
         return Long.valueOf(merchantOrderId);
+    }
+
+    private String buildDepositMerchantOrderId(Long orderId) {
+        return "DEPOSIT:" + orderId;
+    }
+
+    private boolean canCreateDepositPayOrder(OrderInfoDO order) {
+        return Boolean.TRUE.equals(order.getDepositRequired())
+                && !Objects.equals(order.getDepositPayStatus(), LinbangRiskConstants.DEPOSIT_PAY_STATUS_PAID);
+    }
+
+    private String resolveDepositStatusName(String depositPayStatus) {
+        if (Objects.equals(depositPayStatus, LinbangRiskConstants.DEPOSIT_PAY_STATUS_PAID)) {
+            return "SUCCESS";
+        }
+        if (Objects.equals(depositPayStatus, LinbangRiskConstants.DEPOSIT_PAY_STATUS_NOT_REQUIRED)) {
+            return "NOT_REQUIRED";
+        }
+        return "WAITING";
+    }
+
+    private void notifyPaymentSuccess(OrderInfoDO order) {
+        if (order == null || order.getUserId() == null) {
+            return;
+        }
+        messagePushDispatchService.dispatchSingle("FINANCE_PAYMENT_SUCCESS", "支付成功通知", "PAY",
+                order.getId(), order.getUserId(), "订单支付成功");
+    }
+
+    private void notifyOrderStatusChanged(OrderInfoDO order, String afterStatus, String remark) {
+        if (order == null || order.getUserId() == null) {
+            return;
+        }
+        messagePushDispatchService.dispatchSingle("ORDER_STATUS_CHANGED", "订单状态通知", "ORDER",
+                order.getId(), order.getUserId(), StrUtil.blankToDefault(remark, afterStatus));
     }
 
     private void saveOperateLog(Long orderId, Long unitId, String operateType, String operateRole,

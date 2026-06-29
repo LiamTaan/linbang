@@ -45,7 +45,6 @@ final class RiskEventDetailAssembler {
         RiskEventDetailRespVO.OrderSimpleRespVO respVO = new RiskEventDetailRespVO.OrderSimpleRespVO();
         respVO.setId(order.getId());
         respVO.setOrderNo(order.getOrderNo());
-        respVO.setTitle(order.getTitle());
         respVO.setStatus(order.getStatus());
         respVO.setUserId(order.getUserId());
         if (orderUser != null) {

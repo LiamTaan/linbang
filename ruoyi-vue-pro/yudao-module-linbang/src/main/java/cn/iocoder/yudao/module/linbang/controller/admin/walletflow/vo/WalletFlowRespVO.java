@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.walletflow.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -53,11 +54,11 @@ public class WalletFlowRespVO {
     @ExcelProperty("可提现金额")
     private BigDecimal walletAvailableAmount;
 
-    @Schema(description = "业务类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.WALLET_FLOW_BIZ_TYPE, requiredMode = Schema.RequiredMode.REQUIRED, example = "WITHDRAW_APPLY")
     @ExcelProperty("业务类型")
     private String bizType;
 
-    @Schema(description = "流水类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.WALLET_FLOW_TYPE, requiredMode = Schema.RequiredMode.REQUIRED, example = "OUT")
     @ExcelProperty("流水类型")
     private String flowType;
 

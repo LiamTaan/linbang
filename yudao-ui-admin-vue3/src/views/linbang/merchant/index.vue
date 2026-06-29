@@ -12,6 +12,9 @@
     <el-tab-pane label="服务点管理" name="servicePoint">
       <MerchantServicePointIndex v-if="activeTab === 'servicePoint'" />
     </el-tab-pane>
+    <el-tab-pane label="子账号管理" name="subAccount">
+      <MerchantSubAccountIndex v-if="activeTab === 'subAccount'" />
+    </el-tab-pane>
   </el-tabs>
 </template>
 
@@ -22,6 +25,7 @@ import MerchantCategoryIndex from '../merchantcategory/index.vue'
 import MerchantEntryIndex from '../merchantentry/index.vue'
 import MerchantInfoIndex from '../merchantinfo/index.vue'
 import MerchantServicePointIndex from '../merchantservicepoint/index.vue'
+import MerchantSubAccountIndex from '../merchantsubaccount/index.vue'
 
 defineOptions({ name: 'LinbangMerchant' })
 

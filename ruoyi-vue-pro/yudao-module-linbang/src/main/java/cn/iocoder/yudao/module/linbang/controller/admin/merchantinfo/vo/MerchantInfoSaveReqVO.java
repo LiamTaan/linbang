@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.merchantinfo.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -31,11 +32,11 @@ public class MerchantInfoSaveReqVO {
     @Schema(description = "服务范围说明")
     private String serviceScopeDesc;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.MERCHANT_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "ENABLE")
     @NotEmpty(message = "状态不能为空")
     private String status;
 
-    @Schema(description = "接单状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.MERCHANT_ACCEPT_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "ENABLE")
     @NotEmpty(message = "接单状态不能为空")
     private String acceptStatus;
 

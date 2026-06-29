@@ -23,9 +23,15 @@ public class MessageRecordDO extends BaseDO {
 
     private Long templateId;
 
+    private Long campaignId;
+
     private Long pushTaskId;
 
     private Long receiverUserId;
+
+    private String sceneCode;
+
+    private String messageCategory;
 
     private String channelType;
 
@@ -33,9 +39,33 @@ public class MessageRecordDO extends BaseDO {
 
     private Long bizId;
 
+    private String dedupeKey;
+
     private String sendStatus;
 
     private LocalDateTime sendTime;
 
     private String failReason;
+
+    private String title;
+
+    private String contentSnapshot;
+
+    private String routeType;
+
+    private String routeValue;
+
+    private String readStatus;
+
+    private LocalDateTime readTime;
+
+    private LocalDateTime exposedTime;
+
+    private LocalDateTime clickTime;
+
+    private LocalDateTime voicePlayedTime;
+
+    private String voiceText;
+
+    private String providerMessageId;
 }

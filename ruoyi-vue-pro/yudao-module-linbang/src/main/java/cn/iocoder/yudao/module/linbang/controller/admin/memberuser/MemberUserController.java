@@ -30,7 +30,7 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
 
 @Tag(name = "管理后台 - 用户主表")
-@RestController
+@RestController("linbangMemberUserController")
 @RequestMapping("/linbang/member-user")
 @Validated
 public class MemberUserController {
@@ -85,6 +85,22 @@ public class MemberUserController {
     public CommonResult<PageResult<MemberUserRespVO>> getMemberUserPage(@Valid MemberUserPageReqVO pageReqVO) {
         PageResult<MemberUserDO> pageResult = memberUserService.getMemberUserPage(pageReqVO);
         return success(BeanUtils.toBean(pageResult, MemberUserRespVO.class));
+    }
+
+    @PostMapping("/restrict")
+    @Operation(summary = "限制/封禁/拉黑用户")
+    @PreAuthorize("@ss.hasPermission('linbang:member-user:restrict')")
+    public CommonResult<Boolean> restrictMemberUser(@Valid @RequestBody MemberUserRestrictReqVO reqVO) {
+        memberUserService.restrictMemberUser(reqVO);
+        return success(true);
+    }
+
+    @PostMapping("/restrict/release")
+    @Operation(summary = "解除用户限制/封禁")
+    @PreAuthorize("@ss.hasPermission('linbang:member-user:restrict')")
+    public CommonResult<Boolean> releaseMemberUserRestrict(@Valid @RequestBody MemberUserReleaseRestrictReqVO reqVO) {
+        memberUserService.releaseMemberUserRestrict(reqVO);
+        return success(true);
     }
 
     @GetMapping("/export-excel")

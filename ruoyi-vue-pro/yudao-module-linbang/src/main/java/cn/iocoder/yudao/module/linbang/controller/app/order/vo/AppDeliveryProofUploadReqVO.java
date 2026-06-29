@@ -7,6 +7,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Schema(description = "用户 App - 上传交付凭证 Request VO")
@@ -33,5 +34,11 @@ public class AppDeliveryProofUploadReqVO {
 
     @Schema(description = "纬度")
     private BigDecimal latitude;
+
+    @Schema(description = "设备拍摄时间。用于业务级存证快照", example = "2026-06-28T10:30:00")
+    private LocalDateTime deviceTime;
+
+    @Schema(description = "取证地址文本，例如 XX 小区 3 栋 2 单元", example = "广东省深圳市南山区科技园 XX 大厦 1201")
+    private String addressText;
 
 }

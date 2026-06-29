@@ -7,11 +7,19 @@ import javax.validation.Valid;
 
 public interface AppOrderService {
 
+    AppOrderPreviewRespVO previewOrder(Long authUserId, @Valid AppOrderPreviewReqVO reqVO);
+
     Long createOrder(Long authUserId, @Valid AppOrderCreateReqVO reqVO);
+
+    AppOrderSplitRuleMatchRespVO matchSplitRule(AppOrderSplitRuleMatchReqVO reqVO);
+
+    PageResult<AppOrderAcceptPageItemRespVO> getAcceptOrderPage(Long authUserId, AppOrderAcceptPageReqVO reqVO);
 
     PageResult<AppOrderPageItemRespVO> getOrderPage(Long authUserId, AppOrderPageReqVO reqVO);
 
     AppOrderDetailRespVO getOrderDetail(Long authUserId, Long orderId);
+
+    Boolean updateOrder(Long authUserId, @Valid AppOrderUpdateReqVO reqVO);
 
     Boolean cancelOrder(Long authUserId, @Valid AppOrderCancelReqVO reqVO);
 
@@ -23,8 +31,18 @@ public interface AppOrderService {
 
     Boolean confirmOrderUnit(Long authUserId, @Valid AppOrderUnitConfirmReqVO reqVO);
 
+    AppOrderVerifyCodeRespVO getOrderUnitVerifyCode(Long authUserId, Long unitId);
+
+    Boolean verifyOrderUnit(Long authUserId, @Valid AppOrderVerifyReqVO reqVO);
+
+    java.util.List<AppOrderVerifyLogRespVO> getOrderUnitVerifyLogs(Long authUserId, Long unitId);
+
     AppOrderAcceptRespVO acceptOrder(Long authUserId, @Valid AppOrderAcceptCreateReqVO reqVO);
 
     Boolean uploadDeliveryProof(Long authUserId, @Valid AppDeliveryProofUploadReqVO reqVO);
+
+    AppOrderAppealProgressRespVO getAppealProgress(Long authUserId, Long appealId);
+
+    AppOrderGuaranteeConfigRespVO getGuaranteeConfig();
 
 }

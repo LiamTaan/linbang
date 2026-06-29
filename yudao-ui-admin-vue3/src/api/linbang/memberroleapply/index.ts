@@ -11,6 +11,9 @@ export interface MemberRoleApply {
   applyRoleCode?: string
   applyReason?: string
   resourceDesc?: string
+  expectedConversionDesc?: string
+  abilityDesc?: string
+  availableTimeDesc?: string
   auditStatus?: string
   auditRemark?: string
   rejectReason?: string

@@ -33,6 +33,15 @@ public class AppReviewRespVO {
     @Schema(description = "是否自动评价")
     private Boolean isAutoReview;
 
+    @Schema(description = "自动评价文字是否已补充")
+    private Boolean isContentSupplemented;
+
+    @Schema(description = "当前评价是否仍可编辑")
+    private Boolean reviewEditable;
+
+    @Schema(description = "当前评价可编辑截止时间")
+    private LocalDateTime reviewEditDeadline;
+
     @Schema(description = "评价状态，按评价业务字典展示；常见值由前后端统一字典决定", example = "ENABLE")
     private String status;
 

@@ -11,6 +11,8 @@ export interface MemberQualification {
   qualificationName?: string
   qualificationNo?: string
   fileId?: number
+  evidenceFileIdsJson?: string
+  videoFileId?: number
   validStartDate?: string | Dayjs
   validEndDate?: string | Dayjs
   auditStatus?: string
@@ -18,6 +20,7 @@ export interface MemberQualification {
   auditBy?: number
   auditTime?: string | Dayjs
   rejectReason?: string
+  priorityEnabled?: boolean
   createTime?: string | Dayjs
 }
 
@@ -75,6 +78,7 @@ export interface MemberQualificationDetail extends MemberQualification {
     latestCreditLevel?: string
     realNameApproved?: boolean
     merchantBound?: boolean
+    approvedExemptionCount?: number
   }
   relatedQualifications?: Array<{
     id?: number
@@ -82,6 +86,8 @@ export interface MemberQualificationDetail extends MemberQualification {
     qualificationName?: string
     qualificationNo?: string
     fileId?: number
+    evidenceFileIdsJson?: string
+    videoFileId?: number
     validStartDate?: string | Dayjs
     validEndDate?: string | Dayjs
     auditStatus?: string
@@ -90,6 +96,15 @@ export interface MemberQualificationDetail extends MemberQualification {
     auditTime?: string | Dayjs
     rejectReason?: string
     createTime?: string | Dayjs
+  }>
+  certExemptions?: Array<{
+    id?: number
+    exemptionType?: string
+    reason?: string
+    auditStatus?: string
+    effectiveStartTime?: string | Dayjs
+    effectiveEndTime?: string | Dayjs
+    rejectReason?: string
   }>
   creditRecords?: Array<{
     id?: number

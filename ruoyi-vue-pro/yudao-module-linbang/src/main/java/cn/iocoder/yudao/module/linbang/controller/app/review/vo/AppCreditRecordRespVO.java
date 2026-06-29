@@ -27,16 +27,16 @@ public class AppCreditRecordRespVO {
     @Schema(description = "变动后分值", example = "105")
     private Integer afterScore;
 
-    @Schema(description = "触发类型", example = "AUTO")
+    @Schema(description = "触发类型，例如 AUTO 系统自动触发、MANUAL 人工调整", example = "AUTO")
     private String triggerType;
 
-    @Schema(description = "业务类型", example = "REVIEW")
+    @Schema(description = "业务类型，例如 ORDER 订单、REVIEW 评价、APPEAL 申诉、COMPLAINT 投诉", example = "REVIEW")
     private String bizType;
 
-    @Schema(description = "业务 ID", example = "1024")
+    @Schema(description = "业务 ID，关联触发信用变动的订单、评价或申诉记录", example = "1024")
     private Long bizId;
 
-    @Schema(description = "备注")
+    @Schema(description = "备注，记录加减分原因说明")
     private String remark;
 
     @Schema(description = "创建时间")

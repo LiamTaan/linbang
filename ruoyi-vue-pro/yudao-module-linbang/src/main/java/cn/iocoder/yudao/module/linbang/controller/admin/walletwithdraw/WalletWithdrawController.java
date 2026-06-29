@@ -92,6 +92,13 @@ public class WalletWithdrawController {
         return success(true);
     }
 
+    @PostMapping("/retry-transfer")
+    @Operation(summary = "重试提现打款")
+    @Parameter(name = "id", description = "提现申请 ID", required = true, example = "1")
+    @PreAuthorize("@ss.hasPermission('linbang:wallet:withdraw:audit')")
+    public CommonResult<Long> retryWalletWithdrawTransfer(@RequestParam("id") Long id) {
+        return success(walletWithdrawService.retryWalletWithdrawTransfer(id));
+    }
     @GetMapping("/export-excel")
     @Operation(summary = "导出提现申请 Excel")
     @PreAuthorize("@ss.hasPermission('linbang:wallet:withdraw:export')")

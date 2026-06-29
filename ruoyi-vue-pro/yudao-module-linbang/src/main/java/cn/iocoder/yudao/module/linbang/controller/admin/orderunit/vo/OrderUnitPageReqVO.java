@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.orderunit.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -50,7 +51,7 @@ public class OrderUnitPageReqVO extends PageParam {
     @Schema(description = "服务商ID", example = "12215")
     private Long merchantId;
 
-    @Schema(description = "单元状态", example = "2")
+    @Schema(description = OpenApiSchemaConstants.ORDER_UNIT_STATUS, example = "PENDING_ACCEPT")
     private String status;
 
     @Schema(description = "接单截止时间")
@@ -64,5 +65,69 @@ public class OrderUnitPageReqVO extends PageParam {
     @Schema(description = "创建时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] createTime;
+
+    public Long getOrderId() {
+        return orderId;
+    }
+
+    public String getOrderNo() {
+        return orderNo;
+    }
+
+    public String getUnitNo() {
+        return unitNo;
+    }
+
+    public Integer getUnitSeq() {
+        return unitSeq;
+    }
+
+    public String getUnitTitle() {
+        return unitTitle;
+    }
+
+    public BigDecimal getUnitAmount() {
+        return unitAmount;
+    }
+
+    public String getSplitMode() {
+        return splitMode;
+    }
+
+    public Long getPrevUnitId() {
+        return prevUnitId;
+    }
+
+    public String getPrevUnitNo() {
+        return prevUnitNo;
+    }
+
+    public Boolean getIsLocked() {
+        return isLocked;
+    }
+
+    public String getLockReason() {
+        return lockReason;
+    }
+
+    public Long getMerchantId() {
+        return merchantId;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public LocalDateTime[] getAcceptDeadlineTime() {
+        return acceptDeadlineTime;
+    }
+
+    public LocalDateTime[] getFinishTime() {
+        return finishTime;
+    }
+
+    public LocalDateTime[] getCreateTime() {
+        return createTime;
+    }
 
 }

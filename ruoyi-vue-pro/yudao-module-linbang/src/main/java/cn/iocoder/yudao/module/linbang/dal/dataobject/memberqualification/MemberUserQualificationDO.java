@@ -44,6 +44,10 @@ public class MemberUserQualificationDO extends BaseDO {
 
     private Long fileId;
 
+    private String evidenceFileIdsJson;
+
+    private Long videoFileId;
+
     private LocalDate validStartDate;
 
     private LocalDate validEndDate;
@@ -57,5 +61,7 @@ public class MemberUserQualificationDO extends BaseDO {
     private LocalDateTime auditTime;
 
     private String rejectReason;
+
+    private Boolean priorityEnabled;
 
 }

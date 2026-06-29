@@ -92,6 +92,18 @@ public class WalletWithdrawDO extends BaseDO {
      * 打款时间
      */
     private LocalDateTime payTime;
+    /**
+     * 转账单 ID
+     */
+    private Long payTransferId;
+    /**
+     * 转账单号
+     */
+    private String payTransferNo;
+    /**
+     * 转账失败原因
+     */
+    private String transferErrorMsg;
 
 
 }

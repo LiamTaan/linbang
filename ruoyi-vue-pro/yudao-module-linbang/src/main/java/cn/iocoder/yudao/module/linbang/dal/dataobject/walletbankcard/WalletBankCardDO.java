@@ -44,6 +44,10 @@ public class WalletBankCardDO extends BaseDO {
      */
     private String cardNoEncrypt;
     /**
+     * 出款收款账号
+     */
+    private String transferAccount;
+    /**
      * 脱敏卡号
      */
     private String cardNoMask;

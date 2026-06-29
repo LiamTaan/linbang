@@ -8,6 +8,8 @@ import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppBankCardPageR
 import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppBankCardRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppBankCardUpdateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppWalletAccountRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppWalletBillPageReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppWalletBillRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppWalletFlowPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppWalletFlowRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppWalletWithdrawCreateReqVO;
@@ -103,6 +105,12 @@ public class AppWalletController {
     @Operation(summary = "获取钱包流水分页")
     public CommonResult<PageResult<AppWalletFlowRespVO>> getWalletFlowPage(@Valid AppWalletFlowPageReqVO reqVO) {
         return success(appWalletService.getWalletFlowPage(getLoginUserId(), reqVO));
+    }
+
+    @GetMapping("/bill/page")
+    @Operation(summary = "获取统一业务账单分页")
+    public CommonResult<PageResult<AppWalletBillRespVO>> getWalletBillPage(@Valid AppWalletBillPageReqVO reqVO) {
+        return success(appWalletService.getWalletBillPage(getLoginUserId(), reqVO));
     }
 
     @GetMapping("/flow/get")

@@ -2,9 +2,13 @@ package cn.iocoder.yudao.module.system.controller.admin.auth;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.iocoder.yudao.framework.common.biz.system.oauth2.OAuth2TokenCommonApi;
+import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2SceneTicketCreateReqDTO;
+import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2SceneTicketRespDTO;
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.framework.datapermission.core.annotation.DataPermission;
 import cn.iocoder.yudao.framework.security.config.SecurityProperties;
 import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
@@ -59,6 +63,8 @@ public class AuthController {
     private PermissionService permissionService;
     @Resource
     private SocialClientService socialClientService;
+    @Resource
+    private OAuth2TokenCommonApi oauth2TokenApi;
 
     @Resource
     private SecurityProperties securityProperties;
@@ -85,9 +91,21 @@ public class AuthController {
     @PostMapping("/refresh-token")
     @PermitAll
     @Operation(summary = "刷新令牌")
-    @Parameter(name = "refreshToken", description = "刷新令牌", required = true)
-    public CommonResult<AuthLoginRespVO> refreshToken(@RequestParam("refreshToken") String refreshToken) {
-        return success(authService.refreshToken(refreshToken));
+    public CommonResult<AuthLoginRespVO> refreshToken(@RequestBody(required = false) AuthRefreshTokenReqVO body,
+                                                      @RequestParam(value = "refreshToken", required = false) String refreshToken) {
+        return success(authService.refreshToken(resolveRefreshToken(body != null ? body.getRefreshToken() : null, refreshToken)));
+    }
+
+    @PostMapping("/scene-ticket")
+    @Operation(summary = "创建场景票据")
+    public CommonResult<AuthSceneTicketRespVO> createSceneTicket(@RequestBody @Valid AuthSceneTicketCreateReqVO reqVO) {
+        OAuth2SceneTicketCreateReqDTO createReqDTO = new OAuth2SceneTicketCreateReqDTO();
+        createReqDTO.setScene(reqVO.getScene());
+        createReqDTO.setUserId(getLoginUserId());
+        createReqDTO.setUserType(UserTypeEnum.ADMIN.getValue());
+        createReqDTO.setTenantId(SecurityFrameworkUtils.getLoginUser() != null ? SecurityFrameworkUtils.getLoginUser().getTenantId() : null);
+        OAuth2SceneTicketRespDTO ticket = oauth2TokenApi.createSceneTicket(createReqDTO);
+        return success(BeanUtils.toBean(ticket, AuthSceneTicketRespVO.class));
     }
 
     @GetMapping("/get-permission-info")
@@ -171,6 +189,10 @@ public class AuthController {
     @Operation(summary = "社交快捷登录，使用 code 授权码", description = "适合未登录的用户，但是社交账号已绑定用户")
     public CommonResult<AuthLoginRespVO> socialQuickLogin(@RequestBody @Valid AuthSocialLoginReqVO reqVO) {
         return success(authService.socialLogin(reqVO));
+    }
+
+    private String resolveRefreshToken(String bodyRefreshToken, String queryRefreshToken) {
+        return StrUtil.blankToDefault(bodyRefreshToken, queryRefreshToken);
     }
 
 }

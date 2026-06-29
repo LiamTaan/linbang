@@ -3,8 +3,12 @@ package cn.iocoder.yudao.module.linbang.controller.admin.messagepushtask;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.linbang.controller.admin.messagepushtask.vo.MessagePushTaskDetailRespVO;
+import cn.iocoder.yudao.module.linbang.controller.admin.messagepushtask.vo.MessagePushTaskManualSendReqVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.messagepushtask.vo.MessagePushTaskPageReqVO;
+import cn.iocoder.yudao.module.linbang.controller.admin.messagepushtask.vo.MessagePushTaskRetryReqVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.messagepushtask.vo.MessagePushTaskRespVO;
+import cn.iocoder.yudao.module.linbang.service.messagepushtask.ManualMessagePushService;
+import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushTaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -12,6 +16,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,6 +35,10 @@ public class MessagePushTaskController {
 
     @Resource
     private MessagePushTaskService messagePushTaskService;
+    @Resource
+    private MessagePushDispatchService messagePushDispatchService;
+    @Resource
+    private ManualMessagePushService manualMessagePushService;
 
     @GetMapping("/page")
     @Operation(summary = "获得消息推送任务分页")
@@ -43,5 +53,20 @@ public class MessagePushTaskController {
     @PreAuthorize("@ss.hasPermission('linbang:message:push-task:query')")
     public CommonResult<MessagePushTaskDetailRespVO> getPushTask(@RequestParam("id") Long id) {
         return success(messagePushTaskService.getPushTaskDetail(id));
+    }
+
+    @PostMapping("/manual-send")
+    @Operation(summary = "手动发送消息通知")
+    @PreAuthorize("@ss.hasPermission('linbang:message:push-task:query')")
+    public CommonResult<Long> manualSend(@Valid @RequestBody MessagePushTaskManualSendReqVO reqVO) {
+        return success(manualMessagePushService.manualSend(reqVO));
+    }
+
+    @PostMapping("/retry")
+    @Operation(summary = "重试失败的消息推送任务")
+    @PreAuthorize("@ss.hasPermission('linbang:message:push-task:retry')")
+    public CommonResult<Boolean> retry(@Valid @RequestBody MessagePushTaskRetryReqVO reqVO) {
+        messagePushDispatchService.retryTask(reqVO.getId());
+        return success(true);
     }
 }

@@ -6,6 +6,8 @@
       <el-descriptions-item label="词库类型">{{ formatSensitiveWordType(detailData.wordType) }}</el-descriptions-item>
       <el-descriptions-item label="匹配方式">{{ formatSensitiveWordMatchType(detailData.matchType) }}</el-descriptions-item>
       <el-descriptions-item label="拦截级别">{{ detailData.blockLevel || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="适用场景">{{ detailData.sceneType || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="替换文案">{{ detailData.replaceText || '-' }}</el-descriptions-item>
       <el-descriptions-item label="状态">
         <el-tag :type="detailData.status === 'ENABLE' ? 'success' : 'info'">
           {{ formatEnableStatus(detailData.status) }}
@@ -35,6 +37,7 @@
           {{ formatSensitiveWordMatchType(row.matchType) }}
         </template>
       </el-table-column>
+      <el-table-column label="适用场景" prop="sceneType" min-width="150" />
       <el-table-column label="拦截级别" prop="blockLevel" width="120" />
       <el-table-column label="状态" prop="status" width="120">
         <template #default="{ row }">

@@ -61,4 +61,6 @@ public interface ReviewCommentService {
      */
     PageResult<ReviewCommentRespVO> getReviewCommentPage(ReviewCommentPageReqVO pageReqVO);
 
+    void recomputePriorityPoolByReview(Long reviewId);
+
 }

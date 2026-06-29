@@ -10,6 +10,8 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategory.MerchantS
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategoryrel.MerchantCategoryRelDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantentry.MerchantEntryDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
+import cn.iocoder.yudao.module.linbang.service.reviewcomment.MerchantReviewMetricsResp;
+import cn.iocoder.yudao.module.linbang.service.reviewcomment.ReviewCommentMetricsService;
 import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -56,6 +58,8 @@ public class MerchantInfoServiceImpl implements MerchantInfoService {
     private MerchantServicePointMapper merchantServicePointMapper;
     @Resource
     private MemberUserMapper memberUserMapper;
+    @Resource
+    private ReviewCommentMetricsService reviewCommentMetricsService;
 
     @Override
     public Long createMerchantInfo(MerchantInfoSaveReqVO createReqVO) {
@@ -120,6 +124,7 @@ public class MerchantInfoServiceImpl implements MerchantInfoService {
                 .orderByDesc(MerchantServicePointDO::getId));
 
         MerchantInfoDetailRespVO respVO = BeanUtils.toBean(merchantInfo, MerchantInfoDetailRespVO.class);
+        fillReviewMetrics(respVO, merchantInfo.getId());
         if (latestEntry != null) {
             respVO.setEntryId(latestEntry.getId());
             respVO.setEntryNo(latestEntry.getEntryNo());
@@ -173,6 +178,7 @@ public class MerchantInfoServiceImpl implements MerchantInfoService {
         PageResult<MerchantInfoDO> pageResult = merchantInfoMapper.selectPage(pageReqVO, matchedUserIds);
         List<MerchantInfoRespVO> list = BeanUtils.toBean(pageResult.getList(), MerchantInfoRespVO.class);
         fillUserDisplayInfo(list);
+        fillReviewMetrics(list);
         return new PageResult<>(list, pageResult.getTotal());
     }
 
@@ -197,6 +203,24 @@ public class MerchantInfoServiceImpl implements MerchantInfoService {
             item.setUserNickname(user.getNickname());
             item.setUserMobile(user.getMobile());
         });
+    }
+
+    private void fillReviewMetrics(List<MerchantInfoRespVO> list) {
+        list.forEach(item -> fillReviewMetrics(item, item.getId()));
+    }
+
+    private void fillReviewMetrics(MerchantInfoRespVO item, Long merchantId) {
+        MerchantReviewMetricsResp metrics = reviewCommentMetricsService.calculateMerchantMetrics(merchantId);
+        item.setCompositeScore(metrics.getCompositeScore());
+        item.setPositiveRate(metrics.getPositiveRate());
+        item.setInPositivePriorityPool(metrics.getInPositivePriorityPool());
+    }
+
+    private void fillReviewMetrics(MerchantInfoDetailRespVO item, Long merchantId) {
+        MerchantReviewMetricsResp metrics = reviewCommentMetricsService.calculateMerchantMetrics(merchantId);
+        item.setCompositeScore(metrics.getCompositeScore());
+        item.setPositiveRate(metrics.getPositiveRate());
+        item.setInPositivePriorityPool(metrics.getInPositivePriorityPool());
     }
 
     private Map<Long, MerchantServiceCategoryDO> buildCategoryMap(List<MerchantCategoryRelDO> categoryRels) {

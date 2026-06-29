@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.memberrealname.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -19,7 +20,7 @@ public class MemberUserRealNamePageReqVO extends PageParam {
     @Schema(description = "用户关键词（用户编号 / 昵称 / 手机号）", example = "13800138000")
     private String userKeyword;
 
-    @Schema(description = "真实姓名", example = "??")
+    @Schema(description = "真实姓名", example = "张三")
     private String realName;
 
     @Schema(description = "身份证号")
@@ -40,10 +41,10 @@ public class MemberUserRealNamePageReqVO extends PageParam {
     @Schema(description = "人脸核验结果")
     private String faceVerifyResult;
 
-    @Schema(description = "审核状态", example = "2")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, example = "PENDING")
     private String auditStatus;
 
-    @Schema(description = "审核备注", example = "??")
+    @Schema(description = "审核备注", example = "身份证与活体核验一致")
     private String auditRemark;
 
     @Schema(description = "审核人")
@@ -53,7 +54,7 @@ public class MemberUserRealNamePageReqVO extends PageParam {
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] auditTime;
 
-    @Schema(description = "驳回原因", example = "??")
+    @Schema(description = "驳回原因", example = "证件照片不清晰")
     private String rejectReason;
 
     @Schema(description = "创建时间")

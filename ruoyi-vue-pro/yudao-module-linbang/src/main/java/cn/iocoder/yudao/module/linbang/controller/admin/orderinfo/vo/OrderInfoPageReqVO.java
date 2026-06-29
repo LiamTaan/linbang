@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.orderinfo.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -26,10 +27,7 @@ public class OrderInfoPageReqVO extends PageParam {
     @Schema(description = "类目ID", example = "851")
     private Long categoryId;
 
-    @Schema(description = "订单标题")
-    private String title;
-
-    @Schema(description = "计价方式")
+    @Schema(description = OpenApiSchemaConstants.PRICING_MODE, example = "FIXED_PRICE")
     private String pricingMode;
 
     @Schema(description = "预算金额")
@@ -38,7 +36,7 @@ public class OrderInfoPageReqVO extends PageParam {
     @Schema(description = "订单金额")
     private BigDecimal orderAmount;
 
-    @Schema(description = "工期描述")
+    @Schema(description = "服务时长说明，例如 1小时、半天、3天")
     private String serviceDurationDesc;
 
     @Schema(description = "数量")
@@ -46,9 +44,6 @@ public class OrderInfoPageReqVO extends PageParam {
 
     @Schema(description = "需求描述")
     private String requireDesc;
-
-    @Schema(description = "地址ID", example = "30674")
-    private Long addressId;
 
     @Schema(description = "省")
     private String province;
@@ -77,7 +72,7 @@ public class OrderInfoPageReqVO extends PageParam {
     @Schema(description = "是否拆单")
     private Boolean needSplit;
 
-    @Schema(description = "拆单状态", example = "2")
+    @Schema(description = OpenApiSchemaConstants.ORDER_SPLIT_STATUS, example = "UNSPLIT")
     private String splitStatus;
 
     @Schema(description = "协议是否确认")
@@ -86,7 +81,7 @@ public class OrderInfoPageReqVO extends PageParam {
     @Schema(description = "支付订单ID", example = "7048")
     private Long payOrderId;
 
-    @Schema(description = "订单状态", example = "1")
+    @Schema(description = OpenApiSchemaConstants.ORDER_STATUS, example = "PENDING_PAY")
     private String status;
 
     @Schema(description = "创建时间")
