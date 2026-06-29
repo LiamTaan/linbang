@@ -1,0 +1,1 @@
+import{Gr as e,Wr as t,hi as n,li as r}from"./form-create-Bwjdc6Tw.js";function i(){var i=arguments.length;if(!i)return[];for(var a=Array(i-1),o=arguments[0],s=i;s--;)a[s-1]=arguments[s];return e(n(o)?r(o):[o],t(a,1))}export{i as t};

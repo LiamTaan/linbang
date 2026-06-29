@@ -1,0 +1,1 @@
+import{un as e}from"./index-DzXA_nY_.js";var t=async t=>await e.get({url:`/pay/wallet/get`,params:t}),n=async t=>await e.get({url:`/pay/wallet/page`,params:t});export{n,t};

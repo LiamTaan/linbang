@@ -1,0 +1,1 @@
+import{un as e}from"./index-DzXA_nY_.js";var t=`X-Linbang-Dynamic-Key-Token`,n=e=>{if(e)return{[t]:e}},r={verify:async t=>await e.post({url:`/security/dynamic-key/verify`,data:t})};export{n,r as t};

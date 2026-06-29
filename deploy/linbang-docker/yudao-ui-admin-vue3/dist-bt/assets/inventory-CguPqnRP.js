@@ -1,0 +1,1 @@
+import{un as e}from"./index-DzXA_nY_.js";var t={getInventoryPage:async t=>await e.get({url:`/wms/inventory/page`,params:t}),getInventoryList:async t=>await e.get({url:`/wms/inventory/list`,params:t})};export{t};

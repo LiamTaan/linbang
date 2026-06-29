@@ -251,7 +251,131 @@ docker compose up -d
 
 - `POST /admin-api/system/auth/login`
 
-## 9. 常见问题
+## 9. 线上 SQL 变更执行
+
+首次部署时，`建表.sql` 和 `初始化.sql` 会由 MySQL 容器自动导入；但后续线上新增字段、修复数据、补充配置等增量 SQL，不会自动重复执行，需要你手工执行。
+
+强烈建议：
+
+- 不要直接在宝塔终端粘贴大段含中文/JSON 的 SQL 去执行
+- 不要把增量变更直接塞回 `建表.sql` 或 `初始化.sql` 再指望线上自动生效
+- 每次线上 SQL 变更都使用单独的 UTF-8 SQL 文件
+
+### 9.1 准备增量 SQL 文件
+
+建议在服务器上额外放一个目录，例如：
+
+```bash
+mkdir -p /www/wwwroot/linbang-docker/sql-patch
+```
+
+每次变更新建一个独立 SQL 文件，文件名尽量使用 ASCII，例如：
+
+```text
+/www/wwwroot/linbang-docker/sql-patch/20260629_add_sms_config.sql
+```
+
+要求：
+
+- 文件编码必须是 `UTF-8`
+- 文件里可以保留可读中文，禁止转成乱码或问号
+- 一个变更一个文件，方便回溯
+
+### 9.2 先备份数据库
+
+执行增量 SQL 前，先导出当前库：
+
+```bash
+mkdir -p /www/wwwroot/linbang-docker/sql-backup
+
+docker exec linbang-mysql sh -lc 'mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" --default-character-set=utf8mb4 linbang' > /www/wwwroot/linbang-docker/sql-backup/linbang_$(date +%F_%H%M%S).sql
+```
+
+说明：
+
+- 当前编排里的 MySQL 容器名是 `linbang-mysql`
+- 数据库名默认是 `linbang`
+- 这里使用容器环境变量里的 `MYSQL_ROOT_PASSWORD`，不需要把密码明文再写一遍
+
+### 9.3 执行增量 SQL
+
+把 SQL 文件上传到服务器后，执行：
+
+```bash
+docker exec -i linbang-mysql sh -lc 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" --default-character-set=utf8mb4 linbang' < /www/wwwroot/linbang-docker/sql-patch/20260629_add_sms_config.sql
+```
+
+说明：
+
+- 这是推荐做法：宿主机 UTF-8 文件 -> 容器内 `mysql` 执行
+- 不要改成 `echo "中文 SQL" | docker exec ... mysql`
+- 如果 SQL 文件里有中文文案、JSON、配置值，这种方式最稳
+
+### 9.4 执行后验证
+
+至少补一轮验证：
+
+```bash
+docker exec -it linbang-mysql sh -lc 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" linbang'
+```
+
+进入 MySQL 后，执行你本次变更对应的验证 SQL，例如：
+
+```sql
+SHOW TABLES;
+DESC your_table;
+SELECT COUNT(*) FROM your_table;
+```
+
+如果本次变更涉及中文数据、配置文案、消息模板、协议内容，至少抽查：
+
+- 一条旧记录是否正常
+- 一条本次新增/更新记录是否正常
+- 没有出现 `????`、`�`、明显乱码片段
+
+### 9.5 什么时候需要重启后端
+
+分两类看：
+
+1. 纯数据修复、纯配置补录、纯历史数据更新：
+   不一定需要重启后端，执行 SQL 后验证接口即可
+2. SQL 变更配套了后端代码变更：
+   需要重新打 `jar`、上传新 `jar`、再重启后端容器
+
+如果你已经重新上传了新 `jar`，重启后端可执行：
+
+```bash
+cd /www/wwwroot/linbang-docker/deploy/docker
+docker compose restart backend
+```
+
+如果你还改了 `docker-compose.yml` 或 `.env`，建议执行：
+
+```bash
+cd /www/wwwroot/linbang-docker/deploy/docker
+docker compose up -d
+```
+
+### 9.6 首次初始化 SQL 与增量 SQL 的边界
+
+请明确区分：
+
+- `ruoyi-vue-pro/sql/mysql/建表.sql`
+- `ruoyi-vue-pro/sql/mysql/初始化.sql`
+
+它们只用于空库首次初始化。
+
+线上已运行环境后续再改这两个文件：
+
+- 不会自动把变更补到现有数据库
+- 只能影响下一次“全新空库初始化”
+
+所以线上正式变更请统一走：
+
+- 独立增量 SQL 文件
+- 先备份，再执行，再验证
+
+## 10. 常见问题
 
 ### 8.1 页面打开了，但接口 404 或 502
 
@@ -287,7 +411,7 @@ docker compose up -d
 
 如果 IM 相关能力异常，先看 `linbang-nginx` 配置是否被你手工改坏。
 
-## 10. 生产建议
+## 11. 生产建议
 
 当前这套先适合你快速跑通环境，后面建议继续做两件事：
 
@@ -302,7 +426,7 @@ docker compose up -d
 
 这版编排已经默认不对公网暴露这 3 个端口。
 
-## 11. 你现在最短操作路径
+## 12. 你现在最短操作路径
 
 你可以直接照这个顺序做：
 

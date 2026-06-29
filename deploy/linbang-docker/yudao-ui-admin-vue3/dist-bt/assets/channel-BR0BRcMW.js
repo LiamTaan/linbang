@@ -1,0 +1,1 @@
+import{un as e}from"./index-DzXA_nY_.js";var t=(t,n)=>{let r={appId:t,code:n};return e.get({url:`/pay/channel/get`,params:r})},n=t=>e.post({url:`/pay/channel/create`,data:t}),r=t=>e.put({url:`/pay/channel/update`,data:t});export{t as n,r,n as t};

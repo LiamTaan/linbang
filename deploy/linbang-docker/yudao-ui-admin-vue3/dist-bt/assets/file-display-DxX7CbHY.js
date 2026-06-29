@@ -1,0 +1,1 @@
+import{sn as e}from"./index-DzXA_nY_.js";var t=async t=>{let n=Array.from(new Set(t.filter(e=>!!e)));return(await Promise.all(n.map(async t=>{try{return[t,await e(t)]}catch{return}}))).reduce((e,t)=>(t&&(e[t[0]]=t[1]),e),{})},n=(e,t=`附件信息缺失`)=>e?[e.name,e.type].filter(Boolean).join(` / `):t;export{t as n,n as t};

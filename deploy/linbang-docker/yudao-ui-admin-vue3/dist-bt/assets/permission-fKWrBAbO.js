@@ -1,0 +1,1 @@
+import{mn as e,w as t}from"./index-DzXA_nY_.js";var{t:n}=e();function r(e){return t(e)}export{r as t};

@@ -1,0 +1,1 @@
+import{Wa as e}from"./form-create-Bwjdc6Tw.js";function t(t){let n=null,r,i=()=>{n&&(n.srcObject=r||null)};return e(t,e=>{r=e,i()},{flush:`post`,immediate:!0}),e=>{if(e instanceof HTMLMediaElement){n=e,i();return}n&&(n.srcObject=null),n=null}}export{t};

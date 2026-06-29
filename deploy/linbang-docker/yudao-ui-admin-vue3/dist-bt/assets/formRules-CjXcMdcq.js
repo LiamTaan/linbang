@@ -1,0 +1,1 @@
+import{mn as e}from"./index-DzXA_nY_.js";var{t}=e(),n={required:!0,message:t(`common.required`)};export{n as t};

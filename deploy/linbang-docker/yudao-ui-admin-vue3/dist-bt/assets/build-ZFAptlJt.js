@@ -1,0 +1,21 @@
+import"./rolldown-runtime-BM3Ffeng.js";import{Aa as e,Ka as t,Ko as n,La as r,Na as i,Ra as a,X as o,ga as s,io as c,it as l,la as u,ma as d,n as f,pa as p,po as m,qa as h,sa as g,ta as _,ua as v}from"./form-create-Bwjdc6Tw.js";import{t as y}from"./_plugin-vue_export-helper-DSZ7Ymws.js";import{d as b}from"./is-BVVfRFKZ.js";import{f as x,mn as S,rn as C,vt as w}from"./index-DzXA_nY_.js";import{t as T}from"./Dialog-DVONTVQ7.js";import{t as E}from"./ContentWrap-Q36g5XkJ.js";import{t as D}from"./es-CW5yKSel.js";/* empty css               */import{t as O}from"./java-DcHuTPVI.js";import{t as k}from"./json-B14wryys.js";var A=s({name:`InfraBuild`,__name:`index`,setup(t,{expose:n}){n();let{t:r}=S(),i=C(),a=c({switchType:[],autoActive:!0,useTemplate:!1,formOptions:{form:{labelWidth:`100px`}},fieldReadonly:!1,hiddenDragMenu:!1,hiddenDragBtn:!1,hiddenMenu:[],hiddenItem:[],hiddenItemConfig:{},disabledItemConfig:{},showSaveBtn:!1,showConfig:!0,showBaseForm:!0,showControl:!0,showPropsForm:!0,showEventForm:!0,showValidateForm:!0,showFormConfig:!0,showInputData:!0,showDevice:!0,appendConfigData:[]}),o=c(),s=c(!1),l=c(``),u=c(-1),d=c(``);w(o);let p=e=>{s.value=!0,l.value=e},h=()=>{p(`生成 JSON`),u.value=0,d.value=o.value.getRule()},g=()=>{p(`生成 Options`),u.value=1,d.value=o.value.getOption()},_=()=>{p(`生成组件`),u.value=2,d.value=v()},v=()=>{let e=o.value.getRule(),t=o.value.getOption();return`<template>
+    <form-create
+      v-model:api="fApi"
+      :rule="rule"
+      :option="option"
+      @submit="onSubmit"
+    ></form-create>
+  </template>
+  <script setup lang=ts>
+    const faps = ref(null)
+    const rule = ref('')
+    const option = ref('')
+    const init = () => {
+      rule.value = formCreate.parseJson('${f.toJson(e).replaceAll(`\\`,`\\\\`)}')
+      option.value = formCreate.parseJson('${JSON.stringify(t)}')
+    }
+    const onSubmit = (formData) => {
+      //todo 提交表单
+    }
+    init()
+  <\/script>`},y=async e=>{let{copy:t,copied:n,isSupported:a}=x({legacy:!0,source:JSON.stringify(e,null,2)});a?(await t(),m(n)&&i.success(r(`common.copySuccess`))):i.error(r(`common.copyError`))},T=e=>{let t=`json`;return u.value===2&&(t=`xml`),b(e)||(e=JSON.stringify(e,null,2)),D.highlight(e,{language:t,ignoreIllegals:!0}).value||`&nbsp;`};e(async()=>{D.registerLanguage(`xml`,O),D.registerLanguage(`json`,k)});let E={t:r,message:i,designerConfig:a,designer:o,dialogVisible:s,dialogTitle:l,formType:u,formData:d,openModel:p,showJson:h,showOption:g,showTemplate:_,makeTemplate:v,copy:y,highlightedCode:T};return Object.defineProperty(E,`__isScriptSetup`,{enumerable:!1,value:!0}),E}}),j={class:`h-[calc(100vh-var(--top-tool-height)-var(--tags-view-height)-var(--app-content-padding)-var(--app-content-padding)-2px)]`},M={key:0,ref:`editor`},N={class:`hljs`};function P(e,s,c,f,m,y){let b=o,x=r(`fc-designer`),S=E,C=l,w=T,D=a(`dompurify-html`);return i(),v(_,null,[d(S,{"body-style":{padding:`0px`},class:`!mb-0`},{default:t(()=>[g(`div`,j,[d(x,{class:`my-designer`,ref:`designer`,config:f.designerConfig},{handle:t(()=>[d(b,{size:`small`,type:`primary`,plain:``,onClick:f.showJson},{default:t(()=>[...s[2]||=[p(`生成JSON`,-1)]]),_:1}),d(b,{size:`small`,type:`success`,plain:``,onClick:f.showOption},{default:t(()=>[...s[3]||=[p(`生成Options`,-1)]]),_:1}),d(b,{size:`small`,type:`danger`,plain:``,onClick:f.showTemplate},{default:t(()=>[...s[4]||=[p(`生成组件`,-1)]]),_:1})]),_:1},8,[`config`])])]),_:1}),d(w,{modelValue:f.dialogVisible,"onUpdate:modelValue":s[1]||=e=>f.dialogVisible=e,title:f.dialogTitle,"max-height":`600`},{default:t(()=>[f.dialogVisible?(i(),v(`div`,M,[d(b,{style:{float:`right`},onClick:s[0]||=e=>f.copy(f.formData)},{default:t(()=>[p(n(f.t(`common.copy`)),1)]),_:1}),d(C,{height:`580`},{default:t(()=>[g(`div`,null,[g(`pre`,null,[h(g(`code`,N,null,512),[[D,f.highlightedCode(f.formData)]])])])]),_:1})],512)):u(``,!0)]),_:1},8,[`modelValue`,`title`])],64)}var F=y(A,[[`render`,P],[`__file`,`D:/user_wuyou/local_life_helper/yudao-ui-admin-vue3/src/views/infra/build/index.vue`]]);export{F as default};
