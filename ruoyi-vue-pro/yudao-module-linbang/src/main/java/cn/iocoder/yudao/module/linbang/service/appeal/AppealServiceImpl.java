@@ -29,10 +29,13 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderinfo.OrderInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderoperatelog.OrderOperateLogDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderunit.OrderUnitDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.partnercoordination.PartnerCoordinationDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderinfo.OrderInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderoperatelog.OrderOperateLogMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderunit.OrderUnitMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.partnercoordination.PartnerCoordinationMapper;
 import cn.iocoder.yudao.module.linbang.service.creditrecord.CreditRecordService;
+import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
@@ -64,7 +67,11 @@ public class AppealServiceImpl implements AppealService {
     @Resource
     private OrderOperateLogMapper orderOperateLogMapper;
     @Resource
+    private PartnerCoordinationMapper partnerCoordinationMapper;
+    @Resource
     private CreditRecordService creditRecordService;
+    @Resource
+    private MessagePushDispatchService messagePushDispatchService;
 
     @Override
     public Long createAppeal(AppealSaveReqVO createReqVO) {
@@ -130,12 +137,14 @@ public class AppealServiceImpl implements AppealService {
                 : appealMapper.selectList(new LambdaQueryWrapperX<AppealDO>()
                 .eq(AppealDO::getOrderId, appeal.getOrderId())
                 .orderByDesc(AppealDO::getCreateTime, AppealDO::getId));
+        List<PartnerCoordinationDO> coordinationRecords = partnerCoordinationMapper.selectListByDispute("APPEAL", id);
         List<OrderOperateLogDO> operateLogs = appeal.getOrderId() == null ? Collections.emptyList()
                 : orderOperateLogMapper.selectList(new LambdaQueryWrapperX<OrderOperateLogDO>()
                 .eq(OrderOperateLogDO::getOrderId, appeal.getOrderId())
                 .eq(appeal.getUnitId() != null, OrderOperateLogDO::getUnitId, appeal.getUnitId())
                 .orderByDesc(OrderOperateLogDO::getOperateTime, OrderOperateLogDO::getId));
-        return AppealDetailAssembler.build(appeal, order, unit, user, orderUser, merchant, fileRels, relatedAppeals, operateLogs);
+        return AppealDetailAssembler.build(appeal, order, unit, user, orderUser, merchant, fileRels,
+                relatedAppeals, coordinationRecords, operateLogs);
     }
 
     @Override
@@ -166,6 +175,19 @@ public class AppealServiceImpl implements AppealService {
                     "APPEAL_APPROVED", "APPEAL", appeal.getId(),
                     reqVO.getAuditRemark() != null ? reqVO.getAuditRemark() : "申诉审核通过");
         }
+        orderOperateLogMapper.insert(OrderOperateLogDO.builder()
+                .orderId(appeal.getOrderId())
+                .unitId(appeal.getUnitId())
+                .operateType("AUDIT_APPEAL")
+                .operateRole("ADMIN")
+                .operateBy(SecurityFrameworkUtils.getLoginUserId())
+                .beforeStatus(appeal.getStatus())
+                .afterStatus(updateObj.getStatus())
+                .remark(StrUtil.blankToDefault(reqVO.getAuditRemark(),
+                        "申诉审核结果：" + reqVO.getAuditStatus()))
+                .operateTime(LocalDateTime.now())
+                .build());
+        dispatchAppealAuditResult(appeal, reqVO);
     }
 
     @Override
@@ -236,6 +258,19 @@ public class AppealServiceImpl implements AppealService {
             item.setUserNickname(user.getNickname());
             item.setUserMobile(user.getMobile());
         });
+    }
+
+    private void dispatchAppealAuditResult(AppealDO appeal, AppealAuditReqVO reqVO) {
+        if (appeal == null || appeal.getUserId() == null) {
+            return;
+        }
+        String remark = StrUtil.blankToDefault(reqVO.getAuditRemark(),
+                "申诉审核结果：" + StrUtil.blankToDefault(reqVO.getAuditStatus(), "UNKNOWN"));
+        if (StrUtil.isNotBlank(reqVO.getRejectReason())) {
+            remark = reqVO.getRejectReason();
+        }
+        messagePushDispatchService.dispatchSingle("DISPUTE_RESULT", "申诉结果通知", "APPEAL",
+                appeal.getId(), appeal.getUserId(), remark);
     }
 
 }

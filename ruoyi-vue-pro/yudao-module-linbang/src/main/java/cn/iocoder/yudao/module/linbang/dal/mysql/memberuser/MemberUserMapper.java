@@ -8,6 +8,7 @@ import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import org.apache.ibatis.annotations.Mapper;
+import org.springframework.stereotype.Repository;
 import cn.iocoder.yudao.module.linbang.controller.admin.memberuser.vo.*;
 
 /**
@@ -16,10 +17,15 @@ import cn.iocoder.yudao.module.linbang.controller.admin.memberuser.vo.*;
  * @author dawn
  */
 @Mapper
+@Repository("linbangMemberUserMapper")
 public interface MemberUserMapper extends BaseMapperX<MemberUserDO> {
 
     default MemberUserDO selectByMobile(String mobile) {
         return selectOne(MemberUserDO::getMobile, mobile);
+    }
+
+    default MemberUserDO selectByUsername(String username) {
+        return selectOne(MemberUserDO::getUsername, username);
     }
 
     default List<MemberUserDO> selectListByIds(Collection<Long> ids) {

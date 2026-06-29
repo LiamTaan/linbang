@@ -1,10 +1,6 @@
 package cn.iocoder.yudao.module.linbang.dal.dataobject.merchantentry;
 
 import lombok.*;
-import java.util.*;
-import java.time.LocalDateTime;
-import java.time.LocalDateTime;
-import java.time.LocalDateTime;
 import java.time.LocalDateTime;
 import com.baomidou.mybatisplus.annotation.*;
 import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
@@ -74,9 +70,35 @@ public class MerchantEntryDO extends BaseDO {
      */
     private String status;
     /**
+     * 入驻进度状态
+     */
+    private String progressStatus;
+    /**
+     * 当前阶段名称
+     */
+    private String currentStageName;
+    /**
+     * 当前阶段时间
+     */
+    private LocalDateTime currentStageTime;
+    /**
+     * 驳回原因
+     */
+    private String rejectReason;
+    /**
+     * 当前阻塞原因
+     */
+    private String onboardingBlockedReason;
+    /**
+     * 是否已开通接单
+     */
+    private Boolean acceptEnabled;
+    /**
+     * 是否必须绑卡
+     */
+    private Boolean bankCardRequired;
+    /**
      * 备注
      */
     private String remark;
-
-
 }

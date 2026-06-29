@@ -23,6 +23,16 @@ export interface MemberUserRealName {
 }
 
 export interface MemberUserRealNameDetail extends MemberUserRealName {
+  holdCardVideoFileId?: number
+  idCardValidFrom?: string | Dayjs
+  idCardValidEnd?: string | Dayjs
+  wechatRealNameStatus?: string
+  alipayRealNameStatus?: string
+  verifyProvider?: string
+  verifyFlowNo?: string
+  verifyStartedTime?: string | Dayjs
+  verifyCompletedTime?: string | Dayjs
+  verifyFailReason?: string
   updateTime?: string | Dayjs
   user?: {
     id?: number
@@ -65,6 +75,9 @@ export interface MemberUserRealNameDetail extends MemberUserRealName {
     latestCreditLevel?: string
     merchantBound?: boolean
     latestEntryApproved?: boolean
+    holdCardVideoUploaded?: boolean
+    wechatMatched?: boolean
+    alipayMatched?: boolean
   }
   qualifications?: Array<{
     id?: number

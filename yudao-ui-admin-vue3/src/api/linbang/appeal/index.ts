@@ -1,5 +1,6 @@
 import request from '@/config/axios'
 import type { Dayjs } from 'dayjs'
+import { buildDynamicKeyHeaders } from '@/api/linbang/security'
 
 export interface Appeal {
   id: number
@@ -98,6 +99,17 @@ export interface AppealDetail extends Appeal {
     auditTime?: string | Dayjs
     createTime?: string | Dayjs
   }>
+  coordinationRecords?: Array<{
+    id?: number
+    partnerId?: number
+    status?: string
+    coordinationRemark?: string
+    escalateRemark?: string
+    initiatedBy?: number
+    initiatedTime?: string | Dayjs
+    finishedBy?: number
+    finishedTime?: string | Dayjs
+  }>
   operateLogs?: Array<{
     id?: number
     unitId?: number
@@ -135,8 +147,12 @@ export const AppealApi = {
     return await request.put({ url: `/review/appeal/update`, data })
   },
 
-  auditAppeal: async (data: AppealAuditReqVO) => {
-    return await request.post({ url: `/review/appeal/audit`, data })
+  auditAppeal: async (data: AppealAuditReqVO, verifyToken?: string) => {
+    return await request.post({
+      url: `/review/appeal/audit`,
+      data,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   },
 
   exportAppeal: async (params: any) => {

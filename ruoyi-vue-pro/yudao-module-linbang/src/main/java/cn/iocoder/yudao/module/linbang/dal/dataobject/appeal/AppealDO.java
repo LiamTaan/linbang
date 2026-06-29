@@ -80,6 +80,10 @@ public class AppealDO extends BaseDO {
      * 驳回原因
      */
     private String rejectReason;
+    /**
+     * 申诉时效截止时间
+     */
+    private LocalDateTime appealExpireTime;
 
 
 }

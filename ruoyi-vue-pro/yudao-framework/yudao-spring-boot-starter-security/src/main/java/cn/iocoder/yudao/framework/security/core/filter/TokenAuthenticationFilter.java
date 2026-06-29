@@ -21,6 +21,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Token 过滤器，验证 token 的有效性
@@ -30,6 +33,20 @@ import java.io.IOException;
  */
 @RequiredArgsConstructor
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final String SCENE_JMREPORT = "JMREPORT";
+    private static final String SCENE_GOVIEW = "GOVIEW";
+    private static final String SCENE_WEBSOCKET = "WEBSOCKET";
+
+    private static final Map<String, String> SCENE_PATH_PREFIXES;
+
+    static {
+        Map<String, String> scenePaths = new HashMap<>();
+        scenePaths.put("/jmreport/", SCENE_JMREPORT);
+        scenePaths.put("/drag/", SCENE_GOVIEW);
+        scenePaths.put("/infra/ws", SCENE_WEBSOCKET);
+        SCENE_PATH_PREFIXES = Collections.unmodifiableMap(scenePaths);
+    }
 
     private final SecurityProperties securityProperties;
 
@@ -48,10 +65,13 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             try {
                 // 1.1 基于 token 构建登录用户
                 LoginUser loginUser = buildLoginUserByToken(token, userType);
-                // 1.2 模拟 Login 功能，方便日常开发调试
                 if (loginUser == null) {
-                    loginUser = mockLoginUser(request, token, userType);
+                    loginUser = buildLoginUserBySceneTicket(request, token, userType);
                 }
+                // 1.2 模拟 Login 功能，方便日常开发调试
+//                if (loginUser == null) {
+//                    loginUser = mockLoginUser(request, token, userType);
+//                }
 
                 // 2. 设置当前用户
                 if (loginUser != null) {
@@ -90,6 +110,38 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             // 校验 Token 不通过时，考虑到一些接口是无需登录的，所以直接返回 null 即可
             return null;
         }
+    }
+
+    private LoginUser buildLoginUserBySceneTicket(HttpServletRequest request, String token, Integer userType) {
+        String scene = resolveScene(request);
+        if (scene == null) {
+            return null;
+        }
+        try {
+            OAuth2AccessTokenCheckRespDTO ticket = oauth2TokenApi.checkSceneTicket(token, scene);
+            if (ticket == null) {
+                return null;
+            }
+            if (userType != null && ObjectUtil.notEqual(ticket.getUserType(), userType)) {
+                throw new AccessDeniedException("错误的用户类型");
+            }
+            return new LoginUser().setId(ticket.getUserId()).setUserType(ticket.getUserType())
+                    .setInfo(ticket.getUserInfo())
+                    .setTenantId(ticket.getTenantId()).setScopes(ticket.getScopes())
+                    .setExpiresTime(ticket.getExpiresTime());
+        } catch (ServiceException serviceException) {
+            return null;
+        }
+    }
+
+    private String resolveScene(HttpServletRequest request) {
+        String path = StrUtil.blankToDefault(request.getRequestURI(), request.getServletPath());
+        for (Map.Entry<String, String> entry : SCENE_PATH_PREFIXES.entrySet()) {
+            if (path.startsWith(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 
     /**

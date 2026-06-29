@@ -4,6 +4,7 @@ import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
 
@@ -34,7 +35,7 @@ public class WalletBankCardPageReqVO extends PageParam {
     @Schema(description = "预留手机号")
     private String reservedMobile;
 
-    @Schema(description = "状态", example = "2")
+    @Schema(description = OpenApiSchemaConstants.BANK_CARD_STATUS, example = "ENABLE")
     private String status;
 
     @Schema(description = "是否默认")

@@ -23,11 +23,29 @@ public class MessageTemplateDO extends BaseDO {
 
     private String templateName;
 
+    private String sceneCode;
+
+    private String messageCategory;
+
     private String templateType;
 
     private String channelType;
 
-    private String content;
+    private String titleTemplate;
+
+    private String contentTemplate;
+
+    private String routeType;
+
+    private String routeValue;
+
+    private String mpTemplateId;
+
+    private String smsTemplateCode;
+
+    private String voiceTextTemplate;
+
+    private Integer sort;
 
     private String status;
 }

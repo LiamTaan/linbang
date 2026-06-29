@@ -4,6 +4,7 @@ import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import java.math.BigDecimal;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
@@ -23,10 +24,10 @@ public class WalletFlowPageReqVO extends PageParam {
     @Schema(description = "钱包账户ID", example = "16689")
     private Long walletAccountId;
 
-    @Schema(description = "业务类型", example = "1")
+    @Schema(description = OpenApiSchemaConstants.WALLET_FLOW_BIZ_TYPE, example = "WITHDRAW_APPLY")
     private String bizType;
 
-    @Schema(description = "流水类型", example = "1")
+    @Schema(description = OpenApiSchemaConstants.WALLET_FLOW_TYPE, example = "OUT")
     private String flowType;
 
     @Schema(description = "变动金额")

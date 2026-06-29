@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.ordermatchrecord.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -59,6 +60,26 @@ public class OrderMatchRecordRespVO {
     @ExcelProperty("距离公里")
     private BigDecimal distanceKm;
 
+    @Schema(description = "阶段号")
+    @ExcelProperty("阶段号")
+    private Integer stageNo;
+
+    @Schema(description = "推送批次号")
+    @ExcelProperty("推送批次号")
+    private Integer pushBatchNo;
+
+    @Schema(description = "优先层")
+    @ExcelProperty("优先层")
+    private String priorityLayer;
+
+    @Schema(description = "优先池命中")
+    @ExcelProperty("优先池命中")
+    private Boolean priorityPoolFlag;
+
+    @Schema(description = "品类命中等级")
+    @ExcelProperty("品类命中等级")
+    private String categoryMatchLevel;
+
     @Schema(description = "推送时间", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("推送时间")
     private LocalDateTime pushTime;
@@ -67,8 +88,17 @@ public class OrderMatchRecordRespVO {
     @ExcelProperty("接单截止时间")
     private LocalDateTime acceptDeadlineTime;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = "过期时间")
+    @ExcelProperty("过期时间")
+    private LocalDateTime expiredTime;
+
+    @Schema(description = OpenApiSchemaConstants.MATCH_RECORD_STATUS, requiredMode = Schema.RequiredMode.REQUIRED,
+            example = "PUSHED")
     @ExcelProperty("状态")
     private String status;
+
+    @Schema(description = "最终结果")
+    @ExcelProperty("最终结果")
+    private String finalResult;
 
 }

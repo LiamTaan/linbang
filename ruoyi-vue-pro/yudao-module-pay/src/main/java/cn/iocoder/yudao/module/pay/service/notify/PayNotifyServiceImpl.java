@@ -30,6 +30,7 @@ import cn.iocoder.yudao.module.pay.service.refund.PayRefundService;
 import cn.iocoder.yudao.module.pay.service.transfer.PayTransferService;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -91,6 +92,8 @@ public class PayNotifyServiceImpl implements PayNotifyService {
 
     @Resource
     private PayNotifyLockRedisDAO notifyLockCoreRedisDAO;
+    @Resource
+    private ObjectProvider<PayNotifyInternalHandler> internalHandlerProvider;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -245,6 +248,10 @@ public class PayNotifyServiceImpl implements PayNotifyService {
         } else {
             throw new RuntimeException("未知的通知任务类型：" + JsonUtils.toJsonString(task));
         }
+        CommonResult<?> internalResult = executeInternalNotify(task, request);
+        if (internalResult != null) {
+            return internalResult;
+        }
         // 拼接 header 参数
         Map<String, String> headers = new HashMap<>();
         TenantUtils.addTenantHeader(headers, task.getTenantId());
@@ -256,6 +263,15 @@ public class PayNotifyServiceImpl implements PayNotifyService {
             // 解析结果
             return JsonUtils.parseObject(response.body(), CommonResult.class);
         }
+    }
+
+    private CommonResult<?> executeInternalNotify(PayNotifyTaskDO task, Object request) {
+        for (PayNotifyInternalHandler handler : internalHandlerProvider) {
+            if (handler.supports(task)) {
+                return handler.handle(task, request);
+            }
+        }
+        return null;
     }
 
     /**

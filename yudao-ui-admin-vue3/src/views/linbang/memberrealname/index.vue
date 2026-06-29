@@ -96,9 +96,18 @@
       <el-table-column label="证件附件" align="center" min-width="260">
         <template #default="{ row }">
           <div class="leading-20px">
-            <div>{{ formatFileDisplay('正面', row.idCardFrontFileId) }}</div>
-            <div>{{ formatFileDisplay('反面', row.idCardBackFileId) }}</div>
-            <div>{{ formatFileDisplay('手持', row.holdCardFileId) }}</div>
+            <div v-for="item in getAttachmentEntries(row)" :key="item.key">
+              <span>{{ item.label }}：</span>
+              <el-button
+                v-if="item.fileId"
+                link
+                type="primary"
+                @click="openFilePreview(item.label, item.fileId)"
+              >
+                点击查看
+              </el-button>
+              <span v-else>{{ formatAttachmentFile(item.fileId) }}</span>
+            </div>
           </div>
         </template>
       </el-table-column>
@@ -156,17 +165,38 @@
         <span v-else>-</span>
       </el-descriptions-item>
       <el-descriptions-item label="审核时间">{{ formatDate(detailData?.auditTime) }}</el-descriptions-item>
-      <el-descriptions-item label="身份证正面">
-        {{ formatFileDisplay('正面', detailData?.idCardFrontFileId).replace('正面：', '') }}
+      <el-descriptions-item label="证件附件" :span="2">
+        <div class="flex flex-col gap-8px">
+          <div v-for="item in getAttachmentEntries(detailData, true)" :key="item.key">
+            <span>{{ item.label }}：</span>
+            <el-button
+              v-if="item.fileId"
+              link
+              type="primary"
+              @click="openFilePreview(item.label, item.fileId)"
+            >
+              点击查看
+            </el-button>
+            <span v-else>{{ formatAttachmentFile(item.fileId) }}</span>
+          </div>
+        </div>
       </el-descriptions-item>
-      <el-descriptions-item label="身份证反面">
-        {{ formatFileDisplay('反面', detailData?.idCardBackFileId).replace('反面：', '') }}
-      </el-descriptions-item>
-      <el-descriptions-item label="手持证件照">
-        {{ formatFileDisplay('手持', detailData?.holdCardFileId).replace('手持：', '') }}
+      <el-descriptions-item label="身份证有效期">
+        {{ formatDate(detailData?.idCardValidFrom) }} ~ {{ formatDate(detailData?.idCardValidEnd) }}
       </el-descriptions-item>
       <el-descriptions-item label="活体结果">{{ formatVerifyResult(detailData?.livenessResult) }}</el-descriptions-item>
       <el-descriptions-item label="人脸核验结果">{{ formatVerifyResult(detailData?.faceVerifyResult) }}</el-descriptions-item>
+      <el-descriptions-item label="微信实名关联">
+        {{ detailData?.wechatRealNameStatus || '-' }}{{ detailData?.summary?.wechatMatched ? '（已匹配）' : '' }}
+      </el-descriptions-item>
+      <el-descriptions-item label="支付宝实名关联">
+        {{ detailData?.alipayRealNameStatus || '-' }}{{ detailData?.summary?.alipayMatched ? '（已匹配）' : '' }}
+      </el-descriptions-item>
+      <el-descriptions-item label="核验供应商">{{ detailData?.verifyProvider || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="核验流水号">{{ detailData?.verifyFlowNo || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="核验发起时间">{{ formatDate(detailData?.verifyStartedTime) }}</el-descriptions-item>
+      <el-descriptions-item label="核验完成时间">{{ formatDate(detailData?.verifyCompletedTime) }}</el-descriptions-item>
+      <el-descriptions-item label="核验失败原因" :span="2">{{ detailData?.verifyFailReason || '-' }}</el-descriptions-item>
       <el-descriptions-item label="审核备注" :span="2">{{ detailData?.auditRemark || '-' }}</el-descriptions-item>
       <el-descriptions-item label="驳回原因" :span="2">{{ detailData?.rejectReason || '-' }}</el-descriptions-item>
     </el-descriptions>
@@ -259,7 +289,16 @@
       border
       max-height="240"
     >
-      <el-table-column label="资质类型" prop="qualificationType" width="120" />
+      <el-table-column label="资质类型" prop="qualificationType" width="120">
+        <template #default="{ row }">
+          <dict-tag
+            v-if="row.qualificationType"
+            :type="DICT_TYPE.LB_QUALIFICATION_TYPE"
+            :value="row.qualificationType"
+          />
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="资质名称" prop="qualificationName" min-width="160" />
       <el-table-column label="资质编号" prop="qualificationNo" width="160" />
       <el-table-column label="审核状态" prop="auditStatus" width="110">
@@ -305,13 +344,29 @@
       :model="auditFormData"
       :rules="auditFormRules"
       label-width="88px"
-      v-loading="auditLoading"
+      v-loading="auditLoading || auditDetailLoading"
     >
       <el-form-item label="用户">
         <el-input :model-value="formatUserDisplay(currentRow)" disabled />
       </el-form-item>
       <el-form-item label="真实姓名">
         <el-input :model-value="currentRow?.realName" disabled />
+      </el-form-item>
+      <el-form-item label="证件附件">
+        <div class="flex w-full flex-col gap-8px">
+          <div v-for="item in getAttachmentEntries(auditDetail || currentRow, true)" :key="item.key">
+            <span>{{ item.label }}：</span>
+            <el-button
+              v-if="item.fileId"
+              link
+              type="primary"
+              @click="openFilePreview(item.label, item.fileId)"
+            >
+              点击查看
+            </el-button>
+            <span v-else>{{ formatAttachmentFile(item.fileId) }}</span>
+          </div>
+        </div>
       </el-form-item>
       <el-form-item label="审核结果" prop="auditStatus">
         <el-radio-group v-model="auditFormData.auditStatus">
@@ -345,16 +400,50 @@
       <el-button type="primary" :loading="auditLoading" @click="submitAudit">提交审核</el-button>
     </template>
   </Dialog>
+
+  <Dialog v-model="filePreviewVisible" :title="filePreviewTitle" width="900px">
+    <div v-loading="filePreviewLoading" class="min-h-320px">
+      <template v-if="previewFile && previewFileUrl">
+        <el-image
+          v-if="isImageType(previewFile)"
+          class="w-full"
+          fit="contain"
+          :src="previewFileUrl"
+          :preview-src-list="[previewFileUrl]"
+          preview-teleported
+        />
+        <video
+          v-else-if="isVideoType(previewFile)"
+          class="h-520px w-full rounded-4px bg-black"
+          :src="previewFileUrl"
+          controls
+        ></video>
+        <iframe
+          v-else-if="isPdfType(previewFile)"
+          :src="previewFileUrl"
+          class="h-520px w-full border-0"
+        ></iframe>
+        <div v-else class="flex min-h-320px items-center justify-center">
+          <el-empty description="当前文件暂不支持直接预览">
+            <el-button type="primary" @click="openFileInNewTab">新窗口查看</el-button>
+          </el-empty>
+        </div>
+      </template>
+      <el-empty v-else description="附件信息缺失或文件不可预览" />
+    </div>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { getStrDictOptions, DICT_TYPE } from '@/utils/dict'
 import { dateFormatter, formatDate } from '@/utils/formatTime'
 import download from '@/utils/download'
 import { useMessage } from '@/hooks/web/useMessage'
 import { formatEnableStatus, formatTriggerType, formatVerifyResult } from '../utils/display'
+import { formatFileBrief, loadFilesByIds, type FileLookupMap } from '../shared/file-display'
+import type { FileVO } from '@/api/infra/file'
 import {
   MemberUserRealNameApi,
   type MemberUserRealNameDetail,
@@ -371,6 +460,11 @@ const detailVisible = ref(false)
 const detailLoading = ref(false)
 const list = ref<MemberUserRealName[]>([])
 const detailData = ref<MemberUserRealNameDetail>()
+const fileMap = reactive<FileLookupMap>({})
+const filePreviewVisible = ref(false)
+const filePreviewLoading = ref(false)
+const filePreviewTitle = ref('附件预览')
+const previewFile = ref<FileVO>()
 const total = ref(0)
 const queryFormRef = ref<FormInstance>()
 const queryParams = reactive({
@@ -383,12 +477,85 @@ const queryParams = reactive({
   createTime: [] as string[]
 })
 
+type RealNameAttachmentFields = {
+  idCardFrontFileId?: number
+  idCardBackFileId?: number
+  holdCardFileId?: number
+  holdCardVideoFileId?: number
+}
+
+const getAttachmentEntries = (record?: RealNameAttachmentFields, includeVideo = false) => {
+  const attachments = [
+    { key: 'front', label: '身份证正面', fileId: record?.idCardFrontFileId },
+    { key: 'back', label: '身份证反面', fileId: record?.idCardBackFileId },
+    { key: 'hold', label: '手持证件照', fileId: record?.holdCardFileId }
+  ]
+  if (includeVideo) {
+    attachments.push({ key: 'video', label: '手持视频', fileId: record?.holdCardVideoFileId })
+  }
+  return attachments
+}
+
+const loadAttachmentFiles = async (records: Array<RealNameAttachmentFields | undefined>) => {
+  Object.assign(
+    fileMap,
+    await loadFilesByIds(records.flatMap((record) => getAttachmentEntries(record, true).map((item) => item.fileId)))
+  )
+}
+
+const previewFileUrl = computed(() => previewFile.value?.url)
+
+const isImageType = (file?: FileVO) => {
+  return Boolean(file?.type?.includes('image'))
+}
+
+const isVideoType = (file?: FileVO) => {
+  return Boolean(file?.type?.includes('video'))
+}
+
+const isPdfType = (file?: FileVO) => {
+  return Boolean(file?.type?.includes('pdf') || file?.name?.toLowerCase().endsWith('.pdf'))
+}
+
+const formatAttachmentFile = (fileId?: number) => {
+  if (!fileId) {
+    return '-'
+  }
+  return formatFileBrief(fileMap[fileId], `文件 ID：${fileId}`)
+}
+
+const openFilePreview = async (label: string, fileId?: number) => {
+  if (!fileId) {
+    return
+  }
+  filePreviewTitle.value = `${label}预览`
+  previewFile.value = fileMap[fileId]
+  filePreviewVisible.value = true
+  if (previewFile.value) {
+    return
+  }
+  filePreviewLoading.value = true
+  try {
+    Object.assign(fileMap, await loadFilesByIds([fileId]))
+    previewFile.value = fileMap[fileId]
+  } finally {
+    filePreviewLoading.value = false
+  }
+}
+
+const openFileInNewTab = () => {
+  if (previewFileUrl.value) {
+    window.open(previewFileUrl.value, '_blank', 'noopener,noreferrer')
+  }
+}
+
 const getList = async () => {
   loading.value = true
   try {
     const data = await MemberUserRealNameApi.getMemberUserRealNamePage(queryParams)
     list.value = data.list
     total.value = data.total
+    await loadAttachmentFiles(data.list)
   } finally {
     loading.value = false
   }
@@ -420,6 +587,7 @@ const openDetail = async (id: number) => {
   detailLoading.value = true
   try {
     detailData.value = await MemberUserRealNameApi.getMemberUserRealName(id)
+    await loadAttachmentFiles([detailData.value])
   } finally {
     detailLoading.value = false
   }
@@ -441,17 +609,12 @@ const formatDetailUserDisplay = () => {
   return summary || (detailData.value?.userId ? '用户信息缺失' : '-')
 }
 
-const formatFileDisplay = (label: string, fileId?: number) => {
-  if (!fileId) {
-    return `${label}：-`
-  }
-  return `${label}：已上传`
-}
-
 const auditDialogVisible = ref(false)
 const auditLoading = ref(false)
+const auditDetailLoading = ref(false)
 const auditFormRef = ref<FormInstance>()
 const currentRow = ref<MemberUserRealName>()
+const auditDetail = ref<MemberUserRealNameDetail>()
 const auditFormData = reactive<MemberUserRealNameAuditReqVO>({
   id: 0,
   auditStatus: 'APPROVED',
@@ -474,13 +637,22 @@ const auditFormRules = reactive<FormRules>({
   ]
 })
 
-const openAuditDialog = (row: MemberUserRealName) => {
+const openAuditDialog = async (row: MemberUserRealName) => {
   currentRow.value = row
+  auditDetail.value = undefined
   auditFormData.id = row.id
   auditFormData.auditStatus = row.auditStatus === 'REJECTED' ? 'REJECTED' : 'APPROVED'
   auditFormData.auditRemark = row.auditRemark || ''
   auditFormData.rejectReason = row.rejectReason || ''
   auditDialogVisible.value = true
+  auditDetailLoading.value = true
+  try {
+    await loadAttachmentFiles([row])
+    auditDetail.value = await MemberUserRealNameApi.getMemberUserRealName(row.id)
+    await loadAttachmentFiles([auditDetail.value])
+  } finally {
+    auditDetailLoading.value = false
+  }
 }
 
 const submitAudit = async () => {

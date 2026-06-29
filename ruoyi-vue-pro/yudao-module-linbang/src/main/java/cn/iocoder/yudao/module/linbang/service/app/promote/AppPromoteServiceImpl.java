@@ -2,12 +2,20 @@ package cn.iocoder.yudao.module.linbang.service.app.promote;
 
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppCommissionPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppInviteCodeRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteInviteCodeBindReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteCenterRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteTemplatePageReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteTemplateRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteTeamStatsRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.commissionorder.CommissionOrderDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.messagetemplate.MessageTemplateDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.promoter.PromoterDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.promoterrelation.PromoterRelationDO;
+import cn.iocoder.yudao.module.linbang.dal.mysql.messagetemplate.MessageTemplateMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.promoterrelation.PromoterRelationMapper;
 import cn.iocoder.yudao.module.linbang.service.commissionorder.CommissionOrderService;
 import cn.iocoder.yudao.module.linbang.service.promoter.PromoterService;
 import org.springframework.stereotype.Service;
@@ -15,6 +23,7 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -27,6 +36,10 @@ public class AppPromoteServiceImpl implements AppPromoteService {
     private PromoterService promoterService;
     @Resource
     private CommissionOrderService commissionOrderService;
+    @Resource
+    private PromoterRelationMapper promoterRelationMapper;
+    @Resource
+    private MessageTemplateMapper messageTemplateMapper;
 
     @Override
     public AppPromoteCenterRespVO getPromoteCenter(Long userId) {
@@ -36,11 +49,17 @@ public class AppPromoteServiceImpl implements AppPromoteService {
         List<CommissionOrderDO> commissionOrders = recentPage.getList();
         AppPromoteCenterRespVO respVO = BeanUtils.toBean(promoter, AppPromoteCenterRespVO.class);
         respVO.setPromoterId(promoter.getId());
+        respVO.setLevelName(resolvePromoterLevelName(promoter.getLevelCode()));
+        respVO.setUpgradeConditionDesc(resolveUpgradeConditionDesc(promoter.getLevelCode()));
+        respVO.setNextLevelNeedMetric(resolveNextLevelNeedMetric(promoter));
         respVO.setPendingCommissionCount(countByStatus(commissionOrders, "PENDING"));
         respVO.setSettledCommissionCount(countByStatus(commissionOrders, "SETTLED"));
         respVO.setInvalidCommissionCount(countByStatus(commissionOrders, "INVALID"));
         respVO.setPendingCommissionAmount(sumAmountByStatus(commissionOrders, "PENDING"));
         respVO.setSettledCommissionAmount(sumAmountByStatus(commissionOrders, "SETTLED"));
+        respVO.setPendingSettleCommissionAmount(respVO.getPendingCommissionAmount());
+        respVO.setInviteShortLink(promoter.getInviteUrl());
+        respVO.setInvitePosterUrl("/app/promote/poster?code=" + promoter.getInviteCode());
         respVO.setRecentCommissionOrders(commissionOrders.stream()
                 .limit(5)
                 .map(item -> BeanUtils.toBean(item, AppPromoteCenterRespVO.RecentCommissionRespVO.class))
@@ -57,12 +76,84 @@ public class AppPromoteServiceImpl implements AppPromoteService {
     @Override
     public AppInviteCodeRespVO getInviteCode(Long userId) {
         PromoterDO promoter = promoterService.getOrCreatePromoter(userId);
-        return new AppInviteCodeRespVO(promoter.getInviteCode(), promoter.getInviteUrl());
+        return new AppInviteCodeRespVO(promoter.getInviteCode(), promoter.getInviteUrl(),
+                promoter.getInviteUrl(), "/app/promote/poster?code=" + promoter.getInviteCode());
     }
 
     @Override
     public void bindInviteCode(Long userId, AppPromoteInviteCodeBindReqVO reqVO) {
         promoterService.bindInviteCode(userId, reqVO);
+    }
+
+    @Override
+    public AppPromoteTeamStatsRespVO getTeamStats(Long userId) {
+        PromoterDO promoter = promoterService.getOrCreatePromoter(userId);
+        List<PromoterRelationDO> firstLevelRelations = promoterRelationMapper.selectList(new LambdaQueryWrapperX<PromoterRelationDO>()
+                .eq(PromoterRelationDO::getPromoterId, promoter.getId())
+                .orderByDesc(PromoterRelationDO::getBindTime, PromoterRelationDO::getId));
+        List<Long> firstLevelUserIds = firstLevelRelations.stream()
+                .map(PromoterRelationDO::getUserId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        List<PromoterDO> firstLevelPromoters = firstLevelUserIds.isEmpty() ? java.util.Collections.emptyList()
+                : firstLevelUserIds.stream()
+                .map(promoterService::getOrCreatePromoter)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        List<Long> firstLevelPromoterIds = firstLevelPromoters.stream()
+                .map(PromoterDO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        List<PromoterRelationDO> secondLevelRelations = firstLevelPromoterIds.isEmpty() ? java.util.Collections.emptyList()
+                : promoterRelationMapper.selectList(new LambdaQueryWrapperX<PromoterRelationDO>()
+                .in(PromoterRelationDO::getPromoterId, firstLevelPromoterIds)
+                .orderByDesc(PromoterRelationDO::getBindTime, PromoterRelationDO::getId));
+
+        AppPromoteTeamStatsRespVO respVO = new AppPromoteTeamStatsRespVO();
+        respVO.setFirstLevelUserCount(firstLevelRelations.size());
+        respVO.setFirstLevelConvertCount((int) firstLevelRelations.stream()
+                .filter(item -> "CONVERTED".equalsIgnoreCase(item.getConvertStatus()))
+                .count());
+        respVO.setFirstLevelCommissionAmount(sumCommissionAmount(promoter.getId(), firstLevelUserIds));
+        respVO.setSecondLevelUserCount(secondLevelRelations.size());
+        respVO.setSecondLevelConvertCount((int) secondLevelRelations.stream()
+                .filter(item -> "CONVERTED".equalsIgnoreCase(item.getConvertStatus()))
+                .count());
+        respVO.setSecondLevelCommissionAmount(sumCommissionAmount(firstLevelPromoterIds));
+
+        List<AppPromoteTeamStatsRespVO.RecentConvertRespVO> recentConverts = new ArrayList<>();
+        firstLevelRelations.stream().limit(5).forEach(item -> recentConverts.add(convertRecent(item, "FIRST")));
+        if (recentConverts.size() < 5) {
+            secondLevelRelations.stream().limit(5 - recentConverts.size())
+                    .forEach(item -> recentConverts.add(convertRecent(item, "SECOND")));
+        }
+        respVO.setRecentConverts(recentConverts);
+        return respVO;
+    }
+
+    @Override
+    public PageResult<AppPromoteTemplateRespVO> getTemplatePage(Long userId, AppPromoteTemplatePageReqVO reqVO) {
+        promoterService.getOrCreatePromoter(userId);
+        PageResult<MessageTemplateDO> pageResult = messageTemplateMapper.selectPage(reqVO,
+                new LambdaQueryWrapperX<MessageTemplateDO>()
+                        .eq(MessageTemplateDO::getStatus, "ENABLE")
+                        .likeIfPresent(MessageTemplateDO::getMessageCategory, reqVO.getMessageCategory())
+                        .in(MessageTemplateDO::getMessageCategory, "MARKETING", "SYSTEM")
+                        .orderByAsc(MessageTemplateDO::getSort)
+                        .orderByDesc(MessageTemplateDO::getId));
+        return new PageResult<>(pageResult.getList().stream().map(this::buildTemplateResp).collect(Collectors.toList()),
+                pageResult.getTotal());
+    }
+
+    @Override
+    public AppPromoteTemplateRespVO getTemplate(Long userId, Long id) {
+        promoterService.getOrCreatePromoter(userId);
+        MessageTemplateDO template = messageTemplateMapper.selectById(id);
+        if (template == null || !"ENABLE".equalsIgnoreCase(template.getStatus())) {
+            return null;
+        }
+        return buildTemplateResp(template);
     }
 
     private Integer countByStatus(List<CommissionOrderDO> commissionOrders, String status) {
@@ -77,5 +168,88 @@ public class AppPromoteServiceImpl implements AppPromoteService {
                 .map(CommissionOrderDO::getCommissionAmount)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal sumCommissionAmount(Long promoterId, List<Long> userIds) {
+        if (promoterId == null || userIds == null || userIds.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        return commissionOrderService.getAppCommissionOrderPage(promoterId, new AppCommissionPageReqVO()).getList().stream()
+                .filter(item -> userIds.contains(item.getUserId()))
+                .map(CommissionOrderDO::getCommissionAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal sumCommissionAmount(List<Long> promoterIds) {
+        if (promoterIds == null || promoterIds.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal total = BigDecimal.ZERO;
+        for (Long promoterId : promoterIds) {
+            total = total.add(commissionOrderService.getAppCommissionOrderPage(promoterId, new AppCommissionPageReqVO()).getList().stream()
+                    .map(CommissionOrderDO::getCommissionAmount)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add));
+        }
+        return total;
+    }
+
+    private AppPromoteTeamStatsRespVO.RecentConvertRespVO convertRecent(PromoterRelationDO relation, String level) {
+        AppPromoteTeamStatsRespVO.RecentConvertRespVO respVO = new AppPromoteTeamStatsRespVO.RecentConvertRespVO();
+        respVO.setUserId(relation.getUserId());
+        respVO.setLevel(level);
+        respVO.setBindTime(relation.getBindTime());
+        respVO.setFirstOrderId(relation.getFirstOrderId());
+        respVO.setConvertStatus(relation.getConvertStatus());
+        return respVO;
+    }
+
+    private AppPromoteTemplateRespVO buildTemplateResp(MessageTemplateDO template) {
+        AppPromoteTemplateRespVO respVO = new AppPromoteTemplateRespVO();
+        respVO.setId(template.getId());
+        respVO.setTemplateCode(template.getTemplateCode());
+        respVO.setTitle(template.getTitleTemplate());
+        respVO.setContent(template.getContentTemplate());
+        respVO.setTemplateType(template.getTemplateType());
+        respVO.setChannelType(template.getChannelType());
+        respVO.setMessageCategory(template.getMessageCategory());
+        respVO.setRouteType(template.getRouteType());
+        respVO.setRouteValue(template.getRouteValue());
+        respVO.setStatus(template.getStatus());
+        respVO.setUpdateTime(template.getUpdateTime());
+        return respVO;
+    }
+
+    private String resolvePromoterLevelName(String levelCode) {
+        if ("PROMOTER_SENIOR".equalsIgnoreCase(levelCode) || "SENIOR".equalsIgnoreCase(levelCode)) {
+            return "高级推广员";
+        }
+        if ("PROMOTER_MIDDLE".equalsIgnoreCase(levelCode) || "MIDDLE".equalsIgnoreCase(levelCode)) {
+            return "中级推广员";
+        }
+        return "初级推广员";
+    }
+
+    private String resolveUpgradeConditionDesc(String levelCode) {
+        if ("PROMOTER_SENIOR".equalsIgnoreCase(levelCode) || "SENIOR".equalsIgnoreCase(levelCode)) {
+            return "当前已是最高等级，继续保持活跃转化和稳定服务。";
+        }
+        if ("PROMOTER_MIDDLE".equalsIgnoreCase(levelCode) || "MIDDLE".equalsIgnoreCase(levelCode)) {
+            return "累计绑定 50 人且累计转化 20 单可升级高级推广员。";
+        }
+        return "累计绑定 10 人且累计转化 5 单可升级中级推广员。";
+    }
+
+    private String resolveNextLevelNeedMetric(PromoterDO promoter) {
+        int bindUserCount = promoter.getBindUserCount() == null ? 0 : promoter.getBindUserCount();
+        int convertCount = promoter.getConvertCount() == null ? 0 : promoter.getConvertCount();
+        if ("PROMOTER_SENIOR".equalsIgnoreCase(promoter.getLevelCode()) || "SENIOR".equalsIgnoreCase(promoter.getLevelCode())) {
+            return "已达到最高等级";
+        }
+        if ("PROMOTER_MIDDLE".equalsIgnoreCase(promoter.getLevelCode()) || "MIDDLE".equalsIgnoreCase(promoter.getLevelCode())) {
+            return "还差绑定 " + Math.max(0, 50 - bindUserCount) + " 人，转化 " + Math.max(0, 20 - convertCount) + " 单";
+        }
+        return "还差绑定 " + Math.max(0, 10 - bindUserCount) + " 人，转化 " + Math.max(0, 5 - convertCount) + " 单";
     }
 }

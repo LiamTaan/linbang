@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.complaint.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -76,7 +77,7 @@ public class ComplaintRespVO {
     @ExcelProperty("投诉内容")
     private String content;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.COMPLAINT_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "PENDING")
     @ExcelProperty(value = "状态", converter = DictConvert.class)
     @DictFormat("lb_complaint_status") // TODO 代码优化：建议设置到对应的 DictTypeConstants 枚举类中
     private String status;

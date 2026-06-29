@@ -7,6 +7,8 @@ import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppBankCardPageR
 import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppBankCardRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppBankCardUpdateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppWalletAccountRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppWalletBillPageReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppWalletBillRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppWalletFlowPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppWalletFlowRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppWalletWithdrawPageReqVO;
@@ -36,6 +38,8 @@ public interface AppWalletService {
     void setDefaultBankCard(Long authUserId, @Valid AppBankCardDefaultReqVO reqVO);
 
     void deleteBankCard(Long authUserId, Long id);
+
+    PageResult<AppWalletBillRespVO> getWalletBillPage(Long authUserId, AppWalletBillPageReqVO reqVO);
 
     PageResult<AppWalletFlowRespVO> getWalletFlowPage(Long authUserId, AppWalletFlowPageReqVO reqVO);
 

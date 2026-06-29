@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.walletaccount.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -60,7 +61,7 @@ public class WalletAccountRespVO {
     @ExcelProperty("佣金金额")
     private BigDecimal commissionAmount;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.WALLET_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "ENABLE")
     @ExcelProperty("状态")
     private String status;
 

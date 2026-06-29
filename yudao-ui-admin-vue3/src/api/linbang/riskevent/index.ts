@@ -13,6 +13,10 @@ export interface RiskEvent {
   handleBy?: number
   handleTime?: string
   remark?: string
+  disposeStatus?: string
+  disposeAction?: string
+  disposeRemark?: string
+  relatedUserIds?: string
   createTime?: string | Dayjs
 }
 
@@ -135,5 +139,9 @@ export const RiskEventApi = {
 
   getRiskEvent: async (id: number) => {
     return await request.get<RiskEventDetail>({ url: `/risk/event/get?id=${id}` })
+  },
+
+  disposeRiskEvent: async (data: { id: number; disposeAction: string; disposeRemark?: string }) => {
+    return await request.post({ url: '/risk/event/dispose', data })
   }
 }

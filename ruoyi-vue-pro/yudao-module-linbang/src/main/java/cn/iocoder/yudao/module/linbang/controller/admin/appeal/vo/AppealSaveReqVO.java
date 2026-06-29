@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.appeal.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -36,11 +37,11 @@ public class AppealSaveReqVO {
     @Schema(description = "申诉内容")
     private String content;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.APPEAL_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "PENDING")
     @NotEmpty(message = "状态不能为空")
     private String status;
 
-    @Schema(description = "审核状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "APPROVED")
     @NotEmpty(message = "审核状态不能为空")
     private String auditStatus;
 

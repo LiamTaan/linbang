@@ -37,6 +37,18 @@ public interface FileService {
                       String name, String directory, String type);
 
     /**
+     * 保存文件，并返回完整文件记录
+     *
+     * @param content   文件内容
+     * @param name      文件名称，允许空
+     * @param directory 目录，允许空
+     * @param type      文件的 MIME 类型，允许空
+     * @return 文件记录
+     */
+    FileDO createFileInfo(@NotEmpty(message = "文件内容不能为空") byte[] content,
+                          String name, String directory, String type);
+
+    /**
      * 生成文件预签名地址信息，用于上传
      *
      * @param name      文件名

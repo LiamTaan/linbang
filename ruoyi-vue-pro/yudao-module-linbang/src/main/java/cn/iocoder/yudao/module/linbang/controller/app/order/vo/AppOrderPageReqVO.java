@@ -13,6 +13,9 @@ public class AppOrderPageReqVO extends PageParam {
     @Schema(description = "订单状态筛选：PENDING_PAY 待支付、PENDING_ACCEPT 待接单、ACCEPTED 已接单、SERVING 服务中、PENDING_CONFIRM 待确认、AFTER_SALE 售后中、FINISHED 已完成、REFUNDED 已退款、CLOSED 已关闭")
     private String status;
 
+    @Schema(description = "订单业务分类筛选：WAIT_ACCEPT 待接、IN_SERVICE 服务中、FINISHED 已完成、AFTER_SALE 售后、WAIT_REVIEW 待评价、WAIT_PAY 待付款、REFUNDED 已退款")
+    private String businessCategory;
+
     @Schema(description = "类目 ID")
     private Long categoryId;
 

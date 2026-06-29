@@ -82,6 +82,22 @@
       <el-table-column label="备注" prop="remark" min-width="180" />
       <el-table-column label="创建时间" prop="createTime" :formatter="dateFormatter" width="180" />
     </el-table>
+    <el-divider content-position="left">最近业务账单</el-divider>
+    <el-table :data="detailData.recentBills || []" size="small" border>
+      <el-table-column label="账单标题" prop="billTitle" min-width="140" />
+      <el-table-column label="账单类型" prop="billType" width="120" />
+      <el-table-column label="业务状态" prop="bizStatus" width="120" />
+      <el-table-column label="方向" prop="amountDirection" width="90">
+        <template #default="{ row }">
+          {{ row.amountDirection === 'OUT' ? '支出' : '收入' }}
+        </template>
+      </el-table-column>
+      <el-table-column label="金额" prop="amount" width="120" />
+      <el-table-column label="关联订单" prop="relatedOrderId" width="120" />
+      <el-table-column label="关联单元" prop="relatedUnitId" width="120" />
+      <el-table-column label="备注" prop="remark" min-width="180" />
+      <el-table-column label="创建时间" prop="createTime" :formatter="dateFormatter" width="180" />
+    </el-table>
     <el-divider content-position="left">最近提现</el-divider>
     <el-table :data="detailData.recentWithdraws || []" size="small" border>
       <el-table-column label="提现单号" prop="withdrawNo" min-width="160" />
@@ -149,6 +165,9 @@ const open = async (id: number) => {
     }
     if (!detailData.value.recentWithdraws) {
       detailData.value.recentWithdraws = []
+    }
+    if (!detailData.value.recentBills) {
+      detailData.value.recentBills = []
     }
   } finally {
     detailLoading.value = false

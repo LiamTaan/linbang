@@ -4,6 +4,7 @@ import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
 
@@ -22,10 +23,10 @@ public class CreditRulePageReqVO extends PageParam {
     @Schema(description = "分值变动")
     private Integer scoreChange;
 
-    @Schema(description = "触发类型", example = "2")
+    @Schema(description = OpenApiSchemaConstants.CREDIT_TRIGGER_TYPE, example = "AUTO")
     private String triggerType;
 
-    @Schema(description = "状态", example = "2")
+    @Schema(description = OpenApiSchemaConstants.CREDIT_RULE_STATUS, example = "ENABLE")
     private String status;
 
     @Schema(description = "创建时间")

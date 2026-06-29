@@ -112,11 +112,13 @@
       </el-table-column>
       <el-table-column label="审核备注" align="center" prop="auditRemark" min-width="160" />
       <el-table-column label="驳回原因" align="center" prop="rejectReason" min-width="160" />
+      <el-table-column label="出款单号" align="center" prop="payTransferNo" min-width="180" />
+      <el-table-column label="出款失败原因" align="center" prop="transferErrorMsg" min-width="180" />
       <el-table-column label="审核人" align="center" prop="auditBy" width="100" />
       <el-table-column label="审核时间" align="center" prop="auditTime" :formatter="dateFormatter" width="180" />
       <el-table-column label="打款时间" align="center" prop="payTime" :formatter="dateFormatter" width="180" />
       <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="操作" align="center" fixed="right" width="120">
+      <el-table-column label="操作" align="center" fixed="right" width="180">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetailDialog(row.id)">详情</el-button>
           <el-button
@@ -127,6 +129,15 @@
             @click="openAuditDialog(row)"
           >
             审核
+          </el-button>
+          <el-button
+            v-if="canRetryTransfer(row)"
+            link
+            type="warning"
+            v-hasPermi="['linbang:wallet:withdraw:audit']"
+            @click="handleRetryTransfer(row)"
+          >
+            重试打款
           </el-button>
         </template>
       </el-table-column>
@@ -310,6 +321,10 @@ const openAuditDialog = (row: WalletWithdraw) => {
   auditDialogVisible.value = true
 }
 
+const canRetryTransfer = (row: WalletWithdraw) => {
+  return row.auditStatus === 'APPROVED' && (row.status === 'FAILED' || row.status === 'APPROVED')
+}
+
 const submitAudit = async () => {
   await auditFormRef.value?.validate()
   try {
@@ -330,6 +345,19 @@ const submitAudit = async () => {
     await getList()
   } finally {
     auditLoading.value = false
+  }
+}
+
+const handleRetryTransfer = async (row: WalletWithdraw) => {
+  try {
+    await message.confirm(`确认重新发起提现单 ${row.withdrawNo || row.id} 的打款？`)
+    const verifyToken = await requestDynamicKeyToken('重试提现打款')
+    loading.value = true
+    await WalletWithdrawApi.retryWalletWithdrawTransfer(row.id, verifyToken)
+    message.success('已重新发起打款')
+    await getList()
+  } finally {
+    loading.value = false
   }
 }
 

@@ -1,6 +1,7 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.creditrecord.vo;
 
 import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -28,13 +29,13 @@ public class CreditRecordPageReqVO extends PageParam {
     @Schema(description = "规则名称")
     private String ruleName;
 
-    @Schema(description = "触发类型")
+    @Schema(description = OpenApiSchemaConstants.CREDIT_TRIGGER_TYPE, example = "AUTO")
     private String triggerType;
 
-    @Schema(description = "业务类型")
+    @Schema(description = OpenApiSchemaConstants.CREDIT_BIZ_TYPE, example = "ORDER")
     private String bizType;
 
-    @Schema(description = "业务ID")
+    @Schema(description = "业务 ID，关联订单、单元、投诉、申诉或提现等业务主键", example = "1001")
     private Long bizId;
 
     @Schema(description = "分值变动")

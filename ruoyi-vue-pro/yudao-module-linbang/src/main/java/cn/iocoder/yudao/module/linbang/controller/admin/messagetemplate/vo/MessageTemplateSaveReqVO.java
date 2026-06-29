@@ -18,14 +18,34 @@ public class MessageTemplateSaveReqVO {
     @NotBlank(message = "模板名称不能为空")
     private String templateName;
 
+    @NotBlank(message = "场景编码不能为空")
+    private String sceneCode;
+
+    @NotBlank(message = "消息分类不能为空")
+    private String messageCategory;
+
     @NotBlank(message = "模板类型不能为空")
     private String templateType;
 
     @NotBlank(message = "渠道类型不能为空")
     private String channelType;
 
+    private String titleTemplate;
+
     @NotBlank(message = "模板内容不能为空")
-    private String content;
+    private String contentTemplate;
+
+    private String routeType;
+
+    private String routeValue;
+
+    private String mpTemplateId;
+
+    private String smsTemplateCode;
+
+    private String voiceTextTemplate;
+
+    private Integer sort;
 
     @NotNull(message = "状态不能为空")
     private String status;

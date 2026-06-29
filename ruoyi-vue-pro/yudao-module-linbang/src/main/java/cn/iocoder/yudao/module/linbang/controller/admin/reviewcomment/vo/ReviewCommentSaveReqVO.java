@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.reviewcomment.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -38,7 +39,8 @@ public class ReviewCommentSaveReqVO {
     @NotNull(message = "是否自动评价不能为空")
     private Boolean isAutoReview;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.REVIEW_STATUS, requiredMode = Schema.RequiredMode.REQUIRED,
+            example = "ENABLE")
     @NotEmpty(message = "状态不能为空")
     private String status;
 

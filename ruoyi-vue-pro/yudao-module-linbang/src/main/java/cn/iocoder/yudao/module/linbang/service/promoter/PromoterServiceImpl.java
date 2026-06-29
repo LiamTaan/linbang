@@ -24,6 +24,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.orderinfo.OrderInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderunit.OrderUnitMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.promoter.PromoterMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.promoterrelation.PromoterRelationMapper;
+import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -63,6 +64,8 @@ public class PromoterServiceImpl implements PromoterService {
     private OrderUnitMapper orderUnitMapper;
     @Resource
     private DivideRuleMapper divideRuleMapper;
+    @Resource
+    private MessagePushDispatchService messagePushDispatchService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -173,6 +176,8 @@ public class PromoterServiceImpl implements PromoterService {
                     .totalCommissionAmount(defaultAmount(promoter.getTotalCommissionAmount()).add(commissionAmount))
                     .availableCommissionAmount(defaultAmount(promoter.getAvailableCommissionAmount()).add(commissionAmount))
                     .build());
+            messagePushDispatchService.dispatchSingle("FINANCE_COMMISSION_SETTLED", "佣金结算通知", "COMMISSION",
+                    order.getId(), promoter.getUserId(), "推广佣金已入账，请留意收益变化");
         }
         if (relation.getFirstOrderId() == null || !"CONVERTED".equalsIgnoreCase(relation.getConvertStatus())) {
             promoterRelationMapper.updateById(PromoterRelationDO.builder()

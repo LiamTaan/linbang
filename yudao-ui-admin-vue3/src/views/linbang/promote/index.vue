@@ -12,6 +12,15 @@
     <el-tab-pane label="价格申报" name="priceReport">
       <MerchantPriceReportIndex v-if="activeTab === 'priceReport'" />
     </el-tab-pane>
+    <el-tab-pane label="内容审核" name="content">
+      <PromoteContentIndex v-if="activeTab === 'content'" />
+    </el-tab-pane>
+    <el-tab-pane label="处罚记录" name="penalty">
+      <PromoterPenaltyRecordIndex v-if="activeTab === 'penalty'" />
+    </el-tab-pane>
+    <el-tab-pane label="推广申诉" name="appeal">
+      <PromoteAppealIndex v-if="activeTab === 'appeal'" />
+    </el-tab-pane>
   </el-tabs>
 </template>
 
@@ -21,7 +30,10 @@ import { ref } from 'vue'
 import CommissionOrderIndex from '../commissionorder/index.vue'
 import MerchantPriceReportIndex from '../merchantpricereport/index.vue'
 import PartnerInfoIndex from '../partnerinfo/index.vue'
+import PromoteAppealIndex from '../promoteappeal/index.vue'
+import PromoteContentIndex from '../promotecontent/index.vue'
 import PromoterIndex from '../promoter/index.vue'
+import PromoterPenaltyRecordIndex from '../promoterpenaltyrecord/index.vue'
 
 defineOptions({ name: 'LinbangPromote' })
 

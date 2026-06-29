@@ -3,6 +3,8 @@ package cn.iocoder.yudao.framework.common.biz.system.oauth2;
 import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2AccessTokenCheckRespDTO;
 import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2AccessTokenCreateReqDTO;
 import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2AccessTokenRespDTO;
+import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2SceneTicketCreateReqDTO;
+import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2SceneTicketRespDTO;
 
 import javax.validation.Valid;
 
@@ -45,5 +47,31 @@ public interface OAuth2TokenCommonApi {
      * @return 访问令牌的信息
      */
     OAuth2AccessTokenRespDTO refreshAccessToken(String refreshToken, String clientId);
+
+    /**
+     * 创建场景票据
+     *
+     * @param reqDTO 票据创建信息
+     * @return 场景票据
+     */
+    OAuth2SceneTicketRespDTO createSceneTicket(@Valid OAuth2SceneTicketCreateReqDTO reqDTO);
+
+    /**
+     * 校验场景票据
+     *
+     * @param ticket 票据
+     * @param scene 场景
+     * @return 场景票据对应的用户信息
+     */
+    OAuth2AccessTokenCheckRespDTO checkSceneTicket(String ticket, String scene);
+
+    /**
+     * 消费场景票据
+     *
+     * @param ticket 票据
+     * @param scene 场景
+     * @return 场景票据对应的用户信息
+     */
+    OAuth2AccessTokenCheckRespDTO consumeSceneTicket(String ticket, String scene);
 
 }

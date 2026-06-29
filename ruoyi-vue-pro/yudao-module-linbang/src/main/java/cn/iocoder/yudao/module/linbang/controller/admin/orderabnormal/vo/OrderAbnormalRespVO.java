@@ -64,6 +64,22 @@ public class OrderAbnormalRespVO {
     @ExcelProperty("备注")
     private String remark;
 
+    @Schema(description = "终审状态", example = "APPROVED")
+    @ExcelProperty("终审状态")
+    private String finalAuditStatus;
+
+    @Schema(description = "终审人")
+    @ExcelProperty("终审人")
+    private Long finalAuditBy;
+
+    @Schema(description = "终审时间")
+    @ExcelProperty("终审时间")
+    private LocalDateTime finalAuditTime;
+
+    @Schema(description = "终审意见")
+    @ExcelProperty("终审意见")
+    private String finalAuditRemark;
+
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("创建时间")
     private LocalDateTime createTime;

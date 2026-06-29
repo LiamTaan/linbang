@@ -6,7 +6,9 @@ import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.iocoder.yudao.module.linbang.constants.LinbangRiskConstants;
 import cn.iocoder.yudao.module.linbang.controller.admin.riskevent.vo.RiskEventBizMatchCondition;
+import cn.iocoder.yudao.module.linbang.controller.admin.riskevent.vo.RiskEventDisposeReqVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.riskevent.vo.RiskEventDetailRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.appeal.AppealDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.complaint.ComplaintDO;
@@ -32,12 +34,17 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.orderunit.OrderUnitMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.riskrule.RiskRuleMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.riskevent.RiskEventMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.walletwithdraw.WalletWithdrawMapper;
+import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
+import cn.iocoder.yudao.module.linbang.service.punishlog.PunishLogWriteService;
+import cn.iocoder.yudao.module.linbang.service.risk.LinbangRiskFacade;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -49,6 +56,7 @@ import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionU
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertMap;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertSet;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.RISK_EVENT_DISPOSE_STATUS_INVALID;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.RISK_EVENT_NOT_EXISTS;
 
 @Service
@@ -89,6 +97,12 @@ public class RiskEventServiceImpl implements RiskEventService {
     private MemberUserMapper memberUserMapper;
     @Resource
     private MerchantInfoMapper merchantInfoMapper;
+    @Resource
+    private LinbangRiskFacade linbangRiskFacade;
+    @Resource
+    private MemberUserService memberUserService;
+    @Resource
+    private PunishLogWriteService punishLogWriteService;
 
     @Override
     public RiskEventDetailRespVO getRiskEventDetail(Long id) {
@@ -124,6 +138,101 @@ public class RiskEventServiceImpl implements RiskEventService {
         List<RiskEventRespVO> list = BeanUtils.toBean(pageResult.getList(), RiskEventRespVO.class);
         fillBizDisplayInfo(list);
         return new PageResult<>(list, pageResult.getTotal());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void disposeRiskEvent(Long operatorId, RiskEventDisposeReqVO reqVO) {
+        RiskEventDO riskEvent = riskEventMapper.selectById(reqVO.getId());
+        if (riskEvent == null) {
+            throw exception(RISK_EVENT_NOT_EXISTS);
+        }
+        if (!StrUtil.equalsAnyIgnoreCase(riskEvent.getDisposeStatus(),
+                LinbangRiskConstants.RISK_DISPOSE_STATUS_PENDING,
+                LinbangRiskConstants.RISK_STATUS_PENDING,
+                null)) {
+            throw exception(RISK_EVENT_DISPOSE_STATUS_INVALID);
+        }
+        String action = StrUtil.trimToEmpty(reqVO.getDisposeAction()).toUpperCase();
+        RiskEventDO update = RiskEventDO.builder()
+                .id(riskEvent.getId())
+                .disposeAction(action)
+                .disposeRemark(reqVO.getDisposeRemark())
+                .handleBy(operatorId)
+                .handleTime(java.time.LocalDateTime.now())
+                .build();
+        if (LinbangRiskConstants.RISK_DISPOSE_ACTION_RELEASE.equals(action)
+                || LinbangRiskConstants.RISK_DISPOSE_ACTION_UNFREEZE.equals(action)) {
+            update.setStatus(LinbangRiskConstants.RISK_STATUS_FINISHED);
+            update.setDisposeStatus(LinbangRiskConstants.RISK_DISPOSE_STATUS_RELEASED);
+            if (LinbangRiskConstants.RISK_DISPOSE_ACTION_UNFREEZE.equals(action)
+                    && StrUtil.equalsIgnoreCase(riskEvent.getRiskType(), LinbangRiskConstants.RISK_TYPE_SWIPE_ORDER)
+                    && riskEvent.getBizId() != null) {
+                linbangRiskFacade.releaseFrozenFunds(riskEvent.getBizId(), operatorId, reqVO.getDisposeRemark());
+            }
+            if (LinbangRiskConstants.RISK_DISPOSE_ACTION_RELEASE.equals(action)) {
+                linbangRiskFacade.releaseRestrictRecordByBiz(riskEvent.getBizType(), riskEvent.getBizId(),
+                        LinbangRiskConstants.RESTRICT_TYPE_PUBLISH, operatorId, reqVO.getDisposeRemark());
+                linbangRiskFacade.releaseRestrictRecordByBiz(riskEvent.getBizType(), riskEvent.getBizId(),
+                        LinbangRiskConstants.RESTRICT_TYPE_ACCEPT, operatorId, reqVO.getDisposeRemark());
+            }
+        } else {
+            update.setStatus(LinbangRiskConstants.RISK_STATUS_FINISHED);
+            update.setDisposeStatus(LinbangRiskConstants.RISK_DISPOSE_STATUS_CONFIRMED);
+            applyDisposeAction(riskEvent, action, reqVO.getDisposeRemark(), operatorId);
+        }
+        riskEventMapper.updateById(update);
+    }
+
+    private void applyDisposeAction(RiskEventDO riskEvent, String action, String remark, Long operatorId) {
+        Long primaryUserId = parsePrimaryUserId(riskEvent.getRelatedUserIds());
+        if (primaryUserId == null) {
+            return;
+        }
+        if (LinbangRiskConstants.RISK_DISPOSE_ACTION_BLACKLIST.equals(action)) {
+            linbangRiskFacade.addUserToBlacklist(primaryUserId, riskEvent.getRiskType(),
+                    StrUtil.blankToDefault(remark, "风险事件人工处置加入黑名单"), null);
+            return;
+        }
+        if (LinbangRiskConstants.RISK_DISPOSE_ACTION_BAN_USER.equals(action)) {
+            memberUserService.updateMemberUserStatus(primaryUserId, "DISABLE",
+                    StrUtil.blankToDefault(remark, "风险事件人工处置封禁账号"));
+            linbangRiskFacade.addUserToBlacklist(primaryUserId, "BAN_USER",
+                    StrUtil.blankToDefault(remark, "风险事件人工处置封禁账号"), null);
+            punishLogWriteService.createPunishLog(primaryUserId, LinbangRiskConstants.RISK_DISPOSE_ACTION_BAN_USER,
+                    LinbangRiskConstants.STATUS_DISABLE, StrUtil.blankToDefault(remark, "风险事件人工处置封禁账号"),
+                    riskEvent.getBizType(), riskEvent.getBizId(), "RISK_EVENT", riskEvent.getId(),
+                    operatorId, java.time.LocalDateTime.now(), java.time.LocalDateTime.now(), null, null);
+            return;
+        }
+        if (LinbangRiskConstants.RISK_DISPOSE_ACTION_RESTRICT_PUBLISH.equals(action)) {
+            linbangRiskFacade.createRestrictRecord(primaryUserId, LinbangRiskConstants.RESTRICT_TYPE_PUBLISH,
+                    riskEvent.getHitRuleCode(), riskEvent.getBizType(), riskEvent.getBizId(),
+                    StrUtil.blankToDefault(remark, "风险事件人工处置限制发单"), java.time.LocalDateTime.now().plusDays(7));
+            return;
+        }
+        if (LinbangRiskConstants.RISK_DISPOSE_ACTION_RESTRICT_ACCEPT.equals(action)) {
+            linbangRiskFacade.createRestrictRecord(primaryUserId, LinbangRiskConstants.RESTRICT_TYPE_ACCEPT,
+                    riskEvent.getHitRuleCode(), riskEvent.getBizType(), riskEvent.getBizId(),
+                    StrUtil.blankToDefault(remark, "风险事件人工处置限制接单"), java.time.LocalDateTime.now().plusDays(7));
+            return;
+        }
+        if (LinbangRiskConstants.RISK_DISPOSE_ACTION_FREEZE.equals(action)) {
+            linbangRiskFacade.freezeUserFunds(primaryUserId, riskEvent.getBizType(), riskEvent.getBizId(),
+                    new java.math.BigDecimal("100"), StrUtil.blankToDefault(remark, "风险事件人工处置冻结资金"));
+        }
+    }
+
+    private Long parsePrimaryUserId(String relatedUserIds) {
+        if (StrUtil.isBlank(relatedUserIds)) {
+            return null;
+        }
+        return Arrays.stream(relatedUserIds.split(","))
+                .map(String::trim)
+                .filter(StrUtil::isNotBlank)
+                .findFirst()
+                .map(Long::valueOf)
+                .orElse(null);
     }
 
     private List<RiskEventBizMatchCondition> resolveBizMatchConditions(RiskEventPageReqVO reqVO) {

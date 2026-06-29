@@ -69,13 +69,13 @@
 
 空库初始化统一走仓库入口文件：
 
-1. [../DB/mysql/01_create_all.sql](../DB/mysql/01_create_all.sql)
-2. [../DB/mysql/02_init_all.sql](../DB/mysql/02_init_all.sql)
+1. [sql/mysql/建表.sql](./sql/mysql/建表.sql)
+2. [sql/mysql/初始化.sql](./sql/mysql/初始化.sql)
 
 说明：
 
-- `DB/mysql` 是邻里互助项目的标准交付目录
-- 这两份文件已经是可直接执行的完整 SQL
+- 以上两份文件就是当前仓库唯一有效的空库初始化入口
+- 不再维护额外的 `DB/mysql` 平行目录
 - 建表阶段已合并支付模块 `pay_*` 表结构
 - 初始化阶段会清理与当前系统无关的框架默认菜单
 

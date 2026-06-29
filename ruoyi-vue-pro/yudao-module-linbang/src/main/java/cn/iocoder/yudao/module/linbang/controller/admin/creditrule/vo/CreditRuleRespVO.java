@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.creditrule.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -28,11 +29,11 @@ public class CreditRuleRespVO {
     @ExcelProperty("分值变动")
     private Integer scoreChange;
 
-    @Schema(description = "触发类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.CREDIT_TRIGGER_TYPE, requiredMode = Schema.RequiredMode.REQUIRED, example = "AUTO")
     @ExcelProperty("触发类型")
     private String triggerType;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.CREDIT_RULE_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "ENABLE")
     @ExcelProperty("状态")
     private String status;
 

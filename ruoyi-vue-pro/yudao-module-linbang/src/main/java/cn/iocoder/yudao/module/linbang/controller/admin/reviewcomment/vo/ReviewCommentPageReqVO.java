@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.reviewcomment.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -34,7 +35,7 @@ public class ReviewCommentPageReqVO extends PageParam {
     @Schema(description = "是否自动评价")
     private Boolean isAutoReview;
 
-    @Schema(description = "状态", example = "2")
+    @Schema(description = OpenApiSchemaConstants.REVIEW_STATUS, example = "ENABLE")
     private String status;
 
     @Schema(description = "创建时间")

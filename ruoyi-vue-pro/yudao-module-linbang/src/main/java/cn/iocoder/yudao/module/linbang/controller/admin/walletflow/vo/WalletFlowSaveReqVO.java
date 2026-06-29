@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.walletflow.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -25,11 +26,11 @@ public class WalletFlowSaveReqVO {
     @NotNull(message = "钱包账户ID不能为空")
     private Long walletAccountId;
 
-    @Schema(description = "业务类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.WALLET_FLOW_BIZ_TYPE, requiredMode = Schema.RequiredMode.REQUIRED, example = "WITHDRAW_APPLY")
     @NotEmpty(message = "业务类型不能为空")
     private String bizType;
 
-    @Schema(description = "流水类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.WALLET_FLOW_TYPE, requiredMode = Schema.RequiredMode.REQUIRED, example = "OUT")
     @NotEmpty(message = "流水类型不能为空")
     private String flowType;
 

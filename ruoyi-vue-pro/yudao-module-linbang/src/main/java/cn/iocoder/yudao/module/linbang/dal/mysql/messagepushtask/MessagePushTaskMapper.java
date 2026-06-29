@@ -13,8 +13,12 @@ public interface MessagePushTaskMapper extends BaseMapperX<MessagePushTaskDO> {
     default PageResult<MessagePushTaskDO> selectPage(MessagePushTaskPageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<MessagePushTaskDO>()
                 .likeIfPresent(MessagePushTaskDO::getTaskName, reqVO.getTaskName())
+                .eqIfPresent(MessagePushTaskDO::getCampaignId, reqVO.getCampaignId())
+                .eqIfPresent(MessagePushTaskDO::getSceneCode, reqVO.getSceneCode())
+                .eqIfPresent(MessagePushTaskDO::getMessageCategory, reqVO.getMessageCategory())
                 .eqIfPresent(MessagePushTaskDO::getChannelType, reqVO.getChannelType())
                 .eqIfPresent(MessagePushTaskDO::getStatus, reqVO.getStatus())
+                .eqIfPresent(MessagePushTaskDO::getExecuteStatus, reqVO.getExecuteStatus())
                 .eqIfPresent(MessagePushTaskDO::getBizType, reqVO.getBizType())
                 .betweenIfPresent(MessagePushTaskDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(MessagePushTaskDO::getId));

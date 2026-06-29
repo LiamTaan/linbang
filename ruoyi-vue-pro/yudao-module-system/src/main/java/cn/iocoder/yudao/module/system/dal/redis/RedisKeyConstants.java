@@ -68,6 +68,14 @@ public interface RedisKeyConstants {
     String OAUTH2_ACCESS_TOKEN = "oauth2_access_token:%s";
 
     /**
+     * OAuth2 场景票据缓存
+     *
+     * KEY 格式：oauth2_scene_ticket:{token}
+     * VALUE 数据类型：String 场景票据信息
+     */
+    String OAUTH2_SCENE_TICKET = "oauth2_scene_ticket:%s";
+
+    /**
      * 站内信模版的缓存
      * <p>
      * KEY 格式：notify_template:{code}

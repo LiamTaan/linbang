@@ -1,33 +1,38 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.merchantcategory;
 
-import org.springframework.web.bind.annotation.*;
-import javax.annotation.Resource;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.security.access.prepost.PreAuthorize;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.Operation;
-
-import javax.validation.constraints.*;
-import javax.validation.*;
-import javax.servlet.http.*;
-import java.util.*;
-import java.io.IOException;
-
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
+import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.pojo.PageParam;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
-import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
-
 import cn.iocoder.yudao.framework.excel.core.util.ExcelUtils;
-
-import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
-import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.*;
-
-import cn.iocoder.yudao.module.linbang.controller.admin.merchantcategory.vo.*;
+import cn.iocoder.yudao.module.linbang.controller.admin.merchantcategory.vo.MerchantServiceCategoryListReqVO;
+import cn.iocoder.yudao.module.linbang.controller.admin.merchantcategory.vo.MerchantServiceCategoryPageReqVO;
+import cn.iocoder.yudao.module.linbang.controller.admin.merchantcategory.vo.MerchantServiceCategoryRespVO;
+import cn.iocoder.yudao.module.linbang.controller.admin.merchantcategory.vo.MerchantServiceCategorySaveReqVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategory.MerchantServiceCategoryDO;
 import cn.iocoder.yudao.module.linbang.service.merchantcategory.MerchantServiceCategoryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.*;
+import javax.annotation.Resource;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
+
+import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
+import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
 
 @Tag(name = "管理后台 - 服务类目表")
 @RestController
@@ -77,7 +82,16 @@ public class MerchantServiceCategoryController {
     @PreAuthorize("@ss.hasPermission('linbang:merchant-service-category:query')")
     public CommonResult<MerchantServiceCategoryRespVO> getMerchantServiceCategory(@RequestParam("id") Long id) {
         MerchantServiceCategoryDO merchantServiceCategory = merchantServiceCategoryService.getMerchantServiceCategory(id);
-        return success(BeanUtils.toBean(merchantServiceCategory, MerchantServiceCategoryRespVO.class));
+        return success(convertRespVO(merchantServiceCategory));
+    }
+
+    @GetMapping("/list")
+    @Operation(summary = "获得服务类目表列表")
+    @PreAuthorize("@ss.hasPermission('linbang:merchant-service-category:query')")
+    public CommonResult<List<MerchantServiceCategoryRespVO>> getMerchantServiceCategoryList(
+            @Valid MerchantServiceCategoryListReqVO listReqVO) {
+        List<MerchantServiceCategoryDO> list = merchantServiceCategoryService.getMerchantServiceCategoryList(listReqVO);
+        return success(list.stream().map(this::convertRespVO).collect(Collectors.toList()));
     }
 
     @GetMapping("/page")
@@ -85,7 +99,9 @@ public class MerchantServiceCategoryController {
     @PreAuthorize("@ss.hasPermission('linbang:merchant-service-category:query')")
     public CommonResult<PageResult<MerchantServiceCategoryRespVO>> getMerchantServiceCategoryPage(@Valid MerchantServiceCategoryPageReqVO pageReqVO) {
         PageResult<MerchantServiceCategoryDO> pageResult = merchantServiceCategoryService.getMerchantServiceCategoryPage(pageReqVO);
-        return success(BeanUtils.toBean(pageResult, MerchantServiceCategoryRespVO.class));
+        return success(new PageResult<>(
+                pageResult.getList().stream().map(this::convertRespVO).collect(Collectors.toList()),
+                pageResult.getTotal()));
     }
 
     @GetMapping("/export-excel")
@@ -98,7 +114,21 @@ public class MerchantServiceCategoryController {
         List<MerchantServiceCategoryDO> list = merchantServiceCategoryService.getMerchantServiceCategoryPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "服务类目表.xls", "数据", MerchantServiceCategoryRespVO.class,
-                        BeanUtils.toBean(list, MerchantServiceCategoryRespVO.class));
+                list.stream().map(this::convertRespVO).collect(Collectors.toList()));
+    }
+
+    private MerchantServiceCategoryRespVO convertRespVO(MerchantServiceCategoryDO category) {
+        if (category == null) {
+            return null;
+        }
+        MerchantServiceCategoryRespVO respVO = BeanUtils.toBean(category, MerchantServiceCategoryRespVO.class);
+        if (StrUtil.isBlank(category.getSupportedPricingModes())) {
+            respVO.setSupportedPricingModes(Collections.emptyList());
+            return respVO;
+        }
+        List<String> supportedPricingModes = JsonUtils.parseArray(category.getSupportedPricingModes(), String.class);
+        respVO.setSupportedPricingModes(CollUtil.isEmpty(supportedPricingModes) ? Collections.emptyList() : supportedPricingModes);
+        return respVO;
     }
 
 }

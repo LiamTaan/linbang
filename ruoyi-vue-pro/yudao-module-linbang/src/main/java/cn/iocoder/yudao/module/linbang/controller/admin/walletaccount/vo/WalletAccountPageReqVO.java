@@ -4,6 +4,7 @@ import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import java.math.BigDecimal;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
@@ -38,7 +39,7 @@ public class WalletAccountPageReqVO extends PageParam {
     @Schema(description = "佣金金额")
     private BigDecimal commissionAmount;
 
-    @Schema(description = "状态", example = "1")
+    @Schema(description = OpenApiSchemaConstants.WALLET_STATUS, example = "ENABLE")
     private String status;
 
     @Schema(description = "创建时间")

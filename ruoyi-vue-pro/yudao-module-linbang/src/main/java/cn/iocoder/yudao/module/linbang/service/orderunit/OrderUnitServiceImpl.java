@@ -3,6 +3,8 @@ package cn.iocoder.yudao.module.linbang.service.orderunit;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.iocoder.yudao.module.infra.dal.dataobject.file.FileDO;
+import cn.iocoder.yudao.module.infra.service.file.FileService;
 import cn.iocoder.yudao.module.linbang.controller.admin.orderunit.vo.OrderUnitDetailRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.appeal.AppealDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.complaint.ComplaintDO;
@@ -17,6 +19,7 @@ import javax.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import cn.iocoder.yudao.module.linbang.controller.admin.orderunit.vo.*;
@@ -69,6 +72,8 @@ public class OrderUnitServiceImpl implements OrderUnitService {
     private MemberUserMapper memberUserMapper;
     @Resource
     private MerchantInfoMapper merchantInfoMapper;
+    @Resource
+    private FileService fileService;
 
     @Override
     public Long createOrderUnit(OrderUnitSaveReqVO createReqVO) {
@@ -152,11 +157,12 @@ public class OrderUnitServiceImpl implements OrderUnitService {
         Map<Long, MerchantInfoDO> merchantMap = relatedMerchantIds.isEmpty() ? Collections.emptyMap() : convertMap(
                 merchantInfoMapper.selectBatchIds(relatedMerchantIds),
                 MerchantInfoDO::getId);
+        Map<Long, FileDO> fileMap = buildFileMap(proofs.stream().map(OrderUnitProofDO::getFileId).collect(Collectors.toSet()));
 
         OrderUnitDetailRespVO respVO = BeanUtils.toBean(unit, OrderUnitDetailRespVO.class);
         respVO.setOrderId(order.getId());
         respVO.setOrderNo(order.getOrderNo());
-        respVO.setOrderTitle(order.getTitle());
+        respVO.setOrderTitle(order.getRequireDesc());
         respVO.setOrderStatus(order.getStatus());
         respVO.setUserId(order.getUserId());
         if (orderUser != null) {
@@ -167,17 +173,26 @@ public class OrderUnitServiceImpl implements OrderUnitService {
         respVO.setMerchantId(unit.getMerchantId());
         fillMerchantSummary(respVO, merchant);
         respVO.setPrevUnitNo(prevUnit != null ? prevUnit.getUnitNo() : null);
+        respVO.setVerifyStatus(unit.getVerifyStatus());
+        respVO.setVerifyCode(unit.getVerifyCode());
+        respVO.setVerifyTime(unit.getVerifyTime());
+        respVO.setVerifyBy(unit.getVerifyBy());
+        respVO.setVerifyRemark(unit.getVerifyRemark());
         respVO.setProofs(proofs.stream().map(proof -> {
             OrderUnitDetailRespVO.OrderUnitProofRespVO proofResp = new OrderUnitDetailRespVO.OrderUnitProofRespVO();
             proofResp.setId(proof.getId());
             proofResp.setFileId(proof.getFileId());
+            proofResp.setFileUrl(Optional.ofNullable(fileMap.get(proof.getFileId())).map(FileDO::getUrl).orElse(proof.getFileUrl()));
+            proofResp.setFileHash(proof.getFileHash());
             proofResp.setMerchantId(proof.getMerchantId());
             fillMerchantSummary(proofResp, merchantMap.get(proof.getMerchantId()));
             proofResp.setProofType(proof.getProofType());
             proofResp.setProofDesc(proof.getProofDesc());
             proofResp.setProofTime(proof.getProofTime());
+            proofResp.setDeviceTime(proof.getDeviceTime());
             proofResp.setLongitude(proof.getLongitude());
             proofResp.setLatitude(proof.getLatitude());
+            proofResp.setAddressText(proof.getAddressText());
             return proofResp;
         }).collect(Collectors.toList()));
         respVO.setAcceptRecords(acceptRecords.stream().map(record -> {
@@ -217,6 +232,7 @@ public class OrderUnitServiceImpl implements OrderUnitService {
             appealResp.setAuditRemark(appeal.getAuditRemark());
             appealResp.setRejectReason(appeal.getRejectReason());
             appealResp.setAuditTime(appeal.getAuditTime());
+            appealResp.setAppealExpireTime(appeal.getAppealExpireTime());
             appealResp.setCreateTime(appeal.getCreateTime());
             return appealResp;
         }).collect(Collectors.toList()));
@@ -232,6 +248,7 @@ public class OrderUnitServiceImpl implements OrderUnitService {
             logResp.setOperateTime(log.getOperateTime());
             return logResp;
         }).collect(Collectors.toList()));
+        respVO.setTimeline(buildTimeline(order, unit, proofs, complaints, appeals, operateLogs));
         return respVO;
     }
 
@@ -246,6 +263,17 @@ public class OrderUnitServiceImpl implements OrderUnitService {
         updateObj.setIsLocked(Boolean.FALSE);
         updateObj.setLockReason(reqVO.getUnlockRemark());
         orderUnitMapper.updateById(updateObj);
+        orderOperateLogMapper.insert(OrderOperateLogDO.builder()
+                .orderId(orderUnit.getOrderId())
+                .unitId(orderUnit.getId())
+                .operateType("ADMIN_UNLOCK_UNIT")
+                .operateRole("ADMIN")
+                .operateBy(null)
+                .beforeStatus(orderUnit.getStatus())
+                .afterStatus(orderUnit.getStatus())
+                .remark(StrUtil.blankToDefault(reqVO.getUnlockRemark(), "管理端人工解锁"))
+                .operateTime(java.time.LocalDateTime.now())
+                .build());
     }
 
     @Override
@@ -320,6 +348,20 @@ public class OrderUnitServiceImpl implements OrderUnitService {
         });
     }
 
+    private Map<Long, FileDO> buildFileMap(Set<Long> fileIds) {
+        Map<Long, FileDO> fileMap = new HashMap<>();
+        for (Long fileId : fileIds) {
+            if (fileId == null || fileMap.containsKey(fileId)) {
+                continue;
+            }
+            try {
+                fileMap.put(fileId, fileService.getFile(fileId));
+            } catch (Exception ignored) {
+            }
+        }
+        return fileMap;
+    }
+
     private void fillMerchantSummary(OrderUnitDetailRespVO respVO, MerchantInfoDO merchant) {
         if (merchant == null) {
             return;
@@ -345,6 +387,51 @@ public class OrderUnitServiceImpl implements OrderUnitService {
         respVO.setMerchantName(merchant.getMerchantName());
         respVO.setMerchantContactName(merchant.getContactName());
         respVO.setMerchantContactMobile(merchant.getContactMobile());
+    }
+
+    private List<OrderUnitDetailRespVO.OrderTimelineRespVO> buildTimeline(OrderInfoDO order,
+                                                                          OrderUnitDO unit,
+                                                                          List<OrderUnitProofDO> proofs,
+                                                                          List<ComplaintDO> complaints,
+                                                                          List<AppealDO> appeals,
+                                                                          List<OrderOperateLogDO> operateLogs) {
+        List<OrderUnitDetailRespVO.OrderTimelineRespVO> timeline = new ArrayList<>();
+        timeline.add(buildTimelineItem("ORDER", order.getId(), "主订单创建", order.getRequireDesc(), order.getStatus(), order.getCreateTime()));
+        timeline.add(buildTimelineItem("UNIT", unit.getId(), "单元创建", unit.getUnitTitle(), unit.getStatus(), unit.getCreateTime()));
+        if (unit.getVerifyTime() != null) {
+            timeline.add(buildTimelineItem("VERIFY", unit.getId(), "单元核销", unit.getVerifyRemark(), unit.getVerifyStatus(), unit.getVerifyTime()));
+        }
+        if (unit.getFinishTime() != null) {
+            timeline.add(buildTimelineItem("UNIT", unit.getId(), "单元完成", unit.getUnitTitle(), unit.getStatus(), unit.getFinishTime()));
+        }
+        for (OrderUnitProofDO proof : proofs) {
+            timeline.add(buildTimelineItem("PROOF", proof.getId(), "完工凭证上传", proof.getProofDesc(), proof.getProofType(), proof.getProofTime()));
+        }
+        for (ComplaintDO complaint : complaints) {
+            timeline.add(buildTimelineItem("COMPLAINT", complaint.getId(), "投诉提交", complaint.getContent(), complaint.getStatus(), complaint.getCreateTime()));
+        }
+        for (AppealDO appeal : appeals) {
+            timeline.add(buildTimelineItem("APPEAL", appeal.getId(), "申诉提交", appeal.getContent(), appeal.getStatus(), appeal.getCreateTime()));
+        }
+        for (OrderOperateLogDO log : operateLogs) {
+            timeline.add(buildTimelineItem("LOG", log.getId(), log.getOperateType(), log.getRemark(), log.getAfterStatus(), log.getOperateTime()));
+        }
+        timeline.sort(Comparator.comparing(OrderUnitDetailRespVO.OrderTimelineRespVO::getEventTime,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+        return timeline;
+    }
+
+    private OrderUnitDetailRespVO.OrderTimelineRespVO buildTimelineItem(String type, Long bizId, String title,
+                                                                        String content, String status,
+                                                                        LocalDateTime eventTime) {
+        OrderUnitDetailRespVO.OrderTimelineRespVO item = new OrderUnitDetailRespVO.OrderTimelineRespVO();
+        item.setTimelineType(type);
+        item.setBizId(bizId);
+        item.setTitle(title);
+        item.setContent(content);
+        item.setStatus(status);
+        item.setEventTime(eventTime);
+        return item;
     }
 
 }

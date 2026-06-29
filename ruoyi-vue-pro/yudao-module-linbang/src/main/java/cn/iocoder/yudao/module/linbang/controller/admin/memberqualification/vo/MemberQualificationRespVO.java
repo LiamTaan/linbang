@@ -4,6 +4,7 @@ import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
 import cn.idev.excel.annotation.ExcelProperty;
 import cn.iocoder.yudao.framework.excel.core.annotations.DictFormat;
 import cn.iocoder.yudao.framework.excel.core.convert.DictConvert;
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -35,8 +36,9 @@ public class MemberQualificationRespVO {
     @ExcelProperty("用户手机号")
     private String userMobile;
 
-    @Schema(description = "资质类型", example = "ELECTRICIAN")
-    @ExcelProperty("资质类型")
+    @Schema(description = OpenApiSchemaConstants.QUALIFICATION_TYPE, example = "ELECTRICIAN")
+    @ExcelProperty(value = "资质类型", converter = DictConvert.class)
+    @DictFormat("lb_qualification_type")
     private String qualificationType;
 
     @Schema(description = "资质名称", example = "电工证")
@@ -59,7 +61,7 @@ public class MemberQualificationRespVO {
     @ExcelProperty("有效结束日期")
     private LocalDate validEndDate;
 
-    @Schema(description = "审核状态", example = "PENDING")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, example = "PENDING")
     @ExcelProperty(value = "审核状态", converter = DictConvert.class)
     @DictFormat("lb_audit_status")
     private String auditStatus;

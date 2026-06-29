@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.walletbankcard.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -38,7 +39,7 @@ public class WalletBankCardSaveReqVO {
     @Schema(description = "预留手机号")
     private String reservedMobile;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.BANK_CARD_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "ENABLE")
     @NotEmpty(message = "状态不能为空")
     private String status;
 

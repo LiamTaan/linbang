@@ -148,6 +148,13 @@
       <el-table-column label="命中规则编码" align="center" prop="matchRuleCode" />
       <el-table-column label="匹配分值" align="center" prop="matchScore" />
       <el-table-column label="距离公里" align="center" prop="distanceKm" />
+      <el-table-column label="阶段号" align="center" prop="stageNo" width="90" />
+      <el-table-column label="批次号" align="center" prop="pushBatchNo" width="90" />
+      <el-table-column label="优先层" align="center" prop="priorityLayer" width="140" />
+      <el-table-column label="优先池" align="center" width="90">
+        <template #default="{ row }">{{ row.priorityPoolFlag ? '是' : '否' }}</template>
+      </el-table-column>
+      <el-table-column label="品类命中" align="center" prop="categoryMatchLevel" width="110" />
       <el-table-column
         label="推送时间"
         align="center"
@@ -167,6 +174,7 @@
           {{ formatMatchStatus(scope.row.status) }}
         </template>
       </el-table-column>
+      <el-table-column label="最终结果" align="center" prop="finalResult" width="120" />
       <el-table-column label="操作" align="center" min-width="120px">
         <template #default="scope">
           <el-button link type="primary" @click="openDetail(scope.row.id)">详情</el-button>

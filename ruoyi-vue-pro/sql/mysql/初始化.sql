@@ -12,15 +12,49 @@ DELETE FROM `system_post` WHERE `id` IN (1, 2, 3, 4, 5);
 DELETE FROM `system_dept` WHERE `id` IN (100, 101, 102, 103, 104, 105);
 DELETE FROM `system_role` WHERE `id` IN (1, 20001, 20002, 20003, 20004, 20005);
 DELETE FROM `system_oauth2_client` WHERE `id` = 1 OR `client_id` = 'default';
+DELETE FROM `system_social_user_bind`;
+DELETE FROM `system_social_user`;
 DELETE FROM `infra_config` WHERE `config_key` IN (
   'system.user.init-password',
   'system.user.register-enabled',
   'linbang.admin.dynamic-key.password',
-  'linbang.qualification.expire-remind-days'
+  'linbang.qualification.expire-remind-days',
+  'linbang.agreement.service',
+  'linbang.agreement.privacy',
+  'linbang.agreement.register-version',
+  'linbang.agreement.register-title',
+  'linbang.agreement.register-content',
+  'linbang.agreement.beneficiary-notice',
+  'linbang.agreement.trade-version',
+  'linbang.agreement.trade-title',
+  'linbang.agreement.project-escrow',
+  'linbang.agreement.project-escrow-title',
+  'linbang.app.tax-reminder',
+  'linbang.app.license-agent-entry-url',
+  'linbang.app.license-agent-entry-title',
+  'linbang.app.order-price-detail-enabled',
+  'linbang.app.mall-entry-enabled',
+  'linbang.app.mall-entry-title',
+  'linbang.app.mall-entry-url',
+  'linbang.app.withdraw-notice',
+  'linbang.sensitive.comment-strategy',
+  'linbang.sensitive.message-strategy',
+  'linbang.sensitive.promote-strategy',
+  'linbang.sensitive.complaint-strategy',
+  'linbang.sensitive.appeal-strategy',
+  'linbang.sensitive.order-publish-strategy',
+  'linbang.ocr.provider',
+  'linbang.ocr.fallback-mode',
+  'linbang.ocr.generic.endpoint',
+  'linbang.ocr.generic.api-key'
 );
 DELETE FROM `infra_file_config`;
 DELETE FROM `pay_channel` WHERE `id` IN (1, 2);
 DELETE FROM `pay_app` WHERE `id` = 1;
+DELETE FROM `system_sms_log`;
+DELETE FROM `system_sms_code`;
+DELETE FROM `system_sms_template`;
+DELETE FROM `system_sms_channel`;
 DELETE FROM `system_dict_data`
 WHERE `dict_type` IN (
   'system_user_sex', 'infra_job_status', 'infra_config_type', 'infra_operate_type',
@@ -43,7 +77,10 @@ WHERE `type` IN (
   'pay_channel_code', 'pay_notify_status', 'pay_order_status',
   'pay_refund_status', 'pay_transfer_status'
 );
-DELETE FROM `system_menu` WHERE `id` BETWEEN 100000 AND 100199;
+DELETE FROM `system_menu` WHERE `id` BETWEEN 110000 AND 110999;
+DELETE FROM `lb_member_point_record`;
+DELETE FROM `lb_user_reminder`;
+DELETE FROM `lb_reward_order_participation`;
 
 INSERT INTO `system_dept`
 (`id`, `name`, `parent_id`, `sort`, `leader_user_id`, `phone`, `email`, `status`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
@@ -104,7 +141,31 @@ VALUES
 (2, 'biz', 1, '用户管理-账号初始密码', 'system.user.init-password', 'admin123', b'0', '邻里互助初始密码', 'admin', NOW(), 'admin', NOW(), b'0'),
 (13, 'biz', 2, '用户管理-注册开关', 'system.user.register-enabled', 'true', b'0', '邻里互助前台注册开关', 'admin', NOW(), 'admin', NOW(), b'0'),
 (14, 'linbang', 2, '邻里互助-后台动态密钥', 'linbang.admin.dynamic-key.password', 'linbang@2026', b'0', '管理端敏感操作统一二次口令', 'admin', NOW(), 'admin', NOW(), b'0'),
-(15, 'linbang', 2, '邻里互助-资质到期提醒阈值', 'linbang.qualification.expire-remind-days', '7,1', b'0', '资质到期前提醒天数，逗号分隔', 'admin', NOW(), 'admin', NOW(), b'0');
+(15, 'linbang', 2, '邻里互助-资质到期提醒阈值', 'linbang.qualification.expire-remind-days', '7,1', b'0', '资质到期前提醒天数，逗号分隔', 'admin', NOW(), 'admin', NOW(), b'0'),
+(30, 'linbang_agreement', 2, '邻里互助-服务协议', 'linbang.agreement.service', '欢迎使用邻里互助平台服务。您在平台发布需求、下单、接单、交易、提现等行为，均受平台服务协议约束。', b'1', 'App 协议配置：服务协议', 'admin', NOW(), 'admin', NOW(), b'0'),
+(31, 'linbang_agreement', 2, '邻里互助-隐私协议', 'linbang.agreement.privacy', '邻里互助将按照法律法规和平台隐私规则收集、使用、存储和保护您的个人信息，并在必要范围内用于实名认证、资质审核、交易履约与风控。', b'1', 'App 协议配置：隐私协议', 'admin', NOW(), 'admin', NOW(), b'0'),
+(32, 'linbang_agreement', 2, '邻里互助-注册协议版本', 'linbang.agreement.register-version', '2026.06.28', b'1', '注册协议版本号', 'admin', NOW(), 'admin', NOW(), b'0'),
+(33, 'linbang_agreement', 2, '邻里互助-注册协议标题', 'linbang.agreement.register-title', '邻里互助平台用户注册协议', b'1', '注册协议标题', 'admin', NOW(), 'admin', NOW(), b'0'),
+(34, 'linbang_agreement', 2, '邻里互助-注册协议内容', 'linbang.agreement.register-content', '注册成为邻里互助用户前，您应当完整阅读并同意本协议、服务协议、隐私协议及平台交易规则。未完成实名、资质、入驻、绑卡等必要步骤前，平台可限制接单、提现等交易能力。', b'1', '注册协议正文', 'admin', NOW(), 'admin', NOW(), b'0'),
+(35, 'linbang_agreement', 2, '邻里互助-受益人连带责任说明', 'linbang.agreement.beneficiary-notice', '如您以个人、企业、子账号或经办人身份在平台发起注册、实名、资质、入驻或收款操作，即视为您已知悉并同意受益人连带责任说明，对提供资料、交易履约、收款结算及违规风险承担相应责任。', b'1', '注册时必须确认的受益人连带责任说明', 'admin', NOW(), 'admin', NOW(), b'0'),
+(36, 'linbang_agreement', 2, '邻里互助-交易担保版本', 'linbang.agreement.trade-version', '2026.06.28', b'1', '交易担保协议版本号', 'admin', NOW(), 'admin', NOW(), b'0'),
+(37, 'linbang_agreement', 2, '邻里互助-交易担保标题', 'linbang.agreement.trade-title', '邻里互助交易担保说明', b'1', '交易担保协议标题', 'admin', NOW(), 'admin', NOW(), b'0'),
+(38, 'linbang_agreement', 2, '邻里互助-项目托管说明', 'linbang.agreement.project-escrow', '订单支付成功后，平台按照订单与单元状态对资金进行托管、解锁、退款与结算管理。存在证件过期、实名失效、资质缺失、银行卡未绑定等情况时，平台可限制接单或结算。', b'1', '项目托管协议正文', 'admin', NOW(), 'admin', NOW(), b'0'),
+(39, 'linbang_agreement', 2, '邻里互助-项目托管标题', 'linbang.agreement.project-escrow-title', '邻里互助项目资金托管说明', b'1', '项目托管协议标题', 'admin', NOW(), 'admin', NOW(), b'0'),
+(16, 'linbang_platform', 2, '订单价格明细展示开关', 'linbang.app.order-price-detail-enabled', 'true', b'1', '控制 App 订单详情是否展示价格明细', 'admin', NOW(), 'admin', NOW(), b'0'),
+(17, 'linbang_platform', 2, '地方商城入口展示开关', 'linbang.app.mall-entry-enabled', 'false', b'1', '控制订单详情是否展示地方商城入口', 'admin', NOW(), 'admin', NOW(), b'0'),
+(18, 'linbang_platform', 2, '地方商城入口标题', 'linbang.app.mall-entry-title', '地方商城', b'1', '订单详情展示的地方商城入口标题', 'admin', NOW(), 'admin', NOW(), b'0'),
+(19, 'linbang_platform', 2, '地方商城入口链接', 'linbang.app.mall-entry-url', '', b'1', '订单详情展示的地方商城入口链接', 'admin', NOW(), 'admin', NOW(), b'0'),
+(20, 'linbang_risk', 2, '评价敏感内容策略', 'linbang.sensitive.comment-strategy', 'REPLACE', b'0', '普通敏感词默认替换后放行', 'admin', NOW(), 'admin', NOW(), b'0'),
+(21, 'linbang_risk', 2, '站内消息敏感内容策略', 'linbang.sensitive.message-strategy', 'REPLACE', b'0', '普通敏感词默认替换后放行', 'admin', NOW(), 'admin', NOW(), b'0'),
+(22, 'linbang_risk', 2, '推广内容敏感内容策略', 'linbang.sensitive.promote-strategy', 'REPLACE', b'0', '普通敏感词默认替换后放行', 'admin', NOW(), 'admin', NOW(), b'0'),
+(23, 'linbang_risk', 2, '投诉敏感内容策略', 'linbang.sensitive.complaint-strategy', 'REPLACE', b'0', '普通敏感词默认替换后放行', 'admin', NOW(), 'admin', NOW(), b'0'),
+(24, 'linbang_risk', 2, '申诉敏感内容策略', 'linbang.sensitive.appeal-strategy', 'REPLACE', b'0', '普通敏感词默认替换后放行', 'admin', NOW(), 'admin', NOW(), b'0'),
+(25, 'linbang_risk', 2, '发单敏感内容策略', 'linbang.sensitive.order-publish-strategy', 'BLOCK', b'0', '发单场景命中手机号、微信、二维码、外链默认阻断', 'admin', NOW(), 'admin', NOW(), b'0'),
+(26, 'linbang_risk', 2, 'OCR 供应商', 'linbang.ocr.provider', 'LOCAL_DISABLED', b'0', '默认关闭，生产可切换 REMOTE_GENERIC', 'admin', NOW(), 'admin', NOW(), b'0'),
+(27, 'linbang_risk', 2, 'OCR 失败兜底策略', 'linbang.ocr.fallback-mode', 'BLOCK', b'0', '发单场景默认严格阻断，非发单场景进入失败留痕', 'admin', NOW(), 'admin', NOW(), b'0'),
+(28, 'linbang_risk', 2, 'OCR 通用接口地址', 'linbang.ocr.generic.endpoint', '', b'0', 'REMOTE_GENERIC 供应商接入地址，默认留空待生产配置', 'admin', NOW(), 'admin', NOW(), b'0'),
+(29, 'linbang_risk', 2, 'OCR 通用接口密钥', 'linbang.ocr.generic.api-key', '', b'0', 'REMOTE_GENERIC 供应商接入密钥，默认留空待生产配置', 'admin', NOW(), 'admin', NOW(), b'0');
 
 INSERT INTO `infra_file_config`
 (`id`, `name`, `storage`, `remark`, `master`, `config`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
@@ -130,6 +191,20 @@ INSERT INTO `pay_channel`
 VALUES
 (1, 'mock', 0, 0, '邻里互助测试支付通道', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.NonePayClientConfig","name":"none-config"}', 'admin', NOW(), 'admin', NOW(), b'0', 1),
 (2, 'wallet', 0, 0, '邻里互助钱包支付通道', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.NonePayClientConfig","name":"none-config"}', 'admin', NOW(), 'admin', NOW(), b'0', 1);
+
+INSERT INTO `system_sms_channel`
+(`id`, `signature`, `code`, `status`, `remark`, `api_key`, `api_secret`, `callback_url`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
+VALUES
+(1, '邻里互助', 'ALIYUN', 0, '默认阿里云短信渠道，请替换为正式 AccessKey 和签名', 'your-access-key-id', 'your-access-key-secret',
+ 'http://127.0.0.1:48080/admin-api/system/sms/callback/aliyun',
+ 'admin', NOW(), 'admin', NOW(), b'0');
+
+INSERT INTO `system_sms_template`
+(`id`, `type`, `status`, `code`, `name`, `content`, `params`, `remark`, `api_template_id`, `channel_id`, `channel_code`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
+VALUES
+(1, 1, 0, 'user-sms-login', '登录验证码', '您的验证码为 {code}，5 分钟内有效，请勿泄露给他人。', '["code"]',
+ '默认阿里云验证码模板，请替换为正式短信模板编号', 'SMS_000000001', 1, 'ALIYUN',
+ 'admin', NOW(), 'admin', NOW(), b'0');
 
 INSERT INTO `system_dict_type`
 (`id`, `name`, `type`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `deleted_time`)
@@ -358,13 +433,14 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 BEGIN;
 
-DELETE FROM `system_role_menu` WHERE `menu_id` BETWEEN 110000 AND 110999;
-DELETE FROM `system_menu` WHERE `id` BETWEEN 110000 AND 110999;
+DELETE FROM `system_role_menu` WHERE `menu_id` BETWEEN 110000 AND 111099;
+DELETE FROM `system_menu` WHERE `id` BETWEEN 110000 AND 111099;
 DELETE FROM `system_dict_data`
 WHERE `dict_type` IN (
   'lb_pricing_mode', 'lb_role_code', 'lb_audit_status', 'lb_order_status',
   'lb_order_unit_status', 'lb_pay_status', 'lb_refund_status',
   'lb_withdraw_status', 'lb_complaint_status', 'lb_appeal_status',
+  'lb_qualification_type',
   'lb_merchant_entry_status', 'lb_role_apply_status',
   'lb_price_report_audit_status', 'lb_message_push_task_status'
 );
@@ -373,17 +449,23 @@ DELETE FROM `system_dict_type`
     'lb_pricing_mode', 'lb_role_code', 'lb_audit_status', 'lb_order_status',
     'lb_order_unit_status', 'lb_pay_status', 'lb_refund_status',
     'lb_withdraw_status', 'lb_complaint_status', 'lb_appeal_status',
+    'lb_qualification_type',
     'lb_merchant_entry_status', 'lb_role_apply_status',
     'lb_price_report_audit_status', 'lb_message_push_task_status'
   );
 DELETE FROM `lb_message_template` WHERE `id` BETWEEN 380001 AND 380099;
+DELETE FROM `lb_message_template` WHERE `id` BETWEEN 380108 AND 380120;
 DELETE FROM `lb_divide_rule` WHERE `id` BETWEEN 300001 AND 300099;
 DELETE FROM `lb_risk_rule` WHERE `id` BETWEEN 310001 AND 310099;
 DELETE FROM `lb_sensitive_word` WHERE `id` BETWEEN 320001 AND 320099;
 DELETE FROM `lb_credit_rule` WHERE `id` BETWEEN 330001 AND 330099;
+DELETE FROM `lb_credit_level_benefit` WHERE `id` BETWEEN 331001 AND 331099;
 DELETE FROM `lb_credit_record` WHERE `id` BETWEEN 331001 AND 331099;
 DELETE FROM `lb_service_category` WHERE `id` BETWEEN 340001 AND 340199;
-DELETE FROM `system_notify_template` WHERE `code` IN ('lb_order_created', 'lb_refund_audited', 'lb_withdraw_audited');
+DELETE FROM `system_notify_template` WHERE `code` IN (
+  'lb_order_created', 'lb_refund_audited', 'lb_withdraw_audited',
+  'lb_merchant_accept_enabled', 'lb_bind_bank_card_required', 'lb_cert_exemption_audited'
+);
 
 INSERT INTO `system_dict_type`
 (`id`, `name`, `type`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `deleted_time`)
@@ -401,15 +483,23 @@ VALUES
 (900011, '邻里互助入驻状态', 'lb_merchant_entry_status', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL),
 (900012, '邻里互助身份申请状态', 'lb_role_apply_status', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL),
 (900013, '邻里互助价格申报审核状态', 'lb_price_report_audit_status', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL),
-(900014, '邻里互助消息推送任务状态', 'lb_message_push_task_status', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL);
+(900014, '邻里互助消息推送任务状态', 'lb_message_push_task_status', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL),
+(900015, '邻里互助消息分类', 'lb_message_category', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL),
+(900016, '邻里互助消息渠道', 'lb_message_channel_type', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL),
+(900017, '邻里互助消息已读状态', 'lb_message_read_status', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL),
+(900018, '邻里互助消息投放来源', 'lb_message_campaign_source_type', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL),
+(900019, '邻里互助消息投放审核状态', 'lb_message_campaign_audit_status', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL),
+(900020, '邻里互助消息投放目标模式', 'lb_message_target_mode', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL),
+(900021, '邻里互助资质类型', 'lb_qualification_type', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL);
 
 INSERT INTO `system_dict_data`
 (`id`, `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
 VALUES
-(910001, 1, '按次', 'BY_TIME', 'lb_pricing_mode', 0, 'primary', '', '按次计价', 'admin', NOW(), 'admin', NOW(), b'0'),
-(910002, 2, '按工序', 'BY_PROCESS', 'lb_pricing_mode', 0, 'success', '', '按工序计价', 'admin', NOW(), 'admin', NOW(), b'0'),
-(910003, 3, '按数量', 'BY_QUANTITY', 'lb_pricing_mode', 0, 'warning', '', '按数量计价', 'admin', NOW(), 'admin', NOW(), b'0'),
-(910004, 4, '按项目', 'BY_PROJECT', 'lb_pricing_mode', 0, 'info', '', '按项目计价', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910001, 1, '一口价', 'FIXED_PRICE', 'lb_pricing_mode', 0, 'primary', '', '固定总价计价', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910002, 2, '承包', 'CONTRACT', 'lb_pricing_mode', 0, 'success', '', '按整包/整项目承包计价', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910003, 3, '外发', 'OUTSOURCING', 'lb_pricing_mode', 0, 'warning', '', '按外发协作计价', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910004, 4, '计时', 'HOURLY', 'lb_pricing_mode', 0, 'info', '', '按小时/时长计价', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910092, 5, '按单位', 'BY_UNIT', 'lb_pricing_mode', 0, 'danger', '', '按件/台/米/平方等单位计价', 'admin', NOW(), 'admin', NOW(), b'0'),
 (910005, 1, '普通用户', 'USER', 'lb_role_code', 0, 'primary', '', '普通用户', 'admin', NOW(), 'admin', NOW(), b'0'),
 (910006, 2, '服务商', 'MERCHANT', 'lb_role_code', 0, 'success', '', '服务商', 'admin', NOW(), 'admin', NOW(), b'0'),
 (910007, 3, '推广员', 'PROMOTER', 'lb_role_code', 0, 'warning', '', '推广员', 'admin', NOW(), 'admin', NOW(), b'0'),
@@ -472,26 +562,66 @@ VALUES
 (910064, 2, '执行中', 'PROCESSING', 'lb_message_push_task_status', 0, 'primary', '', '推送任务执行中', 'admin', NOW(), 'admin', NOW(), b'0'),
 (910065, 3, '执行成功', 'SUCCESS', 'lb_message_push_task_status', 0, 'success', '', '推送任务执行成功', 'admin', NOW(), 'admin', NOW(), b'0'),
 (910066, 4, '部分失败', 'PARTIAL_FAILED', 'lb_message_push_task_status', 0, 'warning', '', '推送任务部分失败', 'admin', NOW(), 'admin', NOW(), b'0'),
-(910067, 5, '执行失败', 'FAILED', 'lb_message_push_task_status', 0, 'danger', '', '推送任务执行失败', 'admin', NOW(), 'admin', NOW(), b'0');
+(910067, 5, '执行失败', 'FAILED', 'lb_message_push_task_status', 0, 'danger', '', '推送任务执行失败', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910068, 6, '已取消', 'CANCELLED', 'lb_message_push_task_status', 0, 'info', '', '推送任务已取消', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910069, 1, '系统类', 'SYSTEM', 'lb_message_category', 0, 'info', '', '系统消息', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910070, 2, '金额类', 'FINANCE', 'lb_message_category', 0, 'warning', '', '金额变动消息', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910071, 3, '订单类', 'ORDER', 'lb_message_category', 0, 'primary', '', '订单状态与核销消息', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910072, 4, '合规类', 'COMPLIANCE', 'lb_message_category', 0, 'danger', '', '证书到期与合规消息', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910073, 5, '纠纷类', 'DISPUTE', 'lb_message_category', 0, 'warning', '', '投诉申诉消息', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910074, 6, '营销类', 'MARKETING', 'lb_message_category', 0, 'success', '', '广告与运营消息', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910075, 1, '站内弹窗/小程序弹窗', 'APP_POPUP', 'lb_message_channel_type', 0, 'primary', '', '消息中心与前台弹窗通道', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910076, 2, '公众号/订阅消息', 'WECHAT_MP_TEMPLATE', 'lb_message_channel_type', 0, 'success', '', '公众号/小程序模板消息通道', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910077, 3, '短信', 'SMS', 'lb_message_channel_type', 0, 'warning', '', '短信发送通道', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910078, 4, 'App语音朗读', 'APP_VOICE', 'lb_message_channel_type', 0, 'info', '', 'App 客户端语音朗读通道', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910079, 1, '未读', 'UNREAD', 'lb_message_read_status', 0, 'warning', '', '消息未读', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910080, 2, '已读', 'READ', 'lb_message_read_status', 0, 'success', '', '消息已读', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910081, 1, '用户定向申请', 'USER_DIRECTED', 'lb_message_campaign_source_type', 0, 'warning', '', '用户发起定向推送申请', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910082, 2, '管理定向投放', 'ADMIN_DIRECTED', 'lb_message_campaign_source_type', 0, 'primary', '', '管理员直接发起投放', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910083, 3, '系统触发', 'SYSTEM_TRIGGER', 'lb_message_campaign_source_type', 0, 'info', '', '系统业务触发投放', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910084, 4, '广告投放', 'AD', 'lb_message_campaign_source_type', 0, 'success', '', '广告或运营活动投放', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910085, 1, '待审核', 'PENDING', 'lb_message_campaign_audit_status', 0, 'warning', '', '投放待审核', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910086, 2, '已通过', 'APPROVED', 'lb_message_campaign_audit_status', 0, 'success', '', '投放审核通过', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910087, 3, '已驳回', 'REJECTED', 'lb_message_campaign_audit_status', 0, 'danger', '', '投放审核驳回', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910088, 4, '已取消', 'CANCELLED', 'lb_message_campaign_audit_status', 0, 'info', '', '投放已取消', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910089, 1, '全平台', 'FULL_PLATFORM', 'lb_message_target_mode', 0, 'primary', '', '全平台用户', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910090, 2, '辖区', 'JURISDICTION', 'lb_message_target_mode', 0, 'success', '', '按辖区定向', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910091, 3, '自定义筛选', 'CUSTOM_FILTER', 'lb_message_target_mode', 0, 'warning', '', '按区域/类目/角色/时段筛选', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910093, 1, '营业执照', 'BUSINESS_LICENSE', 'lb_qualification_type', 0, 'primary', '', '企业/个体工商户营业执照', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910094, 2, '电工证', 'ELECTRICIAN', 'lb_qualification_type', 0, 'warning', '', '电工相关上岗资质', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910095, 3, '焊工证', 'WELDER', 'lb_qualification_type', 0, 'danger', '', '焊接作业相关资质', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910096, 4, '空调制冷证', 'HVAC_TECHNICIAN', 'lb_qualification_type', 0, 'info', '', '空调安装与制冷维修资质', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910097, 5, '管道作业证', 'PLUMBING_TECHNICIAN', 'lb_qualification_type', 0, 'success', '', '给排水、管道维修相关资质', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910098, 6, '保洁服务资质', 'CLEANING_SERVICE', 'lb_qualification_type', 0, 'primary', '', '专业保洁、清洗相关服务资质', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910099, 7, '安装服务资质', 'INSTALLATION_SERVICE', 'lb_qualification_type', 0, 'success', '', '家具、卫浴等安装服务资质', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910100, 8, '安全生产证', 'SAFETY_CERTIFICATE', 'lb_qualification_type', 0, 'danger', '', '安全生产、施工安全相关证件', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910101, 9, '特种作业操作证', 'SPECIAL_OPERATION', 'lb_qualification_type', 0, 'warning', '', '高处、电工作业等特种作业操作证', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910102, 10, '健康证', 'HEALTH_CERTIFICATE', 'lb_qualification_type', 0, 'info', '', '从业健康证明', 'admin', NOW(), 'admin', NOW(), b'0');
 
 INSERT INTO `lb_service_category`
-(`id`, `parent_id`, `category_name`, `category_level`, `sort_no`, `icon`, `default_pricing_mode`, `support_split`, `support_invoice`, `risk_level`, `status`, `tenant_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
+(`id`, `parent_id`, `category_name`, `category_level`, `sort_no`, `icon`, `default_pricing_mode`, `supported_pricing_modes`, `support_split`, `support_invoice`, `risk_level`, `labor_category_flag`, `force_agreement_type`, `invoice_rate_reminder_text`, `status`, `tenant_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
 VALUES
-(340001, 0, '家政保洁', 1, 10, 'ep:house', 'BY_TIME', b'0', b'1', 'LOW', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(340002, 0, '家居维修', 1, 20, 'ep:tools', 'BY_PROJECT', b'1', b'1', 'MEDIUM', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(340003, 0, '家电清洗', 1, 30, 'ep:operation', 'BY_PROJECT', b'0', b'1', 'LOW', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(340004, 0, '跑腿代办', 1, 40, 'ep:van', 'BY_TIME', b'0', b'0', 'MEDIUM', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(340005, 0, '社区安装', 1, 50, 'ep:box', 'BY_PROJECT', b'1', b'1', 'MEDIUM', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(340101, 340001, '日常保洁', 2, 11, NULL, 'BY_TIME', b'0', b'1', 'LOW', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(340102, 340001, '深度清洁', 2, 12, NULL, 'BY_PROJECT', b'1', b'1', 'MEDIUM', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(340201, 340002, '水电维修', 2, 21, NULL, 'BY_PROJECT', b'1', b'1', 'MEDIUM', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(340202, 340002, '门锁门窗维修', 2, 22, NULL, 'BY_PROJECT', b'1', b'1', 'MEDIUM', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(340301, 340003, '空调清洗', 2, 31, NULL, 'BY_PROJECT', b'0', b'1', 'LOW', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(340302, 340003, '油烟机清洗', 2, 32, NULL, 'BY_PROJECT', b'0', b'1', 'LOW', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(340401, 340004, '同城跑腿', 2, 41, NULL, 'BY_TIME', b'0', b'0', 'MEDIUM', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(340402, 340004, '代办代购', 2, 42, NULL, 'BY_TIME', b'0', b'0', 'MEDIUM', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(340501, 340005, '家具安装', 2, 51, NULL, 'BY_PROJECT', b'1', b'1', 'MEDIUM', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(340502, 340005, '卫浴安装', 2, 52, NULL, 'BY_PROJECT', b'1', b'1', 'MEDIUM', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0');
+(340001, 0, '家政保洁', 1, 10, 'ep:house', 'HOURLY', '["HOURLY","BY_UNIT"]', b'0', b'1', 'LOW', b'0', 'TRADE_GUARANTEE', '开票需求通常会降低接单率，请确认是否继续', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(340002, 0, '家居维修', 1, 20, 'ep:tools', 'CONTRACT', '["FIXED_PRICE","CONTRACT","BY_UNIT"]', b'1', b'1', 'MEDIUM', b'1', 'PROJECT_ESCROW', '开票需求通常会降低接单率，请确认是否继续', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(340003, 0, '家电清洗', 1, 30, 'ep:operation', 'FIXED_PRICE', '["FIXED_PRICE","BY_UNIT"]', b'0', b'1', 'LOW', b'0', 'TRADE_GUARANTEE', '开票需求通常会降低接单率，请确认是否继续', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(340004, 0, '跑腿代办', 1, 40, 'ep:van', 'HOURLY', '["HOURLY","FIXED_PRICE"]', b'0', b'0', 'MEDIUM', b'0', 'TRADE_GUARANTEE', NULL, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(340005, 0, '社区安装', 1, 50, 'ep:box', 'CONTRACT', '["FIXED_PRICE","CONTRACT","BY_UNIT"]', b'1', b'1', 'MEDIUM', b'1', 'PROJECT_ESCROW', '开票需求通常会降低接单率，请确认是否继续', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(340101, 340001, '日常保洁', 2, 11, NULL, 'HOURLY', '["HOURLY"]', b'0', b'1', 'LOW', b'0', 'TRADE_GUARANTEE', '开票需求通常会降低接单率，请确认是否继续', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(340102, 340001, '深度清洁', 2, 12, NULL, 'FIXED_PRICE', '["FIXED_PRICE","BY_UNIT"]', b'1', b'1', 'MEDIUM', b'0', 'TRADE_GUARANTEE', '开票需求通常会降低接单率，请确认是否继续', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(340201, 340002, '水电维修', 2, 21, NULL, 'CONTRACT', '["FIXED_PRICE","CONTRACT","BY_UNIT"]', b'1', b'1', 'MEDIUM', b'1', 'PROJECT_ESCROW', '开票需求通常会降低接单率，请确认是否继续', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(340202, 340002, '门锁门窗维修', 2, 22, NULL, 'FIXED_PRICE', '["FIXED_PRICE","BY_UNIT"]', b'1', b'1', 'MEDIUM', b'1', 'PROJECT_ESCROW', '开票需求通常会降低接单率，请确认是否继续', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(340301, 340003, '空调清洗', 2, 31, NULL, 'FIXED_PRICE', '["FIXED_PRICE","BY_UNIT"]', b'0', b'1', 'LOW', b'0', 'TRADE_GUARANTEE', '开票需求通常会降低接单率，请确认是否继续', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(340302, 340003, '油烟机清洗', 2, 32, NULL, 'FIXED_PRICE', '["FIXED_PRICE","BY_UNIT"]', b'0', b'1', 'LOW', b'0', 'TRADE_GUARANTEE', '开票需求通常会降低接单率，请确认是否继续', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(340401, 340004, '同城跑腿', 2, 41, NULL, 'HOURLY', '["HOURLY","FIXED_PRICE"]', b'0', b'0', 'MEDIUM', b'0', 'TRADE_GUARANTEE', NULL, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(340402, 340004, '代办代购', 2, 42, NULL, 'FIXED_PRICE', '["FIXED_PRICE"]', b'0', b'0', 'MEDIUM', b'0', 'TRADE_GUARANTEE', NULL, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(340501, 340005, '家具安装', 2, 51, NULL, 'CONTRACT', '["FIXED_PRICE","CONTRACT","BY_UNIT"]', b'1', b'1', 'MEDIUM', b'1', 'PROJECT_ESCROW', '开票需求通常会降低接单率，请确认是否继续', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(340502, 340005, '卫浴安装', 2, 52, NULL, 'CONTRACT', '["FIXED_PRICE","CONTRACT","BY_UNIT"]', b'1', b'1', 'MEDIUM', b'1', 'PROJECT_ESCROW', '开票需求通常会降低接单率，请确认是否继续', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0');
+
+INSERT INTO `lb_order_split_rule`
+(`id`, `rule_name`, `rule_code`, `match_mode`, `category_id`, `applicable_pricing_modes`, `min_order_amount`, `min_quantity`, `min_worker_count`, `split_mode`, `default_unit_count`, `unit_amount_limit`, `unit_template`, `sort_no`, `status`, `remark`, `tenant_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
+VALUES
+(350001, '用工安装类多人拆单', 'LABOR_INSTALL_BY_PERSON', 'ANY', 340005, '["CONTRACT","BY_UNIT"]', NULL, NULL, 2, 'BY_PERSON', 2, 500.00, '{"titlePrefix":"安装单元","contentTemplate":"安装服务单元 {seq}","lockReasonTemplate":"待前序安装单元完成"}', 10, 'ENABLE', '用工安装类按人数自动拆分', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(350002, '保洁深度服务金额拆单', 'CLEANING_AMOUNT_SPLIT', 'ANY', 340001, '["FIXED_PRICE","BY_UNIT"]', 300.00, NULL, NULL, 'BY_CONTENT', 2, 200.00, '{"titlePrefix":"保洁单元","contentTemplate":"保洁内容单元 {seq}","lockReasonTemplate":"待前序保洁单元完成"}', 20, 'ENABLE', '金额超过 300 的深度保洁订单自动拆分', 1, 'admin', NOW(), 'admin', NOW(), b'0');
 
 INSERT INTO `lb_sensitive_word`
 (`id`, `word`, `word_type`, `match_type`, `block_level`, `status`, `tenant_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
@@ -518,9 +648,24 @@ VALUES
 (330001, 'REAL_NAME_APPROVED', '实名认证通过', 10, 'AUTH', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
 (330002, 'MERCHANT_ENTRY_APPROVED', '服务商入驻通过', 15, 'MERCHANT', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
 (330003, 'ORDER_FINISHED_POSITIVE', '订单完结且评价良好', 5, 'ORDER', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(330007, 'ORDER_FINISHED_NEUTRAL', '订单完结中评', 0, 'ORDER', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(330008, 'ORDER_FINISHED_NEGATIVE', '订单完结差评', -10, 'ORDER', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
 (330004, 'ORDER_CANCELLED_TIMEOUT', '下单后超时取消', -8, 'ORDER', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
 (330005, 'COMPLAINT_CONFIRMED', '投诉核实成立', -15, 'AFTER_SALE', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(330006, 'APPEAL_APPROVED', '申诉审核通过', 6, 'AFTER_SALE', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0');
+(330006, 'APPEAL_APPROVED', '申诉审核通过', 6, 'AFTER_SALE', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(330009, 'VIOLATION_CONFIRMED', '违规核实成立', -20, 'RISK', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0');
+
+INSERT INTO `lb_credit_level_benefit`
+(`id`, `level_code`, `level_name`, `benefit_title`, `benefit_desc`, `sort_no`, `status`, `tenant_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
+VALUES
+(331001, 'EXCELLENT', '优秀', '优先展示', '可进入优质服务优先展示与推荐排序', 1, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(331002, 'EXCELLENT', '优秀', '优先池候选', '满足连续好评条件后可进入好评优先池', 2, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(331003, 'NORMAL', '正常', '标准排序', '可参与平台标准排序和正常接单流转', 1, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(331004, 'NORMAL', '正常', '信用可提升', '继续获得好评可提升到优秀等级', 2, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(331005, 'WARNING', '预警', '流量受限', '排序权重下降，并展示信用预警提示', 1, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(331006, 'WARNING', '预警', '需持续改善', '需持续获得好评或消除负向记录后恢复正常', 2, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(331007, 'DISABLED', '禁用', '风控限制展示', '仅做信用禁用展示和风控标记，不直接封禁登录', 1, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(331008, 'DISABLED', '禁用', '需人工复核', '需通过申诉、整改或人工处理后恢复信用等级', 2, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0');
 
 INSERT INTO `lb_divide_rule`
 (`id`, `rule_name`, `city_level`, `category_id`, `merchant_rate`, `platform_rate`, `partner_rate`, `promoter_rate`, `tax_withhold_rate`, `min_withdraw_amount`, `status`, `effective_time`, `tenant_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
@@ -536,16 +681,71 @@ VALUES
 (390002, '退款审核结果通知', 'lb_refund_audited', '邻里互助系统', '您的退款申请 {refundNo} 审核结果为 {auditStatus}。', 2, '["refundNo","auditStatus"]', 0, '邻里互助业务通知模板', 'admin', NOW(), 'admin', NOW(), b'0'),
 (390003, '提现审核结果通知', 'lb_withdraw_audited', '邻里互助系统', '您的提现申请 {withdrawNo} 审核结果为 {auditStatus}。', 2, '["withdrawNo","auditStatus"]', 0, '邻里互助业务通知模板', 'admin', NOW(), 'admin', NOW(), b'0');
 
-INSERT INTO `lb_message_template`
-(`id`, `template_code`, `template_name`, `template_type`, `channel_type`, `content`, `status`, `tenant_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
+INSERT INTO `lb_message_scene`
+(`id`, `scene_code`, `scene_name`, `message_category`, `default_channels`, `mandatory_sms`, `voice_enabled`, `status`, `biz_type`, `remark`, `tenant_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
 VALUES
-(380001, 'lb_role_apply_audited', '身份申请审核结果通知', 'SYSTEM', 'INTERNAL_MESSAGE', '您的身份申请审核结果已更新，请前往消息中心查看。', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(380002, 'lb_merchant_entry_audited', '入驻审核结果通知', 'SYSTEM', 'INTERNAL_MESSAGE', '您的服务商入驻审核结果已更新，请前往消息中心查看。', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(380003, 'lb_price_report_audited', '价格申报审核结果通知', 'SYSTEM', 'INTERNAL_MESSAGE', '您的价格申报审核结果已更新，请前往消息中心查看。', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(380004, 'lb_refund_audited', '退款审核结果通知', 'SYSTEM', 'INTERNAL_MESSAGE', '您的退款申请审核结果已更新，请前往消息中心查看。', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(380005, 'lb_withdraw_audited', '提现审核结果通知', 'SYSTEM', 'INTERNAL_MESSAGE', '您的提现申请审核结果已更新，请前往消息中心查看。', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(380006, 'lb_qualification_expire_reminder', '资质到期提醒通知', 'SYSTEM', 'INTERNAL_MESSAGE', '您的资质临近到期，请尽快更新，避免影响接单。', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(380007, 'lb_qualification_expire_disable', '资质到期限制接单通知', 'SYSTEM', 'INTERNAL_MESSAGE', '您的资质已到期，当前已限制接单，请完成更新后恢复。', 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0');
+(381001, 'SYSTEM_NOTICE', '系统通知', 'SYSTEM', 'APP_POPUP', b'0', b'1', 'ENABLE', 'SYSTEM', '默认历史迁移场景', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(381002, 'FINANCE_WITHDRAW_AUDIT', '提现审核通知', 'FINANCE', 'APP_POPUP,SMS', b'1', b'1', 'ENABLE', 'WITHDRAW', '金额变动类场景，短信必发', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(381003, 'FINANCE_REFUND_SUCCESS', '退款结果通知', 'FINANCE', 'APP_POPUP,SMS', b'1', b'1', 'ENABLE', 'REFUND', '金额变动类场景，短信必发', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(381004, 'QUALIFICATION_EXPIRE_REMINDER', '资质到期提醒', 'COMPLIANCE', 'APP_POPUP,APP_VOICE', b'0', b'1', 'ENABLE', 'QUALIFICATION_EXPIRY', '到期前 D-7 / D-1 提醒', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(381005, 'QUALIFICATION_EXPIRE_DISABLE', '资质到期禁接单通知', 'COMPLIANCE', 'APP_POPUP,SMS', b'0', b'1', 'ENABLE', 'QUALIFICATION_EXPIRY', '到期后禁接单通知', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(381006, 'ORDER_STATUS_CHANGED', '订单状态通知', 'ORDER', 'APP_POPUP,APP_VOICE', b'0', b'1', 'ENABLE', 'ORDER', '订单状态流转消息', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(381007, 'DISPUTE_CREATED', '纠纷发起通知', 'DISPUTE', 'APP_POPUP,SMS', b'0', b'1', 'ENABLE', 'COMPLAINT', '投诉创建通知', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(381008, 'DISPUTE_RESULT', '纠纷结果通知', 'DISPUTE', 'APP_POPUP,SMS', b'0', b'1', 'ENABLE', 'COMPLAINT', '投诉处理结果通知', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(381009, 'VERIFY_SUCCESS', '核销成功通知', 'ORDER', 'APP_POPUP,APP_VOICE', b'0', b'1', 'ENABLE', 'ORDER', '核销成功通知', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(381010, 'MARKETING_BROADCAST', '运营/广告投放', 'MARKETING', 'APP_POPUP', b'0', b'1', 'ENABLE', 'MARKETING', '运营推送与广告投放', 1, 'admin', NOW(), 'admin', NOW(), b'0');
+
+INSERT INTO `lb_message_template`
+(`id`, `template_code`, `template_name`, `scene_code`, `message_category`, `template_type`, `channel_type`, `title_template`, `content_template`, `route_type`, `route_value`, `mp_template_id`, `sms_template_code`, `voice_text_template`, `sort`, `status`, `tenant_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
+VALUES
+(380001, 'lb_role_apply_audited', '身份申请审核结果通知', 'SYSTEM_NOTICE', 'SYSTEM', 'BIZ', 'APP_POPUP', '身份申请审核结果', '您的身份申请审核结果已更新，请前往消息中心查看。', 'APP_PAGE', '/pages/message/detail', NULL, NULL, '您的身份申请审核结果已更新，请尽快查看。', 10, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380002, 'lb_merchant_entry_audited', '入驻审核结果通知', 'SYSTEM_NOTICE', 'SYSTEM', 'BIZ', 'APP_POPUP', '入驻审核结果', '您的服务商入驻审核结果已更新，请前往消息中心查看。', 'APP_PAGE', '/pages/message/detail', NULL, NULL, '您的入驻审核结果已更新，请查看。', 20, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380003, 'lb_price_report_audited', '价格申报审核结果通知', 'SYSTEM_NOTICE', 'SYSTEM', 'BIZ', 'APP_POPUP', '价格申报结果', '您的价格申报审核结果已更新，请前往消息中心查看。', 'APP_PAGE', '/pages/message/detail', NULL, NULL, '您的价格申报审核结果已更新，请查看。', 30, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380004, 'lb_refund_audited', '退款审核结果通知', 'FINANCE_REFUND_SUCCESS', 'FINANCE', 'BIZ', 'APP_POPUP', '退款结果通知', '您的退款申请审核结果已更新，请前往消息中心查看。', 'APP_PAGE', '/pages/wallet/refund', NULL, NULL, '您的退款结果已更新，请查看。', 40, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380005, 'lb_withdraw_audited', '提现审核结果通知', 'FINANCE_WITHDRAW_AUDIT', 'FINANCE', 'BIZ', 'APP_POPUP', '提现结果通知', '您的提现申请审核结果已更新，请前往消息中心查看。', 'APP_PAGE', '/pages/wallet/withdraw', NULL, NULL, '您的提现审核结果已更新，请查看。', 50, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380006, 'lb_qualification_expire_reminder', '资质到期提醒通知', 'QUALIFICATION_EXPIRE_REMINDER', 'COMPLIANCE', 'BIZ', 'APP_POPUP', '资质到期提醒', '您的资质临近到期，请尽快更新，避免影响接单。', 'APP_PAGE', '/pages/qualification/index', NULL, NULL, '您的资质即将到期，请尽快更新。', 60, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380007, 'lb_qualification_expire_disable', '资质到期限制接单通知', 'QUALIFICATION_EXPIRE_DISABLE', 'COMPLIANCE', 'BIZ', 'APP_POPUP', '资质已到期', '您的资质已到期，当前已限制接单，请完成更新后恢复。', 'APP_PAGE', '/pages/qualification/index', NULL, NULL, '您的资质已到期，当前已限制接单。', 70, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380008, 'lb_withdraw_audited_sms', '提现审核短信通知', 'FINANCE_WITHDRAW_AUDIT', 'FINANCE', 'BIZ', 'SMS', '提现审核短信通知', '您的提现申请审核结果已更新，请注意查收。', 'APP_PAGE', '/pages/wallet/withdraw', NULL, 'lb_withdraw_audited', NULL, 80, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380009, 'lb_refund_audited_sms', '退款结果短信通知', 'FINANCE_REFUND_SUCCESS', 'FINANCE', 'BIZ', 'SMS', '退款结果短信通知', '您的退款申请审核结果已更新，请注意查收。', 'APP_PAGE', '/pages/wallet/refund', NULL, 'lb_refund_audited', NULL, 90, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380100, 'lb_match_pushed', '匹配推送通知', 'SYSTEM_NOTICE', 'ORDER', 'BIZ', 'APP_POPUP', '新的待抢订单', '系统已为您推送新的待抢订单，请尽快处理。', 'APP_PAGE', '/pages/order/grab', NULL, NULL, '系统已为您推送新的待抢订单，请尽快处理。', 100, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380101, 'lb_grab_countdown', '抢单倒计时提醒', 'SYSTEM_NOTICE', 'ORDER', 'BIZ', 'APP_VOICE', '抢单倒计时提醒', '您有新的抢单倒计时，请在 1 分钟内完成接单。', 'APP_PAGE', '/pages/order/grab', NULL, NULL, '您有新的抢单倒计时，请在1分钟内完成接单。', 110, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380102, 'lb_order_flow_advice', '流单建议通知', 'SYSTEM_NOTICE', 'ORDER', 'BIZ', 'APP_POPUP', '订单暂未匹配成功', '订单暂未匹配成功，建议您适当降低条件或加价。', 'APP_PAGE', '/pages/order/detail', NULL, NULL, '订单暂未匹配成功，建议您适当降低条件或加价。', 120, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380103, 'lb_order_flow_refunded', '流单退款结果通知', 'FINANCE_REFUND_SUCCESS', 'FINANCE', 'BIZ', 'APP_POPUP', '流单退款结果通知', '流单单元已发起原路退款，请留意退款结果。', 'APP_PAGE', '/pages/wallet/refund', NULL, NULL, '流单单元已发起原路退款，请留意退款结果。', 130, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380104, 'lb_priority_pool_entered', '优先池入池通知', 'SYSTEM_NOTICE', 'SYSTEM', 'BIZ', 'APP_POPUP', '已进入优先池', '恭喜您进入优先推送池，后续将获得更高层内排序。', 'APP_PAGE', '/pages/merchant/priority', NULL, NULL, '恭喜您进入优先推送池，后续将获得更高层内排序。', 140, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380105, 'lb_priority_pool_exited', '优先池出池通知', 'SYSTEM_NOTICE', 'SYSTEM', 'BIZ', 'APP_POPUP', '已退出优先池', '您已退出优先推送池，请关注评价和投诉状态。', 'APP_PAGE', '/pages/merchant/priority', NULL, NULL, '您已退出优先推送池，请关注评价和投诉状态。', 150, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380106, 'lb_special_cert_audited', '专项资质审核通知', 'SYSTEM_NOTICE', 'COMPLIANCE', 'BIZ', 'APP_POPUP', '专项资质审核结果', '您的专项资质审核结果已更新，请及时查看。', 'APP_PAGE', '/pages/qualification/index', NULL, NULL, '您的专项资质审核结果已更新，请及时查看。', 160, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380107, 'lb_showcase_reward_audited', '晒单优先审核通知', 'SYSTEM_NOTICE', 'SYSTEM', 'BIZ', 'APP_POPUP', '晒单优先审核结果', '您的晒单优先申请审核结果已更新，请及时查看。', 'APP_PAGE', '/pages/merchant/showcase', NULL, NULL, '您的晒单优先申请审核结果已更新，请及时查看。', 170, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380108, 'lb_merchant_accept_enabled', '接单权限开通提醒', 'SYSTEM_NOTICE', 'SYSTEM', 'BIZ', 'APP_POPUP', '接单权限已开通', '您的服务商终审已通过，接单权限现已开通，请及时前往接单。', 'APP_PAGE', '/pages/merchant/entry', NULL, NULL, '您的接单权限已开通，请及时前往接单。', 180, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380109, 'lb_bind_bank_card_required', '银行卡绑定提醒', 'SYSTEM_NOTICE', 'SYSTEM', 'BIZ', 'APP_POPUP', '请先绑定银行卡', '您的入驻终审已通过，但尚未绑定有效银行卡，当前暂不可接单，请先完成绑卡。', 'APP_PAGE', '/pages/wallet/bank-card', NULL, NULL, '您尚未绑定有效银行卡，请先完成绑卡后再接单。', 190, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380110, 'lb_cert_exemption_audited', '证件豁免审核结果通知', 'SYSTEM_NOTICE', 'COMPLIANCE', 'BIZ', 'APP_POPUP', '证件豁免审核结果', '您的证件豁免申请审核结果已更新，请及时查看处理。', 'APP_PAGE', '/pages/qualification/index', NULL, NULL, '您的证件豁免审核结果已更新，请及时查看。', 200, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0');
+
+INSERT INTO `lb_match_strategy`
+(`id`, `strategy_code`, `strategy_name`, `stage_config_json`, `max_stage_count`, `max_radius_km`, `flow_advice_template`,
+ `auto_refund_enabled`, `auto_refund_retry_times`, `status`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+VALUES
+(1, 'DEFAULT', '默认分钟级匹配策略',
+ '[{\"stageNo\":1,\"radiusStartKm\":0.00,\"radiusEndKm\":0.50,\"durationSeconds\":60},{\"stageNo\":2,\"radiusStartKm\":0.50,\"radiusEndKm\":1.00,\"durationSeconds\":60},{\"stageNo\":3,\"radiusStartKm\":1.00,\"radiusEndKm\":2.00,\"durationSeconds\":60},{\"stageNo\":4,\"radiusStartKm\":2.00,\"radiusEndKm\":5.00,\"durationSeconds\":60},{\"stageNo\":5,\"radiusStartKm\":5.00,\"radiusEndKm\":999.00,\"durationSeconds\":60}]',
+ 5, 999.00, '当前附近服务商暂未接单，建议适当降低条件或增加预算，我们将继续为您匹配。',
+ b'1', 3, 'ENABLE', 'admin', NOW(), 'admin', NOW(), b'0', 0);
+
+UPDATE `lb_message_template`
+SET `scene_code` = IFNULL(`scene_code`, 'SYSTEM_NOTICE'),
+    `message_category` = IFNULL(`message_category`, 'SYSTEM')
+WHERE 1 = 1;
+
+UPDATE `lb_message_push_task`
+SET `scene_code` = IFNULL(`scene_code`, 'SYSTEM_NOTICE'),
+    `message_category` = IFNULL(`message_category`, 'SYSTEM'),
+    `execute_status` = IFNULL(`execute_status`, `status`)
+WHERE 1 = 1;
+
+UPDATE `lb_message_record`
+SET `scene_code` = IFNULL(`scene_code`, 'SYSTEM_NOTICE'),
+    `message_category` = IFNULL(`message_category`, 'SYSTEM'),
+    `channel_type` = CASE WHEN `channel_type` = 'INTERNAL_MESSAGE' THEN 'APP_POPUP' ELSE `channel_type` END,
+    `read_status` = IFNULL(`read_status`, 'READ'),
+    `content_snapshot` = IFNULL(`content_snapshot`, `title`)
+WHERE 1 = 1;
 
 INSERT INTO `system_menu`
 (`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`, `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
@@ -597,6 +797,15 @@ VALUES
 (110252, '服务点修改', 'linbang:merchant:service-point:update', 3, 2, 110250, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110253, '服务点删除', 'linbang:merchant:service-point:delete', 3, 3, 110250, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110254, '服务点导出', 'linbang:merchant:service-point:export', 3, 4, 110250, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110260, '晒单悬赏审核', 'linbang:showcase:reward:query', 2, 50, 110200, 'showcase-reward', 'ep:picture-rounded', 'linbang/showcasereward/index', 'LinbangShowcaseReward', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110261, '晒单悬赏审核动作', 'linbang:showcase:reward:audit', 3, 1, 110260, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110262, '优先池管理', 'linbang:priority-pool:query', 2, 60, 110200, 'priority-pool', 'ep:trophy', 'linbang/prioritypool/index', 'LinbangPriorityPool', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110263, '优先池资格变更', 'linbang:priority-pool:update', 3, 1, 110262, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110264, '证件豁免审核', 'linbang:member:cert-exemption:query', 2, 65, 110200, 'cert-exemption', 'ep:document-remove', 'linbang/certexemption/index', 'LinbangCertExemption', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110265, '证件豁免审核动作', 'linbang:member:cert-exemption:audit', 3, 1, 110264, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110266, '子账号管理', 'linbang:merchant:sub-account:query', 2, 66, 110200, 'merchant-sub-account', 'ep:user-filled', 'linbang/merchantsubaccount/index', 'LinbangMerchantSubAccount', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110267, '子账号新增', 'linbang:merchant:sub-account:create', 3, 1, 110266, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110268, '子账号修改', 'linbang:merchant:sub-account:update', 3, 2, 110266, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110300, '订单中心', '', 1, 40, 0, '/linbang-order', 'ep:document', NULL, NULL, 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110310, '订单中心概览', '', 2, 1, 110300, 'overview', 'ep:tickets', 'linbang/order/index', 'LinbangOrderOverview', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110320, '订单列表', 'linbang:order:info:query', 2, 10, 110300, 'order-info', 'ep:document-copy', 'linbang/orderinfo/index', 'LinbangOrderInfo', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
@@ -621,11 +830,16 @@ VALUES
 (110352, '匹配记录修改', 'linbang:order:match-record:update', 3, 2, 110350, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110353, '匹配记录删除', 'linbang:order:match-record:delete', 3, 3, 110350, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110354, '匹配记录导出', 'linbang:order:match-record:export', 3, 4, 110350, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110355, '推送批次监控', 'linbang:match:push-batch:query', 2, 45, 110300, 'match-push-batch', 'ep:connection', 'linbang/matchpushbatch/index', 'LinbangMatchPushBatch', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110356, '匹配策略配置', 'linbang:match:strategy:query', 2, 46, 110300, 'match-strategy', 'ep:operation', 'linbang/matchstrategy/index', 'LinbangMatchStrategy', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110357, '匹配策略保存', 'linbang:match:strategy:update', 3, 1, 110356, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110360, '异常订单处理', 'linbang:order:abnormal:query', 2, 50, 110300, 'order-abnormal', 'ep:warning', 'linbang/orderabnormal/index', 'LinbangOrderAbnormal', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110361, '异常单新增', 'linbang:order:abnormal:create', 3, 1, 110360, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110362, '异常单修改', 'linbang:order:abnormal:update', 3, 2, 110360, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110363, '异常单删除', 'linbang:order:abnormal:delete', 3, 3, 110360, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110364, '异常单导出', 'linbang:order:abnormal:export', 3, 4, 110360, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110365, '流单退款看板', 'linbang:order:flow:query', 2, 60, 110300, 'order-flow', 'ep:refresh-left', 'linbang/orderflow/index', 'LinbangOrderFlow', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110366, '流单退款重试', 'linbang:order:flow:update', 3, 1, 110365, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110400, '资金中心', '', 1, 50, 0, '/linbang-wallet', 'ep:wallet', NULL, NULL, 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110410, '资金中心概览', '', 2, 1, 110400, 'overview', 'ep:money', 'linbang/wallet/index', 'LinbangWalletOverview', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110420, '钱包账户', 'linbang:wallet:account:query', 2, 10, 110400, 'wallet-account', 'ep:credit-card', 'linbang/walletaccount/index', 'LinbangWalletAccount', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
@@ -657,6 +871,8 @@ VALUES
 (110472, '银行卡修改', 'linbang:wallet:bank-card:update', 3, 2, 110470, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110473, '银行卡删除', 'linbang:wallet:bank-card:delete', 3, 3, 110470, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110474, '银行卡导出', 'linbang:wallet:bank-card:export', 3, 4, 110470, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110475, '分账明细', 'linbang:wallet:divide-record:query', 2, 70, 110400, 'divide-record', 'ep:histogram', 'linbang/orderdividerecord/index', 'LinbangOrderDivideRecord', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110476, '托管凭证', 'linbang:wallet:escrow-proof:query', 2, 80, 110400, 'escrow-proof', 'ep:document-checked', 'linbang/escrowproof/index', 'LinbangEscrowProof', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110500, '风控中心', '', 1, 60, 0, '/linbang-risk', 'ep:warning', NULL, NULL, 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110510, '风控中心概览', '', 2, 1, 110500, 'overview', 'ep:monitor', 'linbang/risk/index', 'LinbangRiskOverview', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110520, '风控规则', 'linbang:risk-rule:query', 2, 10, 110500, 'risk-rule', 'ep:set-up', 'linbang/riskrule/index', 'LinbangRiskRule', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
@@ -669,6 +885,13 @@ VALUES
 (110532, '敏感词修改', 'linbang:sensitive-word:update', 3, 2, 110530, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110533, '敏感词删除', 'linbang:sensitive-word:delete', 3, 3, 110530, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110534, '敏感词导出', 'linbang:sensitive-word:export', 3, 4, 110530, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110535, '敏感命中日志', 'linbang:risk:sensitive-hit-log:query', 2, 25, 110500, 'sensitive-hit-log', 'ep:warning-filled', 'linbang/sensitivehitlog/index', 'LinbangSensitiveHitLog', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110536, '图片OCR明细', 'linbang:risk:sensitive-image-scan-result:query', 2, 26, 110500, 'sensitive-image-scan-result', 'ep:picture', 'linbang/sensitiveimagescanresult/index', 'LinbangSensitiveImageScanResult', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110537, '用户自定义脱敏词', 'linbang:risk:user-sensitive-custom-word:query', 2, 27, 110500, 'user-sensitive-custom-word', 'ep:edit-pen', 'linbang/usersensitivecustomword/index', 'LinbangUserSensitiveCustomWord', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110538, '订单拆分规则', 'linbang:order:split-rule:query', 2, 61, 110300, 'order-split-rule', 'ep:files', 'linbang/ordersplitrule/index', 'LinbangOrderSplitRule', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110539, '订单拆分规则新增', 'linbang:order:split-rule:create', 3, 1, 110538, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110540, '订单拆分规则修改', 'linbang:order:split-rule:update', 3, 2, 110538, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110541, '订单拆分规则删除', 'linbang:order:split-rule:delete', 3, 3, 110538, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110600, '信用与售后', '', 1, 70, 0, '/linbang-review', 'ep:chat-round', NULL, NULL, 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110610, '信用与售后概览', '', 2, 1, 110600, 'overview', 'ep:comment', 'linbang/review/index', 'LinbangReviewOverview', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110620, '投诉管理', 'linbang:review:complaint:query', 2, 10, 110600, 'complaint', 'ep:chat-dot-round', 'linbang/complaint/index', 'LinbangComplaint', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
@@ -724,13 +947,24 @@ INSERT INTO `system_role_menu`
 (`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
 SELECT 20002, `id`, 'admin', NOW(), 'admin', NOW(), b'0', 1
 FROM `system_menu`
-WHERE `id` = 110000 OR (`id` BETWEEN 110300 AND 110320) OR (`id` BETWEEN 110400 AND 110474);
+WHERE `id` = 110000 OR (`id` BETWEEN 110300 AND 110320) OR (`id` BETWEEN 110400 AND 110476);
 
 INSERT INTO `system_role_menu`
 (`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
 SELECT 20003, `id`, 'admin', NOW(), 'admin', NOW(), b'0', 1
 FROM `system_menu`
 WHERE `id` = 110000 OR (`id` BETWEEN 110500 AND 110534) OR (`id` BETWEEN 110620 AND 110635);
+INSERT INTO `system_role_menu`
+(`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+SELECT 20003, `id`, 'admin', NOW(), 'admin', NOW(), b'0', 1
+FROM `system_menu`
+WHERE `id` IN (110535, 110536, 110537);
+
+INSERT INTO `system_role_menu`
+(`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+SELECT 20001, `id`, 'admin', NOW(), 'admin', NOW(), b'0', 1
+FROM `system_menu`
+WHERE `id` IN (110538, 110539, 110540, 110541);
 
 INSERT INTO `system_role_menu`
 (`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
@@ -741,9 +975,10 @@ WHERE `id` IN (
   110100, 110130, 110131, 110132, 110133, 110134, 110135,
   110140, 110141,
   110160, 110161,
-  110200, 110230, 110231, 110232, 110233, 110234, 110235, 110250, 110251, 110252, 110253, 110254,
+  110200, 110230, 110231, 110232, 110233, 110234, 110235, 110250, 110251, 110252, 110253, 110254, 110260, 110261, 110262, 110263, 110264, 110265, 110266, 110267, 110268,
+  110300, 110350, 110355, 110356, 110357, 110365, 110366,
   110700, 110720, 110721,
-  110400, 110440, 110441, 110442, 110443, 110444, 110445, 110450, 110451, 110452,
+  110400, 110440, 110441, 110442, 110443, 110444, 110445, 110450, 110451, 110452, 110475, 110476,
   110600, 110620, 110625, 110630, 110635
   ,110680, 110681, 110682, 110683, 110684, 110685
 );
@@ -756,12 +991,55 @@ WHERE `id` IN (
   110000,
   110100, 110110, 110120, 110130, 110140, 110150,
   110160,
-  110200, 110210, 110220, 110230, 110240, 110250,
-  110300, 110310, 110320, 110330, 110340, 110350, 110360,
+  110200, 110210, 110220, 110230, 110240, 110250, 110260, 110262, 110264, 110266,
+  110300, 110310, 110320, 110330, 110340, 110350, 110355, 110356, 110360, 110365,
+  110400, 110475, 110476,
   110600, 110610, 110620, 110630,
   110680, 110681, 110682, 110684,
   110700, 110720
 );
+
+INSERT INTO `system_notify_template` (`id`, `name`, `code`, `nickname`, `content`, `type`, `params`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
+VALUES
+(390004, '提现到账通知', 'lb_withdraw_arrived', '邻里互助系统', '您的提现申请 {withdrawNo} 已到账，请前往钱包查看。', 2, '["withdrawNo"]', 0, '邻里互助业务通知模板', 'admin', NOW(), 'admin', NOW(), b'0'),
+(390005, '提现失败通知', 'lb_withdraw_failed', '邻里互助系统', '您的提现申请 {withdrawNo} 打款失败，金额已退回可提现余额。', 2, '["withdrawNo"]', 0, '邻里互助业务通知模板', 'admin', NOW(), 'admin', NOW(), b'0'),
+(390006, '托管解锁通知', 'lb_escrow_unlocked', '邻里互助系统', '您的订单 {orderNo} 已完成结算，托管资金已解锁。', 2, '["orderNo"]', 0, '邻里互助业务通知模板', 'admin', NOW(), 'admin', NOW(), b'0'),
+(390007, '接单权限开通提醒', 'lb_merchant_accept_enabled', '邻里互助系统', '您的服务商终审已通过，接单权限现已开通。', 2, '[]', 0, '邻里互助业务通知模板', 'admin', NOW(), 'admin', NOW(), b'0'),
+(390008, '银行卡绑定提醒', 'lb_bind_bank_card_required', '邻里互助系统', '您的入驻终审已通过，但尚未绑定有效银行卡，当前暂不可接单。', 2, '[]', 0, '邻里互助业务通知模板', 'admin', NOW(), 'admin', NOW(), b'0'),
+(390009, '证件豁免审核结果通知', 'lb_cert_exemption_audited', '邻里互助系统', '您的证件豁免申请审核结果已更新，请及时查看。', 2, '[]', 0, '邻里互助业务通知模板', 'admin', NOW(), 'admin', NOW(), b'0')
+ON DUPLICATE KEY UPDATE
+`name` = VALUES(`name`),
+`nickname` = VALUES(`nickname`),
+`content` = VALUES(`content`),
+`params` = VALUES(`params`),
+`update_time` = NOW();
+
+INSERT INTO `lb_message_template` (`id`, `template_code`, `template_name`, `scene_code`, `message_category`, `template_type`, `channel_type`, `title_template`, `content_template`, `route_type`, `route_value`, `mp_template_id`, `sms_template_code`, `voice_text_template`, `sort`, `status`, `tenant_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
+VALUES
+(380010, 'lb_withdraw_arrived', '提现到账通知', 'FINANCE_WITHDRAW_SUCCESS', 'FINANCE', 'BIZ', 'APP_POPUP', '提现到账通知', '您的提现申请已到账，请前往钱包查看。', 'APP_PAGE', '/pages/wallet/withdraw', NULL, NULL, '您的提现申请已到账，请前往钱包查看。', 180, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380011, 'lb_withdraw_failed', '提现失败通知', 'FINANCE_WITHDRAW_AUDIT', 'FINANCE', 'BIZ', 'APP_POPUP', '提现失败通知', '您的提现申请打款失败，金额已退回可提现余额。', 'APP_PAGE', '/pages/wallet/withdraw', NULL, NULL, '您的提现申请打款失败，金额已退回可提现余额。', 190, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380012, 'lb_escrow_unlocked', '托管解锁通知', 'ORDER_STATUS_CHANGED', 'ORDER', 'BIZ', 'APP_POPUP', '托管解锁通知', '您的订单已完成结算，托管资金已解锁。', 'APP_PAGE', '/pages/order/detail', NULL, NULL, '您的订单已完成结算，托管资金已解锁。', 200, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380013, 'lb_finance_payment_success', '支付成功通知', 'FINANCE_PAYMENT_SUCCESS', 'FINANCE', 'BIZ', 'APP_POPUP', '支付成功通知', '您的订单支付已成功，请等待服务商接单。', 'APP_PAGE', '/pages/order/detail', NULL, NULL, '您的订单支付已成功，请等待服务商接单。', 210, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380014, 'lb_finance_payment_success_sms', '支付成功短信通知', 'FINANCE_PAYMENT_SUCCESS', 'FINANCE', 'BIZ', 'SMS', '支付成功短信通知', '您的订单支付已成功，请等待服务商接单。', 'APP_PAGE', '/pages/order/detail', NULL, 'lb_finance_payment_success', NULL, 220, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380015, 'lb_order_status_changed', '订单状态通知', 'ORDER_STATUS_CHANGED', 'ORDER', 'BIZ', 'APP_POPUP', '订单状态通知', '您的订单状态已更新，请进入订单详情查看。', 'APP_PAGE', '/pages/order/detail', NULL, NULL, '您的订单状态已更新，请进入订单详情查看。', 230, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380016, 'lb_dispute_created', '纠纷发起通知', 'DISPUTE_CREATED', 'DISPUTE', 'BIZ', 'APP_POPUP', '纠纷发起通知', '您有一条新的纠纷消息，请及时查看处理。', 'APP_PAGE', '/pages/order/detail', NULL, NULL, '您有一条新的纠纷消息，请及时查看处理。', 240, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380017, 'lb_dispute_result', '纠纷结果通知', 'DISPUTE_RESULT', 'DISPUTE', 'BIZ', 'APP_POPUP', '纠纷结果通知', '您的纠纷处理结果已更新，请及时查看。', 'APP_PAGE', '/pages/order/detail', NULL, NULL, '您的纠纷处理结果已更新，请及时查看。', 250, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380018, 'lb_verify_success', '核销成功通知', 'VERIFY_SUCCESS', 'ORDER', 'BIZ', 'APP_POPUP', '核销成功通知', '您的订单单元已核销完成，请查看订单进度。', 'APP_PAGE', '/pages/order/detail', NULL, NULL, '您的订单单元已核销完成，请查看订单进度。', 260, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380019, 'lb_verify_exception', '核销异常通知', 'VERIFY_EXCEPTION', 'ORDER', 'BIZ', 'APP_POPUP', '核销异常通知', '您的订单单元核销出现异常，请核对订单信息后重试。', 'APP_PAGE', '/pages/order/detail', NULL, NULL, '您的订单单元核销出现异常，请核对订单信息后重试。', 270, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(380020, 'lb_commission_settled', '佣金结算通知', 'FINANCE_COMMISSION_SETTLED', 'FINANCE', 'BIZ', 'APP_POPUP', '佣金结算通知', '您的推广佣金已入账，请前往收益中心查看。', 'APP_PAGE', '/pages/promote/index', NULL, NULL, '您的推广佣金已入账，请前往收益中心查看。', 280, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0')
+ON DUPLICATE KEY UPDATE
+`template_name` = VALUES(`template_name`),
+`content_template` = VALUES(`content_template`),
+`status` = VALUES(`status`),
+`update_time` = NOW();
+
+INSERT INTO `infra_config`
+(`id`, `category`, `type`, `name`, `config_key`, `value`, `visible`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
+VALUES
+(620101, 'linbang_platform', 2, 'App 税务提醒文案', 'linbang.app.tax-reminder', '建议尽快办理个体执照；若未办理，平台将按规则代扣 20% 个税。', b'1', '资金域 P0 默认配置', 'admin', NOW(), 'admin', NOW(), b'0'),
+(620102, 'linbang_platform', 2, 'App 个体执照代办入口地址', 'linbang.app.license-agent-entry-url', 'https://example.com/license-agent', b'1', '资金域 P0 默认配置', 'admin', NOW(), 'admin', NOW(), b'0'),
+(620103, 'linbang_platform', 2, 'App 个体执照代办入口标题', 'linbang.app.license-agent-entry-title', '个体执照代办', b'1', '资金域 P0 默认配置', 'admin', NOW(), 'admin', NOW(), b'0'),
+(620104, 'linbang_platform', 2, 'App 提现说明', 'linbang.app.withdraw-notice', '提现申请审核通过后预计 T+1 到账，实际到账时间以银行处理为准。', b'1', '资金域 P0 默认配置', 'admin', NOW(), 'admin', NOW(), b'0');
 
 COMMIT;
 

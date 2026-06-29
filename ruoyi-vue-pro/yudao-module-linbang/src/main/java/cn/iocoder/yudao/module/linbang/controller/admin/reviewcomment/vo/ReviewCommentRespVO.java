@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.reviewcomment.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -72,7 +73,24 @@ public class ReviewCommentRespVO {
     @ExcelProperty("是否自动评价")
     private Boolean isAutoReview;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = "自动评价文字是否已补充")
+    @ExcelProperty("内容已补充")
+    private Boolean isContentSupplemented;
+
+    @Schema(description = "评价可编辑截止时间")
+    @ExcelProperty("编辑截止时间")
+    private LocalDateTime editDeadlineTime;
+
+    @Schema(description = "最后编辑时间")
+    @ExcelProperty("最后编辑时间")
+    private LocalDateTime lastEditTime;
+
+    @Schema(description = "编辑次数")
+    @ExcelProperty("编辑次数")
+    private Integer editCount;
+
+    @Schema(description = OpenApiSchemaConstants.REVIEW_STATUS, requiredMode = Schema.RequiredMode.REQUIRED,
+            example = "ENABLE")
     @ExcelProperty("状态")
     private String status;
 

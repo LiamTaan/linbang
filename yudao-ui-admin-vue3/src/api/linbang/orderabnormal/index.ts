@@ -1,5 +1,6 @@
 import request from '@/config/axios'
 import type { Dayjs } from 'dayjs'
+import { buildDynamicKeyHeaders } from '@/api/linbang/security'
 
 /** 异常订单信息 */
 export interface OrderAbnormal {
@@ -16,7 +17,17 @@ export interface OrderAbnormal {
   handleBy: number
   handleTime?: string | Dayjs
   remark: string
+  finalAuditStatus?: string
+  finalAuditBy?: number
+  finalAuditTime?: string | Dayjs
+  finalAuditRemark?: string
   createTime?: string | Dayjs
+}
+
+export interface OrderAbnormalFinalAuditReqVO {
+  id: number
+  finalAuditStatus: 'APPROVED' | 'REJECTED'
+  finalAuditRemark: string
 }
 
 // 异常订单 API
@@ -54,5 +65,14 @@ export const OrderAbnormalApi = {
   // 导出异常订单 Excel
   exportOrderAbnormal: async (params) => {
     return await request.download({ url: `/order/abnormal/export-excel`, params })
+  },
+
+  // 异常单终审
+  finalAuditOrderAbnormal: async (data: OrderAbnormalFinalAuditReqVO, verifyToken?: string) => {
+    return await request.post({
+      url: `/order/abnormal/final-audit`,
+      data,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   }
 }

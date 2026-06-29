@@ -5,7 +5,10 @@ import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2AccessTokenCheckRespDTO;
 import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2AccessTokenCreateReqDTO;
 import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2AccessTokenRespDTO;
+import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2SceneTicketCreateReqDTO;
+import cn.iocoder.yudao.framework.common.biz.system.oauth2.dto.OAuth2SceneTicketRespDTO;
 import cn.iocoder.yudao.module.system.dal.dataobject.oauth2.OAuth2AccessTokenDO;
+import cn.iocoder.yudao.module.system.service.oauth2.OAuth2SceneTicketService;
 import cn.iocoder.yudao.module.system.service.oauth2.OAuth2TokenService;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +24,8 @@ public class OAuth2TokenApiImpl implements OAuth2TokenCommonApi {
 
     @Resource
     private OAuth2TokenService oauth2TokenService;
+    @Resource
+    private OAuth2SceneTicketService oauth2SceneTicketService;
 
     @Override
     public OAuth2AccessTokenRespDTO createAccessToken(OAuth2AccessTokenCreateReqDTO reqDTO) {
@@ -45,6 +50,21 @@ public class OAuth2TokenApiImpl implements OAuth2TokenCommonApi {
     public OAuth2AccessTokenRespDTO refreshAccessToken(String refreshToken, String clientId) {
         OAuth2AccessTokenDO accessTokenDO = oauth2TokenService.refreshAccessToken(refreshToken, clientId);
         return BeanUtils.toBean(accessTokenDO, OAuth2AccessTokenRespDTO.class);
+    }
+
+    @Override
+    public OAuth2SceneTicketRespDTO createSceneTicket(OAuth2SceneTicketCreateReqDTO reqDTO) {
+        return oauth2SceneTicketService.createSceneTicket(reqDTO);
+    }
+
+    @Override
+    public OAuth2AccessTokenCheckRespDTO checkSceneTicket(String ticket, String scene) {
+        return oauth2SceneTicketService.checkSceneTicket(ticket, scene);
+    }
+
+    @Override
+    public OAuth2AccessTokenCheckRespDTO consumeSceneTicket(String ticket, String scene) {
+        return oauth2SceneTicketService.consumeSceneTicket(ticket, scene);
     }
 
 }

@@ -28,6 +28,12 @@ public class MessagePushTaskDO extends BaseDO {
 
     private String taskName;
 
+    private Long campaignId;
+
+    private String sceneCode;
+
+    private String messageCategory;
+
     private String targetScope;
 
     private String channelType;
@@ -43,6 +49,18 @@ public class MessagePushTaskDO extends BaseDO {
     private LocalDateTime executeTime;
 
     private String status;
+
+    private String executeStatus;
+
+    private Integer plannedAudienceCount;
+
+    private Integer reachedCount;
+
+    private Integer clickedCount;
+
+    private Integer readCount;
+
+    private Integer voicePlayedCount;
 
     private Integer successCount;
 

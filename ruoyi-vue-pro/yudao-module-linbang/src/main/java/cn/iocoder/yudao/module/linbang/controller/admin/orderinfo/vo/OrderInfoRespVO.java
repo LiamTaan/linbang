@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.orderinfo.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -63,11 +64,7 @@ public class OrderInfoRespVO {
     @ExcelProperty("类目名称")
     private String categoryName;
 
-    @Schema(description = "订单标题", requiredMode = Schema.RequiredMode.REQUIRED)
-    @ExcelProperty("订单标题")
-    private String title;
-
-    @Schema(description = "计价方式", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = OpenApiSchemaConstants.PRICING_MODE, requiredMode = Schema.RequiredMode.REQUIRED, example = "FIXED_PRICE")
     @ExcelProperty(value = "计价方式", converter = DictConvert.class)
     @DictFormat("lb_pricing_mode") // TODO 代码优化：建议设置到对应的 DictTypeConstants 枚举类中
     private String pricingMode;
@@ -80,8 +77,8 @@ public class OrderInfoRespVO {
     @ExcelProperty("订单金额")
     private BigDecimal orderAmount;
 
-    @Schema(description = "工期描述")
-    @ExcelProperty("工期描述")
+    @Schema(description = "服务时长说明，例如 1小时、半天、3天")
+    @ExcelProperty("服务时长说明")
     private String serviceDurationDesc;
 
     @Schema(description = "数量")
@@ -91,10 +88,6 @@ public class OrderInfoRespVO {
     @Schema(description = "需求描述")
     @ExcelProperty("需求描述")
     private String requireDesc;
-
-    @Schema(description = "地址ID", example = "30674")
-    @ExcelProperty("地址ID")
-    private Long addressId;
 
     @Schema(description = "省")
     @ExcelProperty("省")
@@ -132,7 +125,7 @@ public class OrderInfoRespVO {
     @ExcelProperty("是否拆单")
     private Boolean needSplit;
 
-    @Schema(description = "拆单状态", example = "2")
+    @Schema(description = OpenApiSchemaConstants.ORDER_SPLIT_STATUS, example = "SPLIT")
     @ExcelProperty("拆单状态")
     private String splitStatus;
 
@@ -144,7 +137,7 @@ public class OrderInfoRespVO {
     @ExcelProperty("支付订单ID")
     private Long payOrderId;
 
-    @Schema(description = "订单状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.ORDER_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "PENDING_ACCEPT")
     @ExcelProperty(value = "订单状态", converter = DictConvert.class)
     @DictFormat("lb_order_status") // TODO 代码优化：建议设置到对应的 DictTypeConstants 枚举类中
     private String status;

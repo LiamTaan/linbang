@@ -6,6 +6,8 @@ import cn.iocoder.yudao.module.system.api.logger.dto.OperateLogPageReqDTO;
 import cn.iocoder.yudao.module.system.controller.admin.logger.vo.operatelog.OperateLogPageReqVO;
 import cn.iocoder.yudao.module.system.dal.dataobject.logger.OperateLogDO;
 
+import java.time.LocalDateTime;
+
 /**
  * 操作日志 Service 接口
  *
@@ -43,5 +45,13 @@ public interface OperateLogService {
      * @return 操作日志分页列表
      */
     PageResult<OperateLogDO> getOperateLogPage(OperateLogPageReqDTO pageReqVO);
+
+    /**
+     * 删除指定时间之前的操作日志
+     *
+     * @param expireTime 过期时间
+     * @return 删除条数
+     */
+    int cleanOperateLogsBefore(LocalDateTime expireTime);
 
 }

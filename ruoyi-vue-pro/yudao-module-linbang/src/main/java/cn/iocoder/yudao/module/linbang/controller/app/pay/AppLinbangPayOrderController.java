@@ -3,8 +3,9 @@ package cn.iocoder.yudao.module.linbang.controller.app.pay;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderCreateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppOrderDepositInfoRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppOrderDepositStatusRespVO;
 import cn.iocoder.yudao.module.linbang.service.app.pay.AppLinbangPayOrderService;
-import cn.iocoder.yudao.module.pay.api.notify.dto.PayOrderNotifyReqDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -18,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import javax.annotation.security.PermitAll;
 import javax.validation.Valid;
 
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -52,12 +52,28 @@ public class AppLinbangPayOrderController {
         return success(appLinbangPayOrderService.getPayOrder(getLoginUserId(), id, orderId, sync));
     }
 
-    @PostMapping("/update-paid")
-    @Operation(summary = "更新邻里订单为已支付")
-    @PermitAll
-    public CommonResult<Boolean> updatePaid(@Valid @RequestBody PayOrderNotifyReqDTO notifyReqDTO) {
-        appLinbangPayOrderService.updatePaid(notifyReqDTO);
-        return success(Boolean.TRUE);
+    @GetMapping("/deposit/info")
+    @Operation(summary = "获取订单保证金确认信息")
+    @Parameter(name = "orderId", required = true, description = "业务订单 ID")
+    public CommonResult<AppOrderDepositInfoRespVO> getDepositInfo(@RequestParam("orderId") Long orderId) {
+        return success(appLinbangPayOrderService.getDepositInfo(getLoginUserId(), orderId));
     }
 
+    @PostMapping("/deposit/create")
+    @Operation(summary = "创建订单保证金支付单")
+    @Parameter(name = "orderId", required = true, description = "业务订单 ID")
+    public CommonResult<Long> createDepositPayOrder(@RequestParam("orderId") Long orderId) {
+        return success(appLinbangPayOrderService.createDepositPayOrder(getLoginUserId(), orderId));
+    }
+
+    @GetMapping("/deposit/status")
+    @Operation(summary = "查询订单保证金支付状态")
+    @Parameters({
+            @Parameter(name = "orderId", required = true, description = "业务订单 ID"),
+            @Parameter(name = "sync", description = "是否同步支付状态")
+    })
+    public CommonResult<AppOrderDepositStatusRespVO> getDepositStatus(@RequestParam("orderId") Long orderId,
+                                                                      @RequestParam(value = "sync", required = false) Boolean sync) {
+        return success(appLinbangPayOrderService.getDepositStatus(getLoginUserId(), orderId, sync));
+    }
 }

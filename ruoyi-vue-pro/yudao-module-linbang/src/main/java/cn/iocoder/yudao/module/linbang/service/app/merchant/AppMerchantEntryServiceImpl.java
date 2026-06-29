@@ -4,6 +4,7 @@ import cn.hutool.core.util.IdUtil;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.controller.app.merchant.entry.vo.AppMerchantEntryCreateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.merchant.entry.vo.AppMerchantEntryRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.merchant.entry.vo.AppMerchantOnboardingProgressRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberqualification.MemberUserQualificationDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategory.MerchantServiceCategoryDO;
@@ -25,6 +26,7 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 import javax.validation.Valid;
 import java.util.Collections;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -33,7 +35,6 @@ import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionU
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MERCHANT_ENTRY_NOT_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MERCHANT_SERVICE_CATEGORY_NOT_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_QUALIFICATION_NOT_EXISTS;
-import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.WALLET_BANK_CARD_INVALID;
 
 @Service
 @Validated
@@ -59,8 +60,10 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
     public Long createEntry(Long authUserId, @Valid AppMerchantEntryCreateReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
         validateCategories(reqVO.getServiceCategoryIds());
-        validateBankCard(loginUser.getId(), reqVO.getBankCardId());
         validateQualifications(loginUser.getId(), reqVO.getQualificationIds());
+        if (reqVO.getBankCardId() != null) {
+            validateBankCard(loginUser.getId(), reqVO.getBankCardId());
+        }
 
         MerchantInfoDO merchantInfo = merchantInfoMapper.selectOne(new LambdaQueryWrapperX<MerchantInfoDO>()
                 .eq(MerchantInfoDO::getUserId, loginUser.getId()));
@@ -106,6 +109,11 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
                 .firstAuditStatus("PENDING")
                 .finalAuditStatus("PENDING")
                 .status("PENDING")
+                .progressStatus("PENDING_FIRST_AUDIT")
+                .currentStageName("待平台初审")
+                .currentStageTime(LocalDateTime.now())
+                .acceptEnabled(Boolean.FALSE)
+                .bankCardRequired(Boolean.TRUE)
                 .remark(null)
                 .build();
         merchantEntryMapper.insert(entry);
@@ -143,9 +151,46 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
         respVO.setFirstAuditStatus(entry.getFirstAuditStatus());
         respVO.setFinalAuditStatus(entry.getFinalAuditStatus());
         respVO.setStatus(entry.getStatus());
+        respVO.setProgressStatus(entry.getProgressStatus());
+        respVO.setCurrentStageName(entry.getCurrentStageName());
+        respVO.setCurrentStageTime(entry.getCurrentStageTime());
+        respVO.setRejectReason(entry.getRejectReason());
+        respVO.setOnboardingBlockedReason(entry.getOnboardingBlockedReason());
+        respVO.setAcceptEnabled(entry.getAcceptEnabled());
+        respVO.setBankCardRequired(entry.getBankCardRequired());
         respVO.setAcceptStatus(merchantInfo != null ? merchantInfo.getAcceptStatus() : null);
         respVO.setRemark(entry.getRemark());
         respVO.setCreateTime(entry.getCreateTime());
+        return respVO;
+    }
+
+    @Override
+    public AppMerchantOnboardingProgressRespVO getOnboardingProgress(Long authUserId) {
+        AppMerchantEntryRespVO current = getCurrentEntry(authUserId);
+        if (current == null) {
+            return null;
+        }
+        AppMerchantOnboardingProgressRespVO respVO = new AppMerchantOnboardingProgressRespVO();
+        respVO.setEntryId(current.getId());
+        respVO.setFirstAuditStatus(current.getFirstAuditStatus());
+        respVO.setFinalAuditStatus(current.getFinalAuditStatus());
+        respVO.setProgressStatus(current.getProgressStatus());
+        respVO.setCurrentStageName(current.getCurrentStageName());
+        respVO.setCurrentStageTime(current.getCurrentStageTime());
+        respVO.setRejectReason(current.getRejectReason());
+        respVO.setAcceptEnabled(current.getAcceptEnabled());
+        respVO.setBlockedByBankCard(Boolean.TRUE.equals(current.getBankCardRequired())
+                && Objects.equals(current.getProgressStatus(), "APPROVED_WAIT_BANK_CARD"));
+        respVO.setBlockedReason(current.getOnboardingBlockedReason());
+        if (Objects.equals(current.getProgressStatus(), "APPROVED_WAIT_BANK_CARD")) {
+            respVO.setNextAction("请先绑定有效银行卡后开通接单权限");
+        } else if (Objects.equals(current.getProgressStatus(), "REJECTED")) {
+            respVO.setNextAction("请根据驳回原因修正资料后重新提交");
+        } else if (Objects.equals(current.getProgressStatus(), "APPROVED_ENABLED")) {
+            respVO.setNextAction("已开通接单权限，可前往接单大厅");
+        } else {
+            respVO.setNextAction("请等待平台审核");
+        }
         return respVO;
     }
 
@@ -164,7 +209,7 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
                 .eq(WalletBankCardDO::getUserId, userId)
                 .eq(WalletBankCardDO::getStatus, "ENABLE"));
         if (bankCard == null) {
-            throw exception(WALLET_BANK_CARD_INVALID);
+            throw exception(cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.WALLET_BANK_CARD_INVALID);
         }
     }
 

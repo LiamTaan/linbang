@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.app.wallet.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -31,10 +32,10 @@ public class AppWalletWithdrawRespVO {
     @Schema(description = "实际到账金额")
     private BigDecimal realAmount;
 
-    @Schema(description = "提现状态：PENDING 待审核、APPROVED 审核通过、REJECTED 审核驳回、SUCCESS 打款成功、FAILED 打款失败")
+    @Schema(description = OpenApiSchemaConstants.WITHDRAW_STATUS, example = "PENDING")
     private String status;
 
-    @Schema(description = "审核状态：PENDING 待审核、APPROVED 已通过、REJECTED 已驳回")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, example = "PENDING")
     private String auditStatus;
 
     @Schema(description = "审核备注")
@@ -51,6 +52,12 @@ public class AppWalletWithdrawRespVO {
 
     @Schema(description = "打款时间")
     private LocalDateTime payTime;
+
+    @Schema(description = "转账单 ID", example = "1001")
+    private Long payTransferId;
+
+    @Schema(description = "预计到账说明", example = "审核通过后预计 T+1 到账")
+    private String expectedArrivalDesc;
 
     @Schema(description = "创建时间")
     private LocalDateTime createTime;

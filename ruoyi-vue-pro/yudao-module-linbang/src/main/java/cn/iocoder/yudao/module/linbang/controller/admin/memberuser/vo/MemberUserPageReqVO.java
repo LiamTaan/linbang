@@ -4,6 +4,7 @@ import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -38,7 +39,7 @@ public class MemberUserPageReqVO extends PageParam {
     @Schema(description = "当前角色编码")
     private String currentRoleCode;
 
-    @Schema(description = "状态", example = "1")
+    @Schema(description = OpenApiSchemaConstants.USER_STATUS, example = "ENABLE")
     private String status;
 
     @Schema(description = "最后登录时间")

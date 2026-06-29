@@ -31,13 +31,14 @@ final class MemberUserRealNameDetailAssembler {
         if (latestEntry != null) {
             respVO.setLatestEntry(BeanUtils.toBean(latestEntry, MemberUserRealNameDetailRespVO.LatestEntryRespVO.class));
         }
-        respVO.setSummary(buildSummary(merchant, latestEntry, qualifications, creditRecords));
+        respVO.setSummary(buildSummary(realName, merchant, latestEntry, qualifications, creditRecords));
         respVO.setQualifications(buildQualifications(qualifications));
         respVO.setCreditRecords(buildCreditRecords(creditRecords));
         return respVO;
     }
 
-    private static MemberUserRealNameDetailRespVO.SummaryRespVO buildSummary(MerchantInfoDO merchant, MerchantEntryDO latestEntry,
+    private static MemberUserRealNameDetailRespVO.SummaryRespVO buildSummary(MemberUserRealNameDO realName, MerchantInfoDO merchant,
+                                                                              MerchantEntryDO latestEntry,
                                                                               List<MemberUserQualificationDO> qualifications,
                                                                               List<CreditRecordDO> creditRecords) {
         List<MemberUserQualificationDO> qualificationSource = qualifications == null ? Collections.emptyList() : qualifications;
@@ -56,6 +57,9 @@ final class MemberUserRealNameDetailAssembler {
         summary.setLatestCreditLevel(merchant == null ? null : merchant.getCreditLevel());
         summary.setMerchantBound(merchant != null);
         summary.setLatestEntryApproved(latestEntry != null && "APPROVED".equalsIgnoreCase(latestEntry.getStatus()));
+        summary.setHoldCardVideoUploaded(realName != null && realName.getHoldCardVideoFileId() != null);
+        summary.setWechatMatched(realName != null && "MATCHED".equalsIgnoreCase(realName.getWechatRealNameStatus()));
+        summary.setAlipayMatched(realName != null && "MATCHED".equalsIgnoreCase(realName.getAlipayRealNameStatus()));
         return summary;
     }
 

@@ -24,6 +24,15 @@ public interface CreditRecordService {
     Long applyCreditRule(Long userId, Long merchantId, String ruleCode, String bizType, Long bizId, String remark);
 
     /**
+     * 删除指定业务对应的信用记录，并按剩余记录重建该用户的信用分链路。
+     *
+     * @param userId 用户ID
+     * @param bizType 业务类型
+     * @param bizId 业务ID
+     */
+    void rollbackBizCreditRecords(Long userId, String bizType, Long bizId);
+
+    /**
      * 获得信用记录分页
      *
      * @param pageReqVO 分页查询

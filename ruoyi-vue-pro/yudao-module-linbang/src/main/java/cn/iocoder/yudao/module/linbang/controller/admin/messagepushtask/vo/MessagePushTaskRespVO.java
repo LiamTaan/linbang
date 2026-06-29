@@ -11,6 +11,12 @@ public class MessagePushTaskRespVO {
 
     private String taskName;
 
+    private Long campaignId;
+
+    private String sceneCode;
+
+    private String messageCategory;
+
     private String targetScope;
 
     private String channelType;
@@ -23,6 +29,8 @@ public class MessagePushTaskRespVO {
 
     private String status;
 
+    private String executeStatus;
+
     private LocalDateTime plannedSendTime;
 
     private LocalDateTime executeTime;
@@ -30,6 +38,16 @@ public class MessagePushTaskRespVO {
     private Integer successCount;
 
     private Integer failCount;
+
+    private Integer plannedAudienceCount;
+
+    private Integer reachedCount;
+
+    private Integer clickedCount;
+
+    private Integer readCount;
+
+    private Integer voicePlayedCount;
 
     private LocalDateTime createTime;
 }

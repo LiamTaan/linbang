@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.walletwithdraw.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -38,10 +39,10 @@ public class WalletWithdrawPageReqVO extends PageParam {
     @Schema(description = "实际到账金额")
     private BigDecimal realAmount;
 
-    @Schema(description = "状态", example = "2")
+    @Schema(description = OpenApiSchemaConstants.WITHDRAW_STATUS, example = "PENDING")
     private String status;
 
-    @Schema(description = "审核状态", example = "1")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, example = "PENDING")
     private String auditStatus;
 
     @Schema(description = "审核备注", example = "你猜")

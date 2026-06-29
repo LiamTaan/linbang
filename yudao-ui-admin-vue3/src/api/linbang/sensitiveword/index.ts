@@ -7,6 +7,8 @@ export interface SensitiveWord {
   wordType?: string
   matchType?: string
   blockLevel?: string
+  sceneType?: string
+  replaceText?: string
   status?: string
   createTime?: string
   updateTime?: string
@@ -18,6 +20,8 @@ export interface SensitiveWordFormData {
   wordType?: string
   matchType?: string
   blockLevel?: string
+  sceneType?: string
+  replaceText?: string
   status?: string
 }
 
@@ -34,6 +38,7 @@ export interface SensitiveWordRelatedWord {
   wordType?: string
   matchType?: string
   blockLevel?: string
+  sceneType?: string
   status?: string
   createTime?: string
 }

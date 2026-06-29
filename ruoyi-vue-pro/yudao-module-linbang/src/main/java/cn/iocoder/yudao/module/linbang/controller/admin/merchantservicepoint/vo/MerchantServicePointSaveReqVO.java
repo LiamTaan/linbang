@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.merchantservicepoint.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -47,7 +48,7 @@ public class MerchantServicePointSaveReqVO {
     @NotNull(message = "服务半径不能为空")
     private BigDecimal serviceRadiusKm;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "ENABLE")
+    @Schema(description = OpenApiSchemaConstants.SERVICE_POINT_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "ENABLE")
     @NotBlank(message = "状态不能为空")
     private String status;
 }

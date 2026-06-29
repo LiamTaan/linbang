@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.complaint.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -34,7 +35,7 @@ public class ComplaintPageReqVO extends PageParam {
     @Schema(description = "投诉内容")
     private String content;
 
-    @Schema(description = "状态", example = "2")
+    @Schema(description = OpenApiSchemaConstants.COMPLAINT_STATUS, example = "PENDING")
     private String status;
 
     @Schema(description = "处理人")

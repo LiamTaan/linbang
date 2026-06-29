@@ -95,7 +95,11 @@ public class ServletUtils {
     public static String getBody(HttpServletRequest request) {
         // 只有在 json 请求在读取，因为只有 CacheRequestBodyFilter 才会进行缓存，支持重复读取
         if (isJsonRequest(request)) {
-            return ServletUtil.getBody(request);
+            try {
+                return ServletUtil.getBody(request);
+            } catch (IllegalStateException ex) {
+                return null;
+            }
         }
         return null;
     }
@@ -103,7 +107,11 @@ public class ServletUtils {
     public static byte[] getBodyBytes(HttpServletRequest request) {
         // 只有在 json 请求在读取，因为只有 CacheRequestBodyFilter 才会进行缓存，支持重复读取
         if (isJsonRequest(request)) {
-            return ServletUtil.getBodyBytes(request);
+            try {
+                return ServletUtil.getBodyBytes(request);
+            } catch (IllegalStateException ex) {
+                return null;
+            }
         }
         return null;
     }

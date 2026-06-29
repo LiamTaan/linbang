@@ -125,6 +125,7 @@ public class WalletAccountServiceImpl implements WalletAccountService {
         respVO.setUser(WalletAccountDetailAssembler.buildUser(user));
         respVO.setDefaultBankCard(WalletAccountDetailAssembler.buildBankCard(defaultBankCard));
         respVO.setRecentFlows(WalletAccountDetailAssembler.buildFlows(recentFlows));
+        respVO.setRecentBills(WalletAccountDetailAssembler.buildBills(recentFlows));
         respVO.setRecentWithdraws(WalletAccountDetailAssembler.buildWithdraws(recentWithdraws));
         respVO.setWithdrawStats(WalletAccountDetailAssembler.buildWithdrawStats(recentWithdraws));
         return respVO;

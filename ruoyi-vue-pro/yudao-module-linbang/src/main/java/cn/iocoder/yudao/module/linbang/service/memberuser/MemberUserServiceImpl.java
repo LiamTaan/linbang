@@ -3,7 +3,12 @@ package cn.iocoder.yudao.module.linbang.service.memberuser;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
+import cn.iocoder.yudao.module.system.api.sms.SmsCodeApi;
+import cn.iocoder.yudao.module.system.api.sms.dto.code.SmsCodeUseReqDTO;
+import cn.iocoder.yudao.module.system.enums.sms.SmsSceneEnum;
 import cn.iocoder.yudao.module.linbang.controller.admin.memberuser.vo.*;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.blacklist.BlacklistDO;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.creditrecord.CreditRecordDO;
@@ -13,6 +18,8 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.memberrealname.MemberUserR
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantentry.MerchantEntryDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.userrestrictrecord.UserRestrictRecordDO;
+import cn.iocoder.yudao.module.linbang.dal.mysql.blacklist.BlacklistMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.creditrecord.CreditRecordMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberaddress.MemberUserAddressMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberqualification.MemberUserQualificationMapper;
@@ -20,24 +27,30 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.memberrealname.MemberUserRealNa
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantentry.MerchantEntryMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.userrestrictrecord.UserRestrictRecordMapper;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.iocoder.yudao.framework.common.util.servlet.ServletUtils.getClientIP;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_NOT_EXISTS;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_RESTRICT_STATUS_INVALID;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.USER_RESTRICT_RECORD_NOT_EXISTS;
 
 /**
  * 用户主表 Service 实现类
  *
  * @author dawn
  */
-@Service
+@Service("linbangMemberUserService")
 @Validated
 public class MemberUserServiceImpl implements MemberUserService {
 
@@ -55,16 +68,26 @@ public class MemberUserServiceImpl implements MemberUserService {
     private MerchantEntryMapper merchantEntryMapper;
     @Resource
     private CreditRecordMapper creditRecordMapper;
+    @Resource
+    private UserRestrictRecordMapper userRestrictRecordMapper;
+    @Resource
+    private BlacklistMapper blacklistMapper;
+    @Resource
+    private SmsCodeApi smsCodeApi;
+    @Resource
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public Long createMemberUser(MemberUserSaveReqVO createReqVO) {
         MemberUserDO memberUser = MemberUserDO.builder()
                 .userNo("LBU" + IdUtil.getSnowflakeNextIdStr())
+                .username(createReqVO.getMobile())
                 .mobile(createReqVO.getMobile())
                 .nickname(createReqVO.getNickname())
                 .avatar(createReqVO.getAvatar())
                 .gender(createReqVO.getGender())
                 .birthday(createReqVO.getBirthday())
+                .accountType("PERSONAL")
                 .registerSource(StrUtil.blankToDefault(createReqVO.getRegisterSource(), "ADMIN"))
                 .currentRoleCode(StrUtil.blankToDefault(createReqVO.getCurrentRoleCode(), "USER"))
                 .status(StrUtil.blankToDefault(createReqVO.getStatus(), "ENABLE"))
@@ -79,6 +102,7 @@ public class MemberUserServiceImpl implements MemberUserService {
         validateMemberUserExists(updateReqVO.getId());
         MemberUserDO updateObj = MemberUserDO.builder()
                 .id(updateReqVO.getId())
+                .username(updateReqVO.getMobile())
                 .mobile(updateReqVO.getMobile())
                 .nickname(updateReqVO.getNickname())
                 .avatar(updateReqVO.getAvatar())
@@ -106,10 +130,12 @@ public class MemberUserServiceImpl implements MemberUserService {
         memberUserMapper.deleteByIds(ids);
     }
 
-    private void validateMemberUserExists(Long id) {
-        if (memberUserMapper.selectById(id) == null) {
+    private MemberUserDO validateMemberUserExists(Long id) {
+        MemberUserDO memberUser = memberUserMapper.selectById(id);
+        if (memberUser == null) {
             throw exception(MEMBER_USER_NOT_EXISTS);
         }
+        return memberUser;
     }
 
     @Override
@@ -155,6 +181,11 @@ public class MemberUserServiceImpl implements MemberUserService {
     }
 
     @Override
+    public MemberUserDO getMemberUserByUsername(String username) {
+        return memberUserMapper.selectByUsername(username);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public MemberUserDO createMemberUserIfAbsent(String mobile, String registerSource) {
         MemberUserDO memberUser = memberUserMapper.selectByMobile(mobile);
@@ -164,9 +195,12 @@ public class MemberUserServiceImpl implements MemberUserService {
         try {
             memberUser = MemberUserDO.builder()
                     .userNo("LBU" + IdUtil.getSnowflakeNextIdStr())
+                    .username(mobile)
                     .mobile(mobile)
                     .nickname("邻里用户" + StrUtil.subSuf(mobile, Math.max(mobile.length() - 4, 0)))
+                    .accountType("PERSONAL")
                     .registerSource(StrUtil.blankToDefault(registerSource, "APP_SMS"))
+                    .registerSourceDetail(registerSource)
                     .currentRoleCode("USER")
                     .status("ENABLE")
                     .build();
@@ -175,6 +209,54 @@ public class MemberUserServiceImpl implements MemberUserService {
         } catch (DuplicateKeyException ex) {
             return memberUserMapper.selectByMobile(mobile);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public MemberUserDO registerMemberUser(String username, String mobile, String encodedPassword, String accountType,
+                                           String registerSource, String registerSourceDetail,
+                                           String agreementVersion, LocalDateTime agreementConfirmedTime) {
+        MemberUserDO existedByMobile = memberUserMapper.selectByMobile(mobile);
+        if (existedByMobile != null) {
+            MemberUserDO update = MemberUserDO.builder()
+                    .id(existedByMobile.getId())
+                    .username(StrUtil.blankToDefault(existedByMobile.getUsername(), username))
+                    .password(StrUtil.blankToDefault(existedByMobile.getPassword(), encodedPassword))
+                    .accountType(StrUtil.blankToDefault(accountType, existedByMobile.getAccountType()))
+                    .registerSource(StrUtil.blankToDefault(registerSource, existedByMobile.getRegisterSource()))
+                    .registerSourceDetail(registerSourceDetail)
+                    .registerAgreementVersion(agreementVersion)
+                    .registerAgreementConfirmedTime(agreementConfirmedTime)
+                    .build();
+            memberUserMapper.updateById(update);
+            return memberUserMapper.selectById(existedByMobile.getId());
+        }
+        MemberUserDO memberUser = MemberUserDO.builder()
+                .userNo("LBU" + IdUtil.getSnowflakeNextIdStr())
+                .username(username)
+                .password(encodedPassword)
+                .accountType(StrUtil.blankToDefault(accountType, "PERSONAL"))
+                .mobile(mobile)
+                .nickname("邻里用户" + StrUtil.subSuf(mobile, Math.max(mobile.length() - 4, 0)))
+                .registerSource(StrUtil.blankToDefault(registerSource, "APP_ACCOUNT"))
+                .registerSourceDetail(registerSourceDetail)
+                .registerAgreementVersion(agreementVersion)
+                .registerAgreementConfirmedTime(agreementConfirmedTime)
+                .currentRoleCode("USER")
+                .status("ENABLE")
+                .build();
+        memberUserMapper.insert(memberUser);
+        return memberUser;
+    }
+
+    @Override
+    public void updateRegisterAgreement(Long userId, String agreementVersion, LocalDateTime confirmedTime) {
+        validateMemberUserExists(userId);
+        memberUserMapper.updateById(MemberUserDO.builder()
+                .id(userId)
+                .registerAgreementVersion(agreementVersion)
+                .registerAgreementConfirmedTime(confirmedTime)
+                .build());
     }
 
     @Override
@@ -200,11 +282,88 @@ public class MemberUserServiceImpl implements MemberUserService {
     }
 
     @Override
+    public void updateMemberUserPassword(Long userId, String password, String code) {
+        MemberUserDO user = validateMemberUserExists(userId);
+        smsCodeApi.useSmsCode(new SmsCodeUseReqDTO().setMobile(user.getMobile()).setCode(code)
+                .setScene(SmsSceneEnum.MEMBER_UPDATE_PASSWORD.getScene()).setUsedIp(getClientIP()));
+        memberUserMapper.updateById(MemberUserDO.builder()
+                .id(userId)
+                .password(passwordEncoder.encode(password))
+                .build());
+    }
+
+    @Override
     public void updateMemberUserRole(Long userId, String currentRoleCode) {
         validateMemberUserExists(userId);
         memberUserMapper.updateById(MemberUserDO.builder()
                 .id(userId)
                 .currentRoleCode(currentRoleCode)
+                .build());
+    }
+
+    @Override
+    public void updateMemberUserStatus(Long userId, String status, String remark) {
+        validateMemberUserExists(userId);
+        memberUserMapper.updateById(MemberUserDO.builder()
+                .id(userId)
+                .status(status)
+                .remark(remark)
+                .build());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void restrictMemberUser(MemberUserRestrictReqVO reqVO) {
+        validateMemberUserExists(reqVO.getUserId());
+        Long loginUserId = SecurityFrameworkUtils.getLoginUserId();
+        LocalDateTime now = LocalDateTime.now();
+        UserRestrictRecordDO record = UserRestrictRecordDO.builder()
+                .userId(reqVO.getUserId())
+                .restrictType(reqVO.getRestrictType())
+                .status("ACTIVE")
+                .startTime(now)
+                .endTime(reqVO.getEndTime())
+                .sourceBizType(reqVO.getActionType())
+                .reason(reqVO.getReason())
+                .build();
+        userRestrictRecordMapper.insert(record);
+        if ("BAN".equalsIgnoreCase(reqVO.getActionType())) {
+            updateMemberUserStatus(reqVO.getUserId(), "DISABLE", reqVO.getReason());
+        }
+        if ("BLACKLIST".equalsIgnoreCase(reqVO.getActionType())) {
+            blacklistMapper.insert(BlacklistDO.builder()
+                    .userId(reqVO.getUserId())
+                    .blackType(reqVO.getRestrictType())
+                    .reason(reqVO.getReason())
+                    .startTime(now)
+                    .endTime(reqVO.getEndTime())
+                    .status("ACTIVE")
+                    .build());
+            updateMemberUserStatus(reqVO.getUserId(), "DISABLE", reqVO.getReason());
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void releaseMemberUserRestrict(MemberUserReleaseRestrictReqVO reqVO) {
+        UserRestrictRecordDO record = userRestrictRecordMapper.selectById(reqVO.getRestrictRecordId());
+        if (record == null) {
+            throw exception(USER_RESTRICT_RECORD_NOT_EXISTS);
+        }
+        if (!"ACTIVE".equalsIgnoreCase(record.getStatus())) {
+            throw exception(MEMBER_USER_RESTRICT_STATUS_INVALID);
+        }
+        userRestrictRecordMapper.updateById(UserRestrictRecordDO.builder()
+                .id(record.getId())
+                .status("RELEASED")
+                .releasedBy(SecurityFrameworkUtils.getLoginUserId())
+                .releasedTime(LocalDateTime.now())
+                .releaseRemark(reqVO.getReleaseRemark())
+                .build());
+        memberUserMapper.updateById(MemberUserDO.builder()
+                .id(record.getUserId())
+                .status("ENABLE")
+                .remark(reqVO.getReleaseRemark())
                 .build());
     }
 

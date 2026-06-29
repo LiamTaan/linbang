@@ -185,7 +185,6 @@ logging:
     cn.iocoder.yudao.module.system.dal.mysql: debug
     cn.iocoder.yudao.module.system.dal.mysql.sms.SmsChannelMapper: INFO # 配置 SmsChannelMapper 的日志级别为 info
     cn.iocoder.yudao.module.tool.dal.mysql: debug
-    cn.iocoder.yudao.module.member.dal.mysql: debug
     cn.iocoder.yudao.module.trade.dal.mysql: debug
     cn.iocoder.yudao.module.promotion.dal.mysql: debug
     cn.iocoder.yudao.module.statistics.dal.mysql: debug
@@ -236,6 +235,8 @@ wx:
 yudao:
   captcha:
     enable: false # 本地环境，暂时关闭图片验证码，方便登录等接口的测试；
+  sms:
+    template-api-validate: false # 本地联调关闭短信平台模板校验，避免占位模板编号阻塞
   security:
     mock-enable: true
   api-encrypt:

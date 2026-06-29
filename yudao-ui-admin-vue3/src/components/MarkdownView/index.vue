@@ -1,5 +1,5 @@
 <template>
-  <div ref="contentRef" class="markdown-view" v-html="renderedMarkdown"></div>
+  <div ref="contentRef" class="markdown-view" v-dompurify-html="renderedMarkdown"></div>
 </template>
 
 <script setup lang="ts">
@@ -19,33 +19,45 @@ const props = defineProps({
 const message = useMessage() // 消息弹窗
 const { copy } = useClipboard({ legacy: true }) // 初始化 copy 到粘贴板
 const contentRef = ref()
+let clickHandler: ((event: Event) => void) | null = null
 
 const md = new MarkdownIt({
+  html: false,
   highlight: function (str, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        const copyHtml = `<div id="copy" data-copy='${str}' style="position: absolute; right: 10px; top: 5px; color: #fff;cursor: pointer;">复制</div>`
-        return `<pre style="position: relative;">${copyHtml}<code class="hljs">${hljs.highlight(lang, str, true).value}</code></pre>`
-      } catch (__) {}
-    }
-    return ``
+    const codeHtml =
+      lang && hljs.getLanguage(lang)
+        ? hljs.highlight(str, { language: lang, ignoreIllegals: true }).value
+        : md.utils.escapeHtml(str)
+    const copyHtml =
+      '<button type="button" class="copy-btn" data-copy-code="1">复制</button>'
+    return `<pre class="code-block">${copyHtml}<code class="hljs">${codeHtml}</code></pre>`
   }
 })
 
 /** 渲染 markdown */
-const renderedMarkdown = computed(() => {
-  return md.render(props.content)
-})
+const renderedMarkdown = computed(() => md.render(props.content))
 
 /** 初始化 **/
-onMounted(async () => {
-  // 添加 copy 监听
-  contentRef.value.addEventListener('click', (e: any) => {
-    if (e.target.id === 'copy') {
-      copy(e.target?.dataset?.copy)
-      message.success('复制成功!')
+onMounted(() => {
+  clickHandler = async (event: Event) => {
+    const target = event.target as HTMLElement | null
+    if (!target?.matches('[data-copy-code="1"]')) {
+      return
     }
-  })
+    const code = target.closest('pre')?.querySelector('code')?.textContent ?? ''
+    if (!code) {
+      return
+    }
+    await copy(code)
+    message.success('复制成功!')
+  }
+  contentRef.value?.addEventListener('click', clickHandler)
+})
+
+onBeforeUnmount(() => {
+  if (clickHandler) {
+    contentRef.value?.removeEventListener('click', clickHandler)
+  }
 })
 </script>
 
@@ -62,6 +74,16 @@ onMounted(async () => {
 
   pre {
     position: relative;
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    color: #fff;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
   }
 
   pre code.hljs {

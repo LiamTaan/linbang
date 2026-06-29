@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.memberuser.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -37,7 +38,7 @@ public class MemberUserSaveReqVO {
     @NotEmpty(message = "当前角色编码不能为空")
     private String currentRoleCode;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.USER_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "ENABLE")
     @NotEmpty(message = "状态不能为空")
     private String status;
 

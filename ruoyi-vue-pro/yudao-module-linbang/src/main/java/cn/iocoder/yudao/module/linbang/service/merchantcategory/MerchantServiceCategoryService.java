@@ -5,7 +5,6 @@ import javax.validation.*;
 import cn.iocoder.yudao.module.linbang.controller.admin.merchantcategory.vo.*;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategory.MerchantServiceCategoryDO;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
 
 /**
  * 服务类目表 Service 接口
@@ -42,6 +41,14 @@ public interface MerchantServiceCategoryService {
     * @param ids 编号
     */
     void deleteMerchantServiceCategoryListByIds(List<Long> ids);
+
+    /**
+     * 获得服务类目表列表
+     *
+     * @param listReqVO 列表查询
+     * @return 服务类目表列表
+     */
+    List<MerchantServiceCategoryDO> getMerchantServiceCategoryList(MerchantServiceCategoryListReqVO listReqVO);
 
     /**
      * 获得服务类目表

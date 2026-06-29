@@ -85,6 +85,14 @@ public class OrderAbnormalController {
         return success(orderAbnormalService.getOrderAbnormalPage(pageReqVO));
     }
 
+    @PostMapping("/final-audit")
+    @Operation(summary = "异常订单终审")
+    @PreAuthorize("@ss.hasPermission('linbang:order:abnormal:final-audit')")
+    public CommonResult<Boolean> finalAuditOrderAbnormal(@Valid @RequestBody OrderAbnormalFinalAuditReqVO reqVO) {
+        orderAbnormalService.finalAuditOrderAbnormal(reqVO);
+        return success(true);
+    }
+
     @GetMapping("/export-excel")
     @Operation(summary = "导出异常订单 Excel")
     @PreAuthorize("@ss.hasPermission('linbang:order:abnormal:export')")

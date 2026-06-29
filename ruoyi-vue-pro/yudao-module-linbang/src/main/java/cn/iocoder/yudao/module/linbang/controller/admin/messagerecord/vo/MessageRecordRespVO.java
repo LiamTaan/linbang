@@ -16,6 +16,9 @@ public class MessageRecordRespVO {
     @ExcelProperty("模板ID")
     private Long templateId;
 
+    @ExcelProperty("活动ID")
+    private Long campaignId;
+
     @ExcelProperty("推送任务ID")
     private Long pushTaskId;
 
@@ -34,6 +37,12 @@ public class MessageRecordRespVO {
     @ExcelProperty("渠道类型")
     private String channelType;
 
+    @ExcelProperty("场景编码")
+    private String sceneCode;
+
+    @ExcelProperty("消息分类")
+    private String messageCategory;
+
     @ExcelProperty("业务类型")
     private String bizType;
 
@@ -48,6 +57,9 @@ public class MessageRecordRespVO {
 
     @ExcelProperty("失败原因")
     private String failReason;
+
+    @ExcelProperty("已读状态")
+    private String readStatus;
 
     @ExcelProperty("创建时间")
     private LocalDateTime createTime;

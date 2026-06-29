@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.ordermatchrecord.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -32,6 +33,21 @@ public class OrderMatchRecordPageReqVO extends PageParam {
     @Schema(description = "距离公里")
     private BigDecimal distanceKm;
 
+    @Schema(description = "阶段号", example = "1")
+    private Integer stageNo;
+
+    @Schema(description = "推送批次号", example = "1")
+    private Integer pushBatchNo;
+
+    @Schema(description = "优先层", example = "PLATFORM_CLOTHING")
+    private String priorityLayer;
+
+    @Schema(description = "是否命中优先池")
+    private Boolean priorityPoolFlag;
+
+    @Schema(description = "品类命中等级", example = "EXACT")
+    private String categoryMatchLevel;
+
     @Schema(description = "推送时间")
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] pushTime;
@@ -40,7 +56,14 @@ public class OrderMatchRecordPageReqVO extends PageParam {
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] acceptDeadlineTime;
 
-    @Schema(description = "状态", example = "1")
+    @Schema(description = "过期时间")
+    @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
+    private LocalDateTime[] expiredTime;
+
+    @Schema(description = OpenApiSchemaConstants.MATCH_RECORD_STATUS, example = "PUSHED")
     private String status;
+
+    @Schema(description = "最终结果", example = "ACCEPTED")
+    private String finalResult;
 
 }

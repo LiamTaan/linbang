@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface AppMerchantServiceCategoryService {
 
-    List<AppMerchantServiceCategoryRespVO> getCategoryList();
+    List<AppMerchantServiceCategoryRespVO> getCategoryList(String keyword);
 
     void updateSelectedCategories(Long authUserId, @Valid AppMerchantSelectedCategoryUpdateReqVO reqVO);
 

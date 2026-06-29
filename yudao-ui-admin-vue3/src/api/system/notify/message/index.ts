@@ -1,5 +1,5 @@
 import request from '@/config/axios'
-import qs from 'qs'
+import { stringifyQuery } from '@/utils/query'
 
 export interface NotifyMessageVO {
   id: number
@@ -29,7 +29,7 @@ export const getMyNotifyMessagePage = async (params: PageParam) => {
 // 批量标记已读
 export const updateNotifyMessageRead = async (ids) => {
   return await request.put({
-    url: '/system/notify-message/update-read?' + qs.stringify({ ids: ids }, { indices: false })
+    url: '/system/notify-message/update-read?' + stringifyQuery({ ids: ids }, { indices: false })
   })
 }
 

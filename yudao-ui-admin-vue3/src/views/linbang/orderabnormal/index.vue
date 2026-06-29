@@ -176,6 +176,11 @@
           {{ formatHandleStatus(scope.row.handleStatus) }}
         </template>
       </el-table-column>
+      <el-table-column label="终审状态" align="center" prop="finalAuditStatus" width="120">
+        <template #default="scope">
+          {{ formatFinalAuditStatus(scope.row.finalAuditStatus) }}
+        </template>
+      </el-table-column>
       <el-table-column label="处理人" align="center" prop="handleBy" />
       <el-table-column
         label="处理时间"
@@ -203,6 +208,15 @@
             编辑
           </el-button>
           <el-button
+            v-if="scope.row.finalAuditStatus !== 'APPROVED'"
+            link
+            type="warning"
+            @click="openFinalAuditDialog(scope.row)"
+            v-hasPermi="['linbang:order:abnormal:final-audit']"
+          >
+            终审
+          </el-button>
+          <el-button
             link
             type="danger"
             @click="handleDelete(scope.row.id)"
@@ -224,15 +238,52 @@
 
   <!-- 表单弹窗：添加/修改 -->
   <OrderAbnormalForm ref="formRef" @success="getList" />
+
+  <Dialog v-model="finalAuditVisible" title="异常订单终审" width="520px">
+    <el-form ref="finalAuditFormRef" :model="finalAuditFormData" :rules="finalAuditFormRules" label-width="88px">
+      <el-form-item label="异常单号">
+        <el-input :model-value="currentRow?.abnormalNo" disabled />
+      </el-form-item>
+      <el-form-item label="当前状态">
+        <el-input :model-value="formatHandleStatus(currentRow?.handleStatus)" disabled />
+      </el-form-item>
+      <el-form-item label="终审结果" prop="finalAuditStatus">
+        <el-radio-group v-model="finalAuditFormData.finalAuditStatus">
+          <el-radio value="APPROVED">通过</el-radio>
+          <el-radio value="REJECTED">驳回</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item label="终审意见" prop="finalAuditRemark">
+        <el-input
+          v-model="finalAuditFormData.finalAuditRemark"
+          type="textarea"
+          :rows="4"
+          maxlength="255"
+          show-word-limit
+          placeholder="请输入终审意见"
+        />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="finalAuditVisible = false">取消</el-button>
+      <el-button type="primary" :loading="finalAuditLoading" @click="submitFinalAudit">提交终审</el-button>
+    </template>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
+import type { FormInstance, FormRules } from 'element-plus'
 import { isEmpty } from '@/utils/is'
 import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
-import { OrderAbnormalApi, OrderAbnormal } from '@/api/linbang/orderabnormal'
+import {
+  OrderAbnormalApi,
+  OrderAbnormal,
+  type OrderAbnormalFinalAuditReqVO
+} from '@/api/linbang/orderabnormal'
 import { formatHandleStatus, formatRiskLevel, HANDLE_STATUS_OPTIONS } from '../utils/display'
 import OrderAbnormalForm from './OrderAbnormalForm.vue'
+import { requestDynamicKeyToken } from '../shared/dynamic-key'
 
 import { onMounted, reactive, ref } from 'vue'
 import { useI18n } from '@/hooks/web/useI18n'
@@ -263,6 +314,29 @@ const queryParams = reactive({
 })
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
+const currentRow = ref<OrderAbnormal>()
+const finalAuditVisible = ref(false)
+const finalAuditLoading = ref(false)
+const finalAuditFormRef = ref<FormInstance>()
+const finalAuditFormData = reactive<OrderAbnormalFinalAuditReqVO>({
+  id: 0,
+  finalAuditStatus: 'APPROVED',
+  finalAuditRemark: ''
+})
+const finalAuditFormRules = reactive<FormRules>({
+  finalAuditStatus: [{ required: true, message: '请选择终审结果', trigger: 'change' }],
+  finalAuditRemark: [{ required: true, message: '请输入终审意见', trigger: 'blur' }]
+})
+
+const formatFinalAuditStatus = (value?: string) => {
+  if (value === 'APPROVED') {
+    return '已通过'
+  }
+  if (value === 'REJECTED') {
+    return '已驳回'
+  }
+  return value || '-'
+}
 
 /** 查询列表 */
 const getList = async () => {
@@ -292,6 +366,14 @@ const resetQuery = () => {
 const formRef = ref()
 const openForm = (type: string, id?: number) => {
   formRef.value.open(type, id)
+}
+
+const openFinalAuditDialog = (row: OrderAbnormal) => {
+  currentRow.value = row
+  finalAuditFormData.id = row.id
+  finalAuditFormData.finalAuditStatus = row.finalAuditStatus === 'REJECTED' ? 'REJECTED' : 'APPROVED'
+  finalAuditFormData.finalAuditRemark = row.finalAuditRemark || row.remark || ''
+  finalAuditVisible.value = true
 }
 
 /** 删除按钮操作 */
@@ -336,6 +418,20 @@ const handleExport = async () => {
   } catch {
   } finally {
     exportLoading.value = false
+  }
+}
+
+const submitFinalAudit = async () => {
+  await finalAuditFormRef.value?.validate()
+  try {
+    const verifyToken = await requestDynamicKeyToken('异常订单终审')
+    finalAuditLoading.value = true
+    await OrderAbnormalApi.finalAuditOrderAbnormal({ ...finalAuditFormData }, verifyToken)
+    message.success('异常订单终审成功')
+    finalAuditVisible.value = false
+    await getList()
+  } finally {
+    finalAuditLoading.value = false
   }
 }
 

@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.memberrealname.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -62,7 +63,7 @@ public class MemberUserRealNameRespVO {
     @ExcelProperty("人脸核验结果")
     private String faceVerifyResult;
 
-    @Schema(description = "审核状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "PENDING")
     @ExcelProperty(value = "审核状态", converter = DictConvert.class)
     @DictFormat("lb_audit_status") // TODO 代码优化：建议设置到对应的 DictTypeConstants 枚举类中
     private String auditStatus;

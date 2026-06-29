@@ -9,6 +9,10 @@ export interface OrderUnit {
   unitNo?: string
   unitSeq?: number
   unitTitle: string
+  unitContent?: string
+  unitProgress?: string
+  workerCount?: number
+  maxAmountLimit?: number
   unitAmount?: number
   splitMode: string
   prevUnitId: number
@@ -22,6 +26,12 @@ export interface OrderUnit {
   status?: string
   acceptDeadlineTime?: string | Dayjs
   finishTime?: string | Dayjs
+  appealExpireTime?: string | Dayjs
+  verifyStatus?: string
+  verifyCode?: string
+  verifyTime?: string | Dayjs
+  verifyBy?: number
+  verifyRemark?: string
   createTime?: string | Dayjs
 }
 
@@ -38,6 +48,8 @@ export interface OrderUnitDetail extends OrderUnit {
   proofs?: Array<{
     id?: number
     fileId?: number
+    fileUrl?: string
+    fileHash?: string
     merchantId?: number
     merchantName?: string
     merchantContactName?: string
@@ -45,6 +57,8 @@ export interface OrderUnitDetail extends OrderUnit {
     proofType?: string
     proofDesc?: string
     proofTime?: string | Dayjs
+    deviceTime?: string | Dayjs
+    addressText?: string
     longitude?: number
     latitude?: number
   }>
@@ -82,6 +96,7 @@ export interface OrderUnitDetail extends OrderUnit {
     auditRemark?: string
     rejectReason?: string
     auditTime?: string | Dayjs
+    appealExpireTime?: string | Dayjs
     createTime?: string | Dayjs
   }>
   operateLogs?: Array<{
@@ -93,6 +108,14 @@ export interface OrderUnitDetail extends OrderUnit {
     afterStatus?: string
     remark?: string
     operateTime?: string | Dayjs
+  }>
+  timeline?: Array<{
+    timelineType?: string
+    bizId?: number
+    title?: string
+    content?: string
+    status?: string
+    eventTime?: string | Dayjs
   }>
 }
 

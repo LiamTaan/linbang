@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.riskrule.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,7 +17,7 @@ public class RiskRulePageReqVO extends PageParam {
     @Schema(description = "规则编码")
     private String ruleCode;
 
-    @Schema(description = "规则名称", example = "??")
+    @Schema(description = "规则名称", example = "用户单日发单次数上限")
     private String ruleName;
 
     @Schema(description = "规则分组")
@@ -25,13 +26,13 @@ public class RiskRulePageReqVO extends PageParam {
     @Schema(description = "规则值")
     private String ruleValue;
 
-    @Schema(description = "值类型", example = "2")
+    @Schema(description = OpenApiSchemaConstants.RISK_RULE_VALUE_TYPE, example = "INTEGER")
     private String valueType;
 
-    @Schema(description = "状态", example = "2")
+    @Schema(description = OpenApiSchemaConstants.ENABLE_DISABLE_STATUS, example = "ENABLE")
     private String status;
 
-    @Schema(description = "备注", example = "????")
+    @Schema(description = "备注", example = "超过阈值时转人工复核")
     private String remark;
 
     @Schema(description = "创建时间")

@@ -4,6 +4,7 @@ import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
 
@@ -25,7 +26,7 @@ public class MerchantEntryPageReqVO extends PageParam {
     @Schema(description = "区域编码")
     private String regionCode;
 
-    @Schema(description = "初审状态", example = "1")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, example = "PENDING")
     private String firstAuditStatus;
 
     @Schema(description = "初审人")
@@ -35,7 +36,7 @@ public class MerchantEntryPageReqVO extends PageParam {
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] firstAuditTime;
 
-    @Schema(description = "终审状态", example = "1")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, example = "PENDING")
     private String finalAuditStatus;
 
     @Schema(description = "终审人")
@@ -45,7 +46,7 @@ public class MerchantEntryPageReqVO extends PageParam {
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
     private LocalDateTime[] finalAuditTime;
 
-    @Schema(description = "状态", example = "2")
+    @Schema(description = OpenApiSchemaConstants.MERCHANT_ENTRY_STATUS, example = "PENDING")
     private String status;
 
     @Schema(description = "备注", example = "??")

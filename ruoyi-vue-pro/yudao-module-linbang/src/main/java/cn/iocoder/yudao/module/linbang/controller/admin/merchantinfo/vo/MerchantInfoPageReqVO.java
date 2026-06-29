@@ -4,6 +4,7 @@ import lombok.*;
 import java.util.*;
 import io.swagger.v3.oas.annotations.media.Schema;
 import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
 
@@ -28,10 +29,10 @@ public class MerchantInfoPageReqVO extends PageParam {
     @Schema(description = "服务范围说明")
     private String serviceScopeDesc;
 
-    @Schema(description = "状态", example = "2")
+    @Schema(description = OpenApiSchemaConstants.MERCHANT_STATUS, example = "ENABLE")
     private String status;
 
-    @Schema(description = "接单状态", example = "2")
+    @Schema(description = OpenApiSchemaConstants.MERCHANT_ACCEPT_STATUS, example = "ENABLE")
     private String acceptStatus;
 
     @Schema(description = "信用分")

@@ -15,19 +15,19 @@ public class AppMerchantServicePointCreateReqVO {
     @NotBlank(message = "服务点名称不能为空")
     private String pointName;
 
-    @Schema(description = "省", example = "Shanghai")
+    @Schema(description = "省", example = "上海市")
     private String province;
 
-    @Schema(description = "市", example = "Shanghai")
+    @Schema(description = "市", example = "上海市")
     private String city;
 
-    @Schema(description = "区", example = "Pudong")
+    @Schema(description = "区", example = "浦东新区")
     private String district;
 
-    @Schema(description = "街道", example = "Lujiazui")
+    @Schema(description = "街道", example = "陆家嘴街道")
     private String street;
 
-    @Schema(description = "详细地址", example = "No.1 Century Avenue")
+    @Schema(description = "详细地址", example = "世纪大道 1 号")
     private String detailAddress;
 
     @Schema(description = "经度", example = "121.500000")

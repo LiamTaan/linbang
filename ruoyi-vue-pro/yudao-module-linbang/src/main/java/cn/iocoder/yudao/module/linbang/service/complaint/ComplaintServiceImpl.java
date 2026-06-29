@@ -24,6 +24,7 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderinfo.OrderInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderoperatelog.OrderOperateLogDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderunit.OrderUnitDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.partnercoordination.PartnerCoordinationDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.complaint.ComplaintMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.complaintfilerel.ComplaintFileRelMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
@@ -32,7 +33,9 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderinfo.OrderInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderoperatelog.OrderOperateLogMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderunit.OrderUnitMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.partnercoordination.PartnerCoordinationMapper;
 import cn.iocoder.yudao.module.linbang.service.creditrecord.CreditRecordService;
+import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
@@ -63,13 +66,18 @@ public class ComplaintServiceImpl implements ComplaintService {
     @Resource
     private OrderOperateLogMapper orderOperateLogMapper;
     @Resource
+    private PartnerCoordinationMapper partnerCoordinationMapper;
+    @Resource
     private CreditRecordService creditRecordService;
+    @Resource
+    private MessagePushDispatchService messagePushDispatchService;
 
     @Override
     public Long createComplaint(ComplaintSaveReqVO createReqVO) {
         // 插入
         ComplaintDO complaint = BeanUtils.toBean(createReqVO, ComplaintDO.class);
         complaintMapper.insert(complaint);
+        dispatchComplaintCreated(complaint);
 
         // 返回
         return complaint.getId();
@@ -130,13 +138,14 @@ public class ComplaintServiceImpl implements ComplaintService {
                 : complaintMapper.selectList(new LambdaQueryWrapperX<ComplaintDO>()
                 .eq(ComplaintDO::getOrderId, complaint.getOrderId())
                 .orderByDesc(ComplaintDO::getCreateTime, ComplaintDO::getId));
+        List<PartnerCoordinationDO> coordinationRecords = partnerCoordinationMapper.selectListByDispute("COMPLAINT", id);
         List<OrderOperateLogDO> operateLogs = complaint.getOrderId() == null ? Collections.emptyList()
                 : orderOperateLogMapper.selectList(new LambdaQueryWrapperX<OrderOperateLogDO>()
                 .eq(OrderOperateLogDO::getOrderId, complaint.getOrderId())
                 .eq(complaint.getUnitId() != null, OrderOperateLogDO::getUnitId, complaint.getUnitId())
                 .orderByDesc(OrderOperateLogDO::getOperateTime, OrderOperateLogDO::getId));
         return ComplaintDetailAssembler.build(complaint, order, unit, complainantUser, respondentUser,
-                orderUser, respondentMerchant, fileRels, relatedComplaints, operateLogs);
+                orderUser, respondentMerchant, fileRels, relatedComplaints, coordinationRecords, operateLogs);
     }
 
     @Override
@@ -161,6 +170,7 @@ public class ComplaintServiceImpl implements ComplaintService {
                     "COMPLAINT_CONFIRMED", "COMPLAINT", complaint.getId(),
                     reqVO.getResultDesc() != null ? reqVO.getResultDesc() : "投诉核实成立");
         }
+        dispatchComplaintResult(complaint, reqVO.getResultDesc());
     }
 
     @Override
@@ -255,6 +265,35 @@ public class ComplaintServiceImpl implements ComplaintService {
                 item.setRespondentUserMobile(respondentUser.getMobile());
             }
         });
+    }
+
+    private void dispatchComplaintCreated(ComplaintDO complaint) {
+        if (complaint == null) {
+            return;
+        }
+        if (complaint.getComplainantUserId() != null) {
+            messagePushDispatchService.dispatchSingle("DISPUTE_CREATED", "纠纷发起通知", "COMPLAINT",
+                    complaint.getId(), complaint.getComplainantUserId(), "投诉已提交，请留意处理进度");
+        }
+        if (complaint.getRespondentUserId() != null) {
+            messagePushDispatchService.dispatchSingle("DISPUTE_CREATED", "纠纷发起通知", "COMPLAINT",
+                    complaint.getId(), complaint.getRespondentUserId(), "您收到一条新的投诉，请及时处理");
+        }
+    }
+
+    private void dispatchComplaintResult(ComplaintDO complaint, String resultDesc) {
+        if (complaint == null) {
+            return;
+        }
+        String remark = StrUtil.blankToDefault(resultDesc, "投诉处理结果已更新");
+        if (complaint.getComplainantUserId() != null) {
+            messagePushDispatchService.dispatchSingle("DISPUTE_RESULT", "纠纷结果通知", "COMPLAINT",
+                    complaint.getId(), complaint.getComplainantUserId(), remark);
+        }
+        if (complaint.getRespondentUserId() != null) {
+            messagePushDispatchService.dispatchSingle("DISPUTE_RESULT", "纠纷结果通知", "COMPLAINT",
+                    complaint.getId(), complaint.getRespondentUserId(), remark);
+        }
     }
 
 }

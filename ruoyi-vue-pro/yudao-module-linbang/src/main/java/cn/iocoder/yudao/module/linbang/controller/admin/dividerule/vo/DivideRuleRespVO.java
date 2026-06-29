@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.dividerule.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -21,7 +22,7 @@ public class DivideRuleRespVO {
     @ExcelProperty("规则名称")
     private String ruleName;
 
-    @Schema(description = "城市等级")
+    @Schema(description = OpenApiSchemaConstants.CITY_LEVEL, example = "TIER_1")
     @ExcelProperty("城市等级")
     private String cityLevel;
 
@@ -57,7 +58,8 @@ public class DivideRuleRespVO {
     @ExcelProperty("最低提现金额")
     private BigDecimal minWithdrawAmount;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.ENABLE_DISABLE_STATUS, requiredMode = Schema.RequiredMode.REQUIRED,
+            example = "ENABLE")
     @ExcelProperty("状态")
     private String status;
 

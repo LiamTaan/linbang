@@ -49,6 +49,9 @@ public class AppAppealRespVO {
     @Schema(description = "驳回原因")
     private String rejectReason;
 
+    @Schema(description = "申诉时效截止时间")
+    private LocalDateTime appealExpireTime;
+
     @Schema(description = "附件文件 ID 列表")
     private List<Long> fileIds;
 

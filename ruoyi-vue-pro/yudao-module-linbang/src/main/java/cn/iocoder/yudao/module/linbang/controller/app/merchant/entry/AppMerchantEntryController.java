@@ -3,6 +3,7 @@ package cn.iocoder.yudao.module.linbang.controller.app.merchant.entry;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.linbang.controller.app.merchant.entry.vo.AppMerchantEntryCreateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.merchant.entry.vo.AppMerchantEntryRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.merchant.entry.vo.AppMerchantOnboardingProgressRespVO;
 import cn.iocoder.yudao.module.linbang.service.app.merchant.AppMerchantEntryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,6 +39,12 @@ public class AppMerchantEntryController {
     @Operation(summary = "获取当前用户最新入驻申请")
     public CommonResult<AppMerchantEntryRespVO> getCurrentEntry() {
         return success(appMerchantEntryService.getCurrentEntry(getLoginUserId()));
+    }
+
+    @GetMapping("/onboarding/progress/get")
+    @Operation(summary = "获取入驻进度")
+    public CommonResult<AppMerchantOnboardingProgressRespVO> getOnboardingProgress() {
+        return success(appMerchantEntryService.getOnboardingProgress(getLoginUserId()));
     }
 
 }

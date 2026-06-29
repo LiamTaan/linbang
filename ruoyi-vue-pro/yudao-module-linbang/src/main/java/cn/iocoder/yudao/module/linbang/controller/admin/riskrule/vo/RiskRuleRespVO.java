@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.riskrule.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -20,7 +21,7 @@ public class RiskRuleRespVO {
     @ExcelProperty("规则编码")
     private String ruleCode;
 
-    @Schema(description = "规则名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "??")
+    @Schema(description = "规则名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "用户单日发单次数上限")
     @ExcelProperty("规则名称")
     private String ruleName;
 
@@ -32,15 +33,17 @@ public class RiskRuleRespVO {
     @ExcelProperty("规则值")
     private String ruleValue;
 
-    @Schema(description = "值类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.RISK_RULE_VALUE_TYPE, requiredMode = Schema.RequiredMode.REQUIRED,
+            example = "INTEGER")
     @ExcelProperty("值类型")
     private String valueType;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.ENABLE_DISABLE_STATUS, requiredMode = Schema.RequiredMode.REQUIRED,
+            example = "ENABLE")
     @ExcelProperty("状态")
     private String status;
 
-    @Schema(description = "备注", example = "????")
+    @Schema(description = "备注", example = "超过阈值时转人工复核")
     @ExcelProperty("备注")
     private String remark;
 

@@ -1,6 +1,7 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.memberqualification.vo;
 
 import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -19,13 +20,13 @@ public class MemberQualificationPageReqVO extends PageParam {
     @Schema(description = "用户关键词（用户编号 / 昵称 / 手机号）", example = "13800138000")
     private String userKeyword;
 
-    @Schema(description = "资质类型", example = "ELECTRICIAN")
+    @Schema(description = OpenApiSchemaConstants.QUALIFICATION_TYPE, example = "ELECTRICIAN")
     private String qualificationType;
 
     @Schema(description = "资质名称", example = "电工证")
     private String qualificationName;
 
-    @Schema(description = "审核状态", example = "PENDING")
+    @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, example = "PENDING")
     private String auditStatus;
 
     @Schema(description = "创建时间")

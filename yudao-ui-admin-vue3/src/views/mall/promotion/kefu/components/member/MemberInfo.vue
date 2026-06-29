@@ -27,17 +27,56 @@
     <el-main class="kefu-content p-10px!">
       <div v-if="!isEmpty(conversation)" v-loading="loading">
         <!-- 基本信息 -->
-        <UserBasicInfo v-if="activeTab === '会员信息'" :user="user" mode="kefu">
+        <el-card v-if="activeTab === '会员信息'" shadow="never">
           <template #header>
             <CardTitle title="基本信息" />
           </template>
-        </UserBasicInfo>
+          <div class="flex flex-col items-center gap-12px">
+            <el-avatar :size="140" :src="user.avatar || undefined" shape="square" />
+            <el-descriptions :column="1" class="kefu-descriptions w-full">
+              <el-descriptions-item label="用户编号">
+                {{ user.userNo || '-' }}
+              </el-descriptions-item>
+              <el-descriptions-item label="昵称">
+                {{ user.nickname || '-' }}
+              </el-descriptions-item>
+              <el-descriptions-item label="手机号">
+                {{ user.mobile || '-' }}
+              </el-descriptions-item>
+              <el-descriptions-item label="性别">
+                {{ formatGender(user.gender) }}
+              </el-descriptions-item>
+              <el-descriptions-item label="生日">
+                {{ user.birthday || '-' }}
+              </el-descriptions-item>
+              <el-descriptions-item label="注册时间">
+                {{ user.createTime ? formatDate(user.createTime as any) : '-' }}
+              </el-descriptions-item>
+              <el-descriptions-item label="最后登录时间">
+                {{ user.lastLoginTime ? formatDate(user.lastLoginTime as any) : '-' }}
+              </el-descriptions-item>
+            </el-descriptions>
+          </div>
+        </el-card>
         <!-- 账户信息 -->
         <el-card v-if="activeTab === '会员信息'" class="h-full mt-10px" shadow="never">
           <template #header>
             <CardTitle title="账户信息" />
           </template>
-          <UserAccountInfo :column="1" :user="user" :wallet="wallet" />
+          <el-descriptions :column="1" class="kefu-descriptions">
+            <el-descriptions-item label="当前积分">
+              {{ user.pointBalance ?? 0 }}
+            </el-descriptions-item>
+            <el-descriptions-item label="当前余额">
+              {{ fenToYuan(wallet.balance || 0) }}
+            </el-descriptions-item>
+            <el-descriptions-item label="累计支出">
+              {{ fenToYuan(wallet.totalExpense || 0) }}
+            </el-descriptions-item>
+            <el-descriptions-item label="累计充值">
+              {{ fenToYuan(wallet.totalRecharge || 0) }}
+            </el-descriptions-item>
+          </el-descriptions>
         </el-card>
       </div>
       <div v-show="!isEmpty(conversation)">
@@ -61,9 +100,10 @@ import { isEmpty } from '@/utils/is'
 import { debounce } from 'lodash-es'
 import { ElScrollbar as ElScrollbarType } from 'element-plus/es/components/scrollbar/index'
 import { CardTitle } from '@/components/Card'
-import UserBasicInfo from '@/views/member/user/detail/UserBasicInfo.vue'
-import UserAccountInfo from '@/views/member/user/detail/UserAccountInfo.vue'
-import * as UserApi from '@/api/member/user'
+import { fenToYuan } from '@/utils'
+import { formatDate } from '@/utils/formatTime'
+import { formatGender } from '@/views/linbang/utils/display'
+import { MemberUserApi, type MemberUser } from '@/api/linbang/memberuser'
 import * as WalletApi from '@/api/pay/wallet/balance'
 
 defineOptions({ name: 'MemberBrowsingHistory' })
@@ -155,11 +195,11 @@ const getUserWallet = async () => {
 
 /** 获得用户 */
 const loading = ref(true) // 加载中
-const user = ref<UserApi.UserVO>({} as UserApi.UserVO)
+const user = ref<MemberUser>({} as MemberUser)
 const getUserData = async () => {
   loading.value = true
   try {
-    user.value = await UserApi.getUser(conversation.value.userId)
+    user.value = await MemberUserApi.getMemberUser(conversation.value.userId)
   } finally {
     loading.value = false
   }

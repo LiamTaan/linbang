@@ -2,6 +2,7 @@ package cn.iocoder.yudao.module.linbang.service.memberqualification;
 
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.linbang.controller.admin.memberqualification.vo.MemberQualificationDetailRespVO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.certexemption.CertExemptionApplyDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.creditrecord.CreditRecordDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberqualification.MemberUserQualificationDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberrealname.MemberUserRealNameDO;
@@ -22,6 +23,7 @@ final class MemberQualificationDetailAssembler {
     static MemberQualificationDetailRespVO build(MemberUserQualificationDO qualification, MemberUserDO user,
                                                  MemberUserRealNameDO realName, MerchantInfoDO merchant,
                                                  MerchantEntryDO latestEntry, List<MemberUserQualificationDO> relatedQualifications,
+                                                 List<CertExemptionApplyDO> certExemptions,
                                                  List<CreditRecordDO> creditRecords) {
         MemberQualificationDetailRespVO respVO = BeanUtils.toBean(qualification, MemberQualificationDetailRespVO.class);
         if (user != null) {
@@ -36,14 +38,16 @@ final class MemberQualificationDetailAssembler {
         if (latestEntry != null) {
             respVO.setLatestEntry(BeanUtils.toBean(latestEntry, MemberQualificationDetailRespVO.LatestEntryRespVO.class));
         }
-        respVO.setSummary(buildSummary(realName, merchant, relatedQualifications, creditRecords));
+        respVO.setSummary(buildSummary(realName, merchant, relatedQualifications, certExemptions, creditRecords));
         respVO.setRelatedQualifications(buildRelatedQualifications(relatedQualifications, qualification.getId()));
+        respVO.setCertExemptions(buildCertExemptions(certExemptions));
         respVO.setCreditRecords(buildCreditRecords(creditRecords));
         return respVO;
     }
 
     private static MemberQualificationDetailRespVO.SummaryRespVO buildSummary(MemberUserRealNameDO realName, MerchantInfoDO merchant,
                                                                               List<MemberUserQualificationDO> relatedQualifications,
+                                                                              List<CertExemptionApplyDO> certExemptions,
                                                                               List<CreditRecordDO> creditRecords) {
         List<MemberUserQualificationDO> qualificationSource = relatedQualifications == null ? Collections.emptyList() : relatedQualifications;
         List<CreditRecordDO> creditSource = creditRecords == null ? Collections.emptyList() : creditRecords;
@@ -65,6 +69,9 @@ final class MemberQualificationDetailAssembler {
         summary.setLatestCreditLevel(merchant == null ? null : merchant.getCreditLevel());
         summary.setRealNameApproved(realName != null && "APPROVED".equalsIgnoreCase(realName.getAuditStatus()));
         summary.setMerchantBound(merchant != null);
+        summary.setApprovedExemptionCount(certExemptions == null ? 0 : (int) certExemptions.stream()
+                .filter(item -> "APPROVED".equalsIgnoreCase(item.getAuditStatus()))
+                .count());
         return summary;
     }
 
@@ -87,6 +94,16 @@ final class MemberQualificationDetailAssembler {
         return creditRecords.stream()
                 .limit(10)
                 .map(item -> BeanUtils.toBean(item, MemberQualificationDetailRespVO.CreditRecordRespVO.class))
+                .collect(Collectors.toList());
+    }
+
+    private static List<MemberQualificationDetailRespVO.CertExemptionRespVO> buildCertExemptions(List<CertExemptionApplyDO> certExemptions) {
+        if (certExemptions == null || certExemptions.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return certExemptions.stream()
+                .limit(10)
+                .map(item -> BeanUtils.toBean(item, MemberQualificationDetailRespVO.CertExemptionRespVO.class))
                 .collect(Collectors.toList());
     }
 }

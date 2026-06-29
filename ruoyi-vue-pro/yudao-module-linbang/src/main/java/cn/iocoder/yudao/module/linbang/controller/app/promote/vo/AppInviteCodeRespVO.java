@@ -10,4 +10,8 @@ public class AppInviteCodeRespVO {
     private String inviteCode;
 
     private String inviteUrl;
+
+    private String inviteShortLink;
+
+    private String invitePosterUrl;
 }

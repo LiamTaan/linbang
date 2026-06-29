@@ -27,6 +27,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderinfo.OrderInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderunit.OrderUnitMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.reviewcomment.ReviewCommentMapper;
+import cn.iocoder.yudao.module.linbang.service.match.PriorityPoolService;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
@@ -54,39 +55,57 @@ public class ReviewCommentServiceImpl implements ReviewCommentService {
     private MerchantInfoMapper merchantInfoMapper;
     @Resource
     private CreditRecordMapper creditRecordMapper;
+    @Resource
+    private PriorityPoolService priorityPoolService;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Long createReviewComment(ReviewCommentSaveReqVO createReqVO) {
         // 插入
         ReviewCommentDO reviewComment = BeanUtils.toBean(createReqVO, ReviewCommentDO.class);
         reviewCommentMapper.insert(reviewComment);
+        recomputePriorityPoolByReview(reviewComment.getId());
 
         // 返回
         return reviewComment.getId();
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateReviewComment(ReviewCommentSaveReqVO updateReqVO) {
         // 校验存在
         validateReviewCommentExists(updateReqVO.getId());
         // 更新
         ReviewCommentDO updateObj = BeanUtils.toBean(updateReqVO, ReviewCommentDO.class);
         reviewCommentMapper.updateById(updateObj);
+        recomputePriorityPoolByReview(updateReqVO.getId());
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteReviewComment(Long id) {
         // 校验存在
         validateReviewCommentExists(id);
+        Long merchantId = resolveMerchantIdByReviewId(id);
         // 删除
         reviewCommentMapper.deleteById(id);
+        recomputePriorityPool(merchantId);
     }
 
     @Override
-        public void deleteReviewCommentListByIds(List<Long> ids) {
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteReviewCommentListByIds(List<Long> ids) {
+        if (CollUtil.isEmpty(ids)) {
+            return;
+        }
+        Set<Long> merchantIds = ids.stream()
+                .map(this::resolveMerchantIdByReviewId)
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
         // 删除
         reviewCommentMapper.deleteByIds(ids);
-        }
+        merchantIds.forEach(this::recomputePriorityPool);
+    }
 
 
     private void validateReviewCommentExists(Long id) {
@@ -150,6 +169,28 @@ public class ReviewCommentServiceImpl implements ReviewCommentService {
         List<ReviewCommentRespVO> list = BeanUtils.toBean(pageResult.getList(), ReviewCommentRespVO.class);
         fillDisplayInfo(list);
         return new PageResult<>(list, pageResult.getTotal());
+    }
+
+    @Override
+    public void recomputePriorityPoolByReview(Long reviewId) {
+        recomputePriorityPool(resolveMerchantIdByReviewId(reviewId));
+    }
+
+    private Long resolveMerchantIdByReviewId(Long reviewId) {
+        ReviewCommentDO review = reviewId == null ? null : reviewCommentMapper.selectById(reviewId);
+        if (review == null || review.getToUserId() == null) {
+            return null;
+        }
+        MerchantInfoDO merchant = merchantInfoMapper.selectOne(new LambdaQueryWrapperX<MerchantInfoDO>()
+                .eq(MerchantInfoDO::getUserId, review.getToUserId())
+                .last("LIMIT 1"));
+        return merchant == null ? null : merchant.getId();
+    }
+
+    private void recomputePriorityPool(Long merchantId) {
+        if (merchantId != null) {
+            priorityPoolService.recomputeMerchantPriorityPool(merchantId);
+        }
     }
 
     private List<Long> resolveMatchedUserIds(String userKeyword) {

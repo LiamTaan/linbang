@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.memberuser.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -52,7 +53,7 @@ public class MemberUserRespVO {
     @DictFormat("lb_role_code") // TODO 代码优化：建议设置到对应的 DictTypeConstants 枚举类中
     private String currentRoleCode;
 
-    @Schema(description = "状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = OpenApiSchemaConstants.USER_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "ENABLE")
     @ExcelProperty("状态")
     private String status;
 

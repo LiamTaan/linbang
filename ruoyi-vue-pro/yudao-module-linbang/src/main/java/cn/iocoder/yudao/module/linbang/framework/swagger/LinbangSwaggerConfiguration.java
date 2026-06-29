@@ -16,7 +16,10 @@ public class LinbangSwaggerConfiguration {
         return YudaoSwaggerAutoConfiguration.buildGroupedOpenApi(
                 "linbang-app",
                 Arrays.asList("/app-api/**"),
-                Arrays.asList("cn.iocoder.yudao.module.linbang.controller.app"));
+                Arrays.asList(
+                        "cn.iocoder.yudao.module.linbang.controller.app",
+                        "cn.iocoder.yudao.module.infra.controller.app.file",
+                        "cn.iocoder.yudao.module.system.controller.app.dict"));
     }
 
     @Bean

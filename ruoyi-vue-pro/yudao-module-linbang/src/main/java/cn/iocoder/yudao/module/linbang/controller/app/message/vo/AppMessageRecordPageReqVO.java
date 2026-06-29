@@ -12,4 +12,10 @@ public class AppMessageRecordPageReqVO extends PageParam {
 
     @Schema(description = "发送状态")
     private String sendStatus;
+
+    @Schema(description = "消息分类", example = "ORDER")
+    private String messageCategory;
+
+    @Schema(description = "已读状态", example = "UNREAD")
+    private String readStatus;
 }

@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.orderunit.vo;
 
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import java.util.*;
@@ -79,7 +80,7 @@ public class OrderUnitRespVO {
     @ExcelProperty("联系手机")
     private String merchantContactMobile;
 
-    @Schema(description = "单元状态", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
+    @Schema(description = OpenApiSchemaConstants.ORDER_UNIT_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "PENDING_ACCEPT")
     @ExcelProperty(value = "单元状态", converter = DictConvert.class)
     @DictFormat("lb_order_unit_status") // TODO 代码优化：建议设置到对应的 DictTypeConstants 枚举类中
     private String status;
@@ -91,6 +92,18 @@ public class OrderUnitRespVO {
     @Schema(description = "完成时间")
     @ExcelProperty("完成时间")
     private LocalDateTime finishTime;
+
+    @Schema(description = OpenApiSchemaConstants.ORDER_VERIFY_STATUS, example = "PENDING")
+    @ExcelProperty("核销状态")
+    private String verifyStatus;
+
+    @Schema(description = "核销码")
+    @ExcelProperty("核销码")
+    private String verifyCode;
+
+    @Schema(description = "核销时间")
+    @ExcelProperty("核销时间")
+    private LocalDateTime verifyTime;
 
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("创建时间")

@@ -21,6 +21,7 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoD
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderabnormal.OrderAbnormalDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderinfo.OrderInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderunit.OrderUnitDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.reviewcomment.ReviewCommentDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.walletwithdraw.WalletWithdrawDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.appeal.AppealMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.complaint.ComplaintMapper;
@@ -31,12 +32,14 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderabnormal.OrderAbnormalMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderinfo.OrderInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderunit.OrderUnitMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.reviewcomment.ReviewCommentMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.walletwithdraw.WalletWithdrawMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +75,8 @@ public class CreditRecordServiceImpl implements CreditRecordService {
     private ComplaintMapper complaintMapper;
     @Resource
     private AppealMapper appealMapper;
+    @Resource
+    private ReviewCommentMapper reviewCommentMapper;
     @Resource
     private WalletWithdrawMapper walletWithdrawMapper;
 
@@ -119,6 +124,19 @@ public class CreditRecordServiceImpl implements CreditRecordService {
                 .build();
         creditRecordMapper.insert(record);
         return record.getId();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void rollbackBizCreditRecords(Long userId, String bizType, Long bizId) {
+        if (userId == null || StrUtil.isBlank(bizType) || bizId == null) {
+            return;
+        }
+        creditRecordMapper.delete(new LambdaQueryWrapperX<CreditRecordDO>()
+                .eq(CreditRecordDO::getUserId, userId)
+                .eq(CreditRecordDO::getBizType, bizType)
+                .eq(CreditRecordDO::getBizId, bizId));
+        rebuildUserCreditRecords(userId);
     }
 
     @Override
@@ -274,6 +292,9 @@ public class CreditRecordServiceImpl implements CreditRecordService {
             case "APPEAL":
                 AppealDO appeal = appealMapper.selectById(bizId);
                 return appeal != null ? StrUtil.blankToDefault(appeal.getAppealNo(), "申诉ID：" + bizId) : "申诉ID：" + bizId;
+            case "REVIEW":
+                ReviewCommentDO review = reviewCommentMapper.selectById(bizId);
+                return review != null ? "评价ID：" + review.getId() + " / " + StrUtil.blankToDefault(review.getContent(), "无评价内容") : "评价ID：" + bizId;
             case "WITHDRAW":
             case "WITHDRAW_APPLY":
                 WalletWithdrawDO withdraw = walletWithdrawMapper.selectById(bizId);
@@ -307,5 +328,43 @@ public class CreditRecordServiceImpl implements CreditRecordService {
         return merchantInfoMapper.selectOne(new LambdaQueryWrapperX<MerchantInfoDO>()
                 .eq(MerchantInfoDO::getUserId, userId)
                 .last("LIMIT 1"));
+    }
+
+    private void rebuildUserCreditRecords(Long userId) {
+        List<CreditRecordDO> records = creditRecordMapper.selectList(new LambdaQueryWrapperX<CreditRecordDO>()
+                .eq(CreditRecordDO::getUserId, userId)
+                .orderByAsc(CreditRecordDO::getCreateTime, CreditRecordDO::getId));
+        if (records.isEmpty()) {
+            MerchantInfoDO merchant = resolveMerchant(userId, null);
+            if (merchant != null) {
+                merchantInfoMapper.updateById(MerchantInfoDO.builder()
+                        .id(merchant.getId())
+                        .creditScore(100)
+                        .creditLevel(CreditLevelResolver.resolve(100))
+                        .build());
+            }
+            return;
+        }
+        int score = 100;
+        List<CreditRecordDO> updates = new ArrayList<>(records.size());
+        for (CreditRecordDO record : records) {
+            Integer scoreChange = record.getScoreChange() == null ? 0 : record.getScoreChange();
+            int beforeScore = score;
+            score = Math.max(0, score + scoreChange);
+            updates.add(CreditRecordDO.builder()
+                    .id(record.getId())
+                    .beforeScore(beforeScore)
+                    .afterScore(score)
+                    .build());
+        }
+        creditRecordMapper.updateBatch(updates);
+        MerchantInfoDO merchant = resolveMerchant(userId, records.get(records.size() - 1).getMerchantId());
+        if (merchant != null) {
+            merchantInfoMapper.updateById(MerchantInfoDO.builder()
+                    .id(merchant.getId())
+                    .creditScore(score)
+                    .creditLevel(CreditLevelResolver.resolve(score))
+                    .build());
+        }
     }
 }

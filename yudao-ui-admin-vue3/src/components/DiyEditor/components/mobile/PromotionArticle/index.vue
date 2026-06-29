@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-30px" v-html="article?.content"></div>
+  <div class="min-h-30px" v-dompurify-html="article?.content || ''"></div>
 </template>
 <script setup lang="ts">
 import { PromotionArticleProperty } from './config'

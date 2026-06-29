@@ -1,6 +1,7 @@
 package cn.iocoder.yudao.module.linbang.controller.admin.merchantservicepoint.vo;
 
 import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -28,7 +29,7 @@ public class MerchantServicePointPageReqVO extends PageParam {
     @Schema(description = "区", example = "浦东新区")
     private String district;
 
-    @Schema(description = "状态", example = "ENABLE")
+    @Schema(description = OpenApiSchemaConstants.SERVICE_POINT_STATUS, example = "ENABLE")
     private String status;
 
     @Schema(description = "创建时间")

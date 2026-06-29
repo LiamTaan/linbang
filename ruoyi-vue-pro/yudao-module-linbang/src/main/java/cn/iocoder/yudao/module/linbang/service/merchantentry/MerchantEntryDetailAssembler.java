@@ -56,6 +56,10 @@ final class MerchantEntryDetailAssembler {
         summary.setApprovedQualificationCount((int) qualificationSource.stream()
                 .filter(item -> "APPROVED".equalsIgnoreCase(item.getAuditStatus()))
                 .count());
+        summary.setBusinessLicenseUploaded(qualificationSource.stream()
+                .anyMatch(item -> "BUSINESS_LICENSE".equalsIgnoreCase(item.getQualificationType())));
+        summary.setInsuranceUploaded(qualificationSource.stream()
+                .anyMatch(item -> "INSURANCE_POLICY".equalsIgnoreCase(item.getQualificationType())));
         return summary;
     }
 

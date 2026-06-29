@@ -20,6 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -51,6 +52,9 @@ public class SmsTemplateServiceImpl implements SmsTemplateService {
 
     @Resource
     private SmsChannelService smsChannelService;
+
+    @Value("${yudao.sms.template-api-validate:true}")
+    private Boolean templateApiValidate;
 
     @Override
     public Long createSmsTemplate(SmsTemplateSaveReqVO createReqVO) {
@@ -175,6 +179,9 @@ public class SmsTemplateServiceImpl implements SmsTemplateService {
      */
     @VisibleForTesting
     void validateApiTemplate(Long channelId, String apiTemplateId) {
+        if (Boolean.FALSE.equals(templateApiValidate)) {
+            return;
+        }
         // 获得短信模板
         SmsClient smsClient = smsChannelService.getSmsClient(channelId);
         Assert.notNull(smsClient, String.format("短信客户端(%d) 不存在", channelId));

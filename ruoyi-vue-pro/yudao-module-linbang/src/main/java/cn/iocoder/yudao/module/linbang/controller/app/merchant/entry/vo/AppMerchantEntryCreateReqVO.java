@@ -5,7 +5,6 @@ import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @Schema(description = "用户 App - 服务商入驻申请 Request VO")
@@ -35,8 +34,7 @@ public class AppMerchantEntryCreateReqVO {
     @Schema(description = "服务范围说明", example = "Home repair and cleaning")
     private String serviceScopeDesc;
 
-    @Schema(description = "银行卡 ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
-    @NotNull(message = "银行卡不能为空")
+    @Schema(description = "银行卡 ID。入驻申请阶段可为空；终审通过后若未绑定有效银行卡，将进入待绑卡状态且不可接单", example = "1")
     private Long bankCardId;
 
     @Schema(description = "资质 ID 列表", requiredMode = Schema.RequiredMode.REQUIRED)

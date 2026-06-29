@@ -6,6 +6,7 @@ import cn.iocoder.yudao.module.linbang.controller.admin.walletwithdraw.vo.*;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.walletwithdraw.WalletWithdrawDO;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import cn.iocoder.yudao.module.pay.api.notify.dto.PayTransferNotifyReqDTO;
 
 /**
  * 提现申请 Service 接口
@@ -65,6 +66,21 @@ public interface WalletWithdrawService {
      * @param reqVO 审核请求
      */
     void auditWalletWithdraw(@Valid WithdrawAuditReqVO reqVO);
+
+    /**
+     * 重新发起提现打款
+     *
+     * @param id 提现单 ID
+     * @return 转账单 ID
+     */
+    Long retryWalletWithdrawTransfer(Long id);
+
+    /**
+     * 更新提现打款结果
+     *
+     * @param notifyReqDTO 转账回调
+     */
+    void updateWalletWithdrawTransferred(@Valid PayTransferNotifyReqDTO notifyReqDTO);
 
     /**
      * 获得提现申请分页

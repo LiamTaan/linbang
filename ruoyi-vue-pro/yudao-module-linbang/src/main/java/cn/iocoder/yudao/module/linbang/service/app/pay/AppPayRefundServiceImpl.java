@@ -1,11 +1,15 @@
 package cn.iocoder.yudao.module.linbang.service.app.pay;
 
 import cn.hutool.core.util.IdUtil;
+import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
 import cn.iocoder.yudao.framework.common.util.number.MoneyUtils;
+import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.framework.common.util.servlet.ServletUtils;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppPayRefundCreateReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppPayRefundPageReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppPayRefundRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderinfo.OrderInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderoperatelog.OrderOperateLogDO;
@@ -17,6 +21,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.orderoperatelog.OrderOperateLog
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderunit.OrderUnitMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.walletaccount.WalletAccountMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.walletflow.WalletFlowMapper;
+import cn.iocoder.yudao.module.linbang.service.finance.LinbangFinanceService;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
 import cn.iocoder.yudao.module.pay.api.notify.dto.PayRefundNotifyReqDTO;
 import cn.iocoder.yudao.module.pay.api.refund.PayRefundApi;
@@ -24,10 +29,12 @@ import cn.iocoder.yudao.module.pay.api.refund.dto.PayRefundCreateReqDTO;
 import cn.iocoder.yudao.module.pay.api.refund.dto.PayRefundRespDTO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.app.PayAppDO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.order.PayOrderDO;
+import cn.iocoder.yudao.module.pay.dal.dataobject.refund.PayRefundDO;
 import cn.iocoder.yudao.module.pay.enums.order.PayOrderStatusEnum;
 import cn.iocoder.yudao.module.pay.enums.refund.PayRefundStatusEnum;
 import cn.iocoder.yudao.module.pay.service.app.PayAppService;
 import cn.iocoder.yudao.module.pay.service.order.PayOrderService;
+import cn.iocoder.yudao.module.pay.dal.mysql.refund.PayRefundMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -37,6 +44,7 @@ import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -68,6 +76,8 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
     private WalletAccountMapper walletAccountMapper;
     @Resource
     private WalletFlowMapper walletFlowMapper;
+    @Resource
+    private PayRefundMapper payRefundMapper;
 
     @Resource
     private PayOrderService payOrderService;
@@ -75,6 +85,10 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
     private PayAppService payAppService;
     @Resource
     private PayRefundApi payRefundApi;
+    @Resource
+    private AutoFlowRefundService autoFlowRefundService;
+    @Resource
+    private LinbangFinanceService linbangFinanceService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -119,6 +133,34 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
     }
 
     @Override
+    public PageResult<AppPayRefundRespVO> getRefundPage(Long authUserId, AppPayRefundPageReqVO reqVO) {
+        MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
+        PageResult<PayRefundDO> pageResult = payRefundMapper.selectPage(reqVO, new LambdaQueryWrapperX<PayRefundDO>()
+                .eq(PayRefundDO::getUserId, loginUser.getId())
+                .eqIfPresent(PayRefundDO::getMerchantOrderId, reqVO.getOrderId() != null ? String.valueOf(reqVO.getOrderId()) : null)
+                .eqIfPresent(PayRefundDO::getAuditStatus, reqVO.getAuditStatus())
+                .betweenIfPresent(PayRefundDO::getCreateTime, reqVO.getCreateTime())
+                .orderByDesc(PayRefundDO::getId));
+        List<AppPayRefundRespVO> list = new ArrayList<>();
+        for (PayRefundDO refund : pageResult.getList()) {
+            list.add(convertRefund(refund));
+        }
+        return new PageResult<>(list, pageResult.getTotal());
+    }
+
+    @Override
+    public AppPayRefundRespVO getRefund(Long authUserId, Long id) {
+        MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
+        PayRefundDO refund = payRefundMapper.selectOne(new LambdaQueryWrapperX<PayRefundDO>()
+                .eq(PayRefundDO::getId, id)
+                .eq(PayRefundDO::getUserId, loginUser.getId()));
+        if (refund == null) {
+            throw exception(ORDER_REFUND_STATUS_NOT_ALLOWED);
+        }
+        return convertRefund(refund);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateRefunded(@Valid PayRefundNotifyReqDTO notifyReqDTO) {
         RefundBizRef bizRef = parseRefundBizRef(notifyReqDTO.getMerchantRefundId());
@@ -135,10 +177,14 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
         }
 
         if (PayRefundStatusEnum.isSuccess(payRefund.getStatus())) {
+            autoFlowRefundService.handleRefundCallback(payRefund.getId(), payRefund.getMerchantRefundId(),
+                    payRefund.getStatus(), payRefund.getChannelErrorMsg());
             handleRefundSuccess(order, unit, payRefund);
             return;
         }
         if (PayRefundStatusEnum.isFailure(payRefund.getStatus())) {
+            autoFlowRefundService.handleRefundCallback(payRefund.getId(), payRefund.getMerchantRefundId(),
+                    payRefund.getStatus(), payRefund.getChannelErrorMsg());
             handleRefundFailure(order, unit, payRefund);
         }
     }
@@ -161,6 +207,7 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
                 .orderAmount(newOrderAmount)
                 .status(nextOrderStatus)
                 .build());
+        linbangFinanceService.handleRefundSuccess(order, unit, refundAmount);
         saveOperateLog(order.getId(), unit != null ? unit.getId() : null, "REFUND_SUCCESS", "SYSTEM", 0L,
                 order.getStatus(), nextOrderStatus, "退款成功，订单金额重算");
         saveRefundTraceFlow(resolveRefundUser(order), order, unit, payRefund.getId(), "REFUND_SUCCESS", "IN",
@@ -208,6 +255,10 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
         if (order.getPayOrderId() == null || Objects.equals(order.getStatus(), "CLOSED") || Objects.equals(order.getStatus(), "REFUNDED")) {
             throw exception(ORDER_REFUND_STATUS_NOT_ALLOWED);
         }
+        if (!Objects.equals(order.getStatus(), "PENDING_ACCEPT")
+                && !Objects.equals(order.getStatus(), "ACCEPTED")) {
+            throw exception(ORDER_REFUND_STATUS_NOT_ALLOWED);
+        }
         return order;
     }
 
@@ -220,6 +271,10 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
             throw exception(ORDER_UNIT_NOT_EXISTS);
         }
         if (Objects.equals(unit.getStatus(), "REFUNDED")) {
+            throw exception(ORDER_REFUND_STATUS_NOT_ALLOWED);
+        }
+        if (!Objects.equals(unit.getStatus(), "PENDING_ACCEPT")
+                && !Objects.equals(unit.getStatus(), "ACCEPTED")) {
             throw exception(ORDER_REFUND_STATUS_NOT_ALLOWED);
         }
         return unit;
@@ -342,6 +397,42 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
             this.unitId = unitId;
         }
 
+    }
+
+    private AppPayRefundRespVO convertRefund(PayRefundDO refund) {
+        AppPayRefundRespVO respVO = BeanUtils.toBean(refund, AppPayRefundRespVO.class);
+        respVO.setOrderId(parseLongQuietly(refund.getMerchantOrderId()));
+        respVO.setUnitId(parseRefundUnitId(refund.getMerchantRefundId()));
+        respVO.setPayOrderId(refund.getOrderId());
+        respVO.setStatusName(resolveRefundStatusName(refund.getStatus()));
+        return respVO;
+    }
+
+    private Long parseRefundUnitId(String merchantRefundId) {
+        try {
+            RefundBizRef bizRef = parseRefundBizRef(merchantRefundId);
+            return bizRef.unitId;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private Long parseLongQuietly(String value) {
+        try {
+            return value == null ? null : Long.valueOf(value);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private String resolveRefundStatusName(Integer status) {
+        if (PayRefundStatusEnum.isSuccess(status)) {
+            return PayRefundStatusEnum.SUCCESS.getName();
+        }
+        if (PayRefundStatusEnum.isFailure(status)) {
+            return PayRefundStatusEnum.FAILURE.getName();
+        }
+        return PayRefundStatusEnum.WAITING.getName();
     }
 
 }

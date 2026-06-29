@@ -100,8 +100,26 @@ public class MessagePushTaskServiceImpl implements MessagePushTaskService {
         if (taskDO.getFailCount() == null) {
             taskDO.setFailCount(0);
         }
+        if (taskDO.getPlannedAudienceCount() == null) {
+            taskDO.setPlannedAudienceCount(0);
+        }
+        if (taskDO.getReachedCount() == null) {
+            taskDO.setReachedCount(0);
+        }
+        if (taskDO.getClickedCount() == null) {
+            taskDO.setClickedCount(0);
+        }
+        if (taskDO.getReadCount() == null) {
+            taskDO.setReadCount(0);
+        }
+        if (taskDO.getVoicePlayedCount() == null) {
+            taskDO.setVoicePlayedCount(0);
+        }
         if (taskDO.getStatus() == null) {
             taskDO.setStatus("PENDING");
+        }
+        if (taskDO.getExecuteStatus() == null) {
+            taskDO.setExecuteStatus(taskDO.getStatus());
         }
         if (taskDO.getPlannedSendTime() == null) {
             taskDO.setPlannedSendTime(LocalDateTime.now());
@@ -115,8 +133,19 @@ public class MessagePushTaskServiceImpl implements MessagePushTaskService {
         messagePushTaskMapper.updateById(MessagePushTaskDO.builder()
                 .id(id)
                 .status(status)
+                .executeStatus(status)
                 .successCount(successCount)
                 .failCount(failCount)
+                .executeTime(LocalDateTime.now())
+                .build());
+    }
+
+    @Override
+    public void markRetrying(Long id) {
+        messagePushTaskMapper.updateById(MessagePushTaskDO.builder()
+                .id(id)
+                .status("PROCESSING")
+                .executeStatus("PROCESSING")
                 .executeTime(LocalDateTime.now())
                 .build());
     }

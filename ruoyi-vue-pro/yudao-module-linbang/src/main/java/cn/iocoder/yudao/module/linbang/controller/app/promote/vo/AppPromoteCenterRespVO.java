@@ -17,11 +17,26 @@ public class AppPromoteCenterRespVO {
     @Schema(description = "等级编码", example = "L1")
     private String levelCode;
 
+    @Schema(description = "等级名称", example = "初级推广员")
+    private String levelName;
+
+    @Schema(description = "升级条件说明")
+    private String upgradeConditionDesc;
+
+    @Schema(description = "距下一等级还差的关键指标说明")
+    private String nextLevelNeedMetric;
+
     @Schema(description = "邀请码", example = "INVITE888")
     private String inviteCode;
 
     @Schema(description = "邀请链接")
     private String inviteUrl;
+
+    @Schema(description = "推广短链")
+    private String inviteShortLink;
+
+    @Schema(description = "推广海报地址")
+    private String invitePosterUrl;
 
     @Schema(description = "绑定用户数", example = "12")
     private Integer bindUserCount;
@@ -34,6 +49,9 @@ public class AppPromoteCenterRespVO {
 
     @Schema(description = "可提现佣金", example = "28.80")
     private BigDecimal availableCommissionAmount;
+
+    @Schema(description = "待结算佣金", example = "12.50")
+    private BigDecimal pendingSettleCommissionAmount;
 
     @Schema(description = "推广员状态：ENABLE 启用、DISABLE 停用", example = "ENABLE")
     private String status;

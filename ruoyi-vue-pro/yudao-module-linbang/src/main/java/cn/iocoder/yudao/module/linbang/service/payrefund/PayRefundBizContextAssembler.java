@@ -36,7 +36,6 @@ final class PayRefundBizContextAssembler {
         respVO.setOrderNo(order.getOrderNo());
         respVO.setUserId(order.getUserId());
         respVO.setMerchantId(order.getMerchantId());
-        respVO.setTitle(order.getTitle());
         respVO.setPricingMode(order.getPricingMode());
         respVO.setOrderAmount(order.getOrderAmount());
         respVO.setSplitStatus(order.getSplitStatus());

@@ -15,9 +15,16 @@ export interface OrderMatchRecord {
           matchRuleCode: string; // 命中规则编码
           matchScore: number; // 匹配分值
           distanceKm: number; // 距离公里
+          stageNo?: number
+          pushBatchNo?: number
+          priorityLayer?: string
+          priorityPoolFlag?: boolean
+          categoryMatchLevel?: string
           pushTime?: string | Dayjs; // 推送时间
           acceptDeadlineTime: string | Dayjs; // 接单截止时间
+          expiredTime?: string | Dayjs
           status?: string; // 状态
+          finalResult?: string
   }
 
 export interface OrderMatchRecordDetail extends OrderMatchRecord {

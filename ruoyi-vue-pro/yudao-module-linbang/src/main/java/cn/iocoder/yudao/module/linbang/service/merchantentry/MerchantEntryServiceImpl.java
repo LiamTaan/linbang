@@ -29,6 +29,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.merchantcategory.MerchantServic
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantcategoryrel.MerchantCategoryRelMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantentry.MerchantEntryMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.walletbankcard.WalletBankCardMapper;
 import cn.iocoder.yudao.module.linbang.service.creditrecord.CreditRecordService;
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
@@ -68,6 +69,8 @@ public class MerchantEntryServiceImpl implements MerchantEntryService {
     private CreditRecordService creditRecordService;
     @Resource
     private MessagePushDispatchService messagePushDispatchService;
+    @Resource
+    private WalletBankCardMapper walletBankCardMapper;
 
     @Override
     public Long createMerchantEntry(MerchantEntrySaveReqVO createReqVO) {
@@ -153,6 +156,11 @@ public class MerchantEntryServiceImpl implements MerchantEntryService {
             updateObj.setFirstAuditBy(loginUserId);
             updateObj.setFirstAuditTime(now);
             updateObj.setStatus("FIRST_APPROVED");
+            updateObj.setProgressStatus("PENDING_FINAL_AUDIT");
+            updateObj.setCurrentStageName("待平台终审");
+            updateObj.setCurrentStageTime(now);
+            updateObj.setRejectReason(null);
+            updateObj.setOnboardingBlockedReason(null);
         } else if ("APPROVED".equals(reqVO.getAuditStatus())) {
             if (!"APPROVED".equals(entry.getFirstAuditStatus())) {
                 updateObj.setFirstAuditStatus("APPROVED");
@@ -163,7 +171,27 @@ public class MerchantEntryServiceImpl implements MerchantEntryService {
             updateObj.setFinalAuditBy(loginUserId);
             updateObj.setFinalAuditTime(now);
             updateObj.setStatus("APPROVED");
-            enableMerchant(entry);
+            if (hasEnabledBankCard(entry.getUserId())) {
+                updateObj.setProgressStatus("APPROVED_ENABLED");
+                updateObj.setCurrentStageName("已开通接单权限");
+                updateObj.setCurrentStageTime(now);
+                updateObj.setAcceptEnabled(Boolean.TRUE);
+                updateObj.setBankCardRequired(Boolean.TRUE);
+                updateObj.setOnboardingBlockedReason(null);
+                enableMerchant(entry, true);
+                messagePushDispatchService.dispatchSingle("lb_merchant_accept_enabled", "接单权限开通提醒", "MERCHANT_ENTRY",
+                        entry.getId(), entry.getUserId(), "终审通过且已绑卡，自动开通接单权限");
+            } else {
+                updateObj.setProgressStatus("APPROVED_WAIT_BANK_CARD");
+                updateObj.setCurrentStageName("终审通过，待绑定银行卡");
+                updateObj.setCurrentStageTime(now);
+                updateObj.setAcceptEnabled(Boolean.FALSE);
+                updateObj.setBankCardRequired(Boolean.TRUE);
+                updateObj.setOnboardingBlockedReason("终审已通过，但尚未绑定有效银行卡");
+                enableMerchant(entry, false);
+                messagePushDispatchService.dispatchSingle("lb_bind_bank_card_required", "银行卡绑定提醒", "MERCHANT_ENTRY",
+                        entry.getId(), entry.getUserId(), "终审通过后提醒先绑定银行卡");
+            }
         } else if ("REJECTED".equals(reqVO.getAuditStatus())) {
             if ("APPROVED".equals(entry.getFirstAuditStatus()) || "FIRST_APPROVED".equals(entry.getStatus())) {
                 updateObj.setFinalAuditStatus("REJECTED");
@@ -175,6 +203,12 @@ public class MerchantEntryServiceImpl implements MerchantEntryService {
                 updateObj.setFirstAuditTime(now);
             }
             updateObj.setStatus("REJECTED");
+            updateObj.setProgressStatus("REJECTED");
+            updateObj.setCurrentStageName("入驻审核已驳回");
+            updateObj.setCurrentStageTime(now);
+            updateObj.setRejectReason(reqVO.getRejectReason());
+            updateObj.setAcceptEnabled(Boolean.FALSE);
+            updateObj.setOnboardingBlockedReason(reqVO.getRejectReason());
         }
         merchantEntryMapper.updateById(updateObj);
         messagePushDispatchService.dispatchSingle("lb_merchant_entry_audited", "入驻审核结果通知", "MERCHANT_ENTRY",
@@ -185,15 +219,22 @@ public class MerchantEntryServiceImpl implements MerchantEntryService {
         }
     }
 
-    private void enableMerchant(MerchantEntryDO entry) {
+    private void enableMerchant(MerchantEntryDO entry, boolean acceptEnabled) {
         if (entry.getMerchantId() != null) {
             merchantInfoMapper.updateById(MerchantInfoDO.builder()
                     .id(entry.getMerchantId())
                     .status("ENABLE")
-                    .acceptStatus("DISABLE")
+                    .acceptStatus(acceptEnabled ? "ENABLE" : "DISABLE")
                     .build());
         }
         memberUserService.updateMemberUserRole(entry.getUserId(), "MERCHANT");
+    }
+
+    private boolean hasEnabledBankCard(Long userId) {
+        return walletBankCardMapper.selectOne(new LambdaQueryWrapperX<cn.iocoder.yudao.module.linbang.dal.dataobject.walletbankcard.WalletBankCardDO>()
+                .eq(cn.iocoder.yudao.module.linbang.dal.dataobject.walletbankcard.WalletBankCardDO::getUserId, userId)
+                .eq(cn.iocoder.yudao.module.linbang.dal.dataobject.walletbankcard.WalletBankCardDO::getStatus, "ENABLE")
+                .last("LIMIT 1")) != null;
     }
 
     @Override

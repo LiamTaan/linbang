@@ -26,6 +26,9 @@ export interface WalletWithdraw {
   auditTime?: string | Dayjs
   rejectReason?: string
   payTime?: string | Dayjs
+  payTransferId?: number
+  payTransferNo?: string
+  transferErrorMsg?: string
   createTime?: string | Dayjs
 }
 
@@ -105,6 +108,13 @@ export const WalletWithdrawApi = {
     return await request.post({
       url: `/wallet/withdraw/audit`,
       data,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
+  },
+
+  retryWalletWithdrawTransfer: async (id: number, verifyToken?: string) => {
+    return await request.post({
+      url: `/wallet/withdraw/retry-transfer?id=${id}`,
       headers: buildDynamicKeyHeaders(verifyToken)
     })
   },
