@@ -1,0 +1,219 @@
+{
+	"pages": [
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "首页",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationBarTitleText": "邻里互助",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/login/social_callback",
+			"style": {
+				"navigationBarTitleText": "授权回调",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/order/order",
+			"style": {
+				"navigationBarTitleText": "需求/接单",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/news/news",
+			"style": {
+				"navigationBarTitleText": "消息",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/my/my",
+			"style": {
+				"navigationBarTitleText": "我的",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/detail_of_earnings/detail_of_earnings",
+			"style": {
+				"navigationBarTitleText": "收支明细",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/certificate/certificate",
+			"style": {
+				"navigationBarTitleText": "认证与证件",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/set/set",
+			"style": {
+				"navigationBarTitleText": "系统设置",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/platform_data/platform_data",
+			"style": {
+				"navigationBarTitleText": "平台数据看板",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/promotion_center/promotion_center",
+			"style": {
+				"navigationBarTitleText": "推广员中心",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/regional_partner/regional_partner",
+			"style": {
+				"navigationBarTitleText": "区域合作商工作台",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/identity_application/identity_application",
+			"style": {
+				"navigationBarTitleText": "身份申请",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/refund/refund",
+			"style": {
+				"navigationBarTitleText": "申请退款",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/my_wallet/my_wallet",
+			"style": {
+				"navigationBarTitleText": "我的钱包",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/bank_card_management/bank_card_management",
+			"style": {
+				"navigationBarTitleText": "银行卡管理",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/complaint/complaint",
+			"style": {
+				"navigationBarTitleText": "投诉与反馈",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/my_credit/my_credit",
+			"style": {
+				"navigationBarTitleText": "我的信用",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/feedback/feedback",
+			"style": {
+				"navigationBarTitleText": "帮助与反馈",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/address_management/address_management",
+			"style": {
+				"navigationBarTitleText": "地址管理",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/appeal/appeal",
+			"style": {
+				"navigationBarTitleText": "申诉",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/order_receiving_status/order_receiving_status",
+			"style": {
+				"navigationBarTitleText": "接单状态管理",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/withdraw_deposit/withdraw_deposit",
+			"style": {
+				"navigationBarTitleText": "提现",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/evaluation_service/evaluation_service",
+			"style": {
+				"navigationBarTitleText": "评价服务",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/split_order_details/split_order_details",
+			"style": {
+				"navigationBarTitleText": "拆分订单详情",
+				"navigationStyle": "custom"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "邻里互助",
+		"navigationBarBackgroundColor": "#FFFFFF",
+		"backgroundColor": "#F5F5F5"
+	},
+	"tabBar": {
+		"custom": true,
+		"color": "#999999",
+		"selectedColor": "#4A90D9",
+		"borderStyle": "white",
+		"backgroundColor": "#FFFFFF",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "首页",
+				"iconPath": "static/img/tabBar/home.png",
+				"selectedIconPath": "static/img/tabBar/home_pitch_on.png"
+			},
+			{
+				"pagePath": "pages/order/order",
+				"text": "需求/接单",
+				"iconPath": "static/img/tabBar/order.png",
+				"selectedIconPath": "static/img/tabBar/order_pitch_on.png"
+			},
+			{
+				"pagePath": "pages/news/news",
+				"text": "消息",
+				"iconPath": "static/img/tabBar/news.png",
+				"selectedIconPath": "static/img/tabBar/news_pitch_on.png"
+			},
+			{
+				"pagePath": "pages/my/my",
+				"text": "我的",
+				"iconPath": "static/img/tabBar/my.png",
+				"selectedIconPath": "static/img/tabBar/my.png"
+			}
+		]
+	},
+	"uniIdRouter": {}
+}
