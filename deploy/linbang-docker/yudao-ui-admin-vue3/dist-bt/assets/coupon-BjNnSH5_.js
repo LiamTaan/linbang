@@ -1,0 +1,1 @@
+import{un as e}from"./index-DzXA_nY_.js";var t=async t=>e.delete({url:`/promotion/coupon/delete?id=${t}`}),n=async t=>e.get({url:`/promotion/coupon/page`,params:t}),r=async t=>e.post({url:`/promotion/coupon/send`,data:t});export{n,r,t};

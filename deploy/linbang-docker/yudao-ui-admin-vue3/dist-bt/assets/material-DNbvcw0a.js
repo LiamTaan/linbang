@@ -1,0 +1,1 @@
+import{un as e}from"./index-DzXA_nY_.js";var t=t=>e.get({url:`/mp/material/page`,params:t}),n=t=>e.delete({url:`/mp/material/delete-permanent?id=`+t});export{t as n,n as t};

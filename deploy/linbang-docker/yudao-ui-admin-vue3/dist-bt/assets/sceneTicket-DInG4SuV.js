@@ -1,0 +1,1 @@
+import{un as e}from"./index-DzXA_nY_.js";var t=t=>e.post({url:`/system/auth/scene-ticket`,data:t}),n=t=>e.post({url:`/member/auth/scene-ticket`,data:t});export{n,t};

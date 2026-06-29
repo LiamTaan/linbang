@@ -440,6 +440,7 @@ WHERE `dict_type` IN (
   'lb_pricing_mode', 'lb_role_code', 'lb_audit_status', 'lb_order_status',
   'lb_order_unit_status', 'lb_pay_status', 'lb_refund_status',
   'lb_withdraw_status', 'lb_complaint_status', 'lb_appeal_status',
+  'lb_qualification_type',
   'lb_merchant_entry_status', 'lb_role_apply_status',
   'lb_price_report_audit_status', 'lb_message_push_task_status'
 );
@@ -448,6 +449,7 @@ DELETE FROM `system_dict_type`
     'lb_pricing_mode', 'lb_role_code', 'lb_audit_status', 'lb_order_status',
     'lb_order_unit_status', 'lb_pay_status', 'lb_refund_status',
     'lb_withdraw_status', 'lb_complaint_status', 'lb_appeal_status',
+    'lb_qualification_type',
     'lb_merchant_entry_status', 'lb_role_apply_status',
     'lb_price_report_audit_status', 'lb_message_push_task_status'
   );
@@ -487,7 +489,8 @@ VALUES
 (900017, '邻里互助消息已读状态', 'lb_message_read_status', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL),
 (900018, '邻里互助消息投放来源', 'lb_message_campaign_source_type', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL),
 (900019, '邻里互助消息投放审核状态', 'lb_message_campaign_audit_status', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL),
-(900020, '邻里互助消息投放目标模式', 'lb_message_target_mode', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL);
+(900020, '邻里互助消息投放目标模式', 'lb_message_target_mode', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL),
+(900021, '邻里互助资质类型', 'lb_qualification_type', 0, '邻里互助业务字典', 'admin', NOW(), 'admin', NOW(), b'0', NULL);
 
 INSERT INTO `system_dict_data`
 (`id`, `sort`, `label`, `value`, `dict_type`, `status`, `color_type`, `css_class`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
@@ -583,7 +586,17 @@ VALUES
 (910088, 4, '已取消', 'CANCELLED', 'lb_message_campaign_audit_status', 0, 'info', '', '投放已取消', 'admin', NOW(), 'admin', NOW(), b'0'),
 (910089, 1, '全平台', 'FULL_PLATFORM', 'lb_message_target_mode', 0, 'primary', '', '全平台用户', 'admin', NOW(), 'admin', NOW(), b'0'),
 (910090, 2, '辖区', 'JURISDICTION', 'lb_message_target_mode', 0, 'success', '', '按辖区定向', 'admin', NOW(), 'admin', NOW(), b'0'),
-(910091, 3, '自定义筛选', 'CUSTOM_FILTER', 'lb_message_target_mode', 0, 'warning', '', '按区域/类目/角色/时段筛选', 'admin', NOW(), 'admin', NOW(), b'0');
+(910091, 3, '自定义筛选', 'CUSTOM_FILTER', 'lb_message_target_mode', 0, 'warning', '', '按区域/类目/角色/时段筛选', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910093, 1, '营业执照', 'BUSINESS_LICENSE', 'lb_qualification_type', 0, 'primary', '', '企业/个体工商户营业执照', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910094, 2, '电工证', 'ELECTRICIAN', 'lb_qualification_type', 0, 'warning', '', '电工相关上岗资质', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910095, 3, '焊工证', 'WELDER', 'lb_qualification_type', 0, 'danger', '', '焊接作业相关资质', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910096, 4, '空调制冷证', 'HVAC_TECHNICIAN', 'lb_qualification_type', 0, 'info', '', '空调安装与制冷维修资质', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910097, 5, '管道作业证', 'PLUMBING_TECHNICIAN', 'lb_qualification_type', 0, 'success', '', '给排水、管道维修相关资质', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910098, 6, '保洁服务资质', 'CLEANING_SERVICE', 'lb_qualification_type', 0, 'primary', '', '专业保洁、清洗相关服务资质', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910099, 7, '安装服务资质', 'INSTALLATION_SERVICE', 'lb_qualification_type', 0, 'success', '', '家具、卫浴等安装服务资质', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910100, 8, '安全生产证', 'SAFETY_CERTIFICATE', 'lb_qualification_type', 0, 'danger', '', '安全生产、施工安全相关证件', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910101, 9, '特种作业操作证', 'SPECIAL_OPERATION', 'lb_qualification_type', 0, 'warning', '', '高处、电工作业等特种作业操作证', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910102, 10, '健康证', 'HEALTH_CERTIFICATE', 'lb_qualification_type', 0, 'info', '', '从业健康证明', 'admin', NOW(), 'admin', NOW(), b'0');
 
 INSERT INTO `lb_service_category`
 (`id`, `parent_id`, `category_name`, `category_level`, `sort_no`, `icon`, `default_pricing_mode`, `supported_pricing_modes`, `support_split`, `support_invoice`, `risk_level`, `labor_category_flag`, `force_agreement_type`, `invoice_rate_reminder_text`, `status`, `tenant_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)

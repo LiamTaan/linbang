@@ -3,6 +3,24 @@ import type { RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 import remainingRouter from './modules/remaining'
 
+const DYNAMIC_IMPORT_RETRY_KEY = '__route_dynamic_import_retry__'
+const DYNAMIC_IMPORT_ERROR_PATTERNS = [
+  'Failed to fetch dynamically imported module',
+  'Importing a module script failed'
+]
+
+const isDynamicImportFailure = (message: string) =>
+  DYNAMIC_IMPORT_ERROR_PATTERNS.some((pattern) => message.includes(pattern))
+
+const buildRetryUrl = (fullPath: string) => {
+  const url = new URL(fullPath, window.location.origin)
+  url.searchParams.set('__route_reload__', `${Date.now()}`)
+  return `${url.pathname}${url.search}${url.hash}`
+}
+
+export const getDynamicImportRetryCacheKey = (fullPath: string) =>
+  `${DYNAMIC_IMPORT_RETRY_KEY}:${fullPath}`
+
 // 创建路由实例
 const router = createRouter({
   history: createWebHistory(import.meta.env.VITE_BASE_PATH), // createWebHashHistory URL带#，createWebHistory URL不带#
@@ -21,11 +39,16 @@ const router = createRouter({
 
 // 处理动态导入失败（如重新构建后 chunk 哈希变化），自动跳转到目标页面
 router.onError((error, to) => {
-  if (
-    error.message.includes('Failed to fetch dynamically imported module') ||
-    error.message.includes('Importing a module script failed')
-  ) {
-    window.location.assign(to.fullPath)
+  if (isDynamicImportFailure(error.message)) {
+    const retryKey = getDynamicImportRetryCacheKey(to.fullPath)
+    const hasRetried = sessionStorage.getItem(retryKey) === '1'
+    if (hasRetried) {
+      sessionStorage.removeItem(retryKey)
+      console.error('[router] Dynamic import recovery failed after one retry:', to.fullPath, error)
+      return
+    }
+    sessionStorage.setItem(retryKey, '1')
+    window.location.replace(buildRetryUrl(to.fullPath))
   }
 })
 

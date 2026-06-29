@@ -1,4 +1,4 @@
-import router from './router'
+import router, { getDynamicImportRetryCacheKey } from './router'
 import type { RouteRecordRaw } from 'vue-router'
 import { isRelogin } from '@/config/axios/service'
 import { getAccessToken } from '@/utils/auth'
@@ -72,6 +72,16 @@ router.beforeEach(async (to, from, next) => {
 })
 
 router.afterEach((to) => {
+  sessionStorage.removeItem(getDynamicImportRetryCacheKey(to.fullPath))
+  const currentUrl = new URL(window.location.href)
+  if (currentUrl.searchParams.has('__route_reload__')) {
+    currentUrl.searchParams.delete('__route_reload__')
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
+    )
+  }
   useTitle(to?.meta?.title as string)
   done() // 结束Progress
   loadDone()

@@ -1,0 +1,1 @@
+import"./TabNews-BLEwUQ29.js";import{t as e}from"./main-zPs0a36D.js";var t=e;export{t};

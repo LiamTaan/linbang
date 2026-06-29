@@ -1,0 +1,1 @@
+import{un as e}from"./index-DzXA_nY_.js";var t=async t=>await e.get({url:`/trade/brokerage-record/page`,params:t});export{t};

@@ -1,0 +1,1 @@
+import{un as e}from"./index-DzXA_nY_.js";var t={getOrderSummary:async t=>await e.get({url:`/wms/home-statistics/order-summary`,params:t}),getOrderTrend:async(t,n)=>await e.get({url:`/wms/home-statistics/order-trend`,params:{...n,days:t}}),getInventorySummary:async t=>await e.get({url:`/wms/home-statistics/inventory-summary`,params:t})};export{t};
