@@ -1,0 +1,16 @@
+{
+  "id": "5194281",
+  "name": "邻里互助",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "12736667",
+      "name": "右箭头",
+      "font_class": "youjiantou",
+      "unicode": "e60a",
+      "unicode_decimal": 58890
+    }
+  ]
+}
