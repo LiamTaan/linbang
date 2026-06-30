@@ -86,8 +86,8 @@ spring:
   redis:
     host: 127.0.0.1 # 地址
     port: 6379 # 端口
-    database: 11 # 数据库索引
-#    password: dev # 密码，建议生产环境开启
+    database: 2 # 数据库索引
+    password: TanLiMing123! # 密码，建议生产环境开启
 
 --- #################### 定时任务相关配置 ####################
 
@@ -128,14 +128,14 @@ rocketmq:
 
 spring:
   # RabbitMQ 配置项，对应 RabbitProperties 配置类
-  rabbitmq:
-    host: 127.0.0.1 # RabbitMQ 服务的地址
-    port: 5672 # RabbitMQ 服务的端口
-    username: rabbit # RabbitMQ 服务的账号
-    password: rabbit # RabbitMQ 服务的密码
+#  rabbitmq:
+#    host: 127.0.0.1 # RabbitMQ 服务的地址
+#    port: 5672 # RabbitMQ 服务的端口
+#    username: rabbit # RabbitMQ 服务的账号
+#    password: rabbit # RabbitMQ 服务的密码
   # Kafka 配置项，对应 KafkaProperties 配置类
-  kafka:
-    bootstrap-servers: 127.0.0.1:9092 # 指定 Kafka Broker 地址，可以设置多个，以逗号分隔
+#  kafka:
+#    bootstrap-servers: 127.0.0.1:9092 # 指定 Kafka Broker 地址，可以设置多个，以逗号分隔
 
 --- #################### 服务保障相关配置 ####################
 
@@ -254,40 +254,40 @@ yudao:
       enabled: true
       base-url: https://restapi.amap.com
       key: ${AMAP_WEB_KEY:6fce091b3bc68b52bc2c8a5050d32f2e}
-  wxa-code:
-    env-version: develop # 小程序版本: 正式版为 "release"；体验版为 "trial"；开发版为 "develop"
-  wxa-subscribe-message:
-    miniprogram-state: developer # 跳转小程序类型：开发版为 “developer”；体验版为 “trial”为；正式版为 “formal”
-  tencent-lbs-key: TVDBZ-TDILD-4ON4B-PFDZA-RNLKH-VVF6E # QQ 地图的密钥 https://lbs.qq.com/service/staticV2/staticGuide/staticDoc
+#  wxa-code:
+#    env-version: develop # 小程序版本: 正式版为 "release"；体验版为 "trial"；开发版为 "develop"
+#  wxa-subscribe-message:
+#    miniprogram-state: developer # 跳转小程序类型：开发版为 “developer”；体验版为 “trial”为；正式版为 “formal”
+#  tencent-lbs-key: TVDBZ-TDILD-4ON4B-PFDZA-RNLKH-VVF6E # QQ 地图的密钥 https://lbs.qq.com/service/staticV2/staticGuide/staticDoc
 
 justauth:
   enabled: true
-  type:
-    DINGTALK: # 钉钉
-      client-id: dingvrnreaje3yqvzhxg
-      client-secret: i8E6iZyDvZj51JIb0tYsYfVQYOks9Cq1lgryEjFRqC79P3iJcrxEwT6Qk2QvLrLI
-      ignore-check-redirect-uri: true
-    WECHAT_ENTERPRISE: # 企业微信
-      client-id: wwd411c69a39ad2e54
-      client-secret: 1wTb7hYxnpT2TUbIeHGXGo7T0odav1ic10mLdyyATOw
-      agent-id: 1000004
-      ignore-check-redirect-uri: true
-    # noinspection SpringBootApplicationYaml
-    WECHAT_MINI_PROGRAM: # 微信小程序
-      client-id: ${wx.miniapp.appid}
-      client-secret: ${wx.miniapp.secret}
-      ignore-check-redirect-uri: true
-      ignore-check-state: true # 微信小程序，不会使用到 state，所以不进行校验
-    WECHAT_MP: # 微信公众号
-      client-id: ${wx.mp.app-id}
-      client-secret: ${wx.mp.secret}
-      ignore-check-redirect-uri: true
-    ALIPAY: # 支付宝小程序
-      client-id: xx
-      client-secret: xx
-      alipay-public-key: xx
-      ignore-check-redirect-uri: true
-      ignore-check-state: true
+#  type:
+#    DINGTALK: # 钉钉
+#      client-id: dingvrnreaje3yqvzhxg
+#      client-secret: i8E6iZyDvZj51JIb0tYsYfVQYOks9Cq1lgryEjFRqC79P3iJcrxEwT6Qk2QvLrLI
+#      ignore-check-redirect-uri: true
+#    WECHAT_ENTERPRISE: # 企业微信
+#      client-id: wwd411c69a39ad2e54
+#      client-secret: 1wTb7hYxnpT2TUbIeHGXGo7T0odav1ic10mLdyyATOw
+#      agent-id: 1000004
+#      ignore-check-redirect-uri: true
+#    # noinspection SpringBootApplicationYaml
+#    WECHAT_MINI_PROGRAM: # 微信小程序
+#      client-id: ${wx.miniapp.appid}
+#      client-secret: ${wx.miniapp.secret}
+#      ignore-check-redirect-uri: true
+#      ignore-check-state: true # 微信小程序，不会使用到 state，所以不进行校验
+#    WECHAT_MP: # 微信公众号
+#      client-id: ${wx.mp.app-id}
+#      client-secret: ${wx.mp.secret}
+#      ignore-check-redirect-uri: true
+#    ALIPAY: # 支付宝小程序
+#      client-id: xx
+#      client-secret: xx
+#      alipay-public-key: xx
+#      ignore-check-redirect-uri: true
+#      ignore-check-state: true
   cache:
     type: REDIS
     prefix: 'social_auth_state:' # 缓存前缀，目前只对 Redis 缓存生效，默认 JUSTAUTH::STATE::
