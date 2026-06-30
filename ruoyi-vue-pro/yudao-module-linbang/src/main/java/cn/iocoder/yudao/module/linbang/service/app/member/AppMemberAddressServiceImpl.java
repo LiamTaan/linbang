@@ -1,8 +1,11 @@
 package cn.iocoder.yudao.module.linbang.service.app.member;
 
+import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressCreateReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressResolveLocationReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressResolveLocationRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressUpdateReqVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberaddress.MemberUserAddressDO;
@@ -71,6 +74,26 @@ public class AppMemberAddressServiceImpl implements AppMemberAddressService {
                 .build();
         memberUserAddressMapper.insert(address);
         return address.getId();
+    }
+
+    @Override
+    public AppMemberAddressResolveLocationRespVO resolveLocation(AppMemberAddressResolveLocationReqVO reqVO) {
+        AmapLocationService.ResolvedAddress resolvedAddress = amapLocationService.resolveAddress(AmapLocationService.ResolveAddressRequest.builder()
+                .longitude(reqVO.getLongitude())
+                .latitude(reqVO.getLatitude())
+                .detailAddress(reqVO.getDetailAddress())
+                .build());
+        AppMemberAddressResolveLocationRespVO respVO = new AppMemberAddressResolveLocationRespVO();
+        respVO.setProvince(resolvedAddress.getProvince());
+        respVO.setCity(resolvedAddress.getCity());
+        respVO.setDistrict(resolvedAddress.getDistrict());
+        respVO.setStreet(resolvedAddress.getStreet());
+        respVO.setDetailAddress(StrUtil.blankToDefault(resolvedAddress.getDetailAddress(), reqVO.getDetailAddress()));
+        respVO.setLongitude(resolvedAddress.getLongitude());
+        respVO.setLatitude(resolvedAddress.getLatitude());
+        respVO.setAdcode(resolvedAddress.getAdcode());
+        respVO.setDisplayAddress(buildDisplayAddress(respVO));
+        return respVO;
     }
 
     @Override
@@ -153,5 +176,22 @@ public class AppMemberAddressServiceImpl implements AppMemberAddressService {
         respVO.setIsDefault(address.getIsDefault());
         respVO.setCreateTime(address.getCreateTime());
         return respVO;
+    }
+
+    private String buildDisplayAddress(AppMemberAddressResolveLocationRespVO respVO) {
+        StringBuilder builder = new StringBuilder();
+        appendIfPresent(builder, respVO.getProvince());
+        appendIfPresent(builder, respVO.getCity());
+        appendIfPresent(builder, respVO.getDistrict());
+        appendIfPresent(builder, respVO.getStreet());
+        appendIfPresent(builder, respVO.getDetailAddress());
+        return builder.toString();
+    }
+
+    private void appendIfPresent(StringBuilder builder, String value) {
+        String trimmed = StrUtil.trimToEmpty(value);
+        if (StrUtil.isNotBlank(trimmed)) {
+            builder.append(trimmed);
+        }
     }
 }

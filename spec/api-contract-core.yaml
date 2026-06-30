@@ -59,13 +59,49 @@ components:
     MemberRoleApply:
       type: object
       properties:
-        applyRoleCode: { type: string, description: 申请角色 PROMOTER/PARTNER/PLATFORM_OPERATOR }
+        applyRoleCode: { type: string, description: 申请角色 PROMOTER/PARTNER/PLATFORM_OPERATOR；服务商 MERCHANT 通过独立入驻流程开通 }
         applyReason: { type: string, description: 申请原因 }
         resourceDesc: { type: string, description: 资源说明；代理、推广员重点字段 }
         expectedConversionDesc: { type: string, description: 预期转化说明；推广员重点字段 }
-        abilityDesc: { type: string, description: 能力说明；平台运营重点字段 }
-        availableTimeDesc: { type: string, description: 可投入时间说明；平台运营重点字段 }
+        abilityDesc: { type: string, description: 能力说明；平台管理员重点字段 }
+        availableTimeDesc: { type: string, description: 可投入时间说明；平台管理员重点字段 }
         auditStatus: { type: string, description: 审核状态 PENDING/APPROVED/REJECTED }
+    MerchantEntry:
+      type: object
+      properties:
+        entryNo: { type: string, description: 服务商入驻单号 }
+        merchantId: { type: integer, format: int64, description: 关联服务商 ID }
+        merchantName: { type: string, description: 服务商名称 }
+        contactName: { type: string, description: 联系人 }
+        contactMobile: { type: string, description: 联系电话 }
+        regionCode: { type: string, description: 服务区域编码 }
+        serviceCategoryIds:
+          type: array
+          description: 服务类目 ID 列表
+          items: { type: integer, format: int64 }
+        qualificationIds:
+          type: array
+          description: 资质 ID 列表
+          items: { type: integer, format: int64 }
+        status: { type: string, description: 入驻状态 PENDING/FIRST_APPROVED/APPROVED/REJECTED }
+        progressStatus: { type: string, description: 进度状态 PENDING_FIRST_AUDIT/PENDING_FINAL_AUDIT/APPROVED_WAIT_BANK_CARD/APPROVED_ENABLED/REJECTED }
+        currentStageName: { type: string, description: 当前阶段名称 }
+        currentStageTime: { type: string, format: date-time, description: 当前阶段时间 }
+        rejectReason: { type: string, description: 驳回原因 }
+        onboardingBlockedReason: { type: string, description: 入驻阻塞原因 }
+        acceptEnabled: { type: boolean, description: 是否已开通接单 }
+        bankCardRequired: { type: boolean, description: 是否需要绑定银行卡后才能接单 }
+    MerchantOnboardingProgress:
+      type: object
+      properties:
+        entryId: { type: integer, format: int64, description: 入驻申请 ID }
+        progressStatus: { type: string, description: 进度状态 PENDING_FIRST_AUDIT/PENDING_FINAL_AUDIT/APPROVED_WAIT_BANK_CARD/APPROVED_ENABLED/REJECTED }
+        currentStageName: { type: string, description: 当前阶段名称 }
+        currentStageTime: { type: string, format: date-time, description: 当前阶段时间 }
+        rejectReason: { type: string, description: 驳回原因 }
+        blockedReason: { type: string, description: 当前阻塞原因 }
+        nextAction: { type: string, description: 下一步动作提示 }
+        acceptEnabled: { type: boolean, description: 是否已开通接单 }
     UserReminder:
       type: object
       properties:
@@ -141,6 +177,29 @@ components:
         status: { type: string, description: 退款状态 }
         successTime: { type: string, format: date-time, description: 退款成功时间 }
         channelErrorMsg: { type: string, description: 渠道失败原因 }
+    HelpFaq:
+      type: object
+      properties:
+        id: { type: integer, format: int64, description: 常见问题 ID }
+        categoryCode: { type: string, description: 常见问题分类编码 FUNDS 资金与提现、ORDER 订单相关、AUTH 认证与入驻、MATCH 抢单与匹配、PROMOTE 推广与佣金 }
+        categoryName: { type: string, description: 分类名称，App 常见问题入口展示 }
+        title: { type: string, description: 问题标题，支持 App 搜索 }
+        content: { type: string, description: 问题答案正文，说明规则、处理路径和注意事项 }
+        icon: { type: string, description: App 图标标识，例如 fund/order/verify/order_match/voice }
+        sortNo: { type: integer, description: 排序号，数值越小越靠前 }
+        status: { type: string, description: 状态 ENABLE 启用展示、DISABLE 停用隐藏 }
+    HelpFeedback:
+      type: object
+      properties:
+        id: { type: integer, format: int64, description: 反馈 ID }
+        userId: { type: integer, format: int64, description: 反馈用户 ID }
+        feedbackType: { type: string, description: 反馈分类，按平台配置展示，例如 功能建议、异常反馈、投诉建议 }
+        content: { type: string, description: 反馈内容 }
+        contactMobile: { type: string, description: 联系电话 }
+        attachmentUrls: { type: string, description: 附件地址，多个以逗号分隔 }
+        status: { type: string, description: 处理状态 PENDING 待处理、PROCESSING 处理中、FINISHED 已完结 }
+        handleRemark: { type: string, description: 处理备注 }
+        createTime: { type: string, format: date-time, description: 创建时间 }
     CommissionRecord:
       type: object
       properties:

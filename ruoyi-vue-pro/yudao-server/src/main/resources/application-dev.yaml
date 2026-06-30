@@ -1,4 +1,5 @@
 server:
+  address: 0.0.0.0
   port: 48080
 
 --- #################### 数据库相关配置 ####################
@@ -214,3 +215,8 @@ justauth:
     type: REDIS
     prefix: 'social_auth_state:' # 缓存前缀，目前只对 Redis 缓存生效，默认 JUSTAUTH::STATE::
     timeout: 24h # 超时时长，目前只对 Redis 缓存生效，默认 3 分钟
+
+linbang:
+  public-base-url: http://192.168.1.13:48080
+  message:
+    public-base-url: ${linbang.public-base-url}

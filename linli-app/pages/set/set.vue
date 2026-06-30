@@ -91,6 +91,7 @@ import { logout, sendSmsCode } from '@/api/auth'
 import { getProfile, updatePassword } from '@/api/member'
 import { getMessageSetting, updateMessageSetting } from '@/api/message'
 import { getPlatformSettings } from '@/utils/auth'
+import { loadPlatformSettings } from '@/services/app-bootstrap'
 import { logoutSession } from '@/services/session'
 
 function promptInput(title, placeholder = '') {
@@ -128,7 +129,7 @@ export default {
                 ])
                 this.profile = profile || {}
                 this.messageSetting = messageSetting || this.messageSetting
-                this.appSettings = getPlatformSettings() || {}
+                this.appSettings = await loadPlatformSettings(true).catch(() => getPlatformSettings() || {})
             } catch (error) {
             }
         },
@@ -140,6 +141,10 @@ export default {
             this.messageSetting = nextValue
             try {
                 await updateMessageSetting(nextValue)
+                uni.showToast({
+                    title: '设置已保存',
+                    icon: 'success'
+                })
             } catch (error) {
                 this.loadPageData()
             }

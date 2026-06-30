@@ -3,6 +3,8 @@ package cn.iocoder.yudao.module.linbang.controller.app.member.address;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressCreateReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressResolveLocationReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressResolveLocationRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressUpdateReqVO;
 import cn.iocoder.yudao.module.linbang.service.app.member.AppMemberAddressService;
@@ -43,6 +45,12 @@ public class AppMemberAddressController {
     @Operation(summary = "新增地址")
     public CommonResult<Long> createAddress(@Valid @RequestBody AppMemberAddressCreateReqVO reqVO) {
         return success(appMemberAddressService.createAddress(getLoginUserId(), reqVO));
+    }
+
+    @PostMapping("/resolve-location")
+    @Operation(summary = "根据坐标解析标准化地址")
+    public CommonResult<AppMemberAddressResolveLocationRespVO> resolveLocation(@Valid @RequestBody AppMemberAddressResolveLocationReqVO reqVO) {
+        return success(appMemberAddressService.resolveLocation(reqVO));
     }
 
     @PutMapping("/update")

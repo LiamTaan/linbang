@@ -64,6 +64,14 @@ export const HELP_FEEDBACK_STATUS_OPTIONS = [
   { label: '已完成', value: 'FINISHED' }
 ]
 
+export const HELP_FAQ_CATEGORY_OPTIONS = [
+  { label: '资金与提现', value: 'FUNDS' },
+  { label: '订单相关', value: 'ORDER' },
+  { label: '认证与入驻', value: 'AUTH' },
+  { label: '抢单与匹配', value: 'MATCH' },
+  { label: '推广与佣金', value: 'PROMOTE' }
+]
+
 export const RISK_EVENT_STATUS_OPTIONS = [
   { label: '待处理', value: 'PENDING' },
   { label: '已处理', value: 'HANDLED' },
@@ -345,6 +353,14 @@ const HELP_FEEDBACK_STATUS_LABELS: Record<string, string> = {
   FINISHED: '已完成'
 }
 
+const HELP_FAQ_CATEGORY_LABELS: Record<string, string> = {
+  FUNDS: '资金与提现',
+  ORDER: '订单相关',
+  AUTH: '认证与入驻',
+  MATCH: '抢单与匹配',
+  PROMOTE: '推广与佣金'
+}
+
 const RISK_EVENT_STATUS_LABELS: Record<string, string> = {
   PENDING: '待处理',
   HANDLED: '已处理',
@@ -530,6 +546,9 @@ export const formatHandleStatus = (value?: string) => formatValueByMap(value, HA
 
 export const formatHelpFeedbackStatus = (value?: string) =>
   formatValueByMap(value, HELP_FEEDBACK_STATUS_LABELS)
+
+export const formatHelpFaqCategory = (value?: string) =>
+  formatValueByMap(value, HELP_FAQ_CATEGORY_LABELS)
 
 export const formatRiskEventStatus = (value?: string) => formatValueByMap(value, RISK_EVENT_STATUS_LABELS)
 

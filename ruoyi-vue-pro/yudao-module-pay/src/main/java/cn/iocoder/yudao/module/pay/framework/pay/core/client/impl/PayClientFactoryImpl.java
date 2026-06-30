@@ -7,6 +7,7 @@ import cn.iocoder.yudao.module.pay.enums.PayChannelEnum;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.PayClient;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.PayClientConfig;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.PayClientFactory;
+import cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate.AggregatePayClient;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.alipay.*;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.wallet.WalletPayClient;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.weixin.*;
@@ -54,6 +55,8 @@ public class PayClientFactoryImpl implements PayClientFactory {
         clientClass.put(ALIPAY_APP, AlipayAppPayClient.class);
         clientClass.put(ALIPAY_PC, AlipayPcPayClient.class);
         clientClass.put(ALIPAY_BAR, AlipayBarPayClient.class);
+        // 聚合支付客户端
+        clientClass.put(AGGREGATE, AggregatePayClient.class);
         // 钱包支付客户端
         clientClass.put(WALLET, WalletPayClient.class);
         // Mock 支付客户端

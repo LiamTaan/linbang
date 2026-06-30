@@ -48,6 +48,8 @@ public class PlatformConfigServiceImpl implements PlatformConfigService {
         respVO.setTaxReminder(getValue(PlatformConfigKeyConstants.APP_TAX_REMINDER));
         respVO.setLicenseAgentEntryTitle(getValue(PlatformConfigKeyConstants.APP_LICENSE_AGENT_ENTRY_TITLE));
         respVO.setLicenseAgentEntryUrl(getValue(PlatformConfigKeyConstants.APP_LICENSE_AGENT_ENTRY_URL));
+        respVO.setAmapJsKey(getValue(PlatformConfigKeyConstants.APP_AMAP_JS_KEY));
+        respVO.setAmapSecurityJsCode(getValue(PlatformConfigKeyConstants.APP_AMAP_SECURITY_JS_CODE));
         respVO.setOrderPriceDetailEnabled(getBooleanValue(PlatformConfigKeyConstants.APP_ORDER_PRICE_DETAIL_ENABLED, true));
         respVO.setMallEntryEnabled(getBooleanValue(PlatformConfigKeyConstants.APP_MALL_ENTRY_ENABLED, false));
         respVO.setMallEntryTitle(getValue(PlatformConfigKeyConstants.APP_MALL_ENTRY_TITLE));

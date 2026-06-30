@@ -10,6 +10,7 @@ import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteCente
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteTemplatePageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteTemplateRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteTeamStatsRespVO;
+import cn.iocoder.yudao.module.linbang.constants.PromoterLevelConstants;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.commissionorder.CommissionOrderDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.messagetemplate.MessageTemplateDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.promoter.PromoterDO;
@@ -49,8 +50,9 @@ public class AppPromoteServiceImpl implements AppPromoteService {
         List<CommissionOrderDO> commissionOrders = recentPage.getList();
         AppPromoteCenterRespVO respVO = BeanUtils.toBean(promoter, AppPromoteCenterRespVO.class);
         respVO.setPromoterId(promoter.getId());
-        respVO.setLevelName(resolvePromoterLevelName(promoter.getLevelCode()));
-        respVO.setUpgradeConditionDesc(resolveUpgradeConditionDesc(promoter.getLevelCode()));
+        respVO.setLevelCode(resolvePromoterLevelCode(promoter));
+        respVO.setLevelName(resolvePromoterLevelName(promoter));
+        respVO.setUpgradeConditionDesc(resolveUpgradeConditionDesc(promoter));
         respVO.setNextLevelNeedMetric(resolveNextLevelNeedMetric(promoter));
         respVO.setPendingCommissionCount(countByStatus(commissionOrders, "PENDING"));
         respVO.setSettledCommissionCount(countByStatus(commissionOrders, "SETTLED"));
@@ -221,35 +223,55 @@ public class AppPromoteServiceImpl implements AppPromoteService {
         return respVO;
     }
 
-    private String resolvePromoterLevelName(String levelCode) {
-        if ("PROMOTER_SENIOR".equalsIgnoreCase(levelCode) || "SENIOR".equalsIgnoreCase(levelCode)) {
+    private String resolvePromoterLevelCode(PromoterDO promoter) {
+        int bindUserCount = defaultInt(promoter.getBindUserCount());
+        if (bindUserCount >= PromoterLevelConstants.PROMOTER_SENIOR_THRESHOLD) {
+            return PromoterLevelConstants.LEVEL_CODE_SENIOR;
+        }
+        if (bindUserCount >= PromoterLevelConstants.PROMOTER_MIDDLE_THRESHOLD) {
+            return PromoterLevelConstants.LEVEL_CODE_MIDDLE;
+        }
+        return PromoterLevelConstants.LEVEL_CODE_PRIMARY;
+    }
+
+    private String resolvePromoterLevelName(PromoterDO promoter) {
+        int bindUserCount = defaultInt(promoter.getBindUserCount());
+        if (bindUserCount >= PromoterLevelConstants.PROMOTER_SENIOR_THRESHOLD) {
             return "高级推广员";
         }
-        if ("PROMOTER_MIDDLE".equalsIgnoreCase(levelCode) || "MIDDLE".equalsIgnoreCase(levelCode)) {
+        if (bindUserCount >= PromoterLevelConstants.PROMOTER_MIDDLE_THRESHOLD) {
             return "中级推广员";
         }
         return "初级推广员";
     }
 
-    private String resolveUpgradeConditionDesc(String levelCode) {
-        if ("PROMOTER_SENIOR".equalsIgnoreCase(levelCode) || "SENIOR".equalsIgnoreCase(levelCode)) {
+    private String resolveUpgradeConditionDesc(PromoterDO promoter) {
+        int bindUserCount = defaultInt(promoter.getBindUserCount());
+        if (bindUserCount >= PromoterLevelConstants.PROMOTER_SENIOR_THRESHOLD) {
             return "当前已是最高等级，继续保持活跃转化和稳定服务。";
         }
-        if ("PROMOTER_MIDDLE".equalsIgnoreCase(levelCode) || "MIDDLE".equalsIgnoreCase(levelCode)) {
-            return "累计绑定 50 人且累计转化 20 单可升级高级推广员。";
+        if (bindUserCount >= PromoterLevelConstants.PROMOTER_MIDDLE_THRESHOLD) {
+            return "累计推广 50 人可升级高级推广员。";
         }
-        return "累计绑定 10 人且累计转化 5 单可升级中级推广员。";
+        return "累计推广 10 人可升级中级推广员。";
     }
 
     private String resolveNextLevelNeedMetric(PromoterDO promoter) {
-        int bindUserCount = promoter.getBindUserCount() == null ? 0 : promoter.getBindUserCount();
-        int convertCount = promoter.getConvertCount() == null ? 0 : promoter.getConvertCount();
-        if ("PROMOTER_SENIOR".equalsIgnoreCase(promoter.getLevelCode()) || "SENIOR".equalsIgnoreCase(promoter.getLevelCode())) {
-            return "已达到最高等级";
+        int bindUserCount = defaultInt(promoter.getBindUserCount());
+        if (bindUserCount >= PromoterLevelConstants.PROMOTER_SENIOR_THRESHOLD) {
+            return "已推广 " + bindUserCount + " 人，已达到最高等级";
         }
-        if ("PROMOTER_MIDDLE".equalsIgnoreCase(promoter.getLevelCode()) || "MIDDLE".equalsIgnoreCase(promoter.getLevelCode())) {
-            return "还差绑定 " + Math.max(0, 50 - bindUserCount) + " 人，转化 " + Math.max(0, 20 - convertCount) + " 单";
+        if (bindUserCount >= PromoterLevelConstants.PROMOTER_MIDDLE_THRESHOLD) {
+            return "已推广 " + bindUserCount + "/" + PromoterLevelConstants.PROMOTER_SENIOR_THRESHOLD + " 人，还差 "
+                    + Math.max(0, PromoterLevelConstants.PROMOTER_SENIOR_THRESHOLD - bindUserCount)
+                    + " 人可升级高级推广员";
         }
-        return "还差绑定 " + Math.max(0, 10 - bindUserCount) + " 人，转化 " + Math.max(0, 5 - convertCount) + " 单";
+        return "已推广 " + bindUserCount + "/" + PromoterLevelConstants.PROMOTER_MIDDLE_THRESHOLD + " 人，还差 "
+                + Math.max(0, PromoterLevelConstants.PROMOTER_MIDDLE_THRESHOLD - bindUserCount)
+                + " 人可升级中级推广员";
+    }
+
+    private Integer defaultInt(Integer value) {
+        return value == null ? 0 : value;
     }
 }

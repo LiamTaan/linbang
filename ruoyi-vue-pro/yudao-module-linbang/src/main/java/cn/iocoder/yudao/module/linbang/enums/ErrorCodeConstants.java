@@ -22,16 +22,17 @@ public interface ErrorCodeConstants {
     ErrorCode MEMBER_QUALIFICATION_EXPIRED = new ErrorCode(1_099_001_009, "服务资质已过期，暂不允许接单");
     ErrorCode MEMBER_ROLE_APPLY_ROLE_CODE_INVALID = new ErrorCode(1_099_001_010, "当前申请角色不受支持");
     ErrorCode MEMBER_ROLE_APPLY_PENDING_EXISTS = new ErrorCode(1_099_001_011, "当前角色已有待审核申请，请勿重复提交");
-    ErrorCode USER_REMINDER_NOT_EXISTS = new ErrorCode(1_099_001_012, "用户提醒不存在");
-    ErrorCode USER_REMINDER_TYPE_INVALID = new ErrorCode(1_099_001_013, "当前提醒类型不支持创建或修改");
-    ErrorCode USER_REMINDER_EVENT_TIME_INVALID = new ErrorCode(1_099_001_014, "提醒时间不合法");
-    ErrorCode MEMBER_USER_MOBILE_DUPLICATED = new ErrorCode(1_099_001_015, "手机号已被注册");
-    ErrorCode MEMBER_USER_USERNAME_DUPLICATED = new ErrorCode(1_099_001_016, "用户名已被占用");
-    ErrorCode MEMBER_USER_PASSWORD_INVALID = new ErrorCode(1_099_001_017, "账号或密码错误");
-    ErrorCode MEMBER_USER_REGISTER_AGREEMENT_REQUIRED = new ErrorCode(1_099_001_018, "请先确认注册协议");
-    ErrorCode MEMBER_USER_ACCOUNT_TYPE_INVALID = new ErrorCode(1_099_001_019, "当前账户类型不受支持");
-    ErrorCode MEMBER_USER_BUSINESS_LICENSE_REQUIRED = new ErrorCode(1_099_001_020, "企业注册必须上传营业执照");
-    ErrorCode MEMBER_ROLE_SWITCH_NOT_ALLOWED = new ErrorCode(1_099_001_021, "当前角色尚未开通或不允许切换");
+    ErrorCode MEMBER_ROLE_APPLY_ALREADY_EXISTS = new ErrorCode(1_099_001_012, "当前角色已开通或正在审核中，请勿重复提交");
+    ErrorCode USER_REMINDER_NOT_EXISTS = new ErrorCode(1_099_001_013, "用户提醒不存在");
+    ErrorCode USER_REMINDER_TYPE_INVALID = new ErrorCode(1_099_001_014, "当前提醒类型不支持创建或修改");
+    ErrorCode USER_REMINDER_EVENT_TIME_INVALID = new ErrorCode(1_099_001_015, "提醒时间不合法");
+    ErrorCode MEMBER_USER_MOBILE_DUPLICATED = new ErrorCode(1_099_001_016, "手机号已被注册");
+    ErrorCode MEMBER_USER_USERNAME_DUPLICATED = new ErrorCode(1_099_001_017, "用户名已被占用");
+    ErrorCode MEMBER_USER_PASSWORD_INVALID = new ErrorCode(1_099_001_018, "账号或密码错误");
+    ErrorCode MEMBER_USER_REGISTER_AGREEMENT_REQUIRED = new ErrorCode(1_099_001_019, "请先确认注册协议");
+    ErrorCode MEMBER_USER_ACCOUNT_TYPE_INVALID = new ErrorCode(1_099_001_020, "当前账户类型不受支持");
+    ErrorCode MEMBER_USER_BUSINESS_LICENSE_REQUIRED = new ErrorCode(1_099_001_021, "企业注册必须上传营业执照");
+    ErrorCode MEMBER_ROLE_SWITCH_NOT_ALLOWED = new ErrorCode(1_099_001_022, "当前角色尚未开通或不允许切换");
 
     // ========== MERCHANT 模块 1-099-002-000 ==========
     ErrorCode MERCHANT_SERVICE_CATEGORY_NOT_EXISTS = new ErrorCode(1_099_002_000, "服务类目不存在");
@@ -46,6 +47,7 @@ public interface ErrorCodeConstants {
     ErrorCode MERCHANT_SERVICE_CATEGORY_IN_USE = new ErrorCode(1_099_002_009, "当前服务类目已关联服务商，无法删除");
     ErrorCode MERCHANT_SUB_ACCOUNT_DISABLED = new ErrorCode(1_099_002_010, "当前子账号已被禁用");
     ErrorCode MERCHANT_SUB_ACCOUNT_PERMISSION_DENIED = new ErrorCode(1_099_002_011, "当前子账号无权执行该操作");
+    ErrorCode MERCHANT_ENTRY_ALREADY_EXISTS = new ErrorCode(1_099_002_012, "当前服务商入驻已提交或已开通，请勿重复申请");
 
     // ========== RISK 模块 1-099-003-000 ==========
     ErrorCode RISK_RULE_NOT_EXISTS = new ErrorCode(1_099_003_000, "风控规则不存在");
@@ -116,6 +118,7 @@ public interface ErrorCodeConstants {
     ErrorCode WALLET_BANK_CARD_INVALID = new ErrorCode(1_099_005_005, "银行卡不存在或无权使用");
     ErrorCode WALLET_AVAILABLE_AMOUNT_NOT_ENOUGH = new ErrorCode(1_099_005_006, "钱包可提现余额不足");
     ErrorCode WALLET_WITHDRAW_AMOUNT_INVALID = new ErrorCode(1_099_005_007, "提现金额不合法");
+    ErrorCode WALLET_WITHDRAW_TRANSFER_UNSUPPORTED = new ErrorCode(1_099_005_008, "聚合支付暂未提供提现打款接口，请走人工处理或等待渠道补充接口");
 
     // ========== REVIEW 模块 1-099-006-000 ==========
     ErrorCode COMPLAINT_NOT_EXISTS = new ErrorCode(1_099_006_000, "投诉单不存在");
@@ -165,6 +168,7 @@ public interface ErrorCodeConstants {
     ErrorCode PARTNER_COORDINATION_NOT_EXISTS = new ErrorCode(1_099_007_032, "合作商协调记录不存在");
     ErrorCode PARTNER_ROLE_REQUIRED = new ErrorCode(1_099_007_033, "当前账号未开通区域合作商身份");
     ErrorCode MEMBER_USER_RESTRICT_STATUS_INVALID = new ErrorCode(1_099_007_034, "当前用户限制状态不允许执行该操作");
+    ErrorCode HELP_FAQ_NOT_EXISTS = new ErrorCode(1_099_007_035, "常见问题不存在");
 
     // ========== CONTENT / SENSITIVE 模块 1-099-009-000 ==========
     ErrorCode CONTENT_SENSITIVE_BLOCKED = new ErrorCode(1_099_009_000, "内容包含敏感信息，已被拦截");

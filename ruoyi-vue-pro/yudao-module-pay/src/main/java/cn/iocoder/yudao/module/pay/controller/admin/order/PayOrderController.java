@@ -10,15 +10,10 @@ import cn.iocoder.yudao.module.pay.controller.admin.order.vo.*;
 import cn.iocoder.yudao.module.pay.convert.order.PayOrderConvert;
 import cn.iocoder.yudao.module.pay.dal.dataobject.app.PayAppDO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.order.PayOrderDO;
-import cn.iocoder.yudao.module.pay.dal.dataobject.order.PayOrderExtensionDO;
-import cn.iocoder.yudao.module.pay.dal.dataobject.wallet.PayWalletDO;
 import cn.iocoder.yudao.module.pay.enums.PayChannelEnum;
 import cn.iocoder.yudao.module.pay.enums.order.PayOrderStatusEnum;
-import cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.wallet.WalletPayClient;
 import cn.iocoder.yudao.module.pay.service.app.PayAppService;
 import cn.iocoder.yudao.module.pay.service.order.PayOrderService;
-import cn.iocoder.yudao.module.pay.service.wallet.PayWalletService;
-import com.google.common.collect.Maps;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -34,14 +29,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import static cn.iocoder.yudao.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
 import static cn.iocoder.yudao.framework.common.util.servlet.ServletUtils.getClientIP;
-import static cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserId;
-import static cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType;
 
 @Tag(name = "管理后台 - 支付订单")
 @RestController
@@ -53,8 +45,6 @@ public class PayOrderController {
     private PayOrderService orderService;
     @Resource
     private PayAppService appService;
-    @Resource
-    private PayWalletService payWalletService;
 
     @GetMapping("/get")
     @Operation(summary = "获得支付订单")
@@ -84,18 +74,9 @@ public class PayOrderController {
     }
 
     @PostMapping("/submit")
-    @Operation(summary = "提交支付订单")
+    @Operation(summary = "提交支付订单", description = "邻里互助统一使用第三方聚合支付通道；管理端传入的微信、支付宝、钱包等渠道编码会被忽略")
     public CommonResult<PayOrderSubmitRespVO> submitPayOrder(@RequestBody PayOrderSubmitReqVO reqVO) {
-        // 1. 钱包支付事，需要额外传 user_id 和 user_type
-        if (Objects.equals(reqVO.getChannelCode(), PayChannelEnum.WALLET.getCode())) {
-            if (reqVO.getChannelExtras() == null) {
-                reqVO.setChannelExtras(Maps.newHashMapWithExpectedSize(1));
-            }
-            PayWalletDO wallet = payWalletService.getOrCreateWallet(getLoginUserId(), getLoginUserType());
-            reqVO.getChannelExtras().put(WalletPayClient.WALLET_ID_KEY, String.valueOf(wallet.getId()));
-        }
-
-        // 2. 提交支付
+        reqVO.setChannelCode(PayChannelEnum.AGGREGATE.getCode());
         PayOrderSubmitRespVO respVO = orderService.submitOrder(reqVO, getClientIP());
         return success(respVO);
     }

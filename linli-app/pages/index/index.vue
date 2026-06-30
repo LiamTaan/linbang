@@ -11,16 +11,25 @@
         </view>
 
         <view class="map-area">
-            <image class="map-bg" src="/static/img/home/map@3x.png" mode="aspectFill" />
+            <!-- #ifdef H5 -->
+            <view id="home-amap" class="amap-container"></view>
+            <view v-if="mapStatusText" class="map-status">
+                <text class="map-status-text">{{ mapStatusText }}</text>
+            </view>
+            <!-- #endif -->
+            <!-- #ifndef H5 -->
+            <map class="native-map" :longitude="mapCenter.longitude" :latitude="mapCenter.latitude"
+                :markers="mapMarkers" scale="15" show-location></map>
+            <!-- #endif -->
         </view>
 
         <view class="main-content">
-            <view class="top-gradient"></view>
-
             <view class="search-box">
-                <image class="search-icon" src="/static/img/home/search@3x.png" />
-                <input class="search-input" placeholder="搜索服务类目" v-model="searchText" confirm-type="search"
-                    @confirm="handleSearch" />
+                <view class="search-input-wrap">
+                    <image class="search-icon" src="/static/img/home/search@3x.png" />
+                    <input class="search-input" placeholder="快速搜索您的需求" v-model="searchText" confirm-type="search"
+                        @confirm="handleSearch" />
+                </view>
                 <view class="search-btn" @click="handleSearch">
                     <text class="search-text">搜索</text>
                 </view>
@@ -28,7 +37,7 @@
 
             <scroll-view class="content-scroll" scroll-y refresher-enabled :refresher-triggered="refreshing"
                 @refresherrefresh="handleRefresh">
-                <view class="category-section">
+                <view class="surface-card category-section" v-if="level1Categories.length">
                     <scroll-view class="category-scroll" scroll-x :show-scrollbar="false">
                         <view class="category-scroll-content">
                             <view v-for="item in level1Categories" :key="item.id" class="category-item"
@@ -55,7 +64,11 @@
                     </scroll-view>
                 </view>
 
-                <view class="pricing-section">
+                <view class="surface-card category-section category-empty" v-else>
+                    <text class="category-empty-text">服务类目加载中，请稍后下拉刷新</text>
+                </view>
+
+                <view class="surface-card pricing-section">
                     <text class="section-title">计价方式</text>
                     <view class="pricing-options">
                         <view v-for="item in pricingOptions" :key="item.value" class="pricing-item"
@@ -65,19 +78,12 @@
                     </view>
                 </view>
 
-                <view class="order-section">
+                <view class="surface-card order-section">
                     <text class="section-title">订单信息</text>
 
                     <view class="form-item">
                         <view class="select-box" @click="handleSelectAddress">
-                            <text class="select-text">{{ selectedAddressLabel || '从地址簿选择服务地址' }}</text>
-                            <text class="select-arrow">▼</text>
-                        </view>
-                    </view>
-
-                    <view class="form-item">
-                        <view class="select-box" @click="handleAgreement">
-                            <text class="select-text">{{ form.province && form.city ? regionText : '查看交易保障与协议' }}</text>
+                            <text class="select-text">{{ selectedAddressLabel || '请选择服务地址' }}</text>
                             <text class="select-arrow">▼</text>
                         </view>
                     </view>
@@ -86,24 +92,15 @@
                         <input class="input-box" placeholder="请输入详细地址" v-model="form.detailAddress" />
                     </view>
 
-                    <view class="form-row">
+                    <view class="form-row compact-row">
                         <view class="form-item small">
-                            <input class="input-box" placeholder="工期/时长" v-model="form.serviceDurationDesc" />
+                            <input class="input-box compact-input" placeholder="工期" v-model="form.serviceDurationDesc" />
                         </view>
                         <view class="form-item small">
-                            <input class="input-box" type="digit" placeholder="数量" v-model="form.quantity" />
+                            <input class="input-box compact-input" type="digit" placeholder="数量" v-model="form.quantity" />
                         </view>
                         <view class="form-item small">
-                            <input class="input-box" type="digit" placeholder="预算金额" v-model="form.budgetAmount" />
-                        </view>
-                    </view>
-
-                    <view class="form-row">
-                        <view class="form-item small">
-                            <input class="input-box" type="number" placeholder="服务人数" v-model="form.workerCount" />
-                        </view>
-                        <view class="form-item small grow">
-                            <input class="input-box" placeholder="价格明细名称（选填）" v-model="form.priceItemName" />
+                            <input class="input-box compact-input" type="digit" placeholder="预算金额" v-model="form.budgetAmount" />
                         </view>
                     </view>
 
@@ -118,8 +115,8 @@
                             <view class="remove-upload" @click="removeUpload(index)">×</view>
                         </view>
                         <view class="upload-box" @click="handleUpload">
-                            <image class="upload-icon" src="/static/img/home/plus@3x.png" />
-                            <text class="upload-text">{{ uploading ? '上传中' : '上传图片' }}</text>
+                            <text class="upload-icon">+</text>
+                            <text class="upload-text">{{ uploading ? '上传中' : '+上传图片' }}</text>
                         </view>
                     </view>
 
@@ -132,19 +129,27 @@
                             v-if="previewResult.invoiceImpactReminder">{{ previewResult.invoiceImpactReminder }}</text>
                     </view>
 
+                    <view class="safety-tip" @click="handleAgreement">
+                        <text class="safety-tip-label">交易保障</text>
+                        <text class="safety-tip-text">{{ guaranteeConfig.projectEscrowAgreementTitle || '工程托管协议' }}</text>
+                        <text class="safety-tip-arrow">></text>
+                    </view>
+
                     <view class="checkbox-list">
                         <view class="checkbox-item">
                             <view class="checkbox" :class="{ checked: form.needInvoice }" @click="toggleInvoice">
                                 <text v-if="form.needInvoice" class="check-icon">✓</text>
                             </view>
-                            <text class="checkbox-text">是否开票<text class="hint">(会按类目配置影响展示提醒)</text></text>
+                            <text class="checkbox-text">是否开票</text>
+                            <text class="hint">（注意是否开票会影响您的最终接单费率）</text>
                         </view>
 
                         <view class="checkbox-item">
                             <view class="checkbox" :class="{ checked: form.needSplit }" @click="toggleSplit">
                                 <text v-if="form.needSplit" class="check-icon">✓</text>
                             </view>
-                            <text class="checkbox-text">希望拆单<text class="hint">(后端会按规则判断是否真正拆分)</text></text>
+                            <text class="checkbox-text">订单拆分</text>
+                            <text class="hint">（按条件拆分订单）</text>
                         </view>
                     </view>
 
@@ -156,6 +161,17 @@
                         <text class="agreement-link" @click.stop="handleAgreement">
                             《{{ guaranteeConfig.projectEscrowAgreementTitle || '工程托管协议' }}》
                         </text>
+                    </view>
+
+                    <view class="extra-fields">
+                        <view class="form-row">
+                            <view class="form-item small">
+                                <input class="input-box" type="number" placeholder="服务人数" v-model="form.workerCount" />
+                            </view>
+                            <view class="form-item small grow">
+                                <input class="input-box" placeholder="价格明细名称（选填）" v-model="form.priceItemName" />
+                            </view>
+                        </view>
                     </view>
                 </view>
 
@@ -178,10 +194,13 @@
 
 <script>
 import tabBar from '@/components/tabBar/tabBar.vue'
-import { getAddressPage, getRoleContext, switchRole } from '@/api/member'
+import { getAddressPage, getRoleContext, resolveAddressLocation, switchRole } from '@/api/member'
 import { uploadAppFile } from '@/api/infra'
 import { getServiceCategoryList } from '@/api/merchant'
 import { createOrder, getGuaranteeConfig, previewOrder } from '@/api/order'
+import { getAppSettings } from '@/api/platform'
+import { getPlatformSettings, hasLogin, setPlatformSettings } from '@/utils/auth'
+import { getAmapJsKey, getAmapSecurityJsCode } from '@/config/app'
 import {
     buildAddressText,
     extractUploadedFile,
@@ -203,6 +222,11 @@ function findCategoryById(list, id) {
     return null
 }
 
+const DEFAULT_MAP_CENTER = {
+    longitude: 113.94352,
+    latitude: 22.540503
+}
+
 export default {
     components: {
         tabBar
@@ -211,6 +235,7 @@ export default {
         return {
             searchText: '',
             refreshing: false,
+            locating: false,
             uploading: false,
             submitting: false,
             categories: [],
@@ -219,6 +244,19 @@ export default {
             guaranteeConfig: {},
             previewResult: {},
             uploadedFiles: [],
+            mapStatusText: '',
+            mapCenter: { ...DEFAULT_MAP_CENTER },
+            mapMarkers: [{
+                id: 1,
+                longitude: DEFAULT_MAP_CENTER.longitude,
+                latitude: DEFAULT_MAP_CENTER.latitude,
+                width: 28,
+                height: 36
+            }],
+            amap: null,
+            amapMarker: null,
+            amapLoadingPromise: null,
+            mapInitialized: false,
             selectedLevel1Id: null,
             selectedLevel2Id: null,
             selectedLevel3Id: null,
@@ -296,14 +334,144 @@ export default {
         uni.hideTabBar()
         this.loadPageData()
     },
+    beforeUnmount() {
+        if (this.amap && this.amap.destroy) {
+            this.amap.destroy()
+        }
+        this.amap = null
+        this.amapMarker = null
+        this.mapInitialized = false
+    },
     methods: {
+        initHomeMap() {
+            this.updateMapCenter(this.mapCenter.longitude, this.mapCenter.latitude)
+            if (this.mapInitialized) {
+                return
+            }
+            this.mapInitialized = true
+            // #ifdef H5
+            this.initH5Amap()
+            // #endif
+        },
+        initH5Amap() {
+            this.loadAmapScript()
+                .then((AMap) => {
+                    if (this.amap) {
+                        return
+                    }
+                    this.mapStatusText = ''
+                    this.amap = new AMap.Map('home-amap', {
+                        center: [this.mapCenter.longitude, this.mapCenter.latitude],
+                        zoom: 15,
+                        resizeEnable: true,
+                        animateEnable: false,
+                        jogEnable: false,
+                        pitchEnable: false,
+                        rotateEnable: false,
+                        showIndoorMap: false,
+                        features: ['bg', 'road', 'point'],
+                        mapStyle: 'amap://styles/normal'
+                    })
+                    this.amapMarker = new AMap.Marker({
+                        position: [this.mapCenter.longitude, this.mapCenter.latitude],
+                        anchor: 'bottom-center'
+                    })
+                    this.amap.add(this.amapMarker)
+                })
+                .catch((error) => {
+                    this.mapStatusText = (error && error.message) || '地图加载失败'
+                })
+        },
+        async loadAmapScript() {
+            if (typeof window === 'undefined' || typeof document === 'undefined') {
+                return Promise.reject(new Error('当前环境不支持 H5 地图'))
+            }
+            if (window.AMap) {
+                return Promise.resolve(window.AMap)
+            }
+            if (this.amapLoadingPromise) {
+                return this.amapLoadingPromise
+            }
+            let settings = getPlatformSettings() || {}
+            if (!getAmapJsKey(settings)) {
+                settings = await getAppSettings().then((value) => setPlatformSettings(value || {})).catch(() => settings)
+            }
+            const key = getAmapJsKey(settings)
+            const securityJsCode = getAmapSecurityJsCode(settings)
+            if (!key) {
+                return Promise.reject(new Error('请配置高德 JS API Key'))
+            }
+            if (securityJsCode) {
+                window._AMapSecurityConfig = {
+                    securityJsCode
+                }
+            }
+            this.mapStatusText = '地图加载中'
+            this.amapLoadingPromise = new Promise((resolve, reject) => {
+                const script = document.createElement('script')
+                script.src = `https://webapi.amap.com/maps?v=1.4.15&key=${encodeURIComponent(key)}`
+                script.async = true
+                script.onload = () => {
+                    if (window.AMap) {
+                        resolve(window.AMap)
+                        return
+                    }
+                    reject(new Error('高德地图 SDK 加载异常'))
+                }
+                script.onerror = () => reject(new Error('高德地图 SDK 加载失败'))
+                document.head.appendChild(script)
+            }).finally(() => {
+                this.amapLoadingPromise = null
+            })
+            return this.amapLoadingPromise
+        },
+        updateMapCenter(longitude, latitude) {
+            const lng = this.normalizeCoordinate(longitude)
+            const lat = this.normalizeCoordinate(latitude)
+            if (!lng || !lat) {
+                return
+            }
+            const currentLng = this.normalizeCoordinate(this.mapCenter.longitude)
+            const currentLat = this.normalizeCoordinate(this.mapCenter.latitude)
+            const centerUnchanged = currentLng && currentLat
+                && Math.abs(currentLng - lng) < 0.000001
+                && Math.abs(currentLat - lat) < 0.000001
+            this.mapCenter = {
+                longitude: lng,
+                latitude: lat
+            }
+            this.mapMarkers = [{
+                ...this.mapMarkers[0],
+                longitude: lng,
+                latitude: lat
+            }]
+            // #ifdef H5
+            if (this.amap && !centerUnchanged) {
+                const position = [lng, lat]
+                this.amap.setCenter(position)
+                if (this.amapMarker) {
+                    this.amapMarker.setPosition(position)
+                }
+            } else if (this.amapMarker && !centerUnchanged) {
+                this.amapMarker.setPosition([lng, lat])
+            }
+            // #endif
+        },
         async loadPageData(keyword = '') {
             try {
+                const loggedIn = hasLogin()
+                const normalizedKeyword = `${keyword || ''}`.trim()
                 const [categories, addressPage, guaranteeConfig, roleContext] = await Promise.all([
-                    getServiceCategoryList(keyword).catch(() => []),
-                    getAddressPage({ pageNo: 1, pageSize: 50 }).catch(() => ({ list: [] })),
-                    getGuaranteeConfig().catch(() => ({})),
-                    getRoleContext().catch(() => ({}))
+                    getServiceCategoryList(normalizedKeyword, { silent: true }).catch(() => []),
+                    loggedIn
+                        ? getAddressPage({ pageNo: 1, pageSize: 50 }, { silent: true }).catch(() => ({ list: [] }))
+                        : Promise.resolve({ list: [] }),
+                    loggedIn
+                        ? getGuaranteeConfig({ silent: true }).catch(() => ({}))
+                        : Promise.resolve({}),
+                    loggedIn
+                        ? getRoleContext({ silent: true }).catch(() => ({}))
+                        : Promise.resolve({})
                 ])
                 this.categories = categories || []
                 this.addressList = (addressPage && addressPage.list) || []
@@ -313,6 +481,7 @@ export default {
                 this.ensureAddressSelection()
             } catch (error) {
             } finally {
+                this.initHomeMap()
                 this.refreshing = false
             }
         },
@@ -391,8 +560,37 @@ export default {
             this.form.longitude = address.longitude || ''
             this.form.latitude = address.latitude || ''
             this.form.adcode = address.adcode || ''
+            this.updateMapCenter(address.longitude, address.latitude)
+            this.previewResult = {}
         },
         handleSelectAddress() {
+            const itemList = []
+            const actions = []
+            if (this.addressList.length) {
+                itemList.push('从地址簿选择')
+                actions.push(() => this.handleSelectSavedAddress())
+            }
+            itemList.push('使用当前位置')
+            actions.push(() => this.handleUseCurrentLocation())
+            itemList.push('地图选点')
+            actions.push(() => this.handleChooseMapLocation())
+            itemList.push('前往地址管理')
+            actions.push(() => {
+                uni.navigateTo({
+                    url: '/pages/address_management/address_management'
+                })
+            })
+            uni.showActionSheet({
+                itemList,
+                success: ({ tapIndex }) => {
+                    const action = actions[tapIndex]
+                    if (action) {
+                        action()
+                    }
+                }
+            })
+        },
+        handleSelectSavedAddress() {
             if (!this.addressList.length) {
                 uni.showModal({
                     title: '暂无地址',
@@ -421,9 +619,208 @@ export default {
                     const address = this.addressList[tapIndex]
                     if (address) {
                         this.applyAddress(address)
-                        this.previewResult = {}
                     }
                 }
+            })
+        },
+        async handleUseCurrentLocation() {
+            if (this.locating) {
+                return
+            }
+            try {
+                this.locating = true
+                uni.showLoading({
+                    title: '定位中',
+                    mask: true
+                })
+                const location = await this.requestCurrentLocation()
+                await this.resolvePickedLocation(location)
+            } catch (error) {
+                this.handleLocationError(error, '定位失败，请确认定位权限已开启')
+            } finally {
+                uni.hideLoading()
+                this.locating = false
+            }
+        },
+        async handleChooseMapLocation() {
+            if (this.locating) {
+                return
+            }
+            try {
+                this.locating = true
+                const location = await this.requestMapLocation()
+                uni.showLoading({
+                    title: '解析地址',
+                    mask: true
+                })
+                await this.resolvePickedLocation(location)
+            } catch (error) {
+                this.handleLocationError(error, '地图选点失败，请稍后重试')
+            } finally {
+                uni.hideLoading()
+                this.locating = false
+            }
+        },
+        requestCurrentLocation() {
+            // #ifdef H5
+            if (typeof navigator !== 'undefined' && navigator.geolocation) {
+                return this.requestBrowserLocation()
+            }
+            // #endif
+            return new Promise((resolve, reject) => {
+                uni.getLocation({
+                    type: 'gcj02',
+                    geocode: true,
+                    isHighAccuracy: true,
+                    success: resolve,
+                    fail: reject
+                })
+            })
+        },
+        requestBrowserLocation() {
+            return new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const coords = position && position.coords
+                        resolve({
+                            ...this.toGcj02Coordinate(coords && coords.longitude, coords && coords.latitude),
+                            accuracy: coords && coords.accuracy,
+                            source: 'browser'
+                        })
+                    },
+                    (error) => {
+                        reject(new Error(this.getBrowserLocationErrorMessage(error)))
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 30000
+                    }
+                )
+            })
+        },
+        toGcj02Coordinate(longitude, latitude) {
+            const lng = Number(longitude)
+            const lat = Number(latitude)
+            if (Number.isNaN(lng) || Number.isNaN(lat)) {
+                return {
+                    longitude,
+                    latitude
+                }
+            }
+            if (lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271) {
+                return {
+                    longitude: lng,
+                    latitude: lat
+                }
+            }
+            const pi = 3.1415926535897932384626
+            const a = 6378245.0
+            const ee = 0.00669342162296594323
+            const transformLat = (x, y) => {
+                let ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x))
+                ret += (20.0 * Math.sin(6.0 * x * pi) + 20.0 * Math.sin(2.0 * x * pi)) * 2.0 / 3.0
+                ret += (20.0 * Math.sin(y * pi) + 40.0 * Math.sin(y / 3.0 * pi)) * 2.0 / 3.0
+                ret += (160.0 * Math.sin(y / 12.0 * pi) + 320 * Math.sin(y * pi / 30.0)) * 2.0 / 3.0
+                return ret
+            }
+            const transformLng = (x, y) => {
+                let ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x))
+                ret += (20.0 * Math.sin(6.0 * x * pi) + 20.0 * Math.sin(2.0 * x * pi)) * 2.0 / 3.0
+                ret += (20.0 * Math.sin(x * pi) + 40.0 * Math.sin(x / 3.0 * pi)) * 2.0 / 3.0
+                ret += (150.0 * Math.sin(x / 12.0 * pi) + 300.0 * Math.sin(x / 30.0 * pi)) * 2.0 / 3.0
+                return ret
+            }
+            let dLat = transformLat(lng - 105.0, lat - 35.0)
+            let dLng = transformLng(lng - 105.0, lat - 35.0)
+            const radLat = lat / 180.0 * pi
+            let magic = Math.sin(radLat)
+            magic = 1 - ee * magic * magic
+            const sqrtMagic = Math.sqrt(magic)
+            dLat = (dLat * 180.0) / ((a * (1 - ee)) / (magic * sqrtMagic) * pi)
+            dLng = (dLng * 180.0) / (a / sqrtMagic * Math.cos(radLat) * pi)
+            return {
+                longitude: lng + dLng,
+                latitude: lat + dLat
+            }
+        },
+        requestMapLocation() {
+            return new Promise((resolve, reject) => {
+                uni.chooseLocation({
+                    success: resolve,
+                    fail: reject
+                })
+            })
+        },
+        async resolvePickedLocation(location) {
+            const payload = {
+                longitude: this.normalizeCoordinate(location.longitude),
+                latitude: this.normalizeCoordinate(location.latitude),
+                detailAddress: this.extractLocationDetail(location)
+            }
+            if (!payload.longitude || !payload.latitude) {
+                throw new Error('未获取到有效坐标')
+            }
+            const resolved = await resolveAddressLocation(payload)
+            this.applyAddress({
+                ...resolved,
+                detailAddress: resolved.detailAddress || payload.detailAddress
+            })
+        },
+        extractLocationDetail(location) {
+            if (!location) {
+                return ''
+            }
+            const candidates = []
+            const poiName = `${location.poiName || ''}`.trim()
+            const name = `${location.name || ''}`.trim()
+            const address = `${location.address || ''}`.trim()
+            const streetLine = `${location.street || ''}${location.streetNum || ''}`.trim()
+            if (poiName) {
+                candidates.push(poiName)
+            }
+            if (name && !['当前位置', '我的位置'].includes(name)) {
+                candidates.push(name)
+            }
+            if (streetLine) {
+                candidates.push(streetLine)
+            }
+            if (address) {
+                candidates.push(address)
+            }
+            return candidates.find(Boolean) || ''
+        },
+        normalizeCoordinate(value) {
+            if (value === '' || value === undefined || value === null) {
+                return ''
+            }
+            const numberValue = Number(value)
+            if (Number.isNaN(numberValue)) {
+                return ''
+            }
+            return numberValue
+        },
+        getBrowserLocationErrorMessage(error) {
+            const code = error && error.code
+            if (code === 1) {
+                return '浏览器定位权限被拒绝，请在地址栏重新允许定位'
+            }
+            if (code === 2) {
+                return '浏览器暂时无法获取当前位置，请检查系统定位服务'
+            }
+            if (code === 3) {
+                return '浏览器定位超时，请稍后重试'
+            }
+            return '浏览器不支持定位或当前环境不可用'
+        },
+        handleLocationError(error, defaultMessage) {
+            const message = `${(error && (error.errMsg || error.message)) || ''}`
+            if (/cancel/i.test(message)) {
+                return
+            }
+            uni.showToast({
+                title: message || defaultMessage,
+                icon: 'none'
             })
         },
         async handleUpload() {
@@ -696,11 +1093,11 @@ export default {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: #F5F5F5;
+    background: linear-gradient(180deg, #eff3f8 0%, #f7f8fb 26%, #f3f5f9 100%);
     padding-bottom: 120rpx;
 
     .header {
-        padding: 60rpx 30rpx 20rpx;
+        padding: 56rpx 26rpx 0;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -711,15 +1108,15 @@ export default {
         z-index: 100;
 
         .location-btn {
-            gap: 8rpx;
-            background: #FFFFFF;
-            border-radius: 25rpx;
-            opacity: 0.9;
-            padding: 13rpx 15rpx;
+            gap: 10rpx;
+            background: rgba(255, 255, 255, 0.94);
+            border-radius: 32rpx;
+            padding: 14rpx 22rpx;
             display: flex;
             align-items: center;
             justify-content: center;
             max-width: 520rpx;
+            box-shadow: 0 12rpx 26rpx rgba(34, 53, 86, 0.1);
 
             .location-icon,
             .location-text {
@@ -733,16 +1130,19 @@ export default {
 
             .location-text {
                 font-size: 24rpx;
-                color: #333333;
+                color: #2b3b51;
             }
         }
 
         .role-switch {
-            width: 43rpx;
-            height: 45rpx;
+            width: 68rpx;
+            height: 68rpx;
             display: flex;
             align-items: center;
             justify-content: center;
+            border-radius: 34rpx;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 12rpx 26rpx rgba(34, 53, 86, 0.1);
 
             .switch-icon {
                 width: 48rpx;
@@ -752,88 +1152,148 @@ export default {
     }
 
     .map-area {
-        height: 400rpx;
+        height: 500rpx;
         width: 100%;
-        background: #E8F4FD;
+        position: relative;
+        overflow: hidden;
+        background: #e7f4ff;
 
-        .map-bg {
+        .amap-container,
+        .native-map {
+            position: absolute;
+            inset: 0;
             width: 100%;
             height: 100%;
+        }
+
+        .amap-container :deep(.amap-logo) {
+            bottom: 116rpx !important;
+        }
+
+        .amap-container :deep(.amap-copyright) {
+            bottom: 112rpx !important;
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 170rpx;
+            background: linear-gradient(180deg, rgba(231, 244, 255, 0) 0%, #f7f8fb 100%);
+        }
+
+        .map-status {
+            position: absolute;
+            left: 50%;
+            top: 188rpx;
+            z-index: 2;
+            min-width: 300rpx;
+            max-width: 560rpx;
+            transform: translateX(-50%);
+            padding: 18rpx 24rpx;
+            border-radius: 18rpx;
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 14rpx 30rpx rgba(33, 72, 108, 0.12);
+            text-align: center;
+
+            .map-status-text {
+                font-size: 24rpx;
+                color: #40546d;
+                line-height: 32rpx;
+            }
         }
     }
 
     .main-content {
-        background: #fff;
-        border-radius: 40rpx 40rpx 0 0;
-        margin-top: -60rpx;
+        margin-top: -86rpx;
         position: relative;
         z-index: 10;
-        min-height: calc(100vh - 340rpx);
-        padding-top: 50rpx;
-
-        .top-gradient {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 100rpx;
-            background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
-            z-index: 5;
-        }
+        min-height: calc(100vh - 414rpx);
+        padding: 0 22rpx;
 
         .search-box {
             display: flex;
             align-items: center;
-            background: #EDF5FF;
-            border-radius: 12rpx;
-            padding: 0 20rpx;
-            margin: 0 30rpx 20rpx;
-            position: relative;
-            z-index: 10;
+            gap: 18rpx;
+            padding: 18rpx 20rpx;
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 22rpx;
+            margin-bottom: 18rpx;
+            box-shadow: 0 18rpx 36rpx rgba(64, 88, 122, 0.12);
 
-            .search-icon {
-                width: 36rpx;
-                height: 36rpx;
-                margin-right: 16rpx;
-            }
-
-            .search-input {
+            .search-input-wrap {
                 flex: 1;
-                height: 80rpx;
-                font-size: 28rpx;
-                color: #333;
+                height: 74rpx;
+                display: flex;
+                align-items: center;
+                background: #eef4fd;
+                border-radius: 16rpx;
+                padding: 0 20rpx;
+
+                .search-icon {
+                    width: 32rpx;
+                    height: 32rpx;
+                    margin-right: 14rpx;
+                }
+
+                .search-input {
+                    flex: 1;
+                    height: 100%;
+                    font-size: 27rpx;
+                    color: #304258;
+                }
             }
 
             .search-btn {
-                background: #FA9D3B;
-                padding: 16rpx 32rpx;
-                border-radius: 30rpx;
+                width: 128rpx;
+                height: 74rpx;
+                background: linear-gradient(180deg, #ffbf72 0%, #fa9d3b 100%);
+                border-radius: 16rpx;
+                display: flex;
+                align-items: center;
+                justify-content: center;
 
                 .search-text {
                     font-size: 28rpx;
                     color: #fff;
-                    font-weight: bold;
+                    font-weight: 600;
                 }
             }
         }
 
         .content-scroll {
             flex: 1;
-            padding: 0 30rpx;
             box-sizing: border-box;
 
-            .category-section,
-            .pricing-section,
-            .order-section {
+            .surface-card {
                 background: #fff;
-                border-radius: 16rpx;
-                padding: 20rpx;
-                margin-bottom: 20rpx;
+                border-radius: 24rpx;
+                padding: 22rpx 24rpx;
+                margin-bottom: 18rpx;
+                box-shadow: 0 12rpx 30rpx rgba(54, 74, 106, 0.08);
+            }
+
+            .category-section {
+                padding-top: 18rpx;
+                padding-bottom: 12rpx;
+            }
+
+            .category-empty {
+                min-height: 112rpx;
+                display: flex;
+                align-items: center;
+
+                .category-empty-text {
+                    font-size: 24rpx;
+                    color: #8d99aa;
+                }
             }
 
             .category-scroll {
                 white-space: nowrap;
-                margin-bottom: 16rpx;
+                margin-bottom: 14rpx;
 
                 &:last-child {
                     margin-bottom: 0;
@@ -841,63 +1301,72 @@ export default {
 
                 .category-scroll-content {
                     display: inline-flex;
-                    gap: 16rpx;
+                    gap: 18rpx;
+                    padding-right: 16rpx;
                 }
 
                 .category-item {
-                    padding: 7rpx 16rpx;
+                    padding: 8rpx 18rpx;
                     white-space: nowrap;
                     flex-shrink: 0;
-                    border-radius: 50rpx;
+                    border-radius: 999rpx;
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    background: transparent;
 
                     &.active {
-                        background: #BEDAFF;
+                        background: #b9d9ff;
 
                         .category-text {
-                            color: #2E83F0;
+                            color: #2f7de8;
+                            font-weight: 600;
                         }
                     }
 
                     .category-text {
                         font-size: 24rpx;
-                        color: #333333;
+                        color: #2d3a4f;
                     }
                 }
             }
 
             .section-title {
-                font-size: 28rpx;
-                font-weight: bold;
-                color: #333;
+                font-size: 30rpx;
+                font-weight: 600;
+                color: #253248;
                 display: block;
-                margin-bottom: 20rpx;
+                margin-bottom: 18rpx;
             }
 
             .pricing-options {
                 display: flex;
-                gap: 16rpx;
+                gap: 14rpx;
                 flex-wrap: wrap;
 
                 .pricing-item {
-                    padding: 10rpx 18rpx;
-                    border-radius: 10rpx;
-                    background: #FFDCB4;
+                    min-width: 92rpx;
+                    padding: 8rpx 16rpx;
+                    border-radius: 12rpx;
+                    background: #ffe7c8;
                     display: flex;
                     align-items: center;
+                    justify-content: center;
 
                     &.active {
-                        background: #F9A23F;
+                        background: #f8b15d;
                     }
 
                     .pricing-text {
-                        font-size: 20rpx;
+                        font-size: 21rpx;
                         color: #FFFFFF;
-                        line-height: 20rpx;
+                        line-height: 24rpx;
                     }
                 }
+            }
+
+            .order-section {
+                position: relative;
             }
 
             .form-item {
@@ -915,67 +1384,90 @@ export default {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    min-height: 80rpx;
-                    padding: 20rpx;
-                    border: 1px solid #CDCDCD;
-                    border-radius: 8rpx;
+                    min-height: 74rpx;
+                    padding: 0 22rpx;
+                    border: 2rpx solid #e9edf3;
+                    border-radius: 16rpx;
+                    background: #fff;
 
                     .select-text {
-                        font-size: 28rpx;
-                        color: #666;
+                        flex: 1;
+                        font-size: 26rpx;
+                        color: #607087;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
                     }
 
                     .select-arrow {
-                        font-size: 20rpx;
-                        color: #999;
+                        margin-left: 20rpx;
+                        font-size: 18rpx;
+                        color: #8f9caf;
                     }
                 }
 
                 .input-box {
                     width: 100%;
-                    height: 80rpx;
-                    padding: 0 20rpx;
-                    border: 1px solid #CDCDCD;
-                    border-radius: 8rpx;
-                    font-size: 28rpx;
-                    color: #333;
+                    height: 74rpx;
+                    padding: 0 22rpx;
+                    border: 2rpx solid #e9edf3;
+                    border-radius: 16rpx;
+                    font-size: 26rpx;
+                    color: #2f3b4f;
+                    background: #fff;
                     box-sizing: border-box;
+                }
+
+                .compact-input {
+                    height: 64rpx;
+                    border-radius: 14rpx;
+                    text-align: center;
+                    padding: 0 12rpx;
+                    font-size: 24rpx;
                 }
 
                 .textarea-box {
                     width: 100%;
-                    height: 200rpx;
-                    padding: 20rpx;
-                    border: 1px solid #CDCDCD;
-                    border-radius: 8rpx;
-                    font-size: 28rpx;
-                    color: #333;
+                    height: 168rpx;
+                    padding: 20rpx 22rpx;
+                    border: 2rpx solid #e9edf3;
+                    border-radius: 16rpx;
+                    font-size: 26rpx;
+                    color: #2f3b4f;
+                    background: #fff;
                     box-sizing: border-box;
                 }
             }
 
             .form-row {
                 display: flex;
-                gap: 16rpx;
-                margin-bottom: 16rpx;
+                gap: 14rpx;
+                margin-bottom: 14rpx;
+            }
+
+            .compact-row {
+                margin-bottom: 18rpx;
             }
 
             .upload-list {
                 display: flex;
                 flex-wrap: wrap;
-                gap: 16rpx;
-                margin-bottom: 20rpx;
+                gap: 14rpx;
+                margin-bottom: 18rpx;
 
                 .upload-preview,
                 .upload-box {
-                    width: 140rpx;
-                    height: 140rpx;
-                    border-radius: 8rpx;
+                    width: calc((100% - 28rpx) / 3);
+                    aspect-ratio: 1 / 1;
+                    min-height: 132rpx;
+                    border-radius: 18rpx;
+                    box-sizing: border-box;
                 }
 
                 .upload-preview {
                     position: relative;
                     overflow: hidden;
+                    background: #f3f6fb;
 
                     .upload-preview-image {
                         width: 100%;
@@ -1003,30 +1495,42 @@ export default {
                     align-items: center;
                     justify-content: center;
                     gap: 12rpx;
-                    border: 2rpx dashed #D9D9D9;
+                    border: 2rpx solid #dde5f1;
+                    background: #fbfcfe;
 
                     .upload-icon {
-                        width: 40rpx;
-                        height: 40rpx;
+                        width: 32rpx;
+                        height: 32rpx;
+                        border-radius: 50%;
+                        line-height: 30rpx;
+                        text-align: center;
+                        border: 2rpx solid #6c8fbe;
+                        color: #4f75aa;
+                        font-size: 30rpx;
+                        font-weight: 300;
                     }
 
                     .upload-text {
-                        font-size: 24rpx;
-                        color: #999;
+                        font-size: 20rpx;
+                        color: #5d79a7;
                     }
                 }
             }
 
             .preview-summary {
-                background: #F6FAFF;
-                border-radius: 12rpx;
-                padding: 20rpx;
-                margin-bottom: 20rpx;
+                min-height: 132rpx;
+                background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%);
+                border-radius: 22rpx;
+                padding: 20rpx 18rpx;
+                box-sizing: border-box;
+                margin-bottom: 18rpx;
+            }
 
+            .preview-summary {
                 .preview-title {
                     font-size: 26rpx;
-                    color: #2E83F0;
-                    font-weight: bold;
+                    color: #2f7de8;
+                    font-weight: 600;
                     display: block;
                     margin-bottom: 12rpx;
                 }
@@ -1034,7 +1538,7 @@ export default {
                 .preview-line {
                     display: block;
                     font-size: 24rpx;
-                    color: #666;
+                    color: #617286;
                     margin-bottom: 8rpx;
 
                     &:last-child {
@@ -1043,46 +1547,81 @@ export default {
                 }
             }
 
+            .safety-tip {
+                min-height: 68rpx;
+                border-radius: 16rpx;
+                background: #f7fafc;
+                display: flex;
+                align-items: center;
+                padding: 0 20rpx;
+                margin-bottom: 18rpx;
+
+                .safety-tip-label {
+                    font-size: 24rpx;
+                    color: #7b8b9d;
+                    margin-right: 16rpx;
+                }
+
+                .safety-tip-text {
+                    flex: 1;
+                    font-size: 24rpx;
+                    color: #2f3b4f;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .safety-tip-arrow {
+                    margin-left: 16rpx;
+                    font-size: 24rpx;
+                    color: #8f9caf;
+                }
+            }
+
             .checkbox-list {
                 margin-bottom: 20rpx;
 
                 .checkbox-item {
                     display: flex;
-                    align-items: center;
-                    gap: 12rpx;
+                    align-items: flex-start;
+                    gap: 10rpx;
                     margin-bottom: 16rpx;
+                    flex-wrap: wrap;
 
                     &:last-child {
                         margin-bottom: 0;
                     }
 
                     .checkbox {
-                        width: 36rpx;
-                        height: 36rpx;
-                        border: 2rpx solid #FA9D3B;
+                        width: 30rpx;
+                        height: 30rpx;
+                        border: 2rpx solid #f4aa4a;
                         border-radius: 6rpx;
                         display: flex;
                         align-items: center;
                         justify-content: center;
+                        margin-top: 4rpx;
 
                         &.checked {
-                            background: #FA9D3B;
+                            background: #f4aa4a;
 
                             .check-icon {
                                 color: #fff;
-                                font-size: 22rpx;
+                                font-size: 18rpx;
                             }
                         }
                     }
 
                     .checkbox-text {
-                        font-size: 26rpx;
-                        color: #333;
+                        font-size: 24rpx;
+                        color: #4b586c;
+                        line-height: 34rpx;
+                    }
 
-                        .hint {
-                            font-size: 22rpx;
-                            color: #999;
-                        }
+                    .hint {
+                        font-size: 22rpx;
+                        color: #f0a44f;
+                        line-height: 34rpx;
                     }
                 }
             }
@@ -1090,23 +1629,24 @@ export default {
             .agreement-item {
                 display: flex;
                 align-items: center;
-                gap: 8rpx;
+                gap: 10rpx;
+                margin-bottom: 18rpx;
 
                 .checkbox {
-                    width: 36rpx;
-                    height: 36rpx;
-                    border: 2rpx solid #4A90F0;
+                    width: 28rpx;
+                    height: 28rpx;
+                    border: 2rpx solid #4385f4;
                     border-radius: 6rpx;
                     display: flex;
                     align-items: center;
                     justify-content: center;
 
                     &.checked {
-                        background: #4A90F0;
+                        background: #4385f4;
 
                         .check-icon {
                             color: #fff;
-                            font-size: 22rpx;
+                            font-size: 18rpx;
                         }
                     }
                 }
@@ -1117,36 +1657,43 @@ export default {
                 }
 
                 .agreement-text {
-                    color: #666;
+                    color: #91a0b2;
                 }
 
                 .agreement-link {
-                    color: #4A90F0;
+                    color: #4385f4;
                 }
+            }
+
+            .extra-fields {
+                margin-top: -4rpx;
             }
 
             .bottom-btns {
                 display: flex;
-                gap: 20rpx;
-                margin-bottom: 20rpx;
+                gap: 28rpx;
+                margin: 8rpx 4rpx 20rpx;
 
                 .bottom-btn {
                     flex: 1;
-                    padding: 28rpx;
+                    height: 72rpx;
                     border-radius: 12rpx;
                     text-align: center;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
 
                     &.preview-btn {
                         background: #fff;
-                        border: 2rpx solid #4A90F0;
+                        border: 2rpx solid #75a9f9;
 
                         .btn-text {
-                            color: #4A90F0;
+                            color: #3e86f2;
                         }
                     }
 
                     &.publish-btn {
-                        background: #4A90F0;
+                        background: linear-gradient(180deg, #4f96f9 0%, #327dea 100%);
 
                         .btn-text {
                             color: #fff;
@@ -1155,13 +1702,13 @@ export default {
 
                     .btn-text {
                         font-size: 30rpx;
-                        font-weight: bold;
+                        font-weight: 600;
                     }
                 }
             }
 
             .bottom-space {
-                height: 60rpx;
+                height: 80rpx;
             }
         }
     }

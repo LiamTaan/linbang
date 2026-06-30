@@ -9,13 +9,9 @@ import cn.iocoder.yudao.module.pay.controller.admin.order.vo.PayOrderSubmitRespV
 import cn.iocoder.yudao.module.pay.controller.app.order.vo.AppPayOrderSubmitReqVO;
 import cn.iocoder.yudao.module.pay.controller.app.order.vo.AppPayOrderSubmitRespVO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.order.PayOrderDO;
-import cn.iocoder.yudao.module.pay.dal.dataobject.wallet.PayWalletDO;
 import cn.iocoder.yudao.module.pay.enums.PayChannelEnum;
 import cn.iocoder.yudao.module.pay.enums.order.PayOrderStatusEnum;
-import cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.wallet.WalletPayClient;
 import cn.iocoder.yudao.module.pay.service.order.PayOrderService;
-import cn.iocoder.yudao.module.pay.service.wallet.PayWalletService;
-import com.google.common.collect.Maps;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -25,12 +21,10 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.Objects;
 
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
 import static cn.iocoder.yudao.framework.common.util.servlet.ServletUtils.getClientIP;
 import static cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserId;
-import static cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType;
 
 @Tag(name = "用户 APP - 支付订单")
 @RestController
@@ -41,8 +35,6 @@ public class AppPayOrderController {
 
     @Resource
     private PayOrderService payOrderService;
-    @Resource
-    private PayWalletService payWalletService;
 
     @GetMapping("/get")
     @Operation(summary = "获得支付订单")
@@ -80,18 +72,9 @@ public class AppPayOrderController {
     }
 
     @PostMapping("/submit")
-    @Operation(summary = "提交支付订单")
+    @Operation(summary = "提交支付订单", description = "邻里互助统一使用第三方聚合支付通道；请求中的微信、支付宝、钱包等展示选择不会改变底层支付渠道")
     public CommonResult<AppPayOrderSubmitRespVO> submitPayOrder(@RequestBody AppPayOrderSubmitReqVO reqVO) {
-        // 1. 钱包支付事，需要额外传 user_id 和 user_type
-        if (Objects.equals(reqVO.getChannelCode(), PayChannelEnum.WALLET.getCode())) {
-            if (reqVO.getChannelExtras() == null) {
-                reqVO.setChannelExtras(Maps.newHashMapWithExpectedSize(1));
-            }
-            PayWalletDO wallet = payWalletService.getOrCreateWallet(getLoginUserId(), getLoginUserType());
-            reqVO.getChannelExtras().put(WalletPayClient.WALLET_ID_KEY, String.valueOf(wallet.getId()));
-        }
-
-        // 2. 提交支付
+        reqVO.setChannelCode(PayChannelEnum.AGGREGATE.getCode());
         PayOrderSubmitRespVO respVO = payOrderService.submitOrder(reqVO, getClientIP());
         return success(BeanUtils.toBean(respVO, AppPayOrderSubmitRespVO.class));
     }

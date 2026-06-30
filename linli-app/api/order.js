@@ -8,20 +8,20 @@ export function createOrder(data) {
   return post('/order/info/create', data)
 }
 
-export function getGuaranteeConfig() {
-  return get('/order/guarantee-config')
+export function getGuaranteeConfig(options = {}) {
+  return get('/order/guarantee-config', {}, options)
 }
 
 export function matchSplitRule(params) {
   return get('/order/split-rule/match', params)
 }
 
-export function getAcceptOrderPage(params) {
-  return get('/order/accept/page', params)
+export function getAcceptOrderPage(params, options = {}) {
+  return get('/order/accept/page', params, options)
 }
 
-export function getOrderPage(params) {
-  return get('/order/info/page', params)
+export function getOrderPage(params, options = {}) {
+  return get('/order/info/page', params, options)
 }
 
 export function getOrderDetail(id) {

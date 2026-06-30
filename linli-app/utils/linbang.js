@@ -41,6 +41,21 @@ export const APPEAL_TYPE_OPTIONS = [
   '其他'
 ]
 
+export const CREDIT_LEVEL_OPTIONS = [
+  { label: '预警', value: 'WARNING' },
+  { label: '正常', value: 'NORMAL' },
+  { label: '优秀', value: 'EXCELLENT' },
+  { label: '禁用', value: 'DISABLED' }
+]
+
+export const ROLE_APPLY_STATUS_OPTIONS = [
+  { label: '可申请', value: 'AVAILABLE' },
+  { label: '审核中', value: 'PENDING' },
+  { label: '已开通', value: 'ENABLED' },
+  { label: '已通过', value: 'APPROVED' },
+  { label: '已驳回', value: 'REJECTED' }
+]
+
 const PRICING_MODE_LABELS = PRICING_MODE_OPTIONS.reduce((acc, item) => {
   acc[item.value] = item.label
   return acc
@@ -82,6 +97,16 @@ const VERIFY_STATUS_LABELS = {
   VERIFIED: '已核销'
 }
 
+const CREDIT_LEVEL_LABELS = CREDIT_LEVEL_OPTIONS.reduce((acc, item) => {
+  acc[item.value] = item.label
+  return acc
+}, {})
+
+const ROLE_APPLY_STATUS_LABELS = ROLE_APPLY_STATUS_OPTIONS.reduce((acc, item) => {
+  acc[item.value] = item.label
+  return acc
+}, {})
+
 export function getPricingModeLabel(value) {
   return PRICING_MODE_LABELS[value] || value || '--'
 }
@@ -100,6 +125,25 @@ export function getDispatchStatusLabel(value) {
 
 export function getVerifyStatusLabel(value) {
   return VERIFY_STATUS_LABELS[value] || value || '--'
+}
+
+export function getCreditLevelLabel(value) {
+  return CREDIT_LEVEL_LABELS[value] || value || '--'
+}
+
+export function getRoleApplyStatusLabel(value) {
+  return ROLE_APPLY_STATUS_LABELS[value] || value || '--'
+}
+
+export function getRoleApplyName(code) {
+  const roleNames = {
+    PROMOTER: '推广员',
+    PARTNER: '区域合作商',
+    PLATFORM_OPERATOR: '平台管理员（请使用管理后台）',
+    MERCHANT: '服务商',
+    USER: '普通用户'
+  }
+  return roleNames[code] || code || '--'
 }
 
 export function buildAddressText(address) {

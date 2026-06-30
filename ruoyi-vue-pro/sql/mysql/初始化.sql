@@ -32,6 +32,8 @@ DELETE FROM `infra_config` WHERE `config_key` IN (
   'linbang.app.tax-reminder',
   'linbang.app.license-agent-entry-url',
   'linbang.app.license-agent-entry-title',
+  'linbang.app.amap-js-key',
+  'linbang.app.amap-security-js-code',
   'linbang.app.order-price-detail-enabled',
   'linbang.app.mall-entry-enabled',
   'linbang.app.mall-entry-title',
@@ -49,7 +51,7 @@ DELETE FROM `infra_config` WHERE `config_key` IN (
   'linbang.ocr.generic.api-key'
 );
 DELETE FROM `infra_file_config`;
-DELETE FROM `pay_channel` WHERE `id` IN (1, 2);
+DELETE FROM `pay_channel` WHERE `id` IN (1, 2, 3);
 DELETE FROM `pay_app` WHERE `id` = 1;
 DELETE FROM `system_sms_log`;
 DELETE FROM `system_sms_code`;
@@ -77,6 +79,7 @@ WHERE `type` IN (
   'pay_channel_code', 'pay_notify_status', 'pay_order_status',
   'pay_refund_status', 'pay_transfer_status'
 );
+DELETE FROM `system_menu` WHERE `id` BETWEEN 100170 AND 100178;
 DELETE FROM `system_menu` WHERE `id` BETWEEN 110000 AND 110999;
 DELETE FROM `lb_member_point_record`;
 DELETE FROM `lb_user_reminder`;
@@ -171,7 +174,7 @@ INSERT INTO `infra_file_config`
 (`id`, `name`, `storage`, `remark`, `master`, `config`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
 VALUES
 (4, '本地存储', 10, '邻里互助默认本地存储，可直接用于开发和联调', b'1',
- '{"@class":"cn.iocoder.yudao.module.infra.framework.file.core.client.local.LocalFileClientConfig","basePath":"D:\\\\user_wuyou\\\\local_life_helper\\\\upload-files","domain":"http://127.0.0.1:48080"}',
+ '{"@class":"cn.iocoder.yudao.module.infra.framework.file.core.client.local.LocalFileClientConfig","basePath":"D:\\\\user_wuyou\\\\local_life_helper\\\\upload-files","domain":"http://192.168.1.13:48080"}',
  'admin', NOW(), 'admin', NOW(), b'0'),
 (5, '阿里云 OSS 存储', 20, '邻里互助 OSS 存储，请替换为正式 bucket 和密钥', b'0',
  '{"@class":"cn.iocoder.yudao.module.infra.framework.file.core.client.s3.S3FileClientConfig","endpoint":"oss-cn-hangzhou.aliyuncs.com","domain":"https://your-bucket.oss-cn-hangzhou.aliyuncs.com","bucket":"your-bucket","accessKey":"your-access-key","accessSecret":"your-access-secret","enablePathStyleAccess":false,"enablePublicAccess":true}',
@@ -180,7 +183,7 @@ VALUES
 INSERT INTO `pay_app`
 (`id`, `app_key`, `name`, `status`, `remark`, `order_notify_url`, `refund_notify_url`, `transfer_notify_url`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
 VALUES
-(1, 'linbang-app', '邻里互助支付应用', 0, '待运营配置',
+(1, 'linbang-app', '邻里互助支付应用', 0, '统一接入第三方聚合支付，不按微信/支付宝拆分商户配置',
  'http://127.0.0.1:48080/admin-api/pay/notify/order',
  'http://127.0.0.1:48080/admin-api/pay/notify/refund',
  'http://127.0.0.1:48080/admin-api/pay/notify/transfer',
@@ -189,8 +192,7 @@ VALUES
 INSERT INTO `pay_channel`
 (`id`, `code`, `status`, `fee_rate`, `remark`, `app_id`, `config`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
 VALUES
-(1, 'mock', 0, 0, '邻里互助测试支付通道', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.NonePayClientConfig","name":"none-config"}', 'admin', NOW(), 'admin', NOW(), b'0', 1),
-(2, 'wallet', 0, 0, '邻里互助钱包支付通道', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.NonePayClientConfig","name":"none-config"}', 'admin', NOW(), 'admin', NOW(), b'0', 1);
+(1, 'aggregate', 0, 0, '邻里互助唯一聚合支付通道；baseUrl 按生产聚合支付网关补齐', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate.AggregatePayClientConfig","baseUrl":"","merchantNo":"826584873720104","merchantName":"深圳市旺佳盈科技有限公司"}', 'admin', NOW(), 'admin', NOW(), b'0', 1);
 
 INSERT INTO `system_sms_channel`
 (`id`, `signature`, `code`, `status`, `remark`, `api_key`, `api_secret`, `callback_url`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
@@ -296,19 +298,7 @@ VALUES
 (810058, 3, '简化模式', 'implicit', 'system_oauth2_grant_type', 0, 'warning', '', '简化模式', 'admin', NOW(), 'admin', NOW(), b'0'),
 (810059, 4, '刷新模式', 'refresh_token', 'system_oauth2_grant_type', 0, 'info', '', '刷新模式', 'admin', NOW(), 'admin', NOW(), b'0'),
 (810060, 5, '客户端模式', 'client_credentials', 'system_oauth2_grant_type', 0, 'default', '', '客户端模式', 'admin', NOW(), 'admin', NOW(), b'0'),
-(810061, 1, '微信公众号支付', 'wx_pub', 'pay_channel_code', 0, 'success', '', '微信公众号支付', 'admin', NOW(), 'admin', NOW(), b'0'),
-(810062, 2, '微信小程序支付', 'wx_lite', 'pay_channel_code', 0, 'success', '', '微信小程序支付', 'admin', NOW(), 'admin', NOW(), b'0'),
-(810063, 3, '微信 App 支付', 'wx_app', 'pay_channel_code', 0, 'success', '', '微信 App 支付', 'admin', NOW(), 'admin', NOW(), b'0'),
-(810064, 4, '微信扫码支付', 'wx_native', 'pay_channel_code', 0, 'success', '', '微信扫码支付', 'admin', NOW(), 'admin', NOW(), b'0'),
-(810065, 5, '微信 Wap 网站支付', 'wx_wap', 'pay_channel_code', 0, 'success', '', '微信 Wap 网站支付', 'admin', NOW(), 'admin', NOW(), b'0'),
-(810066, 6, '微信条码支付', 'wx_bar', 'pay_channel_code', 0, 'success', '', '微信条码支付', 'admin', NOW(), 'admin', NOW(), b'0'),
-(810067, 10, '支付宝 PC 网站支付', 'alipay_pc', 'pay_channel_code', 0, 'primary', '', '支付宝 PC 网站支付', 'admin', NOW(), 'admin', NOW(), b'0'),
-(810068, 11, '支付宝 Wap 网站支付', 'alipay_wap', 'pay_channel_code', 0, 'primary', '', '支付宝 Wap 网站支付', 'admin', NOW(), 'admin', NOW(), b'0'),
-(810069, 12, '支付宝 App 支付', 'alipay_app', 'pay_channel_code', 0, 'primary', '', '支付宝 App 支付', 'admin', NOW(), 'admin', NOW(), b'0'),
-(810070, 13, '支付宝扫码支付', 'alipay_qr', 'pay_channel_code', 0, 'primary', '', '支付宝扫码支付', 'admin', NOW(), 'admin', NOW(), b'0'),
-(810071, 14, '支付宝条码支付', 'alipay_bar', 'pay_channel_code', 0, 'primary', '', '支付宝条码支付', 'admin', NOW(), 'admin', NOW(), b'0'),
-(810072, 20, '模拟支付', 'mock', 'pay_channel_code', 0, 'default', '', '模拟支付', 'admin', NOW(), 'admin', NOW(), b'0'),
-(810073, 21, '钱包支付', 'wallet', 'pay_channel_code', 0, 'info', '', '钱包支付', 'admin', NOW(), 'admin', NOW(), b'0'),
+(810061, 0, '聚合支付', 'aggregate', 'pay_channel_code', 0, 'warning', '', '第三方聚合支付，邻里互助唯一支付通道', 'admin', NOW(), 'admin', NOW(), b'0'),
 (810074, 0, '等待通知', '0', 'pay_notify_status', 0, 'primary', '', '等待通知', 'admin', NOW(), 'admin', NOW(), b'0'),
 (810075, 10, '通知成功', '10', 'pay_notify_status', 0, 'success', '', '通知成功', 'admin', NOW(), 'admin', NOW(), b'0'),
 (810076, 20, '通知失败', '20', 'pay_notify_status', 0, 'danger', '', '通知失败', 'admin', NOW(), 'admin', NOW(), b'0'),
@@ -400,28 +390,13 @@ VALUES
 (100196, '短信模板测试', 'system:sms-template:send-sms', 3, 6, 100190, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100197, '短信日志', '', 2, 120, 100000, 'sms-log', 'ep:document-copy', 'system/sms/log/index', 'SystemSmsLog', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100198, '短信日志查询', 'system:sms-log:query', 3, 1, 100197, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
-(100199, '短信日志导出', 'system:sms-log:export', 3, 2, 100197, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
-(100170, '支付应用配置', '', 2, 90, 100000, 'pay-app', 'ep:wallet-filled', 'pay/app/index', 'PayApp', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
-(100171, '支付应用查询', 'pay:app:query', 3, 1, 100170, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
-(100172, '支付应用新增', 'pay:app:create', 3, 2, 100170, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
-(100173, '支付应用修改', 'pay:app:update', 3, 3, 100170, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
-(100174, '支付应用删除', 'pay:app:delete', 3, 4, 100170, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
-(100175, '支付渠道查询', 'pay:channel:query', 3, 5, 100170, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
-(100176, '支付渠道新增', 'pay:channel:create', 3, 6, 100170, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
-(100177, '支付渠道修改', 'pay:channel:update', 3, 7, 100170, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
-(100178, '支付渠道删除', 'pay:channel:delete', 3, 8, 100170, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0');
+(100199, '短信日志导出', 'system:sms-log:export', 3, 2, 100197, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0');
 
 INSERT INTO `system_role_menu`
 (`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
 SELECT 1, `id`, 'admin', NOW(), 'admin', NOW(), b'0', 1
 FROM `system_menu`
 WHERE `id` BETWEEN 100000 AND 100199;
-
-INSERT INTO `system_role_menu`
-(`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
-VALUES
-(20002, 100171, 'admin', NOW(), 'admin', NOW(), b'0', 1),
-(20004, 100171, 'admin', NOW(), 'admin', NOW(), b'0', 1);
 
 COMMIT;
 
@@ -461,6 +436,7 @@ DELETE FROM `lb_sensitive_word` WHERE `id` BETWEEN 320001 AND 320099;
 DELETE FROM `lb_credit_rule` WHERE `id` BETWEEN 330001 AND 330099;
 DELETE FROM `lb_credit_level_benefit` WHERE `id` BETWEEN 331001 AND 331099;
 DELETE FROM `lb_credit_record` WHERE `id` BETWEEN 331001 AND 331099;
+DELETE FROM `lb_help_faq` WHERE `id` BETWEEN 360001 AND 360099;
 DELETE FROM `lb_service_category` WHERE `id` BETWEEN 340001 AND 340199;
 DELETE FROM `system_notify_template` WHERE `code` IN (
   'lb_order_created', 'lb_refund_audited', 'lb_withdraw_audited',
@@ -928,6 +904,13 @@ VALUES
 (110700, '合作商中心', '', 1, 80, 0, '/linbang-partner', 'ep:office-building', NULL, NULL, 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110720, '价格申报审核', 'linbang:partner:price-report:query', 2, 10, 110700, 'merchant-price-report', 'ep:money', 'linbang/merchantpricereport/index', 'LinbangMerchantPriceReport', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110721, '价格申报审核动作', 'linbang:partner:price-report:audit', 3, 1, 110720, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110760, '平台运营', 'linbang:help:feedback:query', 2, 90, 0, '/linbang-platform', 'ep:service', 'linbang/platform/index', 'LinbangPlatform', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110761, '帮助反馈导出', 'linbang:help:feedback:export', 3, 1, 110760, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110762, '常见问题查询', 'linbang:help:faq:query', 3, 2, 110760, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110763, '常见问题新增', 'linbang:help:faq:create', 3, 3, 110760, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110764, '常见问题修改', 'linbang:help:faq:update', 3, 4, 110760, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110765, '常见问题删除', 'linbang:help:faq:delete', 3, 5, 110760, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110766, '常见问题导出', 'linbang:help:faq:export', 3, 6, 110760, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110800, '消息中心', '', 1, 90, 0, '/linbang-message', 'ep:message', NULL, NULL, 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110830, '推送任务', 'linbang:message:push-task:query', 2, 10, 110800, 'message-push-task', 'ep:promotion', 'linbang/messagepushtask/index', 'LinbangMessagePushTask', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0');
 
@@ -999,6 +982,15 @@ WHERE `id` IN (
   110700, 110720
 );
 
+INSERT INTO `lb_help_faq`
+(`id`, `category_code`, `category_name`, `title`, `content`, `icon`, `sort_no`, `status`, `tenant_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
+VALUES
+(360001, 'FUNDS', '资金与提现', '资金与提现常见问题', '平台资金分为可提现金额、冻结金额和托管金额。订单支付成功后进入托管金额；单元完工并确认后，托管金额按规则解锁为可提现金额。提现需完成实名认证并绑定可用银行卡，申请后按后台审核和打款结果更新状态。', 'fund', 10, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(360002, 'ORDER', '订单相关', '订单相关常见问题', '订单状态包括待付款、待接单、已接单、服务中、待确认、已完成、售后、已退款和已关闭。只有待付款、待接单阶段允许修改地址、预约说明、需求描述等信息；取消、退款、申诉会记录操作日志。', 'order', 20, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(360003, 'AUTH', '认证与入驻', '认证与入驻常见问题', '接单、提现、资质服务等关键能力需要完成实名认证、服务商入驻或对应资质认证。证件即将到期时，平台会通过站内消息提醒；资质失效可能影响接单、结算或展示。', 'verify', 30, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(360004, 'MATCH', '抢单与匹配', '抢单与匹配常见问题', '抢单与匹配会综合订单状态、服务类目、服务区域、接单状态、信用和风控限制判断。若无法接单，请先确认服务商身份已开通、接单状态为开启、资质未过期且账号不存在风控限制。', 'order_match', 40, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(360005, 'PROMOTE', '推广与佣金', '推广与佣金常见问题', '推广收益按平台分账和结算规则生成，常见状态包括待结算、已结算和已失效。订单退款、售后或风控异常可能影响佣金结算；具体金额和时间以佣金记录与钱包流水为准。', 'voice', 50, 'ENABLE', 1, 'admin', NOW(), 'admin', NOW(), b'0');
+
 INSERT INTO `system_notify_template` (`id`, `name`, `code`, `nickname`, `content`, `type`, `params`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
 VALUES
 (390004, '提现到账通知', 'lb_withdraw_arrived', '邻里互助系统', '您的提现申请 {withdrawNo} 已到账，请前往钱包查看。', 2, '["withdrawNo"]', 0, '邻里互助业务通知模板', 'admin', NOW(), 'admin', NOW(), b'0'),
@@ -1039,7 +1031,9 @@ VALUES
 (620101, 'linbang_platform', 2, 'App 税务提醒文案', 'linbang.app.tax-reminder', '建议尽快办理个体执照；若未办理，平台将按规则代扣 20% 个税。', b'1', '资金域 P0 默认配置', 'admin', NOW(), 'admin', NOW(), b'0'),
 (620102, 'linbang_platform', 2, 'App 个体执照代办入口地址', 'linbang.app.license-agent-entry-url', 'https://example.com/license-agent', b'1', '资金域 P0 默认配置', 'admin', NOW(), 'admin', NOW(), b'0'),
 (620103, 'linbang_platform', 2, 'App 个体执照代办入口标题', 'linbang.app.license-agent-entry-title', '个体执照代办', b'1', '资金域 P0 默认配置', 'admin', NOW(), 'admin', NOW(), b'0'),
-(620104, 'linbang_platform', 2, 'App 提现说明', 'linbang.app.withdraw-notice', '提现申请审核通过后预计 T+1 到账，实际到账时间以银行处理为准。', b'1', '资金域 P0 默认配置', 'admin', NOW(), 'admin', NOW(), b'0');
+(620104, 'linbang_platform', 2, 'App 提现说明', 'linbang.app.withdraw-notice', '提现申请审核通过后预计 T+1 到账，实际到账时间以银行处理为准。', b'1', '资金域 P0 默认配置', 'admin', NOW(), 'admin', NOW(), b'0'),
+(620105, 'linbang_platform', 2, '高德地图 JS API Key', 'linbang.app.amap-js-key', '', b'1', 'App H5 首页真实地图使用的高德 JS API Key', 'admin', NOW(), 'admin', NOW(), b'0'),
+(620106, 'linbang_platform', 2, '高德地图 JS API 安全密钥', 'linbang.app.amap-security-js-code', '', b'1', '高德 JS API securityJsCode，未启用安全密钥时可为空', 'admin', NOW(), 'admin', NOW(), b'0');
 
 COMMIT;
 

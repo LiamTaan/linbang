@@ -70,6 +70,7 @@ rules:
         - PROMOTER
         - PARTNER
         - PLATFORM_OPERATOR
+      promoter_level_rule: "推广员初/中/高等级按直推推广人数计算：0-9 人为初级，10-49 人为中级，50 人及以上为高级。"
       promoter_fields:
         - resourceDesc
         - expectedConversionDesc
@@ -79,7 +80,44 @@ rules:
         - abilityDesc
         - availableTimeDesc
       team_stats_rule: "两级分销统计仅做直推一级与间推二级只读展示，不改动现有结算链路"
+      merchant_entry:
+        role_code: MERCHANT
+        role_desc: "服务商是接单和抢单主体，入驻后开通服务商身份。"
+        entry_rule: "服务商入驻独立于身份申请，已提交、审核中、已开通状态禁止重复提交；驳回后允许重新提交。"
+        entry_fields:
+          - merchantName
+          - contactName
+          - contactMobile
+          - regionCode
+          - serviceCategoryIds
+          - qualificationIds
+      platform_operator_scope:
+        role_code: PLATFORM_OPERATOR
+        surface: ADMIN
+        responsibility:
+          - "全局数据查看控制调配（订单、用户、资金、风控）"
+          - "权限配置（给各角色分配权限）"
+          - "规则调整（分账、拆分、风控）"
+          - "终审（入驻、订单异常）"
+          - "账号管理（增删改查、拉黑、封禁）"
+          - "动态密钥验证（操作前触发）"
+          - "操作日志查看（留存 1 年）"
+          - "数据上传、下载、筛选"
+        entry_rule: "平台管理员仅在管理端开通，不作为用户 App 申请身份。"
   payment:
+    provider_rule: "微信、支付宝、H5、钱包展示入口等支付方式统一路由到第三方聚合支付通道；平台业务侧不按微信/支付宝分别配置商户号"
+    channel_code: "aggregate"
+    aggregate_provider:
+      merchant_no: "826584873720104"
+      merchant_name: "深圳市旺佳盈科技有限公司"
+      supported_capabilities:
+        - CREATE_ORDER
+        - QUERY_ORDER
+        - PAY_SUCCESS_NOTIFY
+      unsupported_until_provider_doc:
+        - REFUND
+        - TRANSFER
+        - BANK_CARD_BIND_VERIFY
     order_status_flow:
       - PENDING_PAY
       - PENDING_ACCEPT
@@ -151,3 +189,12 @@ rules:
       - linbang.app.license-agent-entry-url
       - linbang.app.license-agent-entry-title
       - linbang.app.withdraw-notice
+  help_center:
+    faq_source: "常见问题由管理端维护 lb_help_faq，App 只读取 ENABLE 状态数据；默认初始化资金与提现、订单相关、认证与入驻、抢单与匹配、推广与佣金五类"
+    feedback_source: "用户意见反馈真实落库 lb_help_feedback，用户端可提交和查看自己的反馈记录，管理端负责查询、导出和处理"
+    faq_categories:
+      - FUNDS
+      - ORDER
+      - AUTH
+      - MATCH
+      - PROMOTE

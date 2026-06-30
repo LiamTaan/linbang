@@ -19,6 +19,7 @@ import cn.iocoder.yudao.module.pay.dal.dataobject.order.PayOrderDO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.refund.PayRefundDO;
 import cn.iocoder.yudao.module.pay.dal.mysql.refund.PayRefundMapper;
 import cn.iocoder.yudao.module.pay.dal.redis.no.PayNoRedisDAO;
+import cn.iocoder.yudao.module.pay.enums.PayChannelEnum;
 import cn.iocoder.yudao.module.pay.enums.notify.PayNotifyTypeEnum;
 import cn.iocoder.yudao.module.pay.enums.order.PayOrderStatusEnum;
 import cn.iocoder.yudao.module.pay.enums.refund.PayRefundStatusEnum;
@@ -112,6 +113,23 @@ public class PayRefundServiceImpl implements PayRefundService {
             throw exception(REFUND_AUDIT_STATUS_INVALID);
         }
 
+        PayOrderDO order = null;
+        PayChannelDO channel = null;
+        PayClient<?> client = null;
+        if ("APPROVED".equals(reqVO.getAuditStatus())) {
+            order = orderService.getOrder(refund.getOrderId());
+            if (order == null) {
+                throw exception(PAY_ORDER_NOT_FOUND);
+            }
+            channel = channelService.validPayChannel(refund.getChannelId());
+            assertRefundChannelSupported(channel);
+            client = channelService.getPayClient(channel.getId());
+            if (client == null) {
+                log.error("[auditRefund][渠道编号({}) 找不到对应的支付客户端]", channel.getId());
+                throw exception(CHANNEL_NOT_FOUND);
+            }
+        }
+
         PayRefundDO updateObj = new PayRefundDO()
                 .setId(refund.getId())
                 .setAuditStatus(reqVO.getAuditStatus())
@@ -132,16 +150,6 @@ public class PayRefundServiceImpl implements PayRefundService {
         PayRefundDO approvedRefund = refundMapper.selectById(refund.getId());
         if (approvedRefund == null) {
             throw exception(REFUND_NOT_FOUND);
-        }
-        PayOrderDO order = orderService.getOrder(refund.getOrderId());
-        if (order == null) {
-            throw exception(PAY_ORDER_NOT_FOUND);
-        }
-        PayChannelDO channel = channelService.validPayChannel(refund.getChannelId());
-        PayClient<?> client = channelService.getPayClient(channel.getId());
-        if (client == null) {
-            log.error("[auditRefund][渠道编号({}) 找不到对应的支付客户端]", channel.getId());
-            throw exception(CHANNEL_NOT_FOUND);
         }
         try {
             submitRefund(approvedRefund, order, channel, client);
@@ -168,6 +176,9 @@ public class PayRefundServiceImpl implements PayRefundService {
                 app.getId(), reqDTO.getMerchantRefundId());
         if (refund != null) {
             throw exception(REFUND_EXISTS);
+        }
+        if (!Boolean.TRUE.equals(reqDTO.getNeedAudit())) {
+            assertRefundChannelSupported(channel);
         }
 
         // 2.1 插入退款单
@@ -235,6 +246,7 @@ public class PayRefundServiceImpl implements PayRefundService {
         if (Boolean.TRUE.equals(refund.getNeedAudit()) && !"APPROVED".equals(refund.getAuditStatus())) {
             throw exception(REFUND_NEED_AUDIT);
         }
+        assertRefundChannelSupported(channel);
         PayRefundUnifiedReqDTO unifiedReqDTO = new PayRefundUnifiedReqDTO()
                 .setPayPrice(order.getPrice())
                 .setRefundPrice(refund.getRefundPrice())
@@ -244,6 +256,12 @@ public class PayRefundServiceImpl implements PayRefundService {
                 .setReason(refund.getReason());
         PayRefundRespDTO refundRespDTO = client.unifiedRefund(unifiedReqDTO);
         getSelf().notifyRefund(channel, refundRespDTO);
+    }
+
+    private void assertRefundChannelSupported(PayChannelDO channel) {
+        if (PayChannelEnum.AGGREGATE.getCode().equals(channel.getCode())) {
+            throw exception(REFUND_CHANNEL_UNSUPPORTED);
+        }
     }
 
     /**

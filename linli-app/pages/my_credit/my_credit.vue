@@ -12,7 +12,7 @@
             <view class="credit-card">
                 <view class="score-center">
                     <text class="credit-score">{{ credit.creditScore || 0 }}</text>
-                    <text class="level-text">信用等级：{{ credit.creditLevel || '--' }}</text>
+                    <text class="level-text">信用等级：{{ creditLevelLabel }}</text>
                     <text class="next-text">距下一等级还需 {{ credit.nextLevelNeedScore || 0 }} 分</text>
                 </view>
             </view>
@@ -63,6 +63,7 @@
 <script>
 import { getBenefitOverview } from '@/api/benefit'
 import { getCredit, getCreditBenefits } from '@/api/review'
+import { getCreditLevelLabel } from '@/utils/linbang'
 
 export default {
     data() {
@@ -71,6 +72,11 @@ export default {
             benefitOverview: {},
             benefits: [],
             recentRecords: []
+        }
+    },
+    computed: {
+        creditLevelLabel() {
+            return getCreditLevelLabel(this.credit.creditLevel)
         }
     },
     onShow() {

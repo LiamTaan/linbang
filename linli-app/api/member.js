@@ -1,27 +1,31 @@
 import { del, get, post, put } from '@/utils/request'
 
-export function getRoleContext() {
-  return get('/member/role-context/get')
+export function getRoleContext(options = {}) {
+  return get('/member/role-context/get', {}, options)
 }
 
 export function switchRole(data) {
   return post('/member/role-context/switch', data)
 }
 
-export function getProfile() {
-  return get('/member/user/profile')
+export function getProfile(options = {}) {
+  return get('/member/user/profile', {}, options)
 }
 
 export function updateProfile(data) {
   return put('/member/user/update-profile', data)
 }
 
-export function getAddressPage(params) {
-  return get('/member/address/page', params)
+export function getAddressPage(params, options = {}) {
+  return get('/member/address/page', params, options)
 }
 
 export function getAddress(id) {
   return get('/member/address/get', { id })
+}
+
+export function resolveAddressLocation(data) {
+  return post('/member/address/resolve-location', data)
 }
 
 export function createAddress(data) {
@@ -36,8 +40,8 @@ export function deleteAddress(id) {
   return del('/member/address/delete', { id })
 }
 
-export function getQualificationPage(params) {
-  return get('/member/qualification/page', params)
+export function getQualificationPage(params, options = {}) {
+  return get('/member/qualification/page', params, options)
 }
 
 export function getQualification(id) {

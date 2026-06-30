@@ -18,6 +18,8 @@ public interface PlatformConfigKeyConstants {
     String APP_TAX_REMINDER = "linbang.app.tax-reminder";
     String APP_LICENSE_AGENT_ENTRY_URL = "linbang.app.license-agent-entry-url";
     String APP_LICENSE_AGENT_ENTRY_TITLE = "linbang.app.license-agent-entry-title";
+    String APP_AMAP_JS_KEY = "linbang.app.amap-js-key";
+    String APP_AMAP_SECURITY_JS_CODE = "linbang.app.amap-security-js-code";
     String APP_ORDER_PRICE_DETAIL_ENABLED = "linbang.app.order-price-detail-enabled";
     String APP_MALL_ENTRY_ENABLED = "linbang.app.mall-entry-enabled";
     String APP_MALL_ENTRY_TITLE = "linbang.app.mall-entry-title";

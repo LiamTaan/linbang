@@ -1,7 +1,7 @@
 import { del, get, post, put } from '@/utils/request'
 
-export function getWalletAccount() {
-  return get('/wallet/account/get')
+export function getWalletAccount(options = {}) {
+  return get('/wallet/account/get', {}, options)
 }
 
 export function getBankCardPage(params) {
