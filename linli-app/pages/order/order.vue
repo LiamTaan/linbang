@@ -22,21 +22,29 @@
         </scroll-view>
 
         <view class="filter-bar" v-if="mode === 'accept'">
-            <view class="filter-item" @click="toggleFilter('distance')">
+            <view class="filter-item" @click="toggleSort('distance')">
                 <text class="filter-text">{{ filterLabels.distance }}</text>
-                <image class="filter-icon" src="/static/img/order/arrow_down.png" />
+                <view class="sort-arrows">
+                    <text class="sort-arrow" :class="{ active: filterState.distanceSort === 'NEAREST' }">▲</text>
+                    <text class="sort-arrow" :class="{ active: filterState.distanceSort === 'FARTHEST' }">▼</text>
+                </view>
             </view>
-            <view class="filter-item" @click="toggleFilter('price')">
+            <view class="filter-item" @click="toggleSort('price')">
                 <text class="filter-text">{{ filterLabels.price }}</text>
-                <image class="filter-icon" src="/static/img/order/arrow_down.png" />
+                <view class="sort-arrows">
+                    <text class="sort-arrow" :class="{ active: filterState.priceSort === 'PRICE_ASC' }">▲</text>
+                    <text class="sort-arrow" :class="{ active: filterState.priceSort === 'PRICE_DESC' }">▼</text>
+                </view>
             </view>
-            <view class="filter-item" @click="toggleFilter('time')">
+            <view class="filter-item" @click="toggleSort('time')">
                 <text class="filter-text">{{ filterLabels.time }}</text>
-                <image class="filter-icon" src="/static/img/order/arrow_down.png" />
+                <view class="sort-arrows">
+                    <text class="sort-arrow" :class="{ active: filterState.publishTimeSort === 'OLDEST' }">▲</text>
+                    <text class="sort-arrow" :class="{ active: filterState.publishTimeSort === 'NEWEST' }">▼</text>
+                </view>
             </view>
             <view class="filter-item" @click="toggleFilter('screen')">
-                <text class="filter-text">筛选</text>
-                <image class="filter-icon" src="/static/img/order/arrow_down.png" />
+                <image class="filter-icon screen-icon" src="/static/img/order/arrow_down.png" />
             </view>
         </view>
 
@@ -108,6 +116,8 @@
 import tabBar from '@/components/tabBar/tabBar.vue'
 import { acceptOrder, getAcceptOrderPage, getGuaranteeConfig, getOrderPage } from '@/api/order'
 import { getServiceCategoryList } from '@/api/merchant'
+import { getRoleContext } from '@/api/member'
+import { hasLogin } from '@/utils/auth'
 import {
     getBusinessCategoryLabel,
     getDispatchStatusLabel,
@@ -146,6 +156,8 @@ export default {
             refreshing: false,
             loading: false,
             finished: false,
+            isLoggedIn: false,
+            canAcceptOrders: false,
             pageNo: 1,
             pageSize: 10,
             total: 0,
@@ -181,39 +193,52 @@ export default {
         filterLabels() {
             return {
                 distance: this.filterState.distanceSort === 'FARTHEST' ? '距离最远' : '距离最近',
-                price: this.filterState.priceSort === 'PRICE_DESC' ? '价格降序' : (this.filterState.priceSort === 'PRICE_ASC' ? '价格升序' : '价格'),
+                price: this.filterState.priceSort === 'PRICE_DESC' ? '价格降序' : '价格升序',
                 time: this.filterState.publishTimeSort === 'OLDEST' ? '最早发布' : '最新发布'
             }
         }
     },
     onLoad(options) {
         const mode = options && options.mode ? options.mode : 'accept'
-        if (mode === 'serving') {
-            this.mode = 'my'
-            this.currentBusinessCategory = 'IN_SERVICE'
-            return
-        }
-        this.mode = mode === 'my' ? 'my' : 'accept'
+        this.applyEntryMode(mode)
     },
     onShow() {
         uni.hideTabBar()
+        const pendingMode = uni.getStorageSync('linbang_order_tab_mode')
+        if (pendingMode) {
+            uni.removeStorageSync('linbang_order_tab_mode')
+            this.applyEntryMode(pendingMode)
+        }
         this.loadMeta()
         this.reload()
     },
     methods: {
         getBusinessCategoryLabel,
         getDispatchStatusLabel,
+        applyEntryMode(mode) {
+            this.currentCategoryId = ''
+            this.currentBusinessCategory = ''
+            if (mode === 'serving') {
+                this.mode = 'my'
+                this.currentBusinessCategory = 'IN_SERVICE'
+                return
+            }
+            this.mode = mode === 'my' ? 'my' : 'accept'
+        },
         async loadMeta() {
             try {
-                const [categories, guaranteeConfig] = await Promise.all([
-                    getServiceCategoryList().catch(() => []),
-                    getGuaranteeConfig().catch(() => ({}))
+                this.isLoggedIn = hasLogin()
+                const [categories, guaranteeConfig, roleContext] = await Promise.all([
+                    getServiceCategoryList({ silent: true }).catch(() => []),
+                    this.isLoggedIn ? getGuaranteeConfig({ silent: true }).catch(() => ({})) : Promise.resolve({}),
+                    this.isLoggedIn ? getRoleContext({ silent: true }).catch(() => ({})) : Promise.resolve({})
                 ])
                 this.acceptTabs = [{ label: '全部', value: '' }].concat((categories || []).map((item) => ({
                     label: item.categoryName,
                     value: item.id
                 })))
                 this.guaranteeConfig = guaranteeConfig || {}
+                this.canAcceptOrders = ((roleContext && roleContext.enabledRoleCodes) || []).includes('MERCHANT')
             } catch (error) {
             }
         },
@@ -236,8 +261,8 @@ export default {
                 this.loading = true
                 const params = this.buildParams()
                 const pageResp = this.mode === 'accept'
-                    ? await getAcceptOrderPage(params)
-                    : await getOrderPage(params)
+                    ? await getAcceptOrderPage(params, { silent: true })
+                    : await getOrderPage(params, { silent: true })
                 const list = (pageResp && pageResp.list) || []
                 this.total = Number((pageResp && pageResp.total) || 0)
                 this.rawList = this.pageNo === 1 ? list : this.rawList.concat(list)
@@ -293,6 +318,16 @@ export default {
             }
             this.reload()
         },
+        toggleSort(type) {
+            if (type === 'distance') {
+                this.filterState.distanceSort = this.filterState.distanceSort === 'NEAREST' ? 'FARTHEST' : 'NEAREST'
+            } else if (type === 'price') {
+                this.filterState.priceSort = this.filterState.priceSort === 'PRICE_ASC' ? 'PRICE_DESC' : 'PRICE_ASC'
+            } else if (type === 'time') {
+                this.filterState.publishTimeSort = this.filterState.publishTimeSort === 'NEWEST' ? 'OLDEST' : 'NEWEST'
+            }
+            this.reload()
+        },
         toggleFilter(type) {
             const schema = FILTER_SCHEMAS[type]
             if (!schema) {
@@ -302,13 +337,7 @@ export default {
                 itemList: schema.labels,
                 success: ({ tapIndex }) => {
                     const value = schema.values[tapIndex]
-                    if (type === 'distance') {
-                        this.filterState.distanceSort = value
-                    } else if (type === 'price') {
-                        this.filterState.priceSort = value
-                    } else if (type === 'time') {
-                        this.filterState.publishTimeSort = value
-                    } else if (type === 'screen') {
+                    if (type === 'screen') {
                         this.filterState.minOrderAmount = value
                     }
                     this.reload()
@@ -370,6 +399,26 @@ export default {
                 this.openDetail(order)
                 return
             }
+            if (!this.isLoggedIn) {
+                uni.navigateTo({
+                    url: `/pages/login/login?redirect=${encodeURIComponent('/pages/order/order?mode=accept')}`
+                })
+                return
+            }
+            if (!this.canAcceptOrders) {
+                uni.showModal({
+                    title: '暂不可抢单',
+                    content: '当前账号还未开通服务商身份，是否前往服务商入驻？',
+                    success: ({ confirm }) => {
+                        if (confirm) {
+                            uni.navigateTo({
+                                url: '/pages/merchant_entry/merchant_entry'
+                            })
+                        }
+                    }
+                })
+                return
+            }
             const notice = this.guaranteeConfig.antiEscapeNotice || '确认接单后，请按约提供服务。'
             uni.showModal({
                 title: '确认抢单',
@@ -401,39 +450,41 @@ export default {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: #F5F5F5;
+    background: linear-gradient(180deg, #f2f7ff 0%, #ffffff 120rpx, #f5f7fb 100%);
     padding-bottom: 120rpx;
     display: flex;
     flex-direction: column;
 
     .header {
         background: #fff;
-        padding: 20rpx 30rpx;
+        padding: 24rpx 24rpx 16rpx;
 
         .search-bar {
             display: flex;
             align-items: center;
-            height: 60rpx;
+            height: 72rpx;
             background: #EDF5FF;
-            border-radius: 12rpx;
-            padding: 0 30rpx;
+            border-radius: 16rpx;
+            padding: 0 16rpx 0 22rpx;
 
             .search-icon {
                 width: 32rpx;
                 height: 32rpx;
-                margin-right: 16rpx;
+                margin-right: 14rpx;
             }
 
             .search-input {
                 flex: 1;
                 height: 100%;
+                font-size: 28rpx;
+                color: #64748b;
             }
 
             .search-btn {
-                padding: 0 30rpx;
-                height: 80%;
+                min-width: 118rpx;
+                height: 52rpx;
                 background: #F9A23F;
-                border-radius: 6rpx;
+                border-radius: 10rpx;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -453,13 +504,14 @@ export default {
 
         .category-list {
             display: inline-flex;
-            padding: 24rpx 30rpx;
-            gap: 40rpx;
+            padding: 20rpx 24rpx 14rpx;
+            gap: 44rpx;
 
             .category-item {
                 display: flex;
                 flex-direction: column;
-                align-items: center;
+                align-items: flex-start;
+                flex-shrink: 0;
 
                 &.active {
                     .category-text {
@@ -470,11 +522,12 @@ export default {
 
                 .category-text {
                     font-size: 28rpx;
-                    color: #666;
+                    line-height: 38rpx;
+                    color: #5f6c7b;
                 }
 
                 .category-line {
-                    width: 40rpx;
+                    width: 32rpx;
                     height: 6rpx;
                     background: #2E83F0;
                     border-radius: 3rpx;
@@ -488,8 +541,8 @@ export default {
         display: flex;
         justify-content: space-between;
         background: #fff;
-        padding: 20rpx 30rpx;
-        border-bottom: 1rpx solid #F0F0F0;
+        padding: 18rpx 24rpx 22rpx;
+        border-bottom: 12rpx solid #f5f7fb;
 
         .filter-item {
             display: flex;
@@ -498,47 +551,76 @@ export default {
 
             .filter-text {
                 font-size: 26rpx;
-                color: #666;
+                color: #6c7789;
             }
 
             .filter-icon {
-                width: 20rpx;
-                height: 20rpx;
+                width: 18rpx;
+                height: 18rpx;
+                opacity: 0.75;
+            }
+
+            .screen-icon {
+                width: 28rpx;
+                height: 28rpx;
+            }
+
+            .sort-arrows {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 0;
+                width: 18rpx;
+                height: 28rpx;
+
+                .sort-arrow {
+                    height: 13rpx;
+                    line-height: 13rpx;
+                    font-size: 14rpx;
+                    color: #c1cad8;
+
+                    &.active {
+                        color: #2E83F0;
+                    }
+                }
             }
         }
     }
 
     .order-list {
         flex: 1;
-        padding: 20rpx 30rpx;
+        padding: 18rpx 24rpx 24rpx;
         box-sizing: border-box;
 
         .empty-state {
             background: #fff;
-            border-radius: 16rpx;
-            padding: 60rpx 40rpx;
+            border-radius: 18rpx;
+            padding: 76rpx 40rpx;
             text-align: center;
+            box-shadow: 0 8rpx 24rpx rgba(50, 90, 160, 0.06);
 
             .empty-title {
                 display: block;
                 font-size: 30rpx;
                 font-weight: bold;
-                color: #333;
-                margin-bottom: 12rpx;
+                color: #23324a;
+                margin-bottom: 16rpx;
             }
 
             .empty-desc {
                 font-size: 24rpx;
-                color: #999;
+                color: #99a3b4;
             }
         }
 
         .order-card {
             background: #fff;
-            border-radius: 16rpx;
+            border-radius: 18rpx;
             padding: 24rpx;
             margin-bottom: 20rpx;
-            border: 1rpx solid #E8E8E8;
+            border: 1rpx solid #edf2fa;
+            box-shadow: 0 8rpx 24rpx rgba(50, 90, 160, 0.06);
 
             .order-header {
                 display: flex;
@@ -658,8 +740,12 @@ export default {
 
             .order-btn {
                 background: #2E83F0;
-                border-radius: 32rpx;
-                padding: 14rpx 40rpx;
+                border-radius: 12rpx;
+                min-width: 126rpx;
+                padding: 14rpx 28rpx;
+                display: flex;
+                align-items: center;
+                justify-content: center;
 
                 &.secondary {
                     background: #EDF5FF;

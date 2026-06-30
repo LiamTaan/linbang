@@ -90,7 +90,7 @@ public interface OpenApiSchemaConstants {
             "身份申请审核状态：PENDING 待审核、APPROVED 已通过、REJECTED 已驳回。";
 
     String ROLE_APPLY_ROLE_CODE =
-            "身份申请角色：PROMOTER 推广员、PARTNER 代理/区域合作商、PLATFORM_OPERATOR 平台运营。";
+            "身份申请角色：PROMOTER 推广员、PARTNER 区域合作商、PLATFORM_OPERATOR 平台管理员（管理端角色）；服务商 MERCHANT 通过服务商入驻单独开通，不走身份申请。";
 
     String MERCHANT_ENTRY_AUDIT_STATUS =
             "入驻审核动作：FIRST_APPROVED 初审通过、APPROVED 终审通过、REJECTED 驳回。";
@@ -215,6 +215,12 @@ public interface OpenApiSchemaConstants {
 
     String HELP_FEEDBACK_STATUS =
             "反馈处理状态，按帮助反馈状态字典展示，常见值如 PENDING 待处理、PROCESSING 处理中、FINISHED 已完结。";
+
+    String HELP_FAQ_CATEGORY =
+            "常见问题分类，后台可配置，当前初始化分类包括 FUNDS 资金与提现、ORDER 订单相关、AUTH 认证与入驻、MATCH 抢单与匹配、PROMOTE 推广与佣金。";
+
+    String HELP_FAQ_STATUS =
+            "常见问题状态：ENABLE 启用并在 App 帮助中心展示、DISABLE 停用不展示。";
 
     String PARTNER_STATUS =
             "合作商状态：ENABLE 启用、DISABLE 停用。";

@@ -44,6 +44,7 @@ public interface ErrorCodeConstants {
     ErrorCode REFUND_AUDIT_STATUS_INVALID = new ErrorCode(1_007_006_007, "退款审核状态非法");
     ErrorCode REFUND_AUDIT_STATUS_IS_NOT_PENDING = new ErrorCode(1_007_006_008, "支付退款单不处于待审核");
     ErrorCode REFUND_AUDIT_NOT_REQUIRED = new ErrorCode(1_007_006_009, "支付退款单无需人工审核");
+    ErrorCode REFUND_CHANNEL_UNSUPPORTED = new ErrorCode(1_007_006_010, "聚合支付暂未提供退款接口，请走人工处理或等待渠道补充接口");
 
     // ========== 钱包模块 1-007-007-000 ==========
     ErrorCode WALLET_NOT_FOUND = new ErrorCode(1_007_007_000, "用户钱包不存在");

@@ -106,6 +106,10 @@ export const InfraApiErrorLogProcessStatusEnum = {
  * 支付渠道枚举
  */
 export const PayChannelEnum = {
+  AGGREGATE: {
+    code: 'aggregate',
+    name: '聚合支付'
+  },
   WX_PUB: {
     code: 'wx_pub',
     name: '微信 JSAPI 支付'

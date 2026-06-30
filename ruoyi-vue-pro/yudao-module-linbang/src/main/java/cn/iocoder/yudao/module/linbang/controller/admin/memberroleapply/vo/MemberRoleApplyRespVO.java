@@ -37,7 +37,7 @@ public class MemberRoleApplyRespVO {
     @Schema(description = "预期转化说明", example = "预计首月完成 20 个线索转化")
     private String expectedConversionDesc;
 
-    @Schema(description = "能力说明", example = "有本地生活平台运营经验")
+    @Schema(description = "能力说明", example = "有本地生活平台管理经验")
     private String abilityDesc;
 
     @Schema(description = "可投入时间说明", example = "每周可投入 5 天")

@@ -68,22 +68,6 @@
                             <text class="change-btn" @click="chooseBankCard">更换></text>
                         </view>
                     </view>
-
-                    <view class="method-item">
-                        <view class="method-left">
-                            <image class="method-icon" src="/static/img/withdraw_deposit/alipay@3x.png" />
-                            <text class="method-title">提现至支付宝</text>
-                        </view>
-                        <text class="bind-btn" @click="showBankOnlyNotice">暂未开放></text>
-                    </view>
-
-                    <view class="method-item last">
-                        <view class="method-left">
-                            <image class="method-icon" src="/static/img/withdraw_deposit/wechat@3x.png" />
-                            <text class="method-title">提现至微信</text>
-                        </view>
-                        <text class="bind-btn" @click="showBankOnlyNotice">暂未开放></text>
-                    </view>
                 </view>
 
                 <view class="warning-bar">
@@ -158,7 +142,7 @@ export default {
         },
         withdrawNotice() {
             const settings = getPlatformSettings() || {}
-            return settings.withdrawNotice || '提现审核通过后预计 T+1 到账'
+            return settings.withdrawNotice || '提现申请将进入平台审核，打款能力以聚合支付接口开通情况为准'
         }
     },
     onShow() {
@@ -211,12 +195,6 @@ export default {
                         this.selectedBankCardId = card.id
                     }
                 }
-            })
-        },
-        showBankOnlyNotice() {
-            uni.showToast({
-                title: '当前提现能力仅开放银行卡',
-                icon: 'none'
             })
         },
         async handleSubmit() {

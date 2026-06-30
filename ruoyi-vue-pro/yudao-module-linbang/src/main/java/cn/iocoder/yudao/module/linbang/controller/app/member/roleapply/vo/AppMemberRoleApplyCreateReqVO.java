@@ -27,11 +27,11 @@ public class AppMemberRoleApplyCreateReqVO {
     @Size(max = 500, message = "预期转化说明长度不能超过 500 个字符")
     private String expectedConversionDesc;
 
-    @Schema(description = "能力说明，平台运营申请必填，其他角色可为空", example = "有本地生活平台运营和活动策划经验")
+    @Schema(description = "能力说明，平台管理员申请必填，其他角色可为空", example = "有本地生活平台管理和活动策划经验")
     @Size(max = 500, message = "能力说明长度不能超过 500 个字符")
     private String abilityDesc;
 
-    @Schema(description = "可投入时间说明，平台运营申请必填，其他角色可为空", example = "每周可投入 5 天，每天 6 小时")
+    @Schema(description = "可投入时间说明，平台管理员申请必填，其他角色可为空", example = "每周可投入 5 天，每天 6 小时")
     @Size(max = 255, message = "可投入时间说明长度不能超过 255 个字符")
     private String availableTimeDesc;
 }

@@ -54,6 +54,9 @@ export default {
     methods: {
         switchTab(index) {
             const item = this.tabList[index]
+            if (item.path === '/pages/order/order') {
+                uni.setStorageSync('linbang_order_tab_mode', 'accept')
+            }
             uni.switchTab({
                 url: item.path
             })

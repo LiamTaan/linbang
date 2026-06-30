@@ -8,8 +8,8 @@ export function getMessageRecord(id) {
   return get('/message/record/get', { id })
 }
 
-export function getUnreadCount() {
-  return get('/message/record/unread-count')
+export function getUnreadCount(options = {}) {
+  return get('/message/record/unread-count', {}, options)
 }
 
 export function markMessageRead(id) {

@@ -69,8 +69,8 @@
                     <text class="item-label">退款时效</text>
                 </view>
                 <view class="timeline-list">
-                    <text class="timeline-item">• 待接单：1-3 个工作日原路退回</text>
-                    <text class="timeline-item">• 已接单：进入审核后按处理结果原路退款</text>
+                    <text class="timeline-item">• 退款申请提交后进入平台审核</text>
+                    <text class="timeline-item">• 聚合支付退款接口开通后按原支付路径处理，未开通前由平台人工跟进</text>
                 </view>
             </view>
 
@@ -142,11 +142,7 @@ export default {
             return this.currentUnit ? (this.currentUnit.unitTitle || this.currentUnit.unitNo) : '整单退款'
         },
         refundPathText() {
-            const payRecord = this.orderDetail.payRecord || {}
-            if (!payRecord.channelCode) {
-                return '退款金额将原路退回至原支付账户'
-            }
-            return `退款金额将原路退回至 ${payRecord.channelCode} 账户`
+            return '退款将通过聚合支付按原支付路径处理，具体以平台审核结果为准'
         }
     },
     onLoad(options) {

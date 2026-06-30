@@ -14,16 +14,16 @@ public class AppPromoteCenterRespVO {
     @Schema(description = "推广员 ID", example = "1")
     private Long promoterId;
 
-    @Schema(description = "等级编码", example = "L1")
+    @Schema(description = "推广等级编码，按直推推广人数计算：L1 初级、L2 中级、L3 高级", example = "L1")
     private String levelCode;
 
-    @Schema(description = "等级名称", example = "初级推广员")
+    @Schema(description = "推广等级名称，按直推推广人数计算", example = "初级推广员")
     private String levelName;
 
-    @Schema(description = "升级条件说明")
+    @Schema(description = "升级条件说明，按推广人数计算")
     private String upgradeConditionDesc;
 
-    @Schema(description = "距下一等级还差的关键指标说明")
+    @Schema(description = "距下一等级还差的推广人数说明")
     private String nextLevelNeedMetric;
 
     @Schema(description = "邀请码", example = "INVITE888")
@@ -38,7 +38,7 @@ public class AppPromoteCenterRespVO {
     @Schema(description = "推广海报地址")
     private String invitePosterUrl;
 
-    @Schema(description = "绑定用户数", example = "12")
+    @Schema(description = "直推推广人数", example = "12")
     private Integer bindUserCount;
 
     @Schema(description = "转化用户数", example = "5")

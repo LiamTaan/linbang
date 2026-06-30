@@ -33,7 +33,7 @@ import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_RO
 public class AppMemberRoleContextServiceImpl implements AppMemberRoleContextService {
 
     private static final List<String> SUPPORTED_ROLE_CODES = Arrays.asList(
-            "USER", "MERCHANT", "PROMOTER", "PARTNER", "PLATFORM_OPERATOR");
+            "USER", "MERCHANT", "PROMOTER", "PARTNER");
 
     @Resource
     private MemberUserService memberUserService;
@@ -151,7 +151,7 @@ public class AppMemberRoleContextServiceImpl implements AppMemberRoleContextServ
             return "区域合作商";
         }
         if ("PLATFORM_OPERATOR".equals(roleCode)) {
-            return "平台运营";
+            return "平台管理员（请使用管理后台）";
         }
         return "普通用户";
     }
@@ -167,7 +167,7 @@ public class AppMemberRoleContextServiceImpl implements AppMemberRoleContextServ
             return "可查看辖区、处理入驻初审、协调纠纷、提交价格建议。";
         }
         if ("PLATFORM_OPERATOR".equals(roleCode)) {
-            return "可处理平台运营审核任务与协同事项。";
+            return "可在管理端执行全局数据查看、权限配置、规则调整、终审、账号管理、动态密钥验证、操作日志和数据导入导出。";
         }
         return "可下单、查看订单、管理个人资料与钱包。";
     }

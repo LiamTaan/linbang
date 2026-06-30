@@ -1,7 +1,7 @@
 import { get, post } from '@/utils/request'
 
-export function getPromoteCenter() {
-  return get('/promote/center/get')
+export function getPromoteCenter(options = {}) {
+  return get('/promote/center/get', {}, options)
 }
 
 export function getCommissionPage(params) {

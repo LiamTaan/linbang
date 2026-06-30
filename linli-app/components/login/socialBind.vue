@@ -12,16 +12,19 @@
                 <text class="hint">已完成授权，请绑定手机号</text>
             </view>
 
-            <view class="form-item">
-                <view class="phone-prefix">
-                    <text class="prefix-text">+86</text>
+            <view class="form-item phone-item">
+                <view class="phone-input-wrap">
+                    <view class="phone-region">
+                        <text class="region-text">+86</text>
+                    </view>
+                    <view class="phone-divider"></view>
+                    <input class="input-field bare" type="number" placeholder="请输入手机号" v-model="phone" />
                 </view>
-                <input class="input-field" type="number" placeholder="请输入手机号" v-model="phone" />
             </view>
 
-            <view class="form-item">
-                <input class="input-field small" type="number" placeholder="请输入验证码" v-model="codeSms" />
-                <view class="code-btn" @click="getCode">
+            <view class="form-item code-item">
+                <input class="input-field code-input" type="number" placeholder="请输入验证码" v-model="codeSms" />
+                <view class="code-btn" :class="{ disabled: codeCountdown > 0 }" @click="getCode">
                     <text class="btn-text">{{ codeCountdown > 0 ? codeCountdown + 's' : '获取验证码' }}</text>
                 </view>
             </view>
@@ -199,6 +202,14 @@ export default {
     margin-bottom: 24rpx;
     gap: 20rpx;
 
+    &.phone-item {
+        gap: 0;
+    }
+
+    &.code-item {
+        gap: 20rpx;
+    }
+
     .phone-prefix {
         min-width: 88rpx;
         text-align: center;
@@ -218,20 +229,74 @@ export default {
         font-size: 28rpx;
         color: #333;
         box-sizing: border-box;
+
+        &.code-input {
+            min-width: 0;
+            background: #fff;
+        }
+
+        &.bare {
+            border: none;
+            background: transparent;
+            padding: 0;
+        }
+    }
+
+    .phone-input-wrap {
+        width: 100%;
+        height: 88rpx;
+        display: flex;
+        align-items: center;
+        background: #fff;
+        border: 2rpx solid #e6ebf1;
+        border-radius: 14rpx;
+        padding: 0 28rpx;
+        box-sizing: border-box;
+    }
+
+    .phone-region {
+        min-width: 72rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .region-text {
+        font-size: 28rpx;
+        font-weight: 600;
+        color: #2f3a4a;
+    }
+
+    .phone-divider {
+        width: 2rpx;
+        height: 28rpx;
+        background: #d8e1ee;
+        margin: 0 24rpx;
     }
 
     .code-btn {
         height: 88rpx;
         border: 2rpx solid #2e83f0;
         border-radius: 14rpx;
-        padding: 0 28rpx;
+        min-width: 220rpx;
+        background: #f8fbff;
         display: flex;
         align-items: center;
         justify-content: center;
+
+        &.disabled {
+            border-color: #b7d3f8;
+            background: #f5f9ff;
+
+            .btn-text {
+                color: #b7d3f8;
+            }
+        }
     }
 
     .btn-text {
         font-size: 24rpx;
+        font-weight: 500;
         color: #2e83f0;
     }
 }

@@ -8,6 +8,7 @@ import cn.iocoder.yudao.module.pay.dal.dataobject.app.PayAppDO;
 import cn.iocoder.yudao.module.pay.enums.PayChannelEnum;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.PayClientConfig;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.NonePayClientConfig;
+import cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate.AggregatePayClientConfig;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.alipay.AlipayPayClientConfig;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.weixin.WxPayClientConfig;
 import com.baomidou.mybatisplus.annotation.KeySequence;
@@ -101,6 +102,8 @@ public class PayChannelDO extends TenantBaseDO {
                     return JsonUtils.parseObject2(json, WxPayClientConfig.class);
                 case "NonePayClientConfig":
                     return JsonUtils.parseObject2(json, NonePayClientConfig.class);
+                case "AggregatePayClientConfig":
+                    return JsonUtils.parseObject2(json, AggregatePayClientConfig.class);
                 default:
                     throw new IllegalArgumentException("未知的 PayClientConfig 类型：" + json);
             }

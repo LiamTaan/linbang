@@ -1,6 +1,12 @@
 {
 	"pages": [
 		{
+			"path": "pages/splash/splash",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/index/index",
 			"style": {
 				"navigationBarTitleText": "首页",
@@ -64,13 +70,6 @@
 			}
 		},
 		{
-			"path": "pages/platform_data/platform_data",
-			"style": {
-				"navigationBarTitleText": "平台数据看板",
-				"navigationStyle": "custom"
-			}
-		},
-		{
 			"path": "pages/promotion_center/promotion_center",
 			"style": {
 				"navigationBarTitleText": "推广员中心",
@@ -88,6 +87,13 @@
 			"path": "pages/identity_application/identity_application",
 			"style": {
 				"navigationBarTitleText": "身份申请",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/merchant_entry/merchant_entry",
+			"style": {
+				"navigationBarTitleText": "服务商入驻",
 				"navigationStyle": "custom"
 			}
 		},

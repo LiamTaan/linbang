@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import javax.annotation.security.PermitAll;
 
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
 
@@ -26,12 +27,14 @@ public class AppPlatformConfigController {
 
     @GetMapping("/app-settings")
     @Operation(summary = "获取 App 设置")
+    @PermitAll
     public CommonResult<AppPlatformSettingsRespVO> getAppSettings() {
         return success(platformConfigService.getAppSettings());
     }
 
     @GetMapping("/agreement")
     @Operation(summary = "获取协议文案")
+    @PermitAll
     public CommonResult<AppAgreementRespVO> getAgreement() {
         return success(platformConfigService.getAgreement());
     }

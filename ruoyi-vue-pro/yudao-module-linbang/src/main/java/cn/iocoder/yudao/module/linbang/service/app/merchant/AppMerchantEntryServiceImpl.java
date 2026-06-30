@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MERCHANT_ENTRY_ALREADY_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MERCHANT_ENTRY_NOT_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MERCHANT_SERVICE_CATEGORY_NOT_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_QUALIFICATION_NOT_EXISTS;
@@ -59,6 +60,13 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
     @Transactional(rollbackFor = Exception.class)
     public Long createEntry(Long authUserId, @Valid AppMerchantEntryCreateReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
+        MerchantEntryDO latestEntry = merchantEntryMapper.selectOne(new LambdaQueryWrapperX<MerchantEntryDO>()
+                .eq(MerchantEntryDO::getUserId, loginUser.getId())
+                .orderByDesc(MerchantEntryDO::getId)
+                .last("LIMIT 1"));
+        if (latestEntry != null && !"REJECTED".equalsIgnoreCase(latestEntry.getStatus())) {
+            throw exception(MERCHANT_ENTRY_ALREADY_EXISTS);
+        }
         validateCategories(reqVO.getServiceCategoryIds());
         validateQualifications(loginUser.getId(), reqVO.getQualificationIds());
         if (reqVO.getBankCardId() != null) {

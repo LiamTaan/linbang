@@ -52,7 +52,7 @@ public class MessagePushDispatchServiceImpl implements MessagePushDispatchServic
 
     private static final String DEFAULT_TARGET_SCOPE = "SINGLE_USER";
 
-    @Value("${linbang.message.public-base-url:http://127.0.0.1:48080}")
+    @Value("${linbang.message.public-base-url:${linbang.public-base-url:http://127.0.0.1:48080}}")
     private String publicBaseUrl;
 
     @Resource

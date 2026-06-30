@@ -39,6 +39,12 @@ public class AppPlatformSettingsRespVO {
     @Schema(description = "个体执照代办入口链接", example = "https://agent.linbang.cn/license")
     private String licenseAgentEntryUrl;
 
+    @Schema(description = "高德地图 JS API Key，用于 App H5 首页加载真实地图；为空时前端应提示配置缺失", example = "your-amap-js-key")
+    private String amapJsKey;
+
+    @Schema(description = "高德地图 JS API 安全密钥 securityJsCode，用于启用高德安全密钥校验的 H5 地图加载；未启用时可为空", example = "your-security-js-code")
+    private String amapSecurityJsCode;
+
     @Schema(description = "订单价格明细是否展示。`true` 表示 App 订单详情默认展示基础价、附加费、合计等明细", example = "true")
     private Boolean orderPriceDetailEnabled;
 

@@ -11,10 +11,12 @@
         "nvueStyleCompiler" : "uni-app",
         "compilerVersion" : 3,
         "splashscreen" : {
+            "androidStyle" : "common",
             "alwaysShowBeforeRender" : true,
             "waiting" : true,
             "autoclose" : true,
-            "delay" : 0
+            "delay" : 0,
+            "defaultSrc" : "static/img/splash/launch-screen-reference.png"
         },
         /* 模块配置 */
         "modules" : {

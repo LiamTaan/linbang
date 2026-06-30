@@ -6,6 +6,7 @@ import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.controller.app.member.roleapply.vo.AppMemberRoleApplyCreateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.roleapply.vo.AppMemberRoleApplyPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.roleapply.vo.AppMemberRoleApplyRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.rolecontext.vo.AppMemberRoleContextRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberroleapply.MemberRoleApplyDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberroleapply.MemberRoleApplyMapper;
@@ -23,6 +24,7 @@ import java.util.Set;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_ROLE_APPLY_NOT_EXISTS;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_ROLE_APPLY_ALREADY_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_ROLE_APPLY_PENDING_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_ROLE_APPLY_ROLE_CODE_INVALID;
 
@@ -31,10 +33,12 @@ import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_RO
 public class AppMemberRoleApplyServiceImpl implements AppMemberRoleApplyService {
 
     private static final Set<String> SUPPORTED_ROLE_CODES = new HashSet<>(Arrays.asList(
-            "PROMOTER", "PARTNER", "PLATFORM_OPERATOR"));
+            "PROMOTER", "PARTNER"));
 
     @Resource
     private MemberUserService memberUserService;
+    @Resource
+    private AppMemberRoleContextService appMemberRoleContextService;
     @Resource
     private MemberRoleApplyMapper memberRoleApplyMapper;
 
@@ -43,13 +47,17 @@ public class AppMemberRoleApplyServiceImpl implements AppMemberRoleApplyService 
     public Long createRoleApply(Long authUserId, AppMemberRoleApplyCreateReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
         validateApplyRoleCode(reqVO.getApplyRoleCode());
+        AppMemberRoleContextRespVO roleContext = appMemberRoleContextService.getRoleContext(authUserId);
+        if (roleContext.getEnabledRoleCodes() != null && roleContext.getEnabledRoleCodes().contains(reqVO.getApplyRoleCode())) {
+            throw exception(MEMBER_ROLE_APPLY_ALREADY_EXISTS);
+        }
         MemberRoleApplyDO pendingApply = memberRoleApplyMapper.selectOne(new LambdaQueryWrapperX<MemberRoleApplyDO>()
                 .eq(MemberRoleApplyDO::getUserId, loginUser.getId())
                 .eq(MemberRoleApplyDO::getApplyRoleCode, reqVO.getApplyRoleCode())
-                .eq(MemberRoleApplyDO::getAuditStatus, "PENDING")
+                .in(MemberRoleApplyDO::getAuditStatus, Arrays.asList("PENDING", "APPROVED"))
                 .last("LIMIT 1"));
         if (pendingApply != null) {
-            throw exception(MEMBER_ROLE_APPLY_PENDING_EXISTS);
+            throw exception(MEMBER_ROLE_APPLY_ALREADY_EXISTS);
         }
         MemberRoleApplyDO apply = MemberRoleApplyDO.builder()
                 .userId(loginUser.getId())

@@ -2,7 +2,7 @@
     <view class="login-container">
         <view class="header">
             <view class="avatar">
-                <image class="avatar-img" src="/static/logo.png" />
+                <image class="avatar-img" src="/static/img/login/anonymity.png" />
             </view>
             <view class="welcome-text">
                 <view class="title">欢迎回来</view>
@@ -21,24 +21,24 @@
                     </view>
                 </view>
 
-                <view class="form-item">
-                    <view class="phone-prefix">
-                        <text class="prefix-text">+86</text>
+                <view class="form-item phone-item">
+                    <view class="phone-input-wrap">
+                        <view class="phone-region">
+                            <text class="region-text">+86</text>
+                        </view>
+                        <view class="phone-divider"></view>
+                        <input class="input-field bare" type="number" placeholder="请输入手机号" v-model="phone" />
                     </view>
-                    <input class="input-field" type="number" placeholder="请输入手机号" v-model="phone" />
                 </view>
 
-                <view v-if="loginType === 'phone'" class="form-item">
-                    <view class="phone-prefix">
-                        <text class="prefix-text">验证码</text>
-                    </view>
-                    <input class="input-field small" type="number" placeholder="验证码" v-model="code" />
-                    <view class="code-btn" @click="getCode">
+                <view v-if="loginType === 'phone'" class="form-item code-item">
+                    <input class="input-field code-input" type="number" placeholder="请输入验证码" v-model="code" />
+                    <view class="code-btn" :class="{ disabled: codeCountdown > 0 }" @click="getCode">
                         <text class="btn-text">{{ codeCountdown > 0 ? codeCountdown + 's' : '获取验证码' }}</text>
                     </view>
                 </view>
-                <view v-if="loginType === 'password'" class="form-item password">
-                    <input class="input-field" type="password" placeholder="请输入密码" v-model="password" />
+                <view v-if="loginType === 'password'" class="form-item password password-item">
+                    <input class="input-field password-input" type="password" placeholder="请输入密码" v-model="password" />
                 </view>
 
                 <view class="login-btn" @click="login">
@@ -46,24 +46,6 @@
                 </view>
             </view>
 
-
-            <view class="or-line">
-                <view class="line"></view>
-                <text class="or-text">其他方式登录</text>
-                <view class="line"></view>
-            </view>
-
-            <view class="social-btns">
-                <view class="social-btn" @click="loginWithWechat">
-                    <image class="social-icon" src="/static/img/login/WeChat.png" />
-                </view>
-                <view class="social-btn" @click="loginWithAlipay">
-                    <image class="social-icon" src="/static/img/login/Alipay.png" />
-                </view>
-                <view class="social-btn">
-                    <image class="social-icon" src="/static/img/login/anonymity.png" />
-                </view>
-            </view>
 
             <view class="register-link" @click="switchToRegister">
                 <text class="link-text">还没有账号？</text>
@@ -76,7 +58,6 @@
 <script>
 import { accountLogin, loginBySms, sendSmsCode } from '@/api/auth'
 import { applyLoginSession, redirectAfterLogin } from '@/services/session'
-import { finishSocialLogin, SOCIAL_TYPES, startSocialAuthorize } from '@/utils/social'
 
 export default {
     props: {
@@ -152,43 +133,6 @@ export default {
                 await applyLoginSession(loginResp)
                 redirectAfterLogin(this.redirect)
             } catch (error) {}
-        },
-        async loginWithWechat() {
-            try {
-                const authPayload = await startSocialAuthorize(SOCIAL_TYPES.WECHAT)
-                if (authPayload.manualCallback) {
-                    uni.showToast({
-                        title: '请在授权完成后返回 App',
-                        icon: 'none'
-                    })
-                    return
-                }
-                const result = await finishSocialLogin(authPayload, this.redirect)
-                if (result.bindRequired) {
-                    this.$emit('switch-to-social-bind')
-                }
-            } catch (error) {
-                uni.showToast({
-                    title: '微信登录暂不可用',
-                    icon: 'none'
-                })
-            }
-        },
-        async loginWithAlipay() {
-            try {
-                const authPayload = await startSocialAuthorize(SOCIAL_TYPES.ALIPAY)
-                if (authPayload.manualCallback) {
-                    uni.showToast({
-                        title: '已打开支付宝授权，请完成后返回',
-                        icon: 'none'
-                    })
-                }
-            } catch (error) {
-                uni.showToast({
-                    title: '支付宝登录暂不可用',
-                    icon: 'none'
-                })
-            }
         },
         switchToRegister() {
             this.$emit('switch-to-register')
@@ -295,6 +239,19 @@ export default {
             margin-bottom: 24rpx;
             border-radius: 14rpx;
 
+            &.phone-item {
+                padding: 0;
+            }
+
+            &.code-item {
+                padding: 0;
+                gap: 20rpx;
+            }
+
+            &.password-item {
+                padding: 0;
+            }
+
             .phone-prefix {
                 // padding-right: 20rpx;
                 margin-right: 20rpx;
@@ -320,21 +277,80 @@ export default {
                 &.small {
                     flex: 1;
                 }
+
+                &.code-input {
+                    background: #FFFFFF;
+                    border: 2rpx solid #E2E8F3;
+                    min-width: 0;
+                }
+
+                &.password-input {
+                    min-width: 0;
+                }
+
+                &.bare {
+                    border: none;
+                    background: transparent;
+                    padding: 0;
+                }
+            }
+
+            .phone-input-wrap {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                background: #FFFFFF;
+                border: 2rpx solid #E2E8F3;
+                border-radius: 14rpx;
+                padding: 0 28rpx;
+                box-sizing: border-box;
+            }
+
+            .phone-region {
+                min-width: 72rpx;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .region-text {
+                font-family: Microsoft YaHei;
+                font-weight: 600;
+                font-size: 28rpx;
+                color: #2F3A4A;
+            }
+
+            .phone-divider {
+                width: 2rpx;
+                height: 28rpx;
+                background: #D8E1EE;
+                margin: 0 24rpx;
             }
 
             .code-btn {
                 border-radius: 14rpx;
-                border: 1rpx solid #2E83F0;
+                border: 2rpx solid #2E83F0;
                 height: 100%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                margin-left: 20rpx;
+                min-width: 220rpx;
+                background: #F8FBFF;
+
+                &.disabled {
+                    border-color: #B7D3F8;
+                    background: #F5F9FF;
+
+                    .btn-text {
+                        color: #B7D3F8;
+                    }
+                }
 
                 .btn-text {
-                    padding: 0 36rpx;
+                    padding: 0 28rpx;
                     font-family: Microsoft YaHei;
-                    font-weight: 400;
+                    font-weight: 500;
                     font-size: 24rpx;
                     color: #2E83F0;
                 }
@@ -357,44 +373,8 @@ export default {
             }
         }
 
-        .or-line {
-            margin-top: 70rpx;
-            margin-bottom: 40rpx;
-            display: flex;
-            align-items: center;
-            margin-bottom: 1.25rem;
-            justify-content: center;
-
-            .or-text {
-                font-family: Microsoft YaHei;
-                font-weight: 400;
-                font-size: 25rpx;
-                color: #999999;
-            }
-        }
-
-        .social-btns {
-            display: flex;
-            justify-content: center;
-            gap: 80rpx;
-            margin-bottom: 60rpx;
-
-            .social-btn {
-                width: 49rpx;
-                height: 39rpx;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-
-                .social-icon {
-                    width: 100%;
-                    height: 100%;
-                }
-            }
-        }
-
         .register-link {
+            margin-top: 60rpx;
             text-align: center;
             font-family: Microsoft YaHei;
             font-weight: 400;

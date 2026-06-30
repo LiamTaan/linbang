@@ -3009,6 +3009,52 @@ CREATE TABLE IF NOT EXISTS `lb_app_message_setting` (
   KEY `idx_lb_app_message_setting_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户消息偏好设置表';
 
+DROP TABLE IF EXISTS `lb_help_feedback`;
+CREATE TABLE IF NOT EXISTS `lb_help_feedback` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` BIGINT NOT NULL COMMENT '反馈用户 ID',
+  `feedback_type` VARCHAR(64) NOT NULL COMMENT '反馈分类',
+  `content` VARCHAR(2000) NOT NULL COMMENT '反馈内容',
+  `contact_mobile` VARCHAR(20) DEFAULT NULL COMMENT '联系电话',
+  `attachment_urls` VARCHAR(1000) DEFAULT NULL COMMENT '附件地址，多个以逗号分隔',
+  `status` VARCHAR(32) NOT NULL DEFAULT 'PENDING' COMMENT '处理状态 PENDING/PROCESSING/FINISHED',
+  `handle_by` BIGINT DEFAULT NULL COMMENT '处理人',
+  `handle_remark` VARCHAR(1000) DEFAULT NULL COMMENT '处理备注',
+  `tenant_id` BIGINT NOT NULL DEFAULT 1 COMMENT '租户编号',
+  `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_lb_help_feedback_user_id` (`user_id`),
+  KEY `idx_lb_help_feedback_type` (`feedback_type`),
+  KEY `idx_lb_help_feedback_status` (`status`),
+  KEY `idx_lb_help_feedback_tenant_id` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='帮助反馈表';
+
+DROP TABLE IF EXISTS `lb_help_faq`;
+CREATE TABLE IF NOT EXISTS `lb_help_faq` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `category_code` VARCHAR(64) NOT NULL COMMENT '分类编码',
+  `category_name` VARCHAR(64) NOT NULL COMMENT '分类名称',
+  `title` VARCHAR(128) NOT NULL COMMENT '问题标题',
+  `content` VARCHAR(4000) NOT NULL COMMENT '问题答案正文',
+  `icon` VARCHAR(64) DEFAULT NULL COMMENT 'App 图标标识',
+  `sort_no` INT NOT NULL DEFAULT 0 COMMENT '排序号',
+  `status` VARCHAR(32) NOT NULL DEFAULT 'ENABLE' COMMENT '状态 ENABLE/DISABLE',
+  `tenant_id` BIGINT NOT NULL DEFAULT 1 COMMENT '租户编号',
+  `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_lb_help_faq_category` (`category_code`),
+  KEY `idx_lb_help_faq_status_sort` (`status`, `sort_no`),
+  KEY `idx_lb_help_faq_tenant_id` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='帮助中心常见问题表';
+
 DROP TABLE IF EXISTS `lb_message_feedback_stat`;
 CREATE TABLE IF NOT EXISTS `lb_message_feedback_stat` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',

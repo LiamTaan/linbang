@@ -40,8 +40,8 @@ export function getReview(id) {
   return get('/review/comment/get', { id })
 }
 
-export function getPendingReviewUnits() {
-  return get('/review/comment/pending-units')
+export function getPendingReviewUnits(options = {}) {
+  return get('/review/comment/pending-units', {}, options)
 }
 
 export function getMerchantReviewSummary(merchantId) {

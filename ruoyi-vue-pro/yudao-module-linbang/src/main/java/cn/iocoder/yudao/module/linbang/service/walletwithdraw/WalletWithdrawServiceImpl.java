@@ -62,9 +62,7 @@ import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.*;
 public class WalletWithdrawServiceImpl implements WalletWithdrawService {
 
     private static final String[] PREFERRED_TRANSFER_CHANNELS = {
-            PayChannelEnum.ALIPAY_APP.getCode(),
-            PayChannelEnum.WX_LITE.getCode(),
-            PayChannelEnum.WALLET.getCode()
+            PayChannelEnum.AGGREGATE.getCode()
     };
 
     @Resource
@@ -299,6 +297,7 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
         }
         PayAppDO payApp = getEnabledPayApp();
         PayChannelDO channel = selectTransferChannel(payApp.getId());
+        assertTransferChannelSupported(channel);
         PayTransferCreateReqDTO transferReqDTO = new PayTransferCreateReqDTO()
                 .setAppKey(payApp.getAppKey())
                 .setUserIp("127.0.0.1")
@@ -310,9 +309,6 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
                 .setUserAccount(bankCard.getTransferAccount())
                 .setUserName(bankCard.getAccountName())
                 .setChannelCode(channel.getCode());
-        if (PayChannelEnum.isAlipay(channel.getCode())) {
-            transferReqDTO.setChannelExtras(PayTransferCreateReqDTO.buildAlipayChannelExtra("服务商提现"));
-        }
         PayTransferCreateRespDTO transferRespDTO = payTransferApi.createTransfer(transferReqDTO);
         walletWithdrawMapper.updateById(WalletWithdrawDO.builder()
                 .id(withdraw.getId())
@@ -368,10 +364,13 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
                 }
             }
         }
-        if (channels.isEmpty()) {
-            throw exception(WALLET_WITHDRAW_NOT_EXISTS);
+        throw exception(WALLET_WITHDRAW_TRANSFER_UNSUPPORTED);
+    }
+
+    private void assertTransferChannelSupported(PayChannelDO channel) {
+        if (PayChannelEnum.AGGREGATE.getCode().equals(channel.getCode())) {
+            throw exception(WALLET_WITHDRAW_TRANSFER_UNSUPPORTED);
         }
-        return channels.get(0);
     }
 
     private int toFen(BigDecimal amount) {

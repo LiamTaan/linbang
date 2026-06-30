@@ -127,20 +127,25 @@ export function request(options) {
           resolve(result.data)
           return
         }
-        if (result.code === 401 && auth && retry) {
-          try {
-            await refreshAccessToken()
-            const nextResult = await request({
-              ...options,
-              retry: false
-            })
-            resolve(nextResult)
-            return
-          } catch (error) {
-            handleUnauthorized()
-            reject(error)
-            return
+        if (result.code === 401 && auth) {
+          if (retry) {
+            try {
+              await refreshAccessToken()
+              const nextResult = await request({
+                ...options,
+                retry: false
+              })
+              resolve(nextResult)
+              return
+            } catch (error) {
+              handleUnauthorized()
+              reject(error)
+              return
+            }
           }
+          handleUnauthorized()
+          reject(new Error(result.msg || '登录已过期'))
+          return
         }
         if (!silent) {
           showError(result.msg || '请求失败')
@@ -225,20 +230,25 @@ export function uploadFile(filePath, options = {}) {
           resolve(result.data)
           return
         }
-        if (result.code === 401 && auth && retry) {
-          try {
-            await refreshAccessToken()
-            const nextResult = await uploadFile(filePath, {
-              ...options,
-              retry: false
-            })
-            resolve(nextResult)
-            return
-          } catch (error) {
-            handleUnauthorized()
-            reject(error)
-            return
+        if (result.code === 401 && auth) {
+          if (retry) {
+            try {
+              await refreshAccessToken()
+              const nextResult = await uploadFile(filePath, {
+                ...options,
+                retry: false
+              })
+              resolve(nextResult)
+              return
+            } catch (error) {
+              handleUnauthorized()
+              reject(error)
+              return
+            }
           }
+          handleUnauthorized()
+          reject(new Error(result.msg || '登录已过期'))
+          return
         }
         if (!silent) {
           showError(result.msg || '上传失败')

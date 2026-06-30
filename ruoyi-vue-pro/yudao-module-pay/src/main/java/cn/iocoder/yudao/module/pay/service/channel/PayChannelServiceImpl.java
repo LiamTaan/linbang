@@ -14,6 +14,7 @@ import cn.iocoder.yudao.module.pay.framework.pay.core.client.PayClient;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.PayClientConfig;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.PayClientFactory;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.NonePayClientConfig;
+import cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate.AggregatePayClientConfig;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.alipay.AlipayPayClientConfig;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.weixin.WxPayClientConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -84,6 +85,7 @@ public class PayChannelServiceImpl implements PayChannelService {
         // 解析配置
         Class<? extends PayClientConfig> payClass = PayChannelEnum.isAlipay(code) ? AlipayPayClientConfig.class
                 : PayChannelEnum.isWeixin(code) ? WxPayClientConfig.class
+                : PayChannelEnum.AGGREGATE.getCode().equals(code) ? AggregatePayClientConfig.class
                 : NonePayClientConfig.class;
         if (ObjectUtil.isNull(payClass)) {
             throw exception(CHANNEL_NOT_FOUND);
