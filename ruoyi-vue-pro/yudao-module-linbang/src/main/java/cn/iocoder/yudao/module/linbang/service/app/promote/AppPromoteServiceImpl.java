@@ -29,6 +29,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.PROMOTER_NOT_EXISTS;
+
 @Service
 @Validated
 public class AppPromoteServiceImpl implements AppPromoteService {
@@ -44,7 +47,7 @@ public class AppPromoteServiceImpl implements AppPromoteService {
 
     @Override
     public AppPromoteCenterRespVO getPromoteCenter(Long userId) {
-        PromoterDO promoter = promoterService.getOrCreatePromoter(userId);
+        PromoterDO promoter = getRequiredPromoter(userId);
         PageResult<CommissionOrderDO> recentPage = commissionOrderService.getAppCommissionOrderPage(promoter.getId(),
                 new AppCommissionPageReqVO());
         List<CommissionOrderDO> commissionOrders = recentPage.getList();
@@ -71,13 +74,13 @@ public class AppPromoteServiceImpl implements AppPromoteService {
 
     @Override
     public PageResult<CommissionOrderDO> getCommissionPage(Long userId, AppCommissionPageReqVO reqVO) {
-        PromoterDO promoter = promoterService.getOrCreatePromoter(userId);
+        PromoterDO promoter = getRequiredPromoter(userId);
         return commissionOrderService.getAppCommissionOrderPage(promoter.getId(), reqVO);
     }
 
     @Override
     public AppInviteCodeRespVO getInviteCode(Long userId) {
-        PromoterDO promoter = promoterService.getOrCreatePromoter(userId);
+        PromoterDO promoter = getRequiredPromoter(userId);
         return new AppInviteCodeRespVO(promoter.getInviteCode(), promoter.getInviteUrl(),
                 promoter.getInviteUrl(), "/app/promote/poster?code=" + promoter.getInviteCode());
     }
@@ -89,7 +92,7 @@ public class AppPromoteServiceImpl implements AppPromoteService {
 
     @Override
     public AppPromoteTeamStatsRespVO getTeamStats(Long userId) {
-        PromoterDO promoter = promoterService.getOrCreatePromoter(userId);
+        PromoterDO promoter = getRequiredPromoter(userId);
         List<PromoterRelationDO> firstLevelRelations = promoterRelationMapper.selectList(new LambdaQueryWrapperX<PromoterRelationDO>()
                 .eq(PromoterRelationDO::getPromoterId, promoter.getId())
                 .orderByDesc(PromoterRelationDO::getBindTime, PromoterRelationDO::getId));
@@ -100,7 +103,7 @@ public class AppPromoteServiceImpl implements AppPromoteService {
                 .collect(Collectors.toList());
         List<PromoterDO> firstLevelPromoters = firstLevelUserIds.isEmpty() ? java.util.Collections.emptyList()
                 : firstLevelUserIds.stream()
-                .map(promoterService::getOrCreatePromoter)
+                .map(promoterService::getPromoterByUserId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         List<Long> firstLevelPromoterIds = firstLevelPromoters.stream()
@@ -136,7 +139,7 @@ public class AppPromoteServiceImpl implements AppPromoteService {
 
     @Override
     public PageResult<AppPromoteTemplateRespVO> getTemplatePage(Long userId, AppPromoteTemplatePageReqVO reqVO) {
-        promoterService.getOrCreatePromoter(userId);
+        getRequiredPromoter(userId);
         PageResult<MessageTemplateDO> pageResult = messageTemplateMapper.selectPage(reqVO,
                 new LambdaQueryWrapperX<MessageTemplateDO>()
                         .eq(MessageTemplateDO::getStatus, "ENABLE")
@@ -150,12 +153,20 @@ public class AppPromoteServiceImpl implements AppPromoteService {
 
     @Override
     public AppPromoteTemplateRespVO getTemplate(Long userId, Long id) {
-        promoterService.getOrCreatePromoter(userId);
+        getRequiredPromoter(userId);
         MessageTemplateDO template = messageTemplateMapper.selectById(id);
         if (template == null || !"ENABLE".equalsIgnoreCase(template.getStatus())) {
             return null;
         }
         return buildTemplateResp(template);
+    }
+
+    private PromoterDO getRequiredPromoter(Long userId) {
+        PromoterDO promoter = promoterService.getPromoterByUserId(userId);
+        if (promoter == null || "DISABLE".equalsIgnoreCase(promoter.getStatus())) {
+            throw exception(PROMOTER_NOT_EXISTS);
+        }
+        return promoter;
     }
 
     private Integer countByStatus(List<CommissionOrderDO> commissionOrders, String status) {

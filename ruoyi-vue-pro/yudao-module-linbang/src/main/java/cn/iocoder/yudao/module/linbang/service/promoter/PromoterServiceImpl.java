@@ -68,6 +68,11 @@ public class PromoterServiceImpl implements PromoterService {
     private MessagePushDispatchService messagePushDispatchService;
 
     @Override
+    public PromoterDO getPromoterByUserId(Long userId) {
+        return promoterMapper.selectByUserId(userId);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public PromoterDO getOrCreatePromoter(Long userId) {
         PromoterDO promoter = promoterMapper.selectByUserId(userId);
