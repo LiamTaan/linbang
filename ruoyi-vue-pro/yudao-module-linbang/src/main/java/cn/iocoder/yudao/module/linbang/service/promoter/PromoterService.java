@@ -11,6 +11,8 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.promoter.PromoterDO;
 
 public interface PromoterService {
 
+    PromoterDO getPromoterByUserId(Long userId);
+
     PromoterDO getOrCreatePromoter(Long userId);
 
     void bindInviteCode(Long userId, AppPromoteInviteCodeBindReqVO reqVO);

@@ -58,4 +58,8 @@ export default {
 view {
 	box-sizing: border-box;
 }
+
+.back-icon {
+	display: inline-block;
+}
 </style>

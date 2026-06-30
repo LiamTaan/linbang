@@ -28,10 +28,8 @@
                 </view>
                 <view class="user-level">
                     <view class="level-badge">
-                        <text class="level-text">
-                            <image src="/static/img/my/level@3x.png" />
-                            {{ creditLevelLabel }}
-                        </text>
+                        <image class="level-icon" src="/static/img/my/level@3x.png" />
+                        <text class="level-text">{{ creditLevelLabel }}</text>
                     </view>
                 </view>
             </view>
@@ -254,7 +252,7 @@ export default {
                 return
             }
             try {
-                const [profile, roleContext, wallet, unreadCount, acceptPage, orderTotal, servingPage, afterSalePage, pendingReview, promote, merchantProgress] = await Promise.all([
+                const [profile, roleContext, wallet, unreadCount, acceptPage, orderTotal, servingPage, afterSalePage, pendingReview, merchantProgress] = await Promise.all([
                     getProfile({ silent: true }),
                     getRoleContext({ silent: true }),
                     getWalletAccount({ silent: true }),
@@ -264,13 +262,14 @@ export default {
                     getOrderPage({ pageNo: 1, pageSize: 1, businessCategory: 'IN_SERVICE' }, { silent: true }).catch(() => ({ total: 0, list: [] })),
                     getOrderPage({ pageNo: 1, pageSize: 1, businessCategory: 'AFTER_SALE' }, { silent: true }).catch(() => ({ total: 0, list: [] })),
                     getPendingReviewUnits({ silent: true }).catch(() => []),
-                    getPromoteCenter({ silent: true }).catch(() => ({})),
                     getMerchantOnboardingProgress({ silent: true }).catch(() => ({}))
                 ])
                 this.profile = profile || {}
                 this.roleContext = roleContext || {}
                 this.wallet = wallet || {}
-                this.promote = promote || {}
+                this.promote = ((roleContext && roleContext.enabledRoleCodes) || []).includes('PROMOTER')
+                    ? await getPromoteCenter({ silent: true }).catch(() => ({}))
+                    : {}
                 this.merchantProgress = merchantProgress || {}
                 this.unreadCount = Number(unreadCount || 0)
                 this.orderStats = {
@@ -472,19 +471,26 @@ export default {
             .level-badge {
                 background: #FFE8CD;
                 min-width: 88rpx;
-                padding: 10rpx 18rpx;
+                height: 44rpx;
+                padding: 0 18rpx;
                 border-radius: 32rpx;
-                text-align: center;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6rpx;
+
+                .level-icon {
+                    width: 16rpx;
+                    height: 13rpx;
+                    display: block;
+                    flex-shrink: 0;
+                }
 
                 .level-text {
                     font-size: 20rpx;
+                    line-height: 20rpx;
                     color: #F9A23F;
                     white-space: nowrap;
-
-                    image {
-                        width: 16rpx;
-                        height: 13rpx;
-                    }
                 }
             }
         }

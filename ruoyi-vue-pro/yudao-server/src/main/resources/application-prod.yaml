@@ -187,31 +187,31 @@ yudao:
 
 justauth:
   enabled: true
-  type:
-    DINGTALK:
-      client-id: ${JUSTAUTH_DINGTALK_CLIENT_ID:}
-      client-secret: ${JUSTAUTH_DINGTALK_CLIENT_SECRET:}
-      ignore-check-redirect-uri: true
-    WECHAT_ENTERPRISE:
-      client-id: ${JUSTAUTH_WECHAT_ENTERPRISE_CLIENT_ID:}
-      client-secret: ${JUSTAUTH_WECHAT_ENTERPRISE_CLIENT_SECRET:}
-      agent-id: ${JUSTAUTH_WECHAT_ENTERPRISE_AGENT_ID:}
-      ignore-check-redirect-uri: true
-    WECHAT_MINI_PROGRAM:
-      client-id: ${wx.miniapp.appid}
-      client-secret: ${wx.miniapp.secret}
-      ignore-check-redirect-uri: true
-      ignore-check-state: true
-    WECHAT_MP:
-      client-id: ${wx.mp.app-id}
-      client-secret: ${wx.mp.secret}
-      ignore-check-redirect-uri: true
-    ALIPAY:
-      client-id: ${JUSTAUTH_ALIPAY_CLIENT_ID:}
-      client-secret: ${JUSTAUTH_ALIPAY_CLIENT_SECRET:}
-      alipay-public-key: ${JUSTAUTH_ALIPAY_PUBLIC_KEY:}
-      ignore-check-redirect-uri: true
-      ignore-check-state: true
+#  type:
+#    DINGTALK:
+#      client-id: ${JUSTAUTH_DINGTALK_CLIENT_ID:}
+#      client-secret: ${JUSTAUTH_DINGTALK_CLIENT_SECRET:}
+#      ignore-check-redirect-uri: true
+#    WECHAT_ENTERPRISE:
+#      client-id: ${JUSTAUTH_WECHAT_ENTERPRISE_CLIENT_ID:}
+#      client-secret: ${JUSTAUTH_WECHAT_ENTERPRISE_CLIENT_SECRET:}
+#      agent-id: ${JUSTAUTH_WECHAT_ENTERPRISE_AGENT_ID:}
+#      ignore-check-redirect-uri: true
+#    WECHAT_MINI_PROGRAM:
+#      client-id: ${wx.miniapp.appid}
+#      client-secret: ${wx.miniapp.secret}
+#      ignore-check-redirect-uri: true
+#      ignore-check-state: true
+#    WECHAT_MP:
+#      client-id: ${wx.mp.app-id}
+#      client-secret: ${wx.mp.secret}
+#      ignore-check-redirect-uri: true
+#    ALIPAY:
+#      client-id: ${JUSTAUTH_ALIPAY_CLIENT_ID:}
+#      client-secret: ${JUSTAUTH_ALIPAY_CLIENT_SECRET:}
+#      alipay-public-key: ${JUSTAUTH_ALIPAY_PUBLIC_KEY:}
+#      ignore-check-redirect-uri: true
+#      ignore-check-state: true
   cache:
     type: REDIS
     prefix: 'social_auth_state:'

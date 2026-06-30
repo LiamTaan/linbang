@@ -7,11 +7,9 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.memberroleapply.MemberRole
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantentry.MerchantEntryDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.partnerinfo.PartnerInfoDO;
-import cn.iocoder.yudao.module.linbang.dal.dataobject.promoter.PromoterDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberroleapply.MemberRoleApplyMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantentry.MerchantEntryMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.partnerinfo.PartnerInfoMapper;
-import cn.iocoder.yudao.module.linbang.dal.mysql.promoter.PromoterMapper;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
 import org.springframework.stereotype.Service;
 
@@ -37,9 +35,6 @@ public class AppMemberRoleContextServiceImpl implements AppMemberRoleContextServ
 
     @Resource
     private MemberUserService memberUserService;
-    @Resource
-    private PromoterMapper promoterMapper;
-    @Resource
     private PartnerInfoMapper partnerInfoMapper;
     @Resource
     private MerchantEntryMapper merchantEntryMapper;
@@ -49,7 +44,6 @@ public class AppMemberRoleContextServiceImpl implements AppMemberRoleContextServ
     @Override
     public AppMemberRoleContextRespVO getRoleContext(Long authUserId) {
         MemberUserDO user = memberUserService.getOrCreateMemberUser(authUserId);
-        PromoterDO promoter = promoterMapper.selectByUserId(authUserId);
         PartnerInfoDO partnerInfo = partnerInfoMapper.selectOne(PartnerInfoDO::getUserId, authUserId);
         MerchantEntryDO merchantEntry = merchantEntryMapper.selectOne(new LambdaQueryWrapperX<MerchantEntryDO>()
                 .eq(MerchantEntryDO::getUserId, authUserId)
@@ -63,9 +57,6 @@ public class AppMemberRoleContextServiceImpl implements AppMemberRoleContextServ
         enabledRoleCodes.add("USER");
         if (merchantEntry != null && "APPROVED".equalsIgnoreCase(merchantEntry.getFinalAuditStatus())) {
             enabledRoleCodes.add("MERCHANT");
-        }
-        if (promoter != null && !"DISABLE".equalsIgnoreCase(promoter.getStatus())) {
-            enabledRoleCodes.add("PROMOTER");
         }
         if (partnerInfo != null && "ENABLE".equalsIgnoreCase(partnerInfo.getStatus())) {
             enabledRoleCodes.add("PARTNER");
