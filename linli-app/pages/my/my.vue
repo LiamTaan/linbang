@@ -263,8 +263,7 @@ export default {
                     commonGroup,
                     [
                         { key: 'benefit', label: '我的权益', icon: '/static/img/my/rights@3x.png' },
-                        { key: 'reward', label: '我的悬赏', icon: '/static/img/my/reward@3x.png' },
-                        { key: 'promote_center', label: '推广中心', icon: '/static/img/my/reward@3x.png' }
+                        { key: 'reward', label: '我的悬赏', icon: '/static/img/my/reward@3x.png' }
                     ],
                     supportGroup
                 ]
@@ -284,7 +283,6 @@ export default {
                 return [
                     [
                         { key: 'partner_workbench', label: '区域合作商工作台', icon: '/static/img/my/order-management@3x.png' },
-                        { key: 'promote_center', label: '推广中心', icon: '/static/img/my/reward@3x.png' },
                         { key: 'benefit', label: '我的权益', icon: '/static/img/my/rights@3x.png' }
                     ],
                     commonGroup,
@@ -304,7 +302,6 @@ export default {
                     { key: 'notice', label: '闹钟提醒', icon: '/static/img/my/alarm@3x.png', badge: this.unreadCount }
                 ],
                 [
-                    { key: 'promote_center', label: '推广中心', icon: '/static/img/my/reward@3x.png' },
                     { key: 'settings', label: '系统设置', icon: '/static/img/my/settings@3x.png' },
                     { key: 'feedback', label: '帮助与反馈', icon: '/static/img/my/help-feedback@3x.png' },
                     { key: 'service', label: '我的客服', icon: '/static/img/my/help-feedback@3x.png' }

@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
 import cn.iocoder.yudao.framework.common.util.servlet.ServletUtils;
+import cn.iocoder.yudao.framework.security.config.SecurityProperties;
 import cn.iocoder.yudao.module.linbang.constants.LinbangRiskConstants;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderCreateReqVO;
@@ -24,8 +25,10 @@ import cn.iocoder.yudao.module.pay.api.notify.dto.PayOrderNotifyReqDTO;
 import cn.iocoder.yudao.module.pay.api.order.PayOrderApi;
 import cn.iocoder.yudao.module.pay.api.order.dto.PayOrderCreateReqDTO;
 import cn.iocoder.yudao.module.pay.api.order.dto.PayOrderRespDTO;
+import cn.iocoder.yudao.module.pay.controller.admin.order.vo.PayOrderSubmitReqVO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.app.PayAppDO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.order.PayOrderDO;
+import cn.iocoder.yudao.module.pay.enums.PayChannelEnum;
 import cn.iocoder.yudao.module.pay.enums.order.PayOrderStatusEnum;
 import cn.iocoder.yudao.module.pay.service.app.PayAppService;
 import cn.iocoder.yudao.module.pay.service.order.PayOrderService;
@@ -69,6 +72,8 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
     @Resource
     private PayOrderService payOrderService;
     @Resource
+    private SecurityProperties securityProperties;
+    @Resource
     private MatchDispatchService matchDispatchService;
     @Resource
     private LinbangFinanceService linbangFinanceService;
@@ -107,6 +112,23 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
                 .build());
         saveOperateLog(order.getId(), null, "CREATE_PAY_ORDER", "USER", loginUser.getId(),
                 order.getStatus(), order.getStatus(), "用户创建支付单");
+        return payOrderId;
+    }
+
+    @Override
+    public Long simulatePaySuccess(Long authUserId, @Valid AppLinbangPayOrderCreateReqVO reqVO) {
+        if (!Boolean.TRUE.equals(securityProperties.getMockEnable())) {
+            throw exception(ORDER_PAY_STATUS_NOT_ALLOWED);
+        }
+        Long payOrderId = createPayOrder(authUserId, reqVO);
+        PayOrderDO payOrder = payOrderService.getOrder(payOrderId);
+        if (payOrder != null && PayOrderStatusEnum.isSuccess(payOrder.getStatus())) {
+            return payOrderId;
+        }
+        PayOrderSubmitReqVO submitReqVO = new PayOrderSubmitReqVO();
+        submitReqVO.setId(payOrderId);
+        submitReqVO.setChannelCode(PayChannelEnum.MOCK.getCode());
+        payOrderService.submitOrder(submitReqVO, ServletUtils.getClientIP());
         return payOrderId;
     }
 
