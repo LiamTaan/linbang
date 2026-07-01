@@ -117,11 +117,11 @@
                 </view>
             </view>
 
-            <view class="bottom-actions" v-else>
-                <view class="bottom-btn contact-btn" @click="handleComplaint">
+            <view class="bottom-actions" v-else-if="showBottomActions">
+                <view class="bottom-btn contact-btn" v-if="showComplaintAction" @click="handleComplaint">
                     <text class="btn-text">投诉反馈</text>
                 </view>
-                <view class="bottom-btn refund-btn" @click="handleRefund">
+                <view class="bottom-btn refund-btn" v-if="showRefundAction" @click="handleRefund">
                     <text class="btn-text">申请退款</text>
                 </view>
             </view>
@@ -187,6 +187,15 @@ export default {
             const previewResult = (this.previewSnapshot && this.previewSnapshot.previewResult) || {}
             const guaranteeConfig = (this.previewSnapshot && this.previewSnapshot.guaranteeConfig) || {}
             return previewResult.agreementTitle || guaranteeConfig.projectEscrowAgreementTitle || guaranteeConfig.agreementTitle || ''
+        },
+        showRefundAction() {
+            return ['PENDING_ACCEPT', 'ACCEPTED', 'SERVING', 'PENDING_CONFIRM', 'FINISHED', 'AFTER_SALE'].includes(this.orderDetail.status)
+        },
+        showComplaintAction() {
+            return ['PENDING_ACCEPT', 'ACCEPTED', 'SERVING', 'PENDING_CONFIRM', 'FINISHED', 'AFTER_SALE'].includes(this.orderDetail.status)
+        },
+        showBottomActions() {
+            return this.showRefundAction || this.showComplaintAction
         }
     },
     onLoad(options) {
