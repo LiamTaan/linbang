@@ -118,6 +118,9 @@
             </view>
 
             <view class="bottom-actions" v-else-if="showBottomActions">
+                <view class="bottom-btn pay-btn" v-if="showPayAction" @click="handlePay">
+                    <text class="btn-text">{{ paying ? '支付中...' : '立即支付' }}</text>
+                </view>
                 <view class="bottom-btn contact-btn" v-if="showComplaintAction" @click="handleComplaint">
                     <text class="btn-text">投诉反馈</text>
                 </view>
@@ -141,6 +144,7 @@ import {
     startOrderUnitService,
     uploadDeliveryProof
 } from '@/api/order'
+import { createPayOrder, getPayOrder, submitPayOrder } from '@/api/pay'
 import {
     buildAddressText,
     extractUploadedFile,
@@ -159,7 +163,9 @@ export default {
             orderDetail: {},
             isPreviewMode: false,
             previewSnapshot: null,
-            publishing: false
+            publishing: false,
+            paying: false,
+            payChecking: false
         }
     },
     computed: {
@@ -194,8 +200,11 @@ export default {
         showComplaintAction() {
             return ['PENDING_ACCEPT', 'ACCEPTED', 'SERVING', 'PENDING_CONFIRM', 'FINISHED', 'AFTER_SALE'].includes(this.orderDetail.status)
         },
+        showPayAction() {
+            return !this.isPreviewMode && this.orderDetail.status === 'PENDING_PAY'
+        },
         showBottomActions() {
-            return this.showRefundAction || this.showComplaintAction
+            return this.showPayAction || this.showRefundAction || this.showComplaintAction
         }
     },
     onLoad(options) {
@@ -210,7 +219,7 @@ export default {
             this.loadPreviewDetail()
             return
         }
-        this.loadOrderDetail()
+        this.syncPayAndLoadOrder()
     },
     methods: {
         getOrderStatusLabel,
@@ -227,7 +236,7 @@ export default {
                 return
             }
             this.refreshing = true
-            this.loadOrderDetail()
+            this.syncPayAndLoadOrder()
         },
         loadPreviewDetail() {
             const snapshot = this.previewSnapshot || uni.getStorageSync(ORDER_PREVIEW_STORAGE_KEY)
@@ -315,6 +324,92 @@ export default {
             } catch (error) {
             } finally {
                 this.refreshing = false
+            }
+        },
+        async syncPayAndLoadOrder() {
+            if (!this.orderId) {
+                this.refreshing = false
+                return
+            }
+            if (this.payChecking) {
+                this.refreshing = false
+                return
+            }
+            try {
+                this.payChecking = true
+                await getPayOrder({
+                    orderId: this.orderId,
+                    sync: true
+                }, { silent: true })
+            } catch (error) {
+            } finally {
+                this.payChecking = false
+                this.loadOrderDetail()
+            }
+        },
+        openPayUrl(url) {
+            if (!url) {
+                return
+            }
+            if (typeof plus !== 'undefined' && plus.runtime && plus.runtime.openURL) {
+                plus.runtime.openURL(url)
+                return
+            }
+            if (typeof window !== 'undefined') {
+                window.location.href = url
+                return
+            }
+            uni.setClipboardData({
+                data: url,
+                success: () => {
+                    uni.showToast({
+                        title: '支付链接已复制',
+                        icon: 'none'
+                    })
+                }
+            })
+        },
+        async handlePay() {
+            if (!this.orderId || this.paying) {
+                return
+            }
+            try {
+                this.paying = true
+                const payOrderId = await createPayOrder({
+                    orderId: this.orderId
+                })
+                const submitResult = await submitPayOrder({
+                    id: payOrderId,
+                    channelCode: 'aggregate',
+                    displayMode: 'url'
+                })
+                if (submitResult && submitResult.status === 10) {
+                    uni.showToast({
+                        title: '支付成功',
+                        icon: 'success'
+                    })
+                    this.syncPayAndLoadOrder()
+                    return
+                }
+                if (!submitResult || !submitResult.displayContent) {
+                    uni.showToast({
+                        title: '暂未获取到支付链接',
+                        icon: 'none'
+                    })
+                    return
+                }
+                this.openPayUrl(submitResult.displayContent)
+                uni.showModal({
+                    title: '请完成支付',
+                    content: '支付完成后返回本页，系统会自动更新订单状态并开始派送。',
+                    showCancel: false,
+                    success: () => {
+                        this.syncPayAndLoadOrder()
+                    }
+                })
+            } catch (error) {
+            } finally {
+                this.paying = false
             }
         },
         resolveUnitCardClass(status) {
@@ -707,10 +802,16 @@ export default {
                 background: #4A90F0;
             }
 
+            .pay-btn {
+                background: #FA9D3B;
+                border-color: #FA9D3B;
+            }
+
             .contact-btn .btn-text {
                 color: #4A90F0;
             }
 
+            .pay-btn .btn-text,
             .refund-btn .btn-text {
                 color: #fff;
             }

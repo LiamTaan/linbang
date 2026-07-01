@@ -194,7 +194,8 @@ VALUES
 INSERT INTO `pay_channel`
 (`id`, `code`, `status`, `fee_rate`, `remark`, `app_id`, `config`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
 VALUES
-(1, 'aggregate', 0, 0, '邻里互助唯一聚合支付通道；baseUrl 按生产聚合支付网关补齐，退款/提现需补充银盛证书与网关配置', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate.AggregatePayClientConfig","baseUrl":"","merchantNo":"826584873720104","merchantName":"深圳市旺佳盈科技有限公司","partnerId":"826584873720104","openApiGatewayUrl":"https://openapi.ysepay.com/gateway.do","transferGatewayUrl":"https://df.ysepay.com/gateway.do","privateKeyFilePath":"","privateKeyPassword":"","ysepayPublicKeyFilePath":"","signType":"RSA","charset":"utf-8","version":"3.0"}', 'admin', NOW(), 'admin', NOW(), b'0', 1);
+(1, 'aggregate', 0, 0, '邻里互助唯一聚合支付通道；baseUrl 按生产聚合支付网关补齐，退款/提现需补充银盛证书与网关配置', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate.AggregatePayClientConfig","baseUrl":"","merchantNo":"826584873720104","merchantName":"深圳市旺佳盈科技有限公司","partnerId":"826584873720104","openApiGatewayUrl":"https://openapi.ysepay.com/gateway.do","transferGatewayUrl":"https://df.ysepay.com/gateway.do","privateKeyFilePath":"","privateKeyPassword":"","ysepayPublicKeyFilePath":"","signType":"RSA","charset":"utf-8","version":"3.0"}', 'admin', NOW(), 'admin', NOW(), b'0', 1),
+(2, 'mock', 0, 0, '开发联调模拟支付通道，仅在本地 mock-enable 开启时用于跑通支付后派送流程', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.NonePayClientConfig"}', 'admin', NOW(), 'admin', NOW(), b'0', 1);
 
 INSERT INTO `system_sms_channel`
 (`id`, `signature`, `code`, `status`, `remark`, `api_key`, `api_secret`, `callback_url`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
@@ -301,6 +302,7 @@ VALUES
 (810059, 4, '刷新模式', 'refresh_token', 'system_oauth2_grant_type', 0, 'info', '', '刷新模式', 'admin', NOW(), 'admin', NOW(), b'0'),
 (810060, 5, '客户端模式', 'client_credentials', 'system_oauth2_grant_type', 0, 'default', '', '客户端模式', 'admin', NOW(), 'admin', NOW(), b'0'),
 (810061, 0, '聚合支付', 'aggregate', 'pay_channel_code', 0, 'warning', '', '第三方聚合支付，邻里互助唯一支付通道', 'admin', NOW(), 'admin', NOW(), b'0'),
+(810062, 1, '模拟支付', 'mock', 'pay_channel_code', 0, 'success', '', '开发联调模拟支付通道，仅本地 mock 模式可用', 'admin', NOW(), 'admin', NOW(), b'0'),
 (810074, 0, '等待通知', '0', 'pay_notify_status', 0, 'primary', '', '等待通知', 'admin', NOW(), 'admin', NOW(), b'0'),
 (810075, 10, '通知成功', '10', 'pay_notify_status', 0, 'success', '', '通知成功', 'admin', NOW(), 'admin', NOW(), b'0'),
 (810076, 20, '通知失败', '20', 'pay_notify_status', 0, 'danger', '', '通知失败', 'admin', NOW(), 'admin', NOW(), b'0'),

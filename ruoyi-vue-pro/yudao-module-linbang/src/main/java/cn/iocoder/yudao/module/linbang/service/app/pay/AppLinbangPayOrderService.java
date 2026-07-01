@@ -12,6 +12,8 @@ public interface AppLinbangPayOrderService {
 
     Long createPayOrder(Long authUserId, @Valid AppLinbangPayOrderCreateReqVO reqVO);
 
+    Long simulatePaySuccess(Long authUserId, @Valid AppLinbangPayOrderCreateReqVO reqVO);
+
     AppLinbangPayOrderRespVO getPayOrder(Long authUserId, Long id, Long orderId, Boolean sync);
 
     AppOrderDepositInfoRespVO getDepositInfo(Long authUserId, Long orderId);

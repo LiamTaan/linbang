@@ -39,6 +39,12 @@ public class AppLinbangPayOrderController {
         return success(appLinbangPayOrderService.createPayOrder(getLoginUserId(), reqVO));
     }
 
+    @PostMapping("/simulate-success")
+    @Operation(summary = "模拟支付成功", description = "仅开发联调 mock 模式可用，用于跑通发单支付后派送流程。")
+    public CommonResult<Long> simulatePaySuccess(@Valid @RequestBody AppLinbangPayOrderCreateReqVO reqVO) {
+        return success(appLinbangPayOrderService.simulatePaySuccess(getLoginUserId(), reqVO));
+    }
+
     @GetMapping("/get")
     @Operation(summary = "获取支付订单")
     @Parameters({
