@@ -53,6 +53,9 @@ public class MemberUserRespVO {
     @DictFormat("lb_role_code") // TODO 代码优化：建议设置到对应的 DictTypeConstants 枚举类中
     private String currentRoleCode;
 
+    @Schema(description = "已开通角色编码列表")
+    private List<String> enabledRoleCodes;
+
     @Schema(description = OpenApiSchemaConstants.USER_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "ENABLE")
     @ExcelProperty("状态")
     private String status;

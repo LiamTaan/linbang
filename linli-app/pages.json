@@ -63,6 +63,20 @@
 			}
 		},
 		{
+			"path": "pages/certificate/realname_edit",
+			"style": {
+				"navigationBarTitleText": "实名认证",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/certificate/qualification_edit",
+			"style": {
+				"navigationBarTitleText": "资质认证",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/set/set",
 			"style": {
 				"navigationBarTitleText": "系统设置",
@@ -94,6 +108,20 @@
 			"path": "pages/merchant_entry/merchant_entry",
 			"style": {
 				"navigationBarTitleText": "服务商入驻",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/role_apply_detail/role_apply_detail",
+			"style": {
+				"navigationBarTitleText": "申请详情",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/role_apply_form/role_apply_form",
+			"style": {
+				"navigationBarTitleText": "身份申请",
 				"navigationStyle": "custom"
 			}
 		},
@@ -136,6 +164,13 @@
 			"path": "pages/feedback/feedback",
 			"style": {
 				"navigationBarTitleText": "帮助与反馈",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/my_reward/my_reward",
+			"style": {
+				"navigationBarTitleText": "我的悬赏",
 				"navigationStyle": "custom"
 			}
 		},

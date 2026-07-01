@@ -16,17 +16,21 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.memberaddress.MemberUserAd
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberqualification.MemberUserQualificationDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberrealname.MemberUserRealNameDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.memberroleapply.MemberRoleApplyDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantentry.MerchantEntryDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.partnerinfo.PartnerInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.userrestrictrecord.UserRestrictRecordDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.blacklist.BlacklistMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.creditrecord.CreditRecordMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberaddress.MemberUserAddressMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberqualification.MemberUserQualificationMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberrealname.MemberUserRealNameMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.memberroleapply.MemberRoleApplyMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantentry.MerchantEntryMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.partnerinfo.PartnerInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.userrestrictrecord.UserRestrictRecordMapper;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,6 +42,9 @@ import javax.annotation.Resource;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.framework.common.util.servlet.ServletUtils.getClientIP;
@@ -66,6 +73,10 @@ public class MemberUserServiceImpl implements MemberUserService {
     private MerchantInfoMapper merchantInfoMapper;
     @Resource
     private MerchantEntryMapper merchantEntryMapper;
+    @Resource
+    private PartnerInfoMapper partnerInfoMapper;
+    @Resource
+    private MemberRoleApplyMapper memberRoleApplyMapper;
     @Resource
     private CreditRecordMapper creditRecordMapper;
     @Resource
@@ -162,7 +173,8 @@ public class MemberUserServiceImpl implements MemberUserService {
         List<CreditRecordDO> creditRecords = creditRecordMapper.selectList(new LambdaQueryWrapperX<CreditRecordDO>()
                 .eq(CreditRecordDO::getUserId, id)
                 .orderByDesc(CreditRecordDO::getCreateTime, CreditRecordDO::getId));
-        return MemberUserDetailAssembler.build(memberUser, realName, merchant, latestEntry, qualifications, addresses, creditRecords);
+        return MemberUserDetailAssembler.build(memberUser, realName, merchant, latestEntry, qualifications, addresses,
+                creditRecords, getEnabledRoleCodes(id));
     }
 
     @Override
@@ -370,6 +382,33 @@ public class MemberUserServiceImpl implements MemberUserService {
     @Override
     public PageResult<MemberUserDO> getMemberUserPage(MemberUserPageReqVO pageReqVO) {
         return memberUserMapper.selectPage(pageReqVO);
+    }
+
+    @Override
+    public List<String> getEnabledRoleCodes(Long userId) {
+        Set<String> enabledRoleCodes = new LinkedHashSet<>();
+        enabledRoleCodes.add("USER");
+        MerchantEntryDO merchantEntry = merchantEntryMapper.selectOne(new LambdaQueryWrapperX<MerchantEntryDO>()
+                .eq(MerchantEntryDO::getUserId, userId)
+                .orderByDesc(MerchantEntryDO::getId)
+                .last("LIMIT 1"));
+        if (merchantEntry != null && "APPROVED".equalsIgnoreCase(merchantEntry.getFinalAuditStatus())) {
+            enabledRoleCodes.add("MERCHANT");
+        }
+        PartnerInfoDO partnerInfo = partnerInfoMapper.selectOne(PartnerInfoDO::getUserId, userId);
+        if (partnerInfo != null && "ENABLE".equalsIgnoreCase(partnerInfo.getStatus())) {
+            enabledRoleCodes.add("PARTNER");
+        }
+        List<MemberRoleApplyDO> applies = memberRoleApplyMapper.selectList(new LambdaQueryWrapperX<MemberRoleApplyDO>()
+                .eq(MemberRoleApplyDO::getUserId, userId)
+                .eq(MemberRoleApplyDO::getAuditStatus, "APPROVED")
+                .orderByDesc(MemberRoleApplyDO::getId));
+        for (MemberRoleApplyDO apply : applies) {
+            if (StrUtil.isNotBlank(apply.getApplyRoleCode())) {
+                enabledRoleCodes.add(apply.getApplyRoleCode());
+            }
+        }
+        return new ArrayList<>(enabledRoleCodes);
     }
 
 }

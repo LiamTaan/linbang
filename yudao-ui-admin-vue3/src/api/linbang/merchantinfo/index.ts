@@ -14,6 +14,7 @@ export interface MerchantInfo {
   serviceScopeDesc: string
   status?: string
   acceptStatus?: string
+  dispatchEnabled?: boolean
   creditScore?: number
   creditLevel: string
   compositeScore?: number

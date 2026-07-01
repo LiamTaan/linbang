@@ -154,4 +154,6 @@ public interface MemberUserService {
      */
     PageResult<MemberUserDO> getMemberUserPage(MemberUserPageReqVO pageReqVO);
 
+    List<String> getEnabledRoleCodes(Long userId);
+
 }

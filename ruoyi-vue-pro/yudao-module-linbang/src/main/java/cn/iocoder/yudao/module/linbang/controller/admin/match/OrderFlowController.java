@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -40,12 +41,15 @@ public class OrderFlowController {
     @Operation(summary = "分页获取流单退款看板")
     @PreAuthorize("@ss.hasPermission('linbang:order:flow:query')")
     public CommonResult<PageResult<OrderFlowRespVO>> page(@Valid OrderFlowPageReqVO reqVO) {
-        LambdaQueryWrapperX<OrderUnitDO> queryWrapper = new LambdaQueryWrapperX<OrderUnitDO>()
-                .eqIfPresent(OrderUnitDO::getOrderId, reqVO.getOrderId())
-                .eqIfPresent(OrderUnitDO::getDispatchStatus, reqVO.getDispatchStatus())
-                .eqIfPresent(OrderUnitDO::getAutoRefundStatus, reqVO.getAutoRefundStatus())
-                .orderByDesc(OrderUnitDO::getFlowTime)
-                .orderByDesc(OrderUnitDO::getId);
+        String dispatchStatus = reqVO.getDispatchStatus();
+        LambdaQueryWrapperX<OrderUnitDO> queryWrapper = new LambdaQueryWrapperX<OrderUnitDO>();
+        queryWrapper.eqIfPresent(OrderUnitDO::getOrderId, reqVO.getOrderId());
+        queryWrapper.eqIfPresent(OrderUnitDO::getId, reqVO.getUnitId());
+        queryWrapper.eq(OrderUnitDO::getDispatchStatus, dispatchStatus == null ? "FLOWED" : dispatchStatus);
+        queryWrapper.eqIfPresent(OrderUnitDO::getAutoRefundStatus, reqVO.getAutoRefundStatus());
+        queryWrapper.isNotNull(OrderUnitDO::getFlowTime);
+        queryWrapper.orderByDesc(OrderUnitDO::getFlowTime);
+        queryWrapper.orderByDesc(OrderUnitDO::getId);
         PageResult<OrderUnitDO> pageResult = orderUnitMapper.selectPage(reqVO, queryWrapper);
         return success(new PageResult<>(pageResult.getList().stream().map(this::convert).collect(Collectors.toList()),
                 pageResult.getTotal()));
@@ -56,7 +60,7 @@ public class OrderFlowController {
     @PreAuthorize("@ss.hasPermission('linbang:order:flow:update')")
     public CommonResult<Boolean> retryRefund(@Valid @RequestBody OrderFlowRetryRefundReqVO reqVO) {
         OrderUnitDO unit = orderUnitMapper.selectById(reqVO.getUnitId());
-        if (unit != null && unit.getFlowTime() != null) {
+        if (unit != null && unit.getFlowTime() != null && Objects.equals(unit.getDispatchStatus(), "FLOWED")) {
             autoFlowRefundService.createAutoRefund(unit.getOrderId(), unit.getId(), unit.getFlowTime());
         }
         return success(Boolean.TRUE);

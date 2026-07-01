@@ -120,23 +120,14 @@
                         </view>
                     </view>
 
-                    <view class="preview-summary" v-if="previewResult.previewToken">
-                        <text class="preview-title">预览结果</text>
-                        <text class="preview-line">类目：{{ previewResult.categoryName || currentCategoryName }}</text>
-                        <text class="preview-line">应付金额：¥{{ $fmt.formatMoney(previewResult.orderAmount) }}</text>
-                        <text class="preview-line">协议：{{ previewResult.agreementTitle || guaranteeConfig.projectEscrowAgreementTitle || '工程托管协议' }}</text>
-                        <text class="preview-line"
-                            v-if="previewResult.invoiceImpactReminder">{{ previewResult.invoiceImpactReminder }}</text>
-                    </view>
-
                     <view class="safety-tip" @click="handleAgreement">
                         <text class="safety-tip-label">交易保障</text>
                         <text class="safety-tip-text">{{ guaranteeConfig.projectEscrowAgreementTitle || '工程托管协议' }}</text>
                         <text class="safety-tip-arrow">></text>
                     </view>
 
-                    <view class="checkbox-list">
-                        <view class="checkbox-item">
+                    <view class="checkbox-list" v-if="showInvoiceOption || showSplitOption">
+                        <view class="checkbox-item" v-if="showInvoiceOption">
                             <view class="checkbox" :class="{ checked: form.needInvoice }" @click="toggleInvoice">
                                 <text v-if="form.needInvoice" class="check-icon">✓</text>
                             </view>
@@ -144,7 +135,7 @@
                             <text class="hint">（注意是否开票会影响您的最终接单费率）</text>
                         </view>
 
-                        <view class="checkbox-item">
+                        <view class="checkbox-item" v-if="showSplitOption">
                             <view class="checkbox" :class="{ checked: form.needSplit }" @click="toggleSplit">
                                 <text v-if="form.needSplit" class="check-icon">✓</text>
                             </view>
@@ -153,7 +144,7 @@
                         </view>
                     </view>
 
-                    <view class="agreement-item">
+                    <view class="agreement-item" v-if="showAgreementOption">
                         <view class="checkbox" :class="{ checked: form.agreementConfirmed }" @click="toggleAgreement">
                             <text v-if="form.agreementConfirmed" class="check-icon">✓</text>
                         </view>
@@ -207,6 +198,8 @@ import {
     getPricingModeLabel,
     PRICING_MODE_OPTIONS
 } from '@/utils/linbang'
+
+const ORDER_PREVIEW_STORAGE_KEY = 'linbang_order_preview_snapshot'
 
 function findCategoryById(list, id) {
     for (let i = 0; i < (list || []).length; i++) {
@@ -303,6 +296,26 @@ export default {
         },
         currentCategoryName() {
             return this.currentCategory ? this.currentCategory.categoryName : '--'
+        },
+        showInvoiceOption() {
+            if (typeof this.previewResult.invoiceSupported === 'boolean') {
+                return this.previewResult.invoiceSupported
+            }
+            const current = this.currentCategory || {}
+            return current.supportInvoice !== false
+        },
+        showSplitOption() {
+            if (typeof this.previewResult.splitSupported === 'boolean') {
+                return this.previewResult.splitSupported
+            }
+            const current = this.currentCategory || {}
+            return current.supportSplit !== false
+        },
+        showAgreementOption() {
+            if (typeof this.previewResult.agreementRequired === 'boolean') {
+                return this.previewResult.agreementRequired
+            }
+            return true
         },
         pricingOptions() {
             const current = this.currentCategory || {}
@@ -889,6 +902,10 @@ export default {
             this.previewResult = {}
         },
         toggleAgreement() {
+            if (!this.showAgreementOption) {
+                this.form.agreementConfirmed = true
+                return
+            }
             this.form.agreementConfirmed = !this.form.agreementConfirmed
         },
         handleAgreement() {
@@ -989,7 +1006,7 @@ export default {
             }
             const preview = await previewOrder(payload)
             this.previewResult = preview || {}
-            if (preview && preview.riskStrategy === 'BLOCK') {
+            if (preview && preview.sensitiveHit && preview.riskStrategy === 'BLOCK') {
                 uni.showModal({
                     title: '内容需调整',
                     content: (preview.sensitiveHitSummaries || []).join('；') || '当前需求内容命中风控规则，请修改后重试。',
@@ -1005,16 +1022,18 @@ export default {
                 if (!payload || !this.previewResult.previewToken) {
                     return
                 }
-                const summary = [
-                    `类目：${this.previewResult.categoryName || this.currentCategoryName}`,
-                    `计价：${this.previewResult.pricingModeName || getPricingModeLabel(payload.pricingMode)}`,
-                    `应付金额：¥${this.$fmt.formatMoney(this.previewResult.orderAmount)}`,
-                    this.previewResult.invoiceImpactReminder || this.guaranteeConfig.antiEscapeNotice || ''
-                ].filter(Boolean).join('\n')
-                uni.showModal({
-                    title: '预览成功',
-                    content: summary,
-                    showCancel: false
+                uni.setStorageSync(ORDER_PREVIEW_STORAGE_KEY, {
+                    payload,
+                    previewResult: this.previewResult,
+                    guaranteeConfig: this.guaranteeConfig,
+                    currentCategoryName: this.currentCategoryName,
+                    formSnapshot: {
+                        ...this.form
+                    },
+                    uploadedFiles: this.uploadedFiles
+                })
+                uni.navigateTo({
+                    url: '/pages/split_order_details/split_order_details?preview=1'
                 })
             } catch (error) {
             }
@@ -1023,7 +1042,7 @@ export default {
             if (this.submitting) {
                 return
             }
-            if (!this.form.agreementConfirmed) {
+            if (this.showAgreementOption && !this.form.agreementConfirmed) {
                 uni.showToast({
                     title: '请先勾选协议',
                     icon: 'none'
@@ -1513,36 +1532,6 @@ export default {
                     .upload-text {
                         font-size: 20rpx;
                         color: #5d79a7;
-                    }
-                }
-            }
-
-            .preview-summary {
-                min-height: 132rpx;
-                background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%);
-                border-radius: 22rpx;
-                padding: 20rpx 18rpx;
-                box-sizing: border-box;
-                margin-bottom: 18rpx;
-            }
-
-            .preview-summary {
-                .preview-title {
-                    font-size: 26rpx;
-                    color: #2f7de8;
-                    font-weight: 600;
-                    display: block;
-                    margin-bottom: 12rpx;
-                }
-
-                .preview-line {
-                    display: block;
-                    font-size: 24rpx;
-                    color: #617286;
-                    margin-bottom: 8rpx;
-
-                    &:last-child {
-                        margin-bottom: 0;
                     }
                 }
             }

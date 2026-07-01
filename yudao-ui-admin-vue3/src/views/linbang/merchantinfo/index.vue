@@ -134,6 +134,13 @@
           {{ formatAcceptStatus(row.acceptStatus) }}
         </template>
       </el-table-column>
+      <el-table-column label="自动派单" align="center" prop="dispatchEnabled" width="120">
+        <template #default="{ row }">
+          <el-tag :type="row.dispatchEnabled ? 'success' : 'info'">
+            {{ formatBooleanYesNo(row.dispatchEnabled) }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="信用分" align="center" prop="creditScore" width="100" />
       <el-table-column label="信用等级" align="center" prop="creditLevel" width="120">
         <template #default="{ row }">
@@ -192,6 +199,7 @@
       <el-descriptions-item label="联系人手机号">{{ detailData?.contactMobile || '-' }}</el-descriptions-item>
       <el-descriptions-item label="服务商状态">{{ formatEnableStatus(detailData?.status) }}</el-descriptions-item>
       <el-descriptions-item label="接单状态">{{ formatAcceptStatus(detailData?.acceptStatus) }}</el-descriptions-item>
+      <el-descriptions-item label="自动派单">{{ formatBooleanYesNo(detailData?.dispatchEnabled) }}</el-descriptions-item>
       <el-descriptions-item label="信用分 / 等级">
         {{ detailData?.creditScore ?? '-' }} / {{ formatCreditLevel(detailData?.creditLevel) }}
       </el-descriptions-item>
@@ -246,6 +254,7 @@
           <div class="text-14px text-[var(--el-text-color-secondary)]">服务类目数</div>
           <div class="mt-8px text-24px font-600">{{ detailData?.categories?.length ?? 0 }}</div>
           <div class="mt-6px text-[var(--el-text-color-secondary)]">接单状态：{{ formatAcceptStatus(detailData?.acceptStatus) }}</div>
+          <div class="mt-6px text-[var(--el-text-color-secondary)]">自动派单：{{ formatBooleanYesNo(detailData?.dispatchEnabled) }}</div>
         </el-card>
       </el-col>
     </el-row>

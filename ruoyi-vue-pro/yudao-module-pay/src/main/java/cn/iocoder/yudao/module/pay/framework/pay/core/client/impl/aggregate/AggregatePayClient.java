@@ -24,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -477,7 +478,11 @@ public class AggregatePayClient extends AbstractPayClient<AggregatePayClientConf
     }
 
     private String urlEncode(String value, Charset charset) {
-        return URLEncoder.encode(value, charset).replace("+", "%20");
+        try {
+            return URLEncoder.encode(value, charset.name()).replace("+", "%20");
+        } catch (UnsupportedEncodingException ex) {
+            throw new IllegalStateException("不支持的字符集：" + charset.name(), ex);
+        }
     }
 
     private Map<String, String> mergeNotifyParams(Map<String, String> params, String body) {

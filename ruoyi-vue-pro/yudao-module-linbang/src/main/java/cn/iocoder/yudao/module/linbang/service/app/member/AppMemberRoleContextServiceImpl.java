@@ -28,6 +28,7 @@ public class AppMemberRoleContextServiceImpl implements AppMemberRoleContextServ
 
     @Resource
     private MemberUserService memberUserService;
+    @Resource
     private PartnerInfoMapper partnerInfoMapper;
     @Resource
     private MerchantEntryMapper merchantEntryMapper;

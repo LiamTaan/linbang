@@ -35,115 +35,39 @@
             </view>
 
             <view class="stats-card">
-                <view class="stat-item">
-                    <text class="stat-label">总订单</text>
-                    <text class="stat-value">{{ orderStats.total }} 单</text>
-                </view>
-                <view class="stat-divider"></view>
-                <view class="stat-item" @click="goToWallet">
-                    <text class="stat-label">账户余额</text>
-                    <text class="stat-value">¥{{ $fmt.formatMoney(wallet.availableAmount) }}</text>
-                </view>
-                <view class="stat-divider"></view>
-                <view class="stat-item" @click="navigateTo('/pages/promotion_center/promotion_center')">
-                    <text class="stat-label">推广收益</text>
-                    <text class="stat-value">¥{{ $fmt.formatMoney(promote.totalCommissionAmount) }}</text>
-                </view>
+                <template v-for="(item, index) in summaryItems" :key="item.label">
+                    <view
+                        class="stat-item"
+                        @click="handleSummaryItem(item)">
+                        <text class="stat-label">{{ item.label }}</text>
+                        <text class="stat-value">{{ item.value }}</text>
+                    </view>
+                    <view
+                        v-if="index < summaryItems.length - 1"
+                        class="stat-divider"></view>
+                </template>
             </view>
         </view>
 
         <view class="quick-entry">
-            <view class="entry-item" @click="goToOrderTab('accept')">
+            <view v-for="item in quickEntries" :key="item.key" class="entry-item" @click="handleQuickEntry(item)">
                 <view class="entry-icon-wrapper">
-                    <image class="entry-icon" src="/static/img/my/pending-order@3x.png" />
-                    <view v-if="orderStats.pending > 0" class="entry-badge">
-                        <text class="badge-num">{{ orderStats.pending }}</text>
+                    <image class="entry-icon" :src="item.icon" />
+                    <view v-if="item.badge > 0" class="entry-badge">
+                        <text class="badge-num">{{ item.badge }}</text>
                     </view>
                 </view>
-                <text class="entry-text">待接单</text>
-            </view>
-            <view class="entry-item" @click="goToOrderTab('serving')">
-                <view class="entry-icon-wrapper">
-                    <image class="entry-icon" src="/static/img/my/task@3x.png" />
-                    <view v-if="orderStats.serving > 0" class="entry-badge">
-                        <text class="badge-num">{{ orderStats.serving }}</text>
-                    </view>
-                </view>
-                <text class="entry-text">服务中</text>
-            </view>
-            <view class="entry-item" @click="navigateTo('/pages/evaluation_service/evaluation_service')">
-                <view class="entry-icon-wrapper">
-                    <image class="entry-icon" src="/static/img/my/review@3x.png" />
-                    <view v-if="orderStats.review > 0" class="entry-badge">
-                        <text class="badge-num">{{ orderStats.review }}</text>
-                    </view>
-                </view>
-                <text class="entry-text">待评价</text>
-            </view>
-            <view class="entry-item" @click="navigateTo('/pages/refund/refund')">
-                <view class="entry-icon-wrapper">
-                    <image class="entry-icon" src="/static/img/my/after-sales@3x.png" />
-                    <view v-if="orderStats.afterSale > 0" class="entry-badge">
-                        <text class="badge-num">{{ orderStats.afterSale }}</text>
-                    </view>
-                </view>
-                <text class="entry-text">退款售后</text>
+                <text class="entry-text">{{ item.label }}</text>
             </view>
         </view>
 
-        <view class="function-list">
-            <view class="function-item" @click="goToOrderTab('my')">
-                <image class="func-icon" src="/static/img/my/order-management@3x.png" />
-                <text class="func-text">订单管理</text>
-                <image class="arrow-icon" src="/static/img/my/switch@3x.png" />
-            </view>
-            <view class="function-item" @click="navigateTo('/pages/my_wallet/my_wallet')">
-                <image class="func-icon" src="/static/img/my/account-management@3x.png" />
-                <text class="func-text">账户管理</text>
-                <image class="arrow-icon" src="/static/img/my/switch@3x.png" />
-            </view>
-            <view class="function-item" @click="navigateTo('/pages/certificate/certificate')">
-                <image class="func-icon" src="/static/img/my/verification@3x.png" />
-                <text class="func-text">认证与证件</text>
-                <image class="arrow-icon" src="/static/img/my/switch@3x.png" />
-            </view>
-        </view>
-
-        <view class="function-list">
-            <view class="function-item" @click="navigateTo('/pages/identity_application/identity_application')">
-                <image class="func-icon" src="/static/img/my/identity@3x.png" />
-                <text class="func-text">角色与入驻</text>
-                <image class="arrow-icon" src="/static/img/my/switch@3x.png" />
-            </view>
-            <view class="function-item" @click="navigateTo('/pages/my_credit/my_credit?mode=benefit')">
-                <image class="func-icon" src="/static/img/my/rights@3x.png" />
-                <text class="func-text">我的权益</text>
-                <image class="arrow-icon" src="/static/img/my/switch@3x.png" />
-            </view>
-            <view class="function-item" @click="navigateTo('/pages/promotion_center/promotion_center')">
-                <image class="func-icon" src="/static/img/my/reward@3x.png" />
-                <text class="func-text">推广中心</text>
-                <image class="arrow-icon" src="/static/img/my/switch@3x.png" />
-            </view>
-            <view class="function-item" @click="navigateTo('/pages/news/news?category=SYSTEM')">
-                <image class="func-icon" src="/static/img/my/alarm@3x.png" />
-                <text class="func-text">系统提醒</text>
-                <view class="entry-badge small" v-if="unreadCount > 0">
-                    <text class="badge-num">{{ unreadCount }}</text>
+        <view v-for="(group, groupIndex) in functionGroups" :key="`group-${groupIndex}`" class="function-list">
+            <view v-for="item in group" :key="item.key" class="function-item" @click="handleFunctionItem(item)">
+                <image class="func-icon" :src="item.icon" />
+                <text class="func-text">{{ item.label }}</text>
+                <view class="entry-badge small" v-if="item.badge > 0">
+                    <text class="badge-num">{{ item.badge }}</text>
                 </view>
-                <image class="arrow-icon" src="/static/img/my/switch@3x.png" />
-            </view>
-        </view>
-
-        <view class="function-list">
-            <view class="function-item" @click="navigateTo('/pages/set/set')">
-                <image class="func-icon" src="/static/img/my/settings@3x.png" />
-                <text class="func-text">系统设置</text>
-                <image class="arrow-icon" src="/static/img/my/switch@3x.png" />
-            </view>
-            <view class="function-item" @click="navigateTo('/pages/feedback/feedback')">
-                <image class="func-icon" src="/static/img/my/help-feedback@3x.png" />
-                <text class="func-text">帮助与反馈</text>
                 <image class="arrow-icon" src="/static/img/my/switch@3x.png" />
             </view>
         </view>
@@ -154,11 +78,12 @@
 
 <script>
 import tabBar from '@/components/tabBar/tabBar.vue'
-import { switchRole, getProfile, getRoleContext } from '@/api/member'
+import { switchRole, getProfile, getQualificationPage, getRoleContext } from '@/api/member'
 import { getUnreadCount } from '@/api/message'
 import { getAcceptOrderPage, getOrderPage } from '@/api/order'
-import { getMerchantOnboardingProgress } from '@/api/merchant'
-import { getPromoteCenter } from '@/api/promote'
+import { getMerchantAcceptStatus, getMerchantOnboardingProgress } from '@/api/merchant'
+import { getPromoteCenter, getTeamStats } from '@/api/promote'
+import { getPartnerWorkbench } from '@/api/partner'
 import { getPendingReviewUnits } from '@/api/review'
 import { getWalletAccount } from '@/api/wallet'
 import { hasLogin } from '@/utils/auth'
@@ -174,7 +99,11 @@ export default {
             roleContext: {},
             wallet: {},
             promote: {},
+            teamStats: {},
+            merchantAcceptStatus: {},
             merchantProgress: {},
+            partnerWorkbench: {},
+            qualificationCertified: false,
             unreadCount: 0,
             isLoggedIn: false,
             orderStats: {
@@ -196,29 +125,199 @@ export default {
         currentRoleName() {
             return this.roleContext.currentRoleName || this.profile.currentRoleName || '普通用户'
         },
+        currentRoleCode() {
+            return this.roleContext.currentRoleCode || this.profile.currentRoleCode || 'USER'
+        },
         switchableRoles() {
             return (this.roleContext.roleSummaries || []).filter((item) => item.switchable)
+        },
+        summaryItems() {
+            if (this.currentRoleCode === 'MERCHANT') {
+                return [
+                    {
+                        label: '待接需求',
+                        value: `${this.orderStats.pending} 单`,
+                        action: () => this.goToOrderTab('accept')
+                    },
+                    {
+                        label: '接单状态',
+                        value: this.merchantAcceptStatus.acceptStatus === 'ENABLE' ? '接单中' : '已暂停',
+                        action: () => this.navigateTo('/pages/order_receiving_status/order_receiving_status')
+                    },
+                    {
+                        label: '账户余额',
+                        value: `¥${this.$fmt.formatMoney(this.wallet.availableAmount)}`,
+                        action: () => this.goToWallet()
+                    }
+                ]
+            }
+            if (this.currentRoleCode === 'PROMOTER') {
+                return [
+                    {
+                        label: '直推人数',
+                        value: `${this.promote.bindUserCount || 0} 人`,
+                        action: () => this.navigateTo('/pages/promotion_center/promotion_center')
+                    },
+                    {
+                        label: '累计收益',
+                        value: `¥${this.$fmt.formatMoney(this.promote.totalCommissionAmount)}`,
+                        action: () => this.navigateTo('/pages/promotion_center/promotion_center')
+                    },
+                    {
+                        label: '团队人数',
+                        value: `${(this.teamStats.firstLevelUserCount || 0) + (this.teamStats.secondLevelUserCount || 0)} 人`,
+                        action: () => this.navigateTo('/pages/promotion_center/promotion_center')
+                    }
+                ]
+            }
+            if (this.currentRoleCode === 'PARTNER') {
+                const summary = this.partnerWorkbench.summary || {}
+                return [
+                    {
+                        label: '待初审入驻',
+                        value: `${summary.pendingEntryAuditCount || this.partnerWorkbench.pendingEntryAuditCount || 0} 单`,
+                        action: () => this.navigateTo('/pages/regional_partner/regional_partner')
+                    },
+                    {
+                        label: '待处理纠纷',
+                        value: `${summary.pendingComplaintCount || this.partnerWorkbench.pendingComplaintCount || 0} 单`,
+                        action: () => this.navigateTo('/pages/regional_partner/regional_partner')
+                    },
+                    {
+                        label: '辖区成交额',
+                        value: `¥${this.$fmt.formatMoney(summary.tradeAmount || this.partnerWorkbench.tradeAmount)}`,
+                        action: () => this.navigateTo('/pages/regional_partner/regional_partner')
+                    }
+                ]
+            }
+            return [
+                {
+                    label: '总订单',
+                    value: `${this.orderStats.total} 单`,
+                    action: () => this.goToOrderTab('my')
+                },
+                {
+                    label: '账户余额',
+                    value: `¥${this.$fmt.formatMoney(this.wallet.availableAmount)}`,
+                    action: () => this.goToWallet()
+                },
+                {
+                    label: '推广收益',
+                    value: `¥${this.$fmt.formatMoney(this.promote.totalCommissionAmount)}`,
+                    action: () => this.navigateTo('/pages/promotion_center/promotion_center')
+                }
+            ]
+        },
+        quickEntries() {
+            if (this.currentRoleCode === 'MERCHANT') {
+                return [
+                    { key: 'merchant_accept', label: '待接需求', badge: this.orderStats.pending, icon: '/static/img/my/pending-order@3x.png' },
+                    { key: 'merchant_status', label: '接单状态', badge: 0, icon: '/static/img/my/task@3x.png' },
+                    { key: 'merchant_entry', label: '入驻进度', badge: 0, icon: '/static/img/my/review@3x.png' },
+                    { key: 'merchant_service', label: '服务设置', badge: 0, icon: '/static/img/my/after-sales@3x.png' }
+                ]
+            }
+            if (this.currentRoleCode === 'PROMOTER') {
+                return [
+                    { key: 'promote_center', label: '推广中心', badge: 0, icon: '/static/img/my/pending-order@3x.png' },
+                    { key: 'promote_team', label: '团队数据', badge: 0, icon: '/static/img/my/task@3x.png' },
+                    { key: 'wallet', label: '佣金提现', badge: 0, icon: '/static/img/my/review@3x.png' },
+                    { key: 'reward', label: '我的悬赏', badge: 0, icon: '/static/img/my/after-sales@3x.png' }
+                ]
+            }
+            if (this.currentRoleCode === 'PARTNER') {
+                const summary = this.partnerWorkbench.summary || {}
+                return [
+                    { key: 'partner_workbench', label: '合作商工作台', badge: 0, icon: '/static/img/my/pending-order@3x.png' },
+                    { key: 'partner_entry_audit', label: '入驻初审', badge: Number(summary.pendingEntryAuditCount || this.partnerWorkbench.pendingEntryAuditCount || 0), icon: '/static/img/my/task@3x.png' },
+                    { key: 'partner_dispute', label: '纠纷协调', badge: Number(summary.pendingComplaintCount || this.partnerWorkbench.pendingComplaintCount || 0), icon: '/static/img/my/review@3x.png' },
+                    { key: 'partner_price_report', label: '价格申报', badge: Number(summary.pendingPriceReportCount || this.partnerWorkbench.pendingPriceReportCount || 0), icon: '/static/img/my/after-sales@3x.png' }
+                ]
+            }
+            return [
+                { key: 'user_wait_accept', label: '待接单', badge: this.orderStats.pending, icon: '/static/img/my/pending-order@3x.png' },
+                { key: 'user_serving', label: '服务中', badge: this.orderStats.serving, icon: '/static/img/my/task@3x.png' },
+                { key: 'user_review', label: '待评价', badge: this.orderStats.review, icon: '/static/img/my/review@3x.png' },
+                { key: 'user_after_sale', label: '退款售后', badge: this.orderStats.afterSale, icon: '/static/img/my/after-sales@3x.png' }
+            ]
+        },
+        functionGroups() {
+            const commonGroup = [
+                { key: 'wallet', label: '账户管理', icon: '/static/img/my/account-management@3x.png' },
+                { key: 'certificate', label: '认证与证件', icon: '/static/img/my/verification@3x.png' },
+                { key: 'identity', label: '身份申请', icon: '/static/img/my/identity@3x.png' }
+            ]
+            const supportGroup = [
+                { key: 'notice', label: '闹钟提醒', icon: '/static/img/my/alarm@3x.png', badge: this.unreadCount },
+                { key: 'settings', label: '系统设置', icon: '/static/img/my/settings@3x.png' },
+                { key: 'feedback', label: '帮助与反馈', icon: '/static/img/my/help-feedback@3x.png' },
+                { key: 'service', label: '我的客服', icon: '/static/img/my/help-feedback@3x.png' }
+            ]
+            if (this.currentRoleCode === 'MERCHANT') {
+                return [
+                    [
+                        { key: 'merchant_accept_status', label: '接单状态管理', icon: '/static/img/my/order-management@3x.png' },
+                        { key: 'merchant_order_hall', label: '待接需求大厅', icon: '/static/img/my/account-management@3x.png' },
+                        { key: 'merchant_entry_progress', label: '服务商入驻进度', icon: '/static/img/my/verification@3x.png' }
+                    ],
+                    commonGroup,
+                    [
+                        { key: 'benefit', label: '我的权益', icon: '/static/img/my/rights@3x.png' },
+                        { key: 'reward', label: '我的悬赏', icon: '/static/img/my/reward@3x.png' },
+                        { key: 'promote_center', label: '推广中心', icon: '/static/img/my/reward@3x.png' }
+                    ],
+                    supportGroup
+                ]
+            }
+            if (this.currentRoleCode === 'PROMOTER') {
+                return [
+                    [
+                        { key: 'promote_center', label: '推广中心', icon: '/static/img/my/order-management@3x.png' },
+                        { key: 'benefit', label: '我的权益', icon: '/static/img/my/rights@3x.png' },
+                        { key: 'reward', label: '我的悬赏', icon: '/static/img/my/reward@3x.png' }
+                    ],
+                    commonGroup,
+                    supportGroup
+                ]
+            }
+            if (this.currentRoleCode === 'PARTNER') {
+                return [
+                    [
+                        { key: 'partner_workbench', label: '区域合作商工作台', icon: '/static/img/my/order-management@3x.png' },
+                        { key: 'promote_center', label: '推广中心', icon: '/static/img/my/reward@3x.png' },
+                        { key: 'benefit', label: '我的权益', icon: '/static/img/my/rights@3x.png' }
+                    ],
+                    commonGroup,
+                    supportGroup
+                ]
+            }
+            return [
+                [
+                    { key: 'user_orders', label: '订单管理', icon: '/static/img/my/order-management@3x.png' },
+                    { key: 'wallet', label: '账户管理', icon: '/static/img/my/account-management@3x.png' },
+                    { key: 'certificate', label: '认证与证件', icon: '/static/img/my/verification@3x.png' }
+                ],
+                [
+                    { key: 'identity', label: '身份申请', icon: '/static/img/my/identity@3x.png' },
+                    { key: 'benefit', label: '我的权益', icon: '/static/img/my/rights@3x.png' },
+                    { key: 'reward', label: '我的悬赏', icon: '/static/img/my/reward@3x.png' },
+                    { key: 'notice', label: '闹钟提醒', icon: '/static/img/my/alarm@3x.png', badge: this.unreadCount }
+                ],
+                [
+                    { key: 'promote_center', label: '推广中心', icon: '/static/img/my/reward@3x.png' },
+                    { key: 'settings', label: '系统设置', icon: '/static/img/my/settings@3x.png' },
+                    { key: 'feedback', label: '帮助与反馈', icon: '/static/img/my/help-feedback@3x.png' },
+                    { key: 'service', label: '我的客服', icon: '/static/img/my/help-feedback@3x.png' }
+                ]
+            ]
         },
         verifyTags() {
             const tags = []
             if (this.profile.realNameStatus === 'APPROVED') {
                 tags.push('已实名')
             }
-            if ((this.roleContext.enabledRoleCodes || []).includes('MERCHANT')) {
-                tags.push('服务商已开通')
-            } else if (this.merchantProgress && this.merchantProgress.progressStatus) {
-                tags.push(`服务商${this.getMerchantProgressLabel(this.merchantProgress.progressStatus)}`)
-            } else {
-                tags.push('服务商待开通')
-            }
-            if ((this.roleContext.enabledRoleCodes || []).includes('PROMOTER')) {
-                tags.push('推广员已开通')
-            }
-            if ((this.roleContext.enabledRoleCodes || []).includes('PARTNER')) {
-                tags.push('区域合作商已开通')
-            }
-            if (!tags.length) {
-                tags.push('待完善资料')
+            if (this.qualificationCertified) {
+                tags.push('已资质认证')
             }
             return tags
         }
@@ -240,7 +339,11 @@ export default {
                 this.roleContext = {}
                 this.wallet = {}
                 this.promote = {}
+                this.teamStats = {}
+                this.merchantAcceptStatus = {}
                 this.merchantProgress = {}
+                this.partnerWorkbench = {}
+                this.qualificationCertified = false
                 this.unreadCount = 0
                 this.orderStats = {
                     total: 0,
@@ -252,34 +355,128 @@ export default {
                 return
             }
             try {
-                const [profile, roleContext, wallet, unreadCount, acceptPage, orderTotal, servingPage, afterSalePage, pendingReview, merchantProgress] = await Promise.all([
+                const [profile, roleContext, wallet, unreadCount, merchantProgress, qualificationPage] = await Promise.all([
                     getProfile({ silent: true }),
                     getRoleContext({ silent: true }),
                     getWalletAccount({ silent: true }),
                     getUnreadCount({ silent: true }).catch(() => 0),
-                    getAcceptOrderPage({ pageNo: 1, pageSize: 1 }, { silent: true }).catch(() => ({ total: 0, list: [] })),
-                    getOrderPage({ pageNo: 1, pageSize: 1 }, { silent: true }).catch(() => ({ total: 0, list: [] })),
-                    getOrderPage({ pageNo: 1, pageSize: 1, businessCategory: 'IN_SERVICE' }, { silent: true }).catch(() => ({ total: 0, list: [] })),
-                    getOrderPage({ pageNo: 1, pageSize: 1, businessCategory: 'AFTER_SALE' }, { silent: true }).catch(() => ({ total: 0, list: [] })),
-                    getPendingReviewUnits({ silent: true }).catch(() => []),
-                    getMerchantOnboardingProgress({ silent: true }).catch(() => ({}))
+                    getMerchantOnboardingProgress({ silent: true }).catch(() => ({})),
+                    getQualificationPage({ pageNo: 1, pageSize: 1 }, { silent: true }).catch(() => ({ total: 0, list: [] }))
                 ])
                 this.profile = profile || {}
                 this.roleContext = roleContext || {}
                 this.wallet = wallet || {}
+                this.merchantProgress = merchantProgress || {}
+                this.qualificationCertified = Number((qualificationPage && qualificationPage.total) || 0) > 0
+                    || (((qualificationPage && qualificationPage.list) || []).length > 0)
+                this.unreadCount = Number(unreadCount || 0)
+                this.promote = {}
+                this.teamStats = {}
+                this.merchantAcceptStatus = {}
+                this.partnerWorkbench = {}
+                this.orderStats = { total: 0, pending: 0, serving: 0, review: 0, afterSale: 0 }
+
+                if (this.currentRoleCode === 'MERCHANT') {
+                    const [acceptPage, merchantAcceptStatus] = await Promise.all([
+                        getAcceptOrderPage({ pageNo: 1, pageSize: 1 }, { silent: true }).catch(() => ({ total: 0, list: [] })),
+                        getMerchantAcceptStatus().catch(() => ({}))
+                    ])
+                    this.merchantAcceptStatus = merchantAcceptStatus || {}
+                    this.orderStats.pending = Number((acceptPage && acceptPage.total) || 0)
+                    return
+                }
+
+                if (this.currentRoleCode === 'PROMOTER') {
+                    const [promote, teamStats] = await Promise.all([
+                        getPromoteCenter({ silent: true }).catch(() => ({})),
+                        getTeamStats().catch(() => ({}))
+                    ])
+                    this.promote = promote || {}
+                    this.teamStats = teamStats || {}
+                    return
+                }
+
+                if (this.currentRoleCode === 'PARTNER') {
+                    this.partnerWorkbench = await getPartnerWorkbench().catch(() => ({}))
+                    return
+                }
+
+                const [orderTotal, waitAcceptPage, servingPage, afterSalePage, pendingReview] = await Promise.all([
+                    getOrderPage({ pageNo: 1, pageSize: 1 }, { silent: true }).catch(() => ({ total: 0, list: [] })),
+                    getOrderPage({ pageNo: 1, pageSize: 1, businessCategory: 'WAIT_ACCEPT' }, { silent: true }).catch(() => ({ total: 0, list: [] })),
+                    getOrderPage({ pageNo: 1, pageSize: 1, businessCategory: 'IN_SERVICE' }, { silent: true }).catch(() => ({ total: 0, list: [] })),
+                    getOrderPage({ pageNo: 1, pageSize: 1, businessCategory: 'AFTER_SALE' }, { silent: true }).catch(() => ({ total: 0, list: [] })),
+                    getPendingReviewUnits({ silent: true }).catch(() => [])
+                ])
                 this.promote = ((roleContext && roleContext.enabledRoleCodes) || []).includes('PROMOTER')
                     ? await getPromoteCenter({ silent: true }).catch(() => ({}))
                     : {}
-                this.merchantProgress = merchantProgress || {}
-                this.unreadCount = Number(unreadCount || 0)
                 this.orderStats = {
                     total: Number(orderTotal.total || 0),
-                    pending: Number(acceptPage.total || 0),
+                    pending: Number(waitAcceptPage.total || 0),
                     serving: Number(servingPage.total || 0),
                     review: Array.isArray(pendingReview) ? pendingReview.length : Number((pendingReview && pendingReview.total) || 0),
                     afterSale: Number(afterSalePage.total || 0)
                 }
             } catch (error) {
+            }
+        },
+        handleSummaryItem(item) {
+            if (item && typeof item.action === 'function') {
+                item.action()
+            }
+        },
+        handleQuickEntry(item) {
+            if (!item) {
+                return
+            }
+            const actionMap = {
+                user_wait_accept: () => this.goToOrderTab('my'),
+                user_serving: () => this.goToOrderTab('serving'),
+                user_review: () => this.navigateTo('/pages/evaluation_service/evaluation_service'),
+                user_after_sale: () => this.navigateTo('/pages/refund/refund'),
+                merchant_accept: () => this.goToOrderTab('accept'),
+                merchant_status: () => this.navigateTo('/pages/order_receiving_status/order_receiving_status'),
+                merchant_entry: () => this.navigateTo('/pages/merchant_entry/merchant_entry'),
+                merchant_service: () => this.navigateTo('/pages/order_receiving_status/order_receiving_status'),
+                promote_center: () => this.navigateTo('/pages/promotion_center/promotion_center'),
+                promote_team: () => this.navigateTo('/pages/promotion_center/promotion_center'),
+                wallet: () => this.goToWallet(),
+                reward: () => this.navigateTo('/pages/my_reward/my_reward'),
+                partner_workbench: () => this.navigateTo('/pages/regional_partner/regional_partner'),
+                partner_entry_audit: () => this.navigateTo('/pages/regional_partner/regional_partner'),
+                partner_dispute: () => this.navigateTo('/pages/regional_partner/regional_partner'),
+                partner_price_report: () => this.navigateTo('/pages/regional_partner/regional_partner')
+            }
+            const action = actionMap[item.key]
+            if (action) {
+                action()
+            }
+        },
+        handleFunctionItem(item) {
+            if (!item) {
+                return
+            }
+            const actionMap = {
+                user_orders: () => this.goToOrderTab('my'),
+                wallet: () => this.goToWallet(),
+                certificate: () => this.navigateTo('/pages/certificate/certificate'),
+                identity: () => this.navigateTo('/pages/identity_application/identity_application'),
+                benefit: () => this.navigateTo('/pages/my_credit/my_credit?mode=benefit'),
+                reward: () => this.navigateTo('/pages/my_reward/my_reward'),
+                notice: () => this.goToSystemNotice(),
+                promote_center: () => this.navigateTo('/pages/promotion_center/promotion_center'),
+                settings: () => this.navigateTo('/pages/set/set'),
+                feedback: () => this.navigateTo('/pages/feedback/feedback'),
+                service: () => this.navigateTo('/pages/feedback/feedback?mode=service'),
+                merchant_accept_status: () => this.navigateTo('/pages/order_receiving_status/order_receiving_status'),
+                merchant_order_hall: () => this.goToOrderTab('accept'),
+                merchant_entry_progress: () => this.navigateTo('/pages/merchant_entry/merchant_entry'),
+                partner_workbench: () => this.navigateTo('/pages/regional_partner/regional_partner')
+            }
+            const action = actionMap[item.key]
+            if (action) {
+                action()
             }
         },
         getMerchantProgressLabel(status) {
@@ -320,6 +517,20 @@ export default {
         goToWallet() {
             uni.navigateTo({
                 url: '/pages/my_wallet/my_wallet'
+            })
+        },
+        goToSystemNotice() {
+            uni.switchTab({
+                url: '/pages/news/news',
+                success: () => {
+                    uni.setStorageSync('linbang_news_category', 'SYSTEM')
+                },
+                fail: () => {
+                    uni.showToast({
+                        title: '页面暂不可达',
+                        icon: 'none'
+                    })
+                }
             })
         },
         async handleRoleSwitch() {
@@ -386,25 +597,29 @@ export default {
 
             .user-detail {
                 flex: 1;
+                min-width: 0;
 
                 .user-name {
                     display: flex;
                     align-items: center;
-                    flex-wrap: wrap;
+                    flex-wrap: nowrap;
                     gap: 10rpx;
                     margin-bottom: 12rpx;
+                    min-width: 0;
 
                     .name {
+                        flex: 1;
+                        min-width: 0;
                         font-weight: bold;
                         font-size: 30rpx;
                         color: #FFFFFF;
-                        max-width: 210rpx;
                         overflow: hidden;
                         text-overflow: ellipsis;
                         white-space: nowrap;
                     }
 
                     .service-badge {
+                        flex-shrink: 0;
                         border-radius: 50rpx;
                         border: 2rpx solid #FFFFFF;
                         padding: 6rpx 12rpx;

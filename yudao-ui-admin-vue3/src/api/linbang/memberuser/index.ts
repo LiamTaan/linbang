@@ -13,6 +13,7 @@ export interface MemberUser {
           birthday?: string | Dayjs; // 生日
           registerSource?: string; // 注册来源
           currentRoleCode?: string; // 当前角色编码
+          enabledRoleCodes?: string[]; // 已开通角色编码列表
           status?: string; // 状态
           lastLoginTime?: string | Dayjs; // 最后登录时间
           lastLoginIp?: string; // 最后登录IP
@@ -112,7 +113,7 @@ export interface MemberUserDetail extends MemberUser {
     remark?: string
     createTime?: string | Dayjs
   }>
-  }
+}
 
 export interface MemberUserRestrictReqVO {
   userId: number

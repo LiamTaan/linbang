@@ -1616,6 +1616,7 @@ CREATE TABLE IF NOT EXISTS `lb_match_strategy` (
   `max_stage_count` INT NOT NULL DEFAULT 5 COMMENT '最大阶段数',
   `max_radius_km` DECIMAL(10,2) NOT NULL DEFAULT 5.00 COMMENT '最大半径公里',
   `flow_advice_template` VARCHAR(500) DEFAULT NULL COMMENT '流单建议模板',
+  `auto_dispatch_enabled` BIT(1) NOT NULL DEFAULT b'1' COMMENT '平台级自动派单总开关',
   `auto_refund_enabled` BIT(1) NOT NULL DEFAULT b'1' COMMENT '是否自动退款',
   `auto_refund_retry_times` INT NOT NULL DEFAULT 3 COMMENT '自动退款重试次数',
   `status` VARCHAR(32) NOT NULL DEFAULT 'ENABLE' COMMENT '状态',
@@ -2209,14 +2210,18 @@ CREATE TABLE IF NOT EXISTS `lb_review` (
   `edit_count` INT NOT NULL DEFAULT 0 COMMENT '编辑次数',
   `status` VARCHAR(32) NOT NULL DEFAULT 'ENABLE' COMMENT '状态',
   `tenant_id` BIGINT NOT NULL DEFAULT 1 COMMENT '租户编号',
+  `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
   PRIMARY KEY (`id`),
   KEY `idx_lb_review_order_id` (`order_id`),
   KEY `idx_lb_review_unit_id` (`unit_id`),
   KEY `idx_lb_review_from_unit` (`from_user_id`, `unit_id`),
   KEY `idx_lb_review_tenant_id` (`tenant_id`),
-  KEY `idx_lb_review_to_user_id` (`to_user_id`)
+  KEY `idx_lb_review_to_user_id` (`to_user_id`),
+  KEY `idx_lb_review_deleted` (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评价表';
 
 DROP TABLE IF EXISTS `lb_credit_rule`;
@@ -2313,6 +2318,27 @@ CREATE TABLE IF NOT EXISTS `lb_promoter` (
   UNIQUE KEY `uk_lb_promoter_invite_code` (`invite_code`),
   KEY `idx_lb_promoter_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='推广员表';
+
+DROP TABLE IF EXISTS `lb_promoter_relation`;
+CREATE TABLE IF NOT EXISTS `lb_promoter_relation` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `promoter_id` BIGINT NOT NULL COMMENT '推广员ID',
+  `user_id` BIGINT NOT NULL COMMENT '被推广用户ID',
+  `bind_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '绑定时间',
+  `first_order_id` BIGINT DEFAULT NULL COMMENT '首单订单ID',
+  `convert_status` VARCHAR(32) NOT NULL DEFAULT 'PENDING' COMMENT '转化状态 PENDING/CONVERTED',
+  `tenant_id` BIGINT NOT NULL DEFAULT 1 COMMENT '租户编号',
+  `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_lb_promoter_relation_promoter_user` (`promoter_id`, `user_id`),
+  KEY `idx_lb_promoter_relation_user_id` (`user_id`),
+  KEY `idx_lb_promoter_relation_bind_time` (`bind_time`),
+  KEY `idx_lb_promoter_relation_tenant_id` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='推广员绑定关系表';
 
 DROP TABLE IF EXISTS `lb_partner_info`;
 CREATE TABLE IF NOT EXISTS `lb_partner_info` (

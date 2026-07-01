@@ -58,6 +58,10 @@ public class MerchantInfoRespVO {
     @ExcelProperty("接单状态")
     private String acceptStatus;
 
+    @Schema(description = "是否参与系统自动派单")
+    @ExcelProperty("参与自动派单")
+    private Boolean dispatchEnabled;
+
     @Schema(description = "信用分", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("信用分")
     private Integer creditScore;

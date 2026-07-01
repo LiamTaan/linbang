@@ -44,6 +44,12 @@ public class MatchStrategyServiceImpl implements MatchStrategyService {
     }
 
     @Override
+    public boolean isAutoDispatchEnabled() {
+        MatchStrategyDO strategy = getEnabledStrategy();
+        return strategy == null || Boolean.TRUE.equals(strategy.getAutoDispatchEnabled());
+    }
+
+    @Override
     public boolean isAutoRefundEnabled() {
         MatchStrategyDO strategy = getEnabledStrategy();
         return strategy != null && Boolean.TRUE.equals(strategy.getAutoRefundEnabled());

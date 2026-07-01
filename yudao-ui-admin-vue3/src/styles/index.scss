@@ -3,6 +3,26 @@
 @use './theme.scss';
 @use 'element-plus/theme-chalk/dark/css-vars.css';
 
+.el-form--inline .el-form-item {
+  margin-right: 16px;
+  margin-bottom: 16px;
+  align-items: flex-start;
+}
+
+.el-form--inline .el-form-item__label {
+  min-width: 96px !important;
+  padding-right: 12px;
+  line-height: 16px;
+  white-space: normal;
+  word-break: break-word;
+  align-self: flex-start;
+  justify-content: flex-end;
+}
+
+.el-form--inline .el-form-item__content {
+  min-height: 32px;
+}
+
 .reset-margin [class*='el-icon'] + span {
   margin-left: 2px !important;
 }

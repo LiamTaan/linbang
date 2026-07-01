@@ -35,8 +35,8 @@
       </el-form-item>
       <el-form-item label="前台可见" prop="visible">
         <el-radio-group v-model="formData.visible">
-          <el-radio :value="true">可见</el-radio>
-          <el-radio :value="false">不可见</el-radio>
+          <el-radio :label="true">可见</el-radio>
+          <el-radio :label="false">不可见</el-radio>
         </el-radio-group>
       </el-form-item>
       <el-form-item label="备注" prop="remark">

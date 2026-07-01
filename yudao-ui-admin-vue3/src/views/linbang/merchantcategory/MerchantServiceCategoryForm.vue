@@ -4,7 +4,7 @@
       ref="formRef"
       :model="formData"
       :rules="formRules"
-      label-width="100px"
+      label-width="112px"
       v-loading="formLoading"
     >
       <el-form-item label="上级类目" prop="parentId">
@@ -355,3 +355,18 @@ watch(
   }
 )
 </script>
+
+<style lang="scss" scoped>
+.el-form {
+  :deep(.el-form-item) {
+    align-items: flex-start;
+  }
+
+  :deep(.el-form-item__label) {
+    padding-top: 8px;
+    line-height: 16px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+</style>

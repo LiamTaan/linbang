@@ -21,8 +21,10 @@ final class MemberUserDetailAssembler {
 
     static MemberUserDetailRespVO build(MemberUserDO user, MemberUserRealNameDO realName, MerchantInfoDO merchant,
                                         MerchantEntryDO latestEntry, List<MemberUserQualificationDO> qualifications,
-                                        List<MemberUserAddressDO> addresses, List<CreditRecordDO> creditRecords) {
+                                        List<MemberUserAddressDO> addresses, List<CreditRecordDO> creditRecords,
+                                        List<String> enabledRoleCodes) {
         MemberUserDetailRespVO respVO = BeanUtils.toBean(user, MemberUserDetailRespVO.class);
+        respVO.setEnabledRoleCodes(enabledRoleCodes);
         if (realName != null) {
             respVO.setRealName(BeanUtils.toBean(realName, MemberUserDetailRespVO.RealNameRespVO.class));
         }

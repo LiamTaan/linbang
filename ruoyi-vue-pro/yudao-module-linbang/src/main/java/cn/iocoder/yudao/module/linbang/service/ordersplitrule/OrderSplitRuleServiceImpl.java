@@ -4,7 +4,6 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.controller.admin.ordersplitrule.vo.OrderSplitRulePageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.ordersplitrule.vo.OrderSplitRuleRespVO;
@@ -326,8 +325,23 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
     }
 
     private OrderSplitRuleRespVO toRespVO(OrderSplitRuleDO rule, String categoryName) {
-        OrderSplitRuleRespVO respVO = BeanUtils.toBean(rule, OrderSplitRuleRespVO.class);
+        OrderSplitRuleRespVO respVO = new OrderSplitRuleRespVO();
+        respVO.setId(rule.getId());
+        respVO.setRuleName(rule.getRuleName());
+        respVO.setRuleCode(rule.getRuleCode());
+        respVO.setMatchMode(rule.getMatchMode());
+        respVO.setCategoryId(rule.getCategoryId());
         respVO.setCategoryName(categoryName);
+        respVO.setMinOrderAmount(rule.getMinOrderAmount());
+        respVO.setMinQuantity(rule.getMinQuantity());
+        respVO.setMinWorkerCount(rule.getMinWorkerCount());
+        respVO.setSplitMode(rule.getSplitMode());
+        respVO.setDefaultUnitCount(rule.getDefaultUnitCount());
+        respVO.setUnitAmountLimit(rule.getUnitAmountLimit());
+        respVO.setSortNo(rule.getSortNo());
+        respVO.setStatus(rule.getStatus());
+        respVO.setRemark(rule.getRemark());
+        respVO.setCreateTime(rule.getCreateTime());
         respVO.setApplicablePricingModes(parsePricingModes(rule.getApplicablePricingModes()));
         respVO.setUnitTemplate(parseUnitTemplate(rule.getUnitTemplate()));
         return respVO;
@@ -353,7 +367,21 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
     }
 
     private OrderSplitRuleDO buildRule(OrderSplitRuleSaveReqVO reqVO) {
-        OrderSplitRuleDO rule = BeanUtils.toBean(reqVO, OrderSplitRuleDO.class);
+        OrderSplitRuleDO rule = new OrderSplitRuleDO();
+        rule.setId(reqVO.getId());
+        rule.setRuleName(reqVO.getRuleName());
+        rule.setRuleCode(reqVO.getRuleCode());
+        rule.setMatchMode(reqVO.getMatchMode());
+        rule.setCategoryId(reqVO.getCategoryId());
+        rule.setMinOrderAmount(reqVO.getMinOrderAmount());
+        rule.setMinQuantity(reqVO.getMinQuantity());
+        rule.setMinWorkerCount(reqVO.getMinWorkerCount());
+        rule.setSplitMode(reqVO.getSplitMode());
+        rule.setDefaultUnitCount(reqVO.getDefaultUnitCount());
+        rule.setUnitAmountLimit(reqVO.getUnitAmountLimit());
+        rule.setSortNo(reqVO.getSortNo());
+        rule.setStatus(reqVO.getStatus());
+        rule.setRemark(reqVO.getRemark());
         rule.setApplicablePricingModes(JsonUtils.toJsonString(reqVO.getApplicablePricingModes()));
         rule.setUnitTemplate(JsonUtils.toJsonString(reqVO.getUnitTemplate()));
         return rule;

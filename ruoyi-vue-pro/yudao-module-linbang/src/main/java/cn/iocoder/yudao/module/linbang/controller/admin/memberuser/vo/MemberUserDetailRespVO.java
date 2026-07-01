@@ -21,6 +21,7 @@ public class MemberUserDetailRespVO {
     private LocalDate birthday;
     private String registerSource;
     private String currentRoleCode;
+    private List<String> enabledRoleCodes;
     private String status;
     private LocalDateTime lastLoginTime;
     private String lastLoginIp;

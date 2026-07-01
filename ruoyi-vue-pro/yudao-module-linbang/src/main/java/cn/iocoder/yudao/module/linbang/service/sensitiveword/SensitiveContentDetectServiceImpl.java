@@ -94,7 +94,7 @@ public class SensitiveContentDetectServiceImpl implements SensitiveContentDetect
             blockRequired = blockRequired || textOutcome.isBlockRequired();
         }
 
-        if (CollUtil.isNotEmpty(fileIds)) {
+        if (CollUtil.isNotEmpty(fileIds) && isOcrEnabled()) {
             List<SensitiveWordDO> platformWords = sensitiveWordMapper.selectList();
             List<UserSensitiveCustomWordDO> customWords = userId == null
                     ? new ArrayList<>()
@@ -386,6 +386,12 @@ public class SensitiveContentDetectServiceImpl implements SensitiveContentDetect
             return false;
         }
         return LinbangRiskConstants.SCENE_ORDER_PUBLISH.equals(sceneType);
+    }
+
+    private boolean isOcrEnabled() {
+        String enabled = configService.getConfigByKey(PlatformConfigKeyConstants.OCR_ENABLED) == null
+                ? null : configService.getConfigByKey(PlatformConfigKeyConstants.OCR_ENABLED).getValue();
+        return Boolean.parseBoolean(StrUtil.blankToDefault(enabled, "false"));
     }
 
     private String createMaskedPreviewImage(BufferedImage image, FileDO file) throws Exception {

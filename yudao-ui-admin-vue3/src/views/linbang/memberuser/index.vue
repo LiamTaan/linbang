@@ -130,10 +130,18 @@
       </el-table-column>
       <el-table-column label="生日" align="center" prop="birthday" width="120" />
       <el-table-column label="注册来源" align="center" prop="registerSource" width="120" />
-      <el-table-column label="当前角色" align="center" prop="currentRoleCode" width="120">
+      <el-table-column label="角色" align="center" min-width="180">
         <template #default="{ row }">
-          <dict-tag v-if="row.currentRoleCode" :type="DICT_TYPE.LB_ROLE_CODE" :value="row.currentRoleCode" />
-          <span v-else>-</span>
+          <div class="flex flex-wrap justify-center gap-4px">
+            <dict-tag v-if="row.currentRoleCode" :type="DICT_TYPE.LB_ROLE_CODE" :value="row.currentRoleCode" />
+            <dict-tag
+              v-for="roleCode in (row.enabledRoleCodes || []).filter((item) => item !== row.currentRoleCode)"
+              :key="roleCode"
+              :type="DICT_TYPE.LB_ROLE_CODE"
+              :value="roleCode"
+            />
+            <span v-if="!row.currentRoleCode && !(row.enabledRoleCodes || []).length">-</span>
+          </div>
         </template>
       </el-table-column>
       <el-table-column label="状态" align="center" prop="status" width="120">
@@ -191,6 +199,17 @@
       <el-descriptions-item label="当前角色">
         <dict-tag v-if="detailData?.currentRoleCode" :type="DICT_TYPE.LB_ROLE_CODE" :value="detailData.currentRoleCode" />
         <span v-else>-</span>
+      </el-descriptions-item>
+      <el-descriptions-item label="已开通角色">
+        <div class="flex flex-wrap gap-4px">
+          <dict-tag
+            v-for="roleCode in detailData?.enabledRoleCodes || []"
+            :key="roleCode"
+            :type="DICT_TYPE.LB_ROLE_CODE"
+            :value="roleCode"
+          />
+          <span v-if="!(detailData?.enabledRoleCodes || []).length">-</span>
+        </div>
       </el-descriptions-item>
       <el-descriptions-item label="状态">{{ formatEnableStatus(detailData?.status) }}</el-descriptions-item>
       <el-descriptions-item label="注册来源">{{ detailData?.registerSource || '-' }}</el-descriptions-item>

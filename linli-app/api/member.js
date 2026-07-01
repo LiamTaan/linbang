@@ -48,8 +48,8 @@ export function getQualification(id) {
   return get('/member/qualification/get', { id })
 }
 
-export function getQualificationSummary() {
-  return get('/member/qualification/summary/get')
+export function getQualificationSummary(options = {}) {
+  return get('/member/qualification/summary/get', {}, options)
 }
 
 export function getQualificationReminderPage(params) {
@@ -68,12 +68,12 @@ export function createCertExemption(data) {
   return post('/member/qualification/cert-exemption/create', data)
 }
 
-export function getRealName() {
-  return get('/member/real-name/get')
+export function getRealName(options = {}) {
+  return get('/member/real-name/get', {}, options)
 }
 
-export function getRealNameProgress() {
-  return get('/member/real-name/progress/get')
+export function getRealNameProgress(options = {}) {
+  return get('/member/real-name/progress/get', {}, options)
 }
 
 export function startRealNameVerify(data) {

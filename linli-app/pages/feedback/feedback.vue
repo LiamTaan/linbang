@@ -145,6 +145,7 @@ const DEFAULT_FAQS = [
 export default {
     data() {
         return {
+            entryMode: '',
             searchText: '',
             feedbackContent: '',
             selectedType: '',
@@ -156,6 +157,9 @@ export default {
             submitting: false
         }
     },
+    onLoad(options) {
+        this.entryMode = options && options.mode ? options.mode : ''
+    },
     onShow() {
         this.loadPageData()
     },
@@ -165,6 +169,9 @@ export default {
             this.types = this.appSettings.feedbackTypes || ['功能建议', '异常反馈', '投诉建议']
             this.selectedType = this.selectedType || this.types[0]
             await Promise.all([this.loadSettings(), this.loadProfile(), this.loadFaqList()])
+            if (this.entryMode === 'service') {
+                this.openOnlineService()
+            }
         },
         async loadSettings() {
             try {

@@ -408,14 +408,14 @@ public class AppOrderServiceImpl implements AppOrderService {
     public PageResult<AppOrderPageItemRespVO> getOrderPage(Long authUserId, AppOrderPageReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
         Set<Long> categoryFilterIds = resolveCategoryFilterIds(reqVO.getCategoryId());
-        PageResult<OrderInfoDO> pageResult = orderInfoMapper.selectPage(reqVO, new LambdaQueryWrapperX<OrderInfoDO>()
+        List<OrderInfoDO> orders = orderInfoMapper.selectList(new LambdaQueryWrapperX<OrderInfoDO>()
                 .eq(OrderInfoDO::getUserId, loginUser.getId())
                 .eqIfPresent(OrderInfoDO::getStatus, reqVO.getStatus())
                 .inIfPresent(OrderInfoDO::getCategoryId, categoryFilterIds)
                 .eqIfPresent(OrderInfoDO::getPricingMode, reqVO.getPricingMode())
                 .orderByDesc(OrderInfoDO::getId));
-        List<OrderInfoDO> filteredOrders = applyBusinessCategoryFilter(loginUser.getId(), pageResult.getList(), reqVO.getBusinessCategory());
-        Map<Long, MerchantServiceCategoryDO> categoryMap = buildCategoryMap(pageResult.getList());
+        List<OrderInfoDO> filteredOrders = applyBusinessCategoryFilter(loginUser.getId(), orders, reqVO.getBusinessCategory());
+        Map<Long, MerchantServiceCategoryDO> categoryMap = buildCategoryMap(filteredOrders);
         List<AppOrderPageItemRespVO> list = filteredOrders.stream().map(order -> {
             boolean waitReview = isWaitReviewOrder(loginUser.getId(), order);
             AppOrderPageItemRespVO respVO = new AppOrderPageItemRespVO();
@@ -439,7 +439,7 @@ public class AppOrderServiceImpl implements AppOrderService {
             respVO.setCreateTime(order.getCreateTime());
             return respVO;
         }).collect(Collectors.toList());
-        return new PageResult<>(list, "WAIT_REVIEW".equals(reqVO.getBusinessCategory()) ? (long) list.size() : pageResult.getTotal());
+        return manualPage(list, reqVO.getPageNo(), reqVO.getPageSize());
     }
 
     @Override

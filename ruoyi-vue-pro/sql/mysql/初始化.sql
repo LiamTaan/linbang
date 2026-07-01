@@ -45,6 +45,7 @@ DELETE FROM `infra_config` WHERE `config_key` IN (
   'linbang.sensitive.complaint-strategy',
   'linbang.sensitive.appeal-strategy',
   'linbang.sensitive.order-publish-strategy',
+  'linbang.ocr.enabled',
   'linbang.ocr.provider',
   'linbang.ocr.fallback-mode',
   'linbang.ocr.generic.endpoint',
@@ -79,7 +80,7 @@ WHERE `type` IN (
   'pay_channel_code', 'pay_notify_status', 'pay_order_status',
   'pay_refund_status', 'pay_transfer_status'
 );
-DELETE FROM `system_menu` WHERE `id` BETWEEN 100170 AND 100178;
+DELETE FROM `system_menu` WHERE `id` BETWEEN 100170 AND 100179;
 DELETE FROM `system_menu` WHERE `id` BETWEEN 110000 AND 110999;
 DELETE FROM `lb_member_point_record`;
 DELETE FROM `lb_user_reminder`;
@@ -165,10 +166,11 @@ VALUES
 (23, 'linbang_risk', 2, '投诉敏感内容策略', 'linbang.sensitive.complaint-strategy', 'REPLACE', b'0', '普通敏感词默认替换后放行', 'admin', NOW(), 'admin', NOW(), b'0'),
 (24, 'linbang_risk', 2, '申诉敏感内容策略', 'linbang.sensitive.appeal-strategy', 'REPLACE', b'0', '普通敏感词默认替换后放行', 'admin', NOW(), 'admin', NOW(), b'0'),
 (25, 'linbang_risk', 2, '发单敏感内容策略', 'linbang.sensitive.order-publish-strategy', 'BLOCK', b'0', '发单场景命中手机号、微信、二维码、外链默认阻断', 'admin', NOW(), 'admin', NOW(), b'0'),
-(26, 'linbang_risk', 2, 'OCR 供应商', 'linbang.ocr.provider', 'LOCAL_DISABLED', b'0', '默认关闭，生产可切换 REMOTE_GENERIC', 'admin', NOW(), 'admin', NOW(), b'0'),
-(27, 'linbang_risk', 2, 'OCR 失败兜底策略', 'linbang.ocr.fallback-mode', 'BLOCK', b'0', '发单场景默认严格阻断，非发单场景进入失败留痕', 'admin', NOW(), 'admin', NOW(), b'0'),
-(28, 'linbang_risk', 2, 'OCR 通用接口地址', 'linbang.ocr.generic.endpoint', '', b'0', 'REMOTE_GENERIC 供应商接入地址，默认留空待生产配置', 'admin', NOW(), 'admin', NOW(), b'0'),
-(29, 'linbang_risk', 2, 'OCR 通用接口密钥', 'linbang.ocr.generic.api-key', '', b'0', 'REMOTE_GENERIC 供应商接入密钥，默认留空待生产配置', 'admin', NOW(), 'admin', NOW(), b'0');
+(26, 'linbang_risk', 2, 'OCR 是否启用', 'linbang.ocr.enabled', 'false', b'0', '是否启用图片 OCR 与二维码识别；关闭后发单图片不做 OCR 检测', 'admin', NOW(), 'admin', NOW(), b'0'),
+(27, 'linbang_risk', 2, 'OCR 供应商', 'linbang.ocr.provider', 'LOCAL_DISABLED', b'0', '默认关闭，生产可切换 REMOTE_GENERIC', 'admin', NOW(), 'admin', NOW(), b'0'),
+(28, 'linbang_risk', 2, 'OCR 失败兜底策略', 'linbang.ocr.fallback-mode', 'BLOCK', b'0', '发单场景默认严格阻断，非发单场景进入失败留痕', 'admin', NOW(), 'admin', NOW(), b'0'),
+(29, 'linbang_risk', 2, 'OCR 通用接口地址', 'linbang.ocr.generic.endpoint', '', b'0', 'REMOTE_GENERIC 供应商接入地址，默认留空待生产配置', 'admin', NOW(), 'admin', NOW(), b'0'),
+(40, 'linbang_risk', 2, 'OCR 通用接口密钥', 'linbang.ocr.generic.api-key', '', b'0', 'REMOTE_GENERIC 供应商接入密钥，默认留空待生产配置', 'admin', NOW(), 'admin', NOW(), b'0');
 
 INSERT INTO `infra_file_config`
 (`id`, `name`, `storage`, `remark`, `master`, `config`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
@@ -193,10 +195,6 @@ INSERT INTO `pay_channel`
 (`id`, `code`, `status`, `fee_rate`, `remark`, `app_id`, `config`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
 VALUES
 (1, 'aggregate', 0, 0, '邻里互助唯一聚合支付通道；baseUrl 按生产聚合支付网关补齐，退款/提现需补充银盛证书与网关配置', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate.AggregatePayClientConfig","baseUrl":"","merchantNo":"826584873720104","merchantName":"深圳市旺佳盈科技有限公司","partnerId":"826584873720104","openApiGatewayUrl":"https://openapi.ysepay.com/gateway.do","transferGatewayUrl":"https://df.ysepay.com/gateway.do","privateKeyFilePath":"","privateKeyPassword":"","ysepayPublicKeyFilePath":"","signType":"RSA","charset":"utf-8","version":"3.0"}', 'admin', NOW(), 'admin', NOW(), b'0', 1);
-
-ALTER TABLE `lb_user_bank_card`
-  ADD COLUMN IF NOT EXISTS `bank_province` VARCHAR(64) DEFAULT NULL COMMENT '开户省份' AFTER `account_name`,
-  ADD COLUMN IF NOT EXISTS `bank_city` VARCHAR(64) DEFAULT NULL COMMENT '开户城市' AFTER `bank_province`;
 
 INSERT INTO `system_sms_channel`
 (`id`, `signature`, `code`, `status`, `remark`, `api_key`, `api_secret`, `callback_url`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
@@ -380,6 +378,13 @@ VALUES
 (100166, '文件配置修改', 'infra:file-config:update', 3, 3, 100163, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100167, '文件配置删除', 'infra:file-config:delete', 3, 4, 100163, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100168, '文件配置导出', 'infra:file-config:export', 3, 5, 100163, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100170, '支付中心', '', 1, 950, 0, '/pay', 'ep:wallet', NULL, NULL, 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100171, '支付应用', '', 2, 10, 100170, 'app', 'ep:grid', 'pay/app/index', 'PayApp', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100172, '支付应用查询', 'pay:app:query', 3, 1, 100171, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100173, '支付应用新增', 'pay:app:create', 3, 2, 100171, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100174, '支付应用修改', 'pay:app:update', 3, 3, 100171, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100175, '支付应用删除', 'pay:app:delete', 3, 4, 100171, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(100179, '支付通知', 'pay:notify:query', 2, 20, 100170, 'notify', 'ep:bell', 'pay/notify/index', 'PayNotify', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100180, '短信渠道', '', 2, 100, 100000, 'sms-channel', 'ep:message', 'system/sms/channel/index', 'SystemSmsChannel', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100181, '短信渠道查询', 'system:sms-channel:query', 3, 1, 100180, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (100182, '短信渠道新增', 'system:sms-channel:create', 3, 2, 100180, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
@@ -701,12 +706,12 @@ VALUES
 
 INSERT INTO `lb_match_strategy`
 (`id`, `strategy_code`, `strategy_name`, `stage_config_json`, `max_stage_count`, `max_radius_km`, `flow_advice_template`,
- `auto_refund_enabled`, `auto_refund_retry_times`, `status`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
+ `auto_dispatch_enabled`, `auto_refund_enabled`, `auto_refund_retry_times`, `status`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
 VALUES
 (1, 'DEFAULT', '默认分钟级匹配策略',
  '[{\"stageNo\":1,\"radiusStartKm\":0.00,\"radiusEndKm\":0.50,\"durationSeconds\":60},{\"stageNo\":2,\"radiusStartKm\":0.50,\"radiusEndKm\":1.00,\"durationSeconds\":60},{\"stageNo\":3,\"radiusStartKm\":1.00,\"radiusEndKm\":2.00,\"durationSeconds\":60},{\"stageNo\":4,\"radiusStartKm\":2.00,\"radiusEndKm\":5.00,\"durationSeconds\":60},{\"stageNo\":5,\"radiusStartKm\":5.00,\"radiusEndKm\":999.00,\"durationSeconds\":60}]',
  5, 999.00, '当前附近服务商暂未接单，建议适当降低条件或增加预算，我们将继续为您匹配。',
- b'1', 3, 'ENABLE', 'admin', NOW(), 'admin', NOW(), b'0', 0);
+ b'1', b'1', 3, 'ENABLE', 'admin', NOW(), 'admin', NOW(), b'0', 0);
 
 UPDATE `lb_message_template`
 SET `scene_code` = IFNULL(`scene_code`, 'SYSTEM_NOTICE'),
@@ -821,7 +826,6 @@ VALUES
 (110365, '流单退款看板', 'linbang:order:flow:query', 2, 60, 110300, 'order-flow', 'ep:refresh-left', 'linbang/orderflow/index', 'LinbangOrderFlow', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110366, '流单退款重试', 'linbang:order:flow:update', 3, 1, 110365, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110400, '资金中心', '', 1, 50, 0, '/linbang-wallet', 'ep:wallet', NULL, NULL, 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
-(110410, '资金中心概览', '', 2, 1, 110400, 'overview', 'ep:money', 'linbang/wallet/index', 'LinbangWalletOverview', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110420, '钱包账户', 'linbang:wallet:account:query', 2, 10, 110400, 'wallet-account', 'ep:credit-card', 'linbang/walletaccount/index', 'LinbangWalletAccount', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110421, '账户新增', 'linbang:wallet:account:create', 3, 1, 110420, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110422, '账户修改', 'linbang:wallet:account:update', 3, 2, 110420, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),

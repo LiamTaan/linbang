@@ -56,16 +56,17 @@
                 </view>
 
                 <view
-                    v-if="role.code === 'MERCHANT' && (merchantEntry || merchantProgress)"
+                    v-if="role.showProgress"
                     class="role-progress"
-                    @click="handleRoleAction(role)">
+                    @click="handleViewProgress(role)">
                     <view class="progress-left">
                         <text class="progress-title">申请进度</text>
-                        <text class="progress-sub">{{ merchantProgressText }}</text>
-                        <text v-if="merchantProgressTime" class="progress-time">{{ $fmt.formatDateTime(merchantProgressTime) }}</text>
+                        <text class="progress-sub">{{ role.progressTitle }}</text>
+                        <text v-if="role.progressTime" class="progress-time">{{ $fmt.formatDateTime(role.progressTime) }}</text>
                     </view>
                     <text class="progress-link">查看 ></text>
                 </view>
+
             </view>
 
             <view class="bottom-space"></view>
@@ -74,9 +75,9 @@
 </template>
 
 <script>
-import { createRoleApply, getRoleApplyPage, getRoleContext } from '@/api/member'
+import { getRoleApplyPage, getRoleContext } from '@/api/member'
 import { getMerchantEntry, getMerchantOnboardingProgress } from '@/api/merchant'
-import { getRoleApplyName, getRoleApplyStatusLabel } from '@/utils/linbang'
+import { getRoleApplyStatusLabel } from '@/utils/linbang'
 
 const ROLE_META = {
     MERCHANT: {
@@ -110,17 +111,6 @@ const MERCHANT_STATUS_LABELS = {
     APPROVED: '终审通过',
     REJECTED: '已驳回',
     PENDING: '已申请'
-}
-
-function promptInput(title, placeholder = '') {
-    return new Promise((resolve) => {
-        uni.showModal({
-            title,
-            editable: true,
-            placeholderText: placeholder,
-            success: (res) => resolve(res.confirm ? (res.content || '') : '')
-        })
-    })
 }
 
 export default {
@@ -163,48 +153,48 @@ export default {
                 || (this.merchantEntry && this.merchantEntry.status)
                 || (this.merchantEntry ? 'PENDING' : 'AVAILABLE')
         },
+        latestRoleApplications() {
+            return (this.applications || []).reduce((acc, item) => {
+                if (!item || !item.applyRoleCode) {
+                    return acc
+                }
+                const current = acc[item.applyRoleCode]
+                if (!current || Number(item.id || 0) > Number(current.id || 0)) {
+                    acc[item.applyRoleCode] = item
+                }
+                return acc
+            }, {})
+        },
         visibleRoleCards() {
             const summaries = this.roleContext.roleSummaries || []
             return ROLE_ORDER.map((code) => {
                 const meta = ROLE_META[code]
                 const summary = summaries.find((item) => item.roleCode === code) || {}
+                const latestApply = this.latestRoleApplications[code] || null
                 const roleStatus = code === 'MERCHANT'
                     ? this.merchantStatusKey
-                    : (summary.roleStatus || 'AVAILABLE')
-                let buttonText = '去申请'
-                let buttonClass = 'primary'
-                if (code === 'MERCHANT') {
-                    if (roleStatus === 'REJECTED') {
-                        buttonText = '重新申请'
-                    } else if (roleStatus === 'APPROVED_ENABLED') {
-                        buttonText = '已开通'
-                    } else if (roleStatus === 'APPROVED_WAIT_BANK_CARD') {
-                        buttonText = '去绑卡'
-                    } else if (roleStatus === 'PENDING' || roleStatus === 'PENDING_FIRST_AUDIT' || roleStatus === 'PENDING_FINAL_AUDIT') {
-                        buttonText = '已申请'
-                    } else {
-                        buttonText = '去申请'
-                    }
-                    buttonClass = 'outline'
-                } else if (roleStatus === 'PENDING') {
-                    buttonText = '审核中'
-                    buttonClass = 'disabled'
-                } else if (roleStatus === 'ENABLED') {
-                    buttonText = '已开通'
-                    buttonClass = 'disabled'
-                }
+                    : this.resolveRoleStatus(summary, latestApply)
+                const buttonMeta = this.resolveButtonMeta(code, roleStatus)
                 return {
                     code,
                     name: meta.name,
                     desc: meta.desc,
                     icon: meta.icon,
                     features: meta.features,
+                    latestApply,
                     roleStatus,
+                    buttonText: buttonMeta.text,
+                    buttonClass: buttonMeta.className,
+                    showProgress: code === 'MERCHANT' ? !!(this.merchantEntry || this.merchantProgress) : !!latestApply,
+                    progressTitle: code === 'MERCHANT'
+                        ? this.merchantProgressText
+                        : this.resolveRoleProgressTitle(latestApply),
+                    progressTime: code === 'MERCHANT'
+                        ? this.merchantProgressTime
+                        : ((latestApply && (latestApply.auditTime || latestApply.updateTime || latestApply.createTime)) || ''),
                     statusLabel: code === 'MERCHANT'
                         ? (MERCHANT_STATUS_LABELS[roleStatus] || roleStatus)
-                        : getRoleApplyStatusLabel(roleStatus),
-                    buttonText,
-                    buttonClass
+                        : getRoleApplyStatusLabel(roleStatus)
                 }
             })
         }
@@ -213,8 +203,6 @@ export default {
         this.loadPageData()
     },
     methods: {
-        getRoleApplyName,
-        getRoleApplyStatusLabel,
         async loadPageData() {
             try {
                 const [roleContext, page, merchantEntry, merchantProgress] = await Promise.all([
@@ -230,81 +218,113 @@ export default {
             } catch (error) {
             }
         },
+        resolveRoleStatus(summary, latestApply) {
+            if (summary.roleStatus && summary.roleStatus !== 'AVAILABLE') {
+                return summary.roleStatus
+            }
+            if (latestApply && latestApply.auditStatus) {
+                return latestApply.auditStatus
+            }
+            return 'AVAILABLE'
+        },
+        resolveButtonMeta(code, roleStatus) {
+            if (code === 'MERCHANT') {
+                if (roleStatus === 'REJECTED') {
+                    return { text: '重新申请', className: 'outline' }
+                }
+                if (roleStatus === 'APPROVED_ENABLED') {
+                    return { text: '已开通', className: 'disabled' }
+                }
+                if (roleStatus === 'APPROVED_WAIT_BANK_CARD') {
+                    return { text: '去绑卡', className: 'primary' }
+                }
+                if (roleStatus === 'PENDING' || roleStatus === 'PENDING_FIRST_AUDIT' || roleStatus === 'PENDING_FINAL_AUDIT' || roleStatus === 'FIRST_APPROVED' || roleStatus === 'APPROVED') {
+                    return { text: '查看进度', className: 'outline' }
+                }
+                return { text: '去申请', className: 'primary' }
+            }
+            if (roleStatus === 'PENDING') {
+                return { text: '查看进度', className: 'outline' }
+            }
+            if (roleStatus === 'ENABLED' || roleStatus === 'APPROVED') {
+                return { text: '已开通', className: 'disabled' }
+            }
+            if (roleStatus === 'REJECTED') {
+                return { text: '重新申请', className: 'outline' }
+            }
+            return { text: '去申请', className: 'primary' }
+        },
+        resolveRoleProgressTitle(latestApply) {
+            if (!latestApply) {
+                return '待提交申请'
+            }
+            if (latestApply.auditStatus === 'REJECTED' && latestApply.rejectReason) {
+                return `已驳回：${latestApply.rejectReason}`
+            }
+            return `${this.getRoleApplyStatusLabel(latestApply.auditStatus)} · ${latestApply.currentNodeName || '平台审核中'}`
+        },
         async handleRoleAction(role) {
             if (!role) {
                 return
             }
             if (role.code === 'MERCHANT') {
-                if (role.roleStatus === 'APPROVED_ENABLED') {
-                    uni.navigateTo({
-                        url: '/pages/order/order?mode=accept'
-                    })
-                    return
-                }
-                if (role.roleStatus === 'APPROVED_WAIT_BANK_CARD') {
-                    uni.navigateTo({
-                        url: '/pages/bank_card_management/bank_card_management'
-                    })
-                    return
-                }
+                this.handleMerchantAction(role)
+                return
+            }
+            if (role.roleStatus === 'PENDING' && role.latestApply) {
+                this.handleViewProgress(role)
+                return
+            }
+            if (role.roleStatus === 'ENABLED' || role.roleStatus === 'APPROVED') {
+                uni.showToast({
+                    title: '该身份已开通',
+                    icon: 'none'
+                })
+                return
+            }
+            uni.navigateTo({
+                url: `/pages/role_apply_form/role_apply_form?roleCode=${role.code}`
+            })
+        },
+        handleMerchantAction(role) {
+            if (role.roleStatus === 'APPROVED_ENABLED') {
+                uni.navigateTo({
+                    url: '/pages/order/order?mode=accept'
+                })
+                return
+            }
+            if (role.roleStatus === 'APPROVED_WAIT_BANK_CARD') {
+                uni.navigateTo({
+                    url: '/pages/bank_card_management/bank_card_management'
+                })
+                return
+            }
+            uni.navigateTo({
+                url: '/pages/merchant_entry/merchant_entry'
+            })
+        },
+        handleViewProgress(role) {
+            if (!role) {
+                return
+            }
+            if (role.code === 'MERCHANT') {
                 uni.navigateTo({
                     url: '/pages/merchant_entry/merchant_entry'
                 })
                 return
             }
-            if (role.roleStatus === 'PENDING' || role.roleStatus === 'ENABLED') {
+            if (!role.latestApply || !role.latestApply.id) {
                 uni.showToast({
-                    title: role.roleStatus === 'PENDING' ? '当前状态审核中' : '该身份已开通',
+                    title: '暂无申请记录',
                     icon: 'none'
                 })
                 return
             }
-            await this.handleApply(role)
+            uni.navigateTo({
+                url: `/pages/role_apply_detail/role_apply_detail?id=${role.latestApply.id}`
+            })
         },
-        async handleApply(role) {
-            try {
-                const applyReason = await promptInput(`${role.name}申请说明`, '请简要说明申请原因')
-                if (!applyReason) {
-                    return
-                }
-                const payload = {
-                    applyRoleCode: role.code,
-                    applyReason
-                }
-                if (role.code === 'PROMOTER') {
-                    payload.resourceDesc = await promptInput('资源说明', '请填写可投入资源')
-                    if (!payload.resourceDesc) {
-                        return
-                    }
-                    payload.expectedConversionDesc = await promptInput('预期转化说明', '例如首月转化 20 个线索')
-                    if (!payload.expectedConversionDesc) {
-                        return
-                    }
-                    payload.abilityDesc = payload.resourceDesc
-                    payload.availableTimeDesc = '可按需配合平台安排'
-                } else if (role.code === 'PARTNER') {
-                    payload.resourceDesc = await promptInput('资源说明', '请填写可投入资源')
-                    if (!payload.resourceDesc) {
-                        return
-                    }
-                    payload.abilityDesc = payload.resourceDesc
-                    payload.availableTimeDesc = '可按需配合平台安排'
-                } else {
-                    uni.showToast({
-                        title: '当前角色暂不支持申请',
-                        icon: 'none'
-                    })
-                    return
-                }
-                await createRoleApply(payload)
-                uni.showToast({
-                    title: '申请已提交',
-                    icon: 'success'
-                })
-                this.loadPageData()
-            } catch (error) {
-            }
-        },
+        getRoleApplyStatusLabel,
         goBack() {
             uni.navigateBack()
         }
@@ -315,15 +335,21 @@ export default {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: #f5f7fb;
+    background: linear-gradient(180deg, #eef4ff 0, #f6f8fc 220rpx, #f5f7fb 100%);
 }
 
 .header {
-    background: #fff;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
     padding: 60rpx 30rpx 26rpx;
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+.back-btn,
+.placeholder {
+    width: 48rpx;
 }
 
 .back-icon {
@@ -334,21 +360,22 @@ export default {
 
 .title {
     font-size: 32rpx;
-    color: #222;
-    font-weight: 500;
+    color: #18243d;
+    font-weight: 600;
 }
 
 .content-scroll {
-    padding: 22rpx 24rpx 30rpx;
+    padding: 24rpx;
     box-sizing: border-box;
 }
 
 .current-card {
-    border: 1px solid #4d91f7;
-    border-radius: 18rpx;
-    background: #edf5ff;
-    padding: 24rpx 22rpx;
-    margin-bottom: 22rpx;
+    border-radius: 28rpx;
+    background: linear-gradient(135deg, #ebf4ff, #f8fbff);
+    border: 2rpx solid rgba(77, 145, 247, 0.28);
+    padding: 26rpx 24rpx;
+    margin-bottom: 24rpx;
+    box-shadow: 0 16rpx 34rpx rgba(63, 116, 196, 0.08);
 }
 
 .current-card-inner {
@@ -361,25 +388,25 @@ export default {
 .current-meta {
     display: flex;
     flex-direction: column;
-    gap: 10rpx;
+    gap: 12rpx;
 }
 
 .current-label {
-    font-size: 20rpx;
+    font-size: 22rpx;
     color: #6c87a8;
 }
 
 .current-role-row {
     display: flex;
     align-items: center;
-    gap: 12rpx;
+    gap: 14rpx;
 }
 
 .current-icon {
-    width: 34rpx;
-    height: 34rpx;
+    width: 40rpx;
+    height: 40rpx;
     border-radius: 50%;
-    background: #4d91f7;
+    background: linear-gradient(135deg, #5d98f7, #2e83f0);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -387,38 +414,38 @@ export default {
 
 .current-icon-text {
     color: #fff;
-    font-size: 20rpx;
+    font-size: 22rpx;
     line-height: 1;
 }
 
 .current-name {
-    font-size: 32rpx;
+    font-size: 34rpx;
     font-weight: bold;
     color: #1f68d4;
 }
 
 .current-hint {
-    font-size: 20rpx;
+    font-size: 22rpx;
     color: #6c87a8;
     white-space: nowrap;
 }
 
 .section-title {
-    margin: 18rpx 0 14rpx;
+    margin: 12rpx 0 16rpx;
 }
 
 .title-text {
-    font-size: 24rpx;
-    color: #333;
+    font-size: 26rpx;
+    color: #24324b;
     font-weight: bold;
 }
 
 .role-card {
-    background: #fff;
-    border-radius: 18rpx;
-    padding: 22rpx;
-    margin-bottom: 18rpx;
-    box-shadow: 0 6rpx 20rpx rgba(15, 47, 90, 0.06);
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 26rpx;
+    padding: 26rpx 24rpx;
+    margin-bottom: 20rpx;
+    box-shadow: 0 14rpx 34rpx rgba(15, 47, 90, 0.06);
 }
 
 .role-card-header {
@@ -440,25 +467,24 @@ export default {
 }
 
 .role-merchant .role-title {
-    color: #f39b25;
+    color: #eb8b12;
 }
 
 .role-promoter .role-title {
-    color: #2ab05d;
+    color: #1ea65d;
 }
 
 .role-partner .role-title {
-    color: #8f3df2;
+    color: #8a35f0;
 }
 
 .role-icon {
-    width: 32rpx;
-    height: 32rpx;
+    width: 38rpx;
+    height: 38rpx;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background: #f4f7fb;
 }
 
 .role-icon-merchant {
@@ -466,28 +492,16 @@ export default {
 }
 
 .role-icon-promoter {
-    background: #eef9f0;
+    background: #eefaf2;
 }
 
 .role-icon-partner {
-    background: #f3ebff;
+    background: #f4ecff;
 }
 
 .role-icon-text {
-    font-size: 20rpx;
+    font-size: 22rpx;
     line-height: 1;
-}
-
-.role-icon-merchant .role-icon-text {
-    color: #f39b25;
-}
-
-.role-icon-promoter .role-icon-text {
-    color: #2ab05d;
-}
-
-.role-icon-partner .role-icon-text {
-    color: #8f3df2;
 }
 
 .role-title {
@@ -498,45 +512,34 @@ export default {
 .role-desc {
     display: block;
     font-size: 22rpx;
-    color: #818b9a;
-    line-height: 1.6;
-}
-
-.role-merchant .role-desc {
-    color: #7f6d55;
-}
-
-.role-promoter .role-desc {
-    color: #567d5f;
-}
-
-.role-partner .role-desc {
-    color: #6c5a89;
+    color: #6f7b8f;
+    line-height: 1.7;
 }
 
 .role-btn {
-    min-width: 128rpx;
-    height: 54rpx;
-    border-radius: 10rpx;
+    min-width: 136rpx;
+    height: 60rpx;
+    border-radius: 16rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 14rpx;
+    padding: 0 18rpx;
     margin-top: 8rpx;
 }
 
 .role-btn.primary {
-    background: #2e83f0;
+    background: linear-gradient(135deg, #4a90f0, #2e83f0);
+    box-shadow: 0 10rpx 20rpx rgba(46, 131, 240, 0.22);
 }
 
 .role-btn.outline {
-    background: #fff;
+    background: #f8fbff;
     border: 2rpx solid #4d91f7;
 }
 
 .role-btn.disabled {
-    background: #e9eff7;
-    border: 2rpx solid #d8e2ee;
+    background: #eaf0f7;
+    border: 2rpx solid #d9e3ef;
 }
 
 .role-btn-text {
@@ -557,21 +560,21 @@ export default {
 }
 
 .role-feature-list {
-    margin-top: 14rpx;
+    margin-top: 18rpx;
     display: flex;
     flex-direction: column;
-    gap: 6rpx;
+    gap: 8rpx;
 }
 
 .role-feature {
-    font-size: 20rpx;
-    color: #818b9a;
-    line-height: 1.5;
+    font-size: 22rpx;
+    color: #7b8797;
+    line-height: 1.6;
 }
 
 .role-progress {
-    margin-top: 16rpx;
-    padding-top: 16rpx;
+    margin-top: 18rpx;
+    padding: 20rpx 4rpx 2rpx;
     border-top: 1px solid #eef2f7;
     display: flex;
     justify-content: space-between;
@@ -583,22 +586,24 @@ export default {
     display: flex;
     flex-direction: column;
     gap: 6rpx;
+    min-width: 0;
 }
 
 .progress-title {
     font-size: 22rpx;
-    color: #333;
+    color: #24324b;
     font-weight: bold;
 }
 
 .progress-sub,
 .progress-time {
     font-size: 20rpx;
-    color: #9099a8;
+    color: #8d98a8;
+    line-height: 1.5;
 }
 
 .progress-link {
-    font-size: 20rpx;
+    font-size: 22rpx;
     color: #4d91f7;
     white-space: nowrap;
 }
