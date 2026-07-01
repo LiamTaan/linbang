@@ -31,8 +31,11 @@ final class WalletBankCardDetailAssembler {
         respVO.setBankName(bankCard.getBankName());
         respVO.setBankCode(bankCard.getBankCode());
         respVO.setCardNoEncrypt(bankCard.getCardNoEncrypt());
+        respVO.setTransferAccount(bankCard.getTransferAccount());
         respVO.setCardNoMask(bankCard.getCardNoMask());
         respVO.setAccountName(bankCard.getAccountName());
+        respVO.setBankProvince(bankCard.getBankProvince());
+        respVO.setBankCity(bankCard.getBankCity());
         respVO.setReservedMobile(bankCard.getReservedMobile());
         respVO.setStatus(bankCard.getStatus());
         respVO.setIsDefault(bankCard.getIsDefault());

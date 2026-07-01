@@ -158,6 +158,30 @@
           </template>
         </el-table-column>
       </el-table-column>
+      <el-table-column align="center" label="聚合支付配置">
+        <el-table-column :label="PayChannelEnum.AGGREGATE.name" align="center">
+          <template #default="scope">
+            <el-button
+              v-if="isChannelExists(scope.row.channelCodes, PayChannelEnum.AGGREGATE.code)"
+              circle
+              size="small"
+              type="success"
+              @click="openChannelForm(scope.row, PayChannelEnum.AGGREGATE.code)"
+            >
+              <Icon icon="ep:check" />
+            </el-button>
+            <el-button
+              v-else
+              circle
+              size="small"
+              type="danger"
+              @click="openChannelForm(scope.row, PayChannelEnum.AGGREGATE.code)"
+            >
+              <Icon icon="ep:close" />
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table-column>
       <el-table-column align="center" label="模拟支付配置">
         <el-table-column :label="PayChannelEnum.MOCK.name" align="center">
           <template #default="scope">
@@ -214,6 +238,7 @@
 
   <!-- 表单弹窗：添加/修改 -->
   <AppForm ref="formRef" @success="getList" />
+  <AggregateChannelForm ref="aggregateFormRef" @success="getList" />
   <AlipayChannelForm ref="alipayFormRef" @success="getList" />
   <WeixinChannelForm ref="weixinFormRef" @success="getList" />
   <MockChannelForm ref="mockFormRef" @success="getList" />
@@ -224,6 +249,7 @@ import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import * as AppApi from '@/api/pay/app'
 import AppForm from './components/AppForm.vue'
 import { CommonStatusEnum, PayChannelEnum } from '@/utils/constants'
+import AggregateChannelForm from './components/channel/AggregateChannelForm.vue'
 import AlipayChannelForm from './components/channel/AlipayChannelForm.vue'
 import WeixinChannelForm from './components/channel/WeixinChannelForm.vue'
 import MockChannelForm from './components/channel/MockChannelForm.vue'
@@ -342,6 +368,7 @@ const alipayFormRef = ref()
 const weixinFormRef = ref()
 const mockFormRef = ref()
 const walletFormRef = ref()
+const aggregateFormRef = ref()
 const channelParam = reactive({
   appId: null, // 应用 ID
   payCode: null // 渠道编码
@@ -349,6 +376,10 @@ const channelParam = reactive({
 const openChannelForm = async (row, payCode) => {
   channelParam.appId = row.id
   channelParam.payCode = payCode
+  if (payCode.indexOf('aggregate') === 0) {
+    aggregateFormRef.value.open(row.id, payCode)
+    return
+  }
   if (payCode.indexOf('alipay_') === 0) {
     alipayFormRef.value.open(row.id, payCode)
     return

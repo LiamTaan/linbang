@@ -250,7 +250,9 @@ public class AppWalletServiceImpl implements AppWalletService {
                 .transferAccount(reqVO.getCardNo())
                 .cardNoMask(maskCardNo(reqVO.getCardNo()))
                 .accountName(reqVO.getAccountName())
-                .reservedMobile(StrUtil.blankToDefault(reqVO.getReservedMobile(), loginUser.getMobile()))
+                .bankProvince(reqVO.getBankProvince())
+                .bankCity(reqVO.getBankCity())
+                .reservedMobile(reqVO.getReservedMobile())
                 .status("ENABLE")
                 .isDefault(reqVO.getIsDefault())
                 .build();
@@ -268,6 +270,8 @@ public class AppWalletServiceImpl implements AppWalletService {
                 .bankName(reqVO.getBankName())
                 .bankCode(reqVO.getBankCode())
                 .accountName(reqVO.getAccountName())
+                .bankProvince(reqVO.getBankProvince())
+                .bankCity(reqVO.getBankCity())
                 .reservedMobile(reqVO.getReservedMobile())
                 .isDefault(reqVO.getIsDefault())
                 .build());

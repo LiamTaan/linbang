@@ -29,6 +29,15 @@
       <el-form-item label="开户名" prop="accountName">
         <el-input v-model="formData.accountName" placeholder="请输入开户名" />
       </el-form-item>
+      <el-form-item label="出款账号" prop="transferAccount">
+        <el-input v-model="formData.transferAccount" placeholder="请输入第三方提现收款账号" />
+      </el-form-item>
+      <el-form-item label="开户省份" prop="bankProvince">
+        <el-input v-model="formData.bankProvince" placeholder="请输入开户省份" />
+      </el-form-item>
+      <el-form-item label="开户城市" prop="bankCity">
+        <el-input v-model="formData.bankCity" placeholder="请输入开户城市" />
+      </el-form-item>
       <el-form-item label="预留手机号" prop="reservedMobile">
         <el-input v-model="formData.reservedMobile" placeholder="请输入预留手机号" />
       </el-form-item>
@@ -87,6 +96,9 @@ type FormData = {
   cardNoEncrypt?: string
   cardNoMask?: string
   accountName?: string
+  transferAccount?: string
+  bankProvince?: string
+  bankCity?: string
   reservedMobile?: string
   status?: string
   isDefault?: boolean
@@ -109,6 +121,9 @@ const createEmptyFormData = (): FormData => ({
   cardNoEncrypt: undefined,
   cardNoMask: undefined,
   accountName: undefined,
+  transferAccount: undefined,
+  bankProvince: undefined,
+  bankCity: undefined,
   reservedMobile: undefined,
   status: undefined,
   isDefault: undefined
@@ -117,9 +132,14 @@ const formData = ref<FormData>(createEmptyFormData())
 const formRules = reactive({
   userId: [{ required: true, message: '用户不能为空', trigger: 'change' }],
   bankName: [{ required: true, message: '银行名称不能为空', trigger: 'blur' }],
+  bankCode: [{ required: true, message: '银行编码不能为空', trigger: 'blur' }],
   cardNoEncrypt: [{ required: true, message: '加密卡号不能为空', trigger: 'blur' }],
   cardNoMask: [{ required: true, message: '脱敏卡号不能为空', trigger: 'blur' }],
   accountName: [{ required: true, message: '开户名不能为空', trigger: 'blur' }],
+  transferAccount: [{ required: true, message: '出款账号不能为空', trigger: 'blur' }],
+  bankProvince: [{ required: true, message: '开户省份不能为空', trigger: 'blur' }],
+  bankCity: [{ required: true, message: '开户城市不能为空', trigger: 'blur' }],
+  reservedMobile: [{ required: true, message: '预留手机号不能为空', trigger: 'blur' }],
   status: [{ required: true, message: '状态不能为空', trigger: 'blur' }],
   isDefault: [{ required: true, message: '是否默认不能为空', trigger: 'blur' }]
 })
@@ -211,6 +231,9 @@ const buildFormData = (data: WalletBankCardFormData): FormData => ({
   cardNoEncrypt: data.cardNoEncrypt,
   cardNoMask: data.cardNoMask,
   accountName: data.accountName,
+  transferAccount: data.transferAccount,
+  bankProvince: data.bankProvince,
+  bankCity: data.bankCity,
   reservedMobile: data.reservedMobile,
   status: data.status,
   isDefault: data.isDefault

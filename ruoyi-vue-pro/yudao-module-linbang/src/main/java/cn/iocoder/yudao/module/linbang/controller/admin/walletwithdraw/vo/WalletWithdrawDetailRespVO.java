@@ -110,11 +110,17 @@ public class WalletWithdrawDetailRespVO {
         private String bankName;
         @Schema(description = "银行编码")
         private String bankCode;
+        @Schema(description = "出款收款账号；第三方提现时实际传输的收款账号")
+        private String transferAccount;
         @Schema(description = "脱敏卡号")
         private String cardNoMask;
         @Schema(description = "开户名")
         private String accountName;
-        @Schema(description = "预留手机号")
+        @Schema(description = "开户省份；第三方出款需要的开户行省份")
+        private String bankProvince;
+        @Schema(description = "开户城市；第三方出款需要的开户行城市")
+        private String bankCity;
+        @Schema(description = "银行预留手机号；第三方出款校验使用")
         private String reservedMobile;
         @Schema(description = "银行卡状态", example = "ENABLE")
         private String status;

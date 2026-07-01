@@ -119,6 +119,9 @@ public interface ErrorCodeConstants {
     ErrorCode WALLET_AVAILABLE_AMOUNT_NOT_ENOUGH = new ErrorCode(1_099_005_006, "钱包可提现余额不足");
     ErrorCode WALLET_WITHDRAW_AMOUNT_INVALID = new ErrorCode(1_099_005_007, "提现金额不合法");
     ErrorCode WALLET_WITHDRAW_TRANSFER_UNSUPPORTED = new ErrorCode(1_099_005_008, "聚合支付暂未提供提现打款接口，请走人工处理或等待渠道补充接口");
+    ErrorCode WALLET_WITHDRAW_AUDIT_STATUS_INVALID = new ErrorCode(1_099_005_009, "当前提现申请状态不允许执行该审核或重试操作");
+    ErrorCode WALLET_WITHDRAW_TRANSFER_NOTIFY_INVALID = new ErrorCode(1_099_005_010, "提现转账回调数据不合法");
+    ErrorCode WALLET_WITHDRAW_PAY_APP_NOT_CONFIGURED = new ErrorCode(1_099_005_011, "未找到可用的支付应用配置，无法发起提现打款");
 
     // ========== REVIEW 模块 1-099-006-000 ==========
     ErrorCode COMPLAINT_NOT_EXISTS = new ErrorCode(1_099_006_000, "投诉单不存在");

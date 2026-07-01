@@ -41,12 +41,16 @@ components:
         pendingPromoteIncome: { type: number, format: double, description: 待结算推广收益，单位元 }
         defaultBankCard:
           type: object
-          description: 默认收款账户摘要
+          description: 默认收款账户摘要；当前仅表示系统内提现收款账户，不代表第三方鉴权绑卡
           properties:
             id: { type: integer, format: int64, description: 银行卡 ID }
             bankName: { type: string, description: 银行名称 }
+            bankCode: { type: string, description: 银行编码；提现出款时传给第三方通道识别收款银行 }
             cardNoMask: { type: string, description: 卡号脱敏展示 }
             accountName: { type: string, description: 开户人 }
+            bankProvince: { type: string, description: 开户省份；第三方出款需要的开户行省份 }
+            bankCity: { type: string, description: 开户城市；第三方出款需要的开户行城市 }
+            reservedMobile: { type: string, description: 银行预留手机号；第三方出款校验使用 }
         benefits:
           type: array
           description: 权益摘要列表

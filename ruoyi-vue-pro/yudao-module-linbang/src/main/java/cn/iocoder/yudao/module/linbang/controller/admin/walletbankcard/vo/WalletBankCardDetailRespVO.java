@@ -24,15 +24,21 @@ public class WalletBankCardDetailRespVO {
     private String userMobile;
     @Schema(description = "银行名称", example = "中国建设银行")
     private String bankName;
-    @Schema(description = "银行编码", example = "CCB")
+    @Schema(description = "银行编码；提现出款时传给第三方通道识别收款银行", example = "CCB")
     private String bankCode;
     @Schema(description = "加密卡号")
     private String cardNoEncrypt;
+    @Schema(description = "出款收款账号；第三方提现时实际传输的收款账号", example = "6222020202020202020")
+    private String transferAccount;
     @Schema(description = "脱敏卡号", example = "6222****8888")
     private String cardNoMask;
     @Schema(description = "开户名", example = "张三")
     private String accountName;
-    @Schema(description = "预留手机号", example = "13800138000")
+    @Schema(description = "开户省份；第三方出款需要的开户行省份", example = "广东省")
+    private String bankProvince;
+    @Schema(description = "开户城市；第三方出款需要的开户行城市", example = "深圳市")
+    private String bankCity;
+    @Schema(description = "银行预留手机号；第三方出款校验使用", example = "13800138000")
     private String reservedMobile;
     @Schema(description = OpenApiSchemaConstants.BANK_CARD_STATUS, example = "ENABLE")
     private String status;

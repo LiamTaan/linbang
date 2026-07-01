@@ -50,17 +50,32 @@ public class LinbangPayNotifyInternalHandler implements PayNotifyInternalHandler
 
     private boolean matchesOrder(PayNotifyTaskDO task) {
         return Objects.equals(task.getType(), PayNotifyTypeEnum.ORDER.getType())
-                && PayNotifyRouteHelper.matches(task.getNotifyUrl(), "/app-api/linbang/pay/order/update-paid");
+                && matchesAny(task.getNotifyUrl(),
+                "/app-api/linbang/pay/order/update-paid",
+                "/admin-api/pay/notify/order");
     }
 
     private boolean matchesRefund(PayNotifyTaskDO task) {
         return Objects.equals(task.getType(), PayNotifyTypeEnum.REFUND.getType())
-                && PayNotifyRouteHelper.matches(task.getNotifyUrl(), "/app-api/pay/refund/update-refunded");
+                && matchesAny(task.getNotifyUrl(),
+                "/app-api/pay/refund/update-refunded",
+                "/admin-api/pay/notify/refund");
     }
 
     private boolean matchesTransfer(PayNotifyTaskDO task) {
         return Objects.equals(task.getType(), PayNotifyTypeEnum.TRANSFER.getType())
-                && PayNotifyRouteHelper.matches(task.getNotifyUrl(), "/admin-api/wallet/withdraw/update-transferred");
+                && matchesAny(task.getNotifyUrl(),
+                "/admin-api/wallet/withdraw/update-transferred",
+                "/admin-api/pay/notify/transfer");
+    }
+
+    private boolean matchesAny(String notifyUrl, String... suffixes) {
+        for (String suffix : suffixes) {
+            if (PayNotifyRouteHelper.matches(notifyUrl, suffix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

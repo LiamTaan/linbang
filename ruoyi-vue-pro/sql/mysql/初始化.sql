@@ -184,15 +184,19 @@ INSERT INTO `pay_app`
 (`id`, `app_key`, `name`, `status`, `remark`, `order_notify_url`, `refund_notify_url`, `transfer_notify_url`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
 VALUES
 (1, 'linbang-app', '邻里互助支付应用', 0, '统一接入第三方聚合支付，不按微信/支付宝拆分商户配置',
- 'http://127.0.0.1:48080/admin-api/pay/notify/order',
- 'http://127.0.0.1:48080/admin-api/pay/notify/refund',
- 'http://127.0.0.1:48080/admin-api/pay/notify/transfer',
+ 'http://127.0.0.1:48080/app-api/linbang/pay/order/update-paid',
+ 'http://127.0.0.1:48080/app-api/pay/refund/update-refunded',
+ 'http://127.0.0.1:48080/admin-api/wallet/withdraw/update-transferred',
  'admin', NOW(), 'admin', NOW(), b'0');
 
 INSERT INTO `pay_channel`
 (`id`, `code`, `status`, `fee_rate`, `remark`, `app_id`, `config`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
 VALUES
-(1, 'aggregate', 0, 0, '邻里互助唯一聚合支付通道；baseUrl 按生产聚合支付网关补齐', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate.AggregatePayClientConfig","baseUrl":"","merchantNo":"826584873720104","merchantName":"深圳市旺佳盈科技有限公司"}', 'admin', NOW(), 'admin', NOW(), b'0', 1);
+(1, 'aggregate', 0, 0, '邻里互助唯一聚合支付通道；baseUrl 按生产聚合支付网关补齐，退款/提现需补充银盛证书与网关配置', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate.AggregatePayClientConfig","baseUrl":"","merchantNo":"826584873720104","merchantName":"深圳市旺佳盈科技有限公司","partnerId":"826584873720104","openApiGatewayUrl":"https://openapi.ysepay.com/gateway.do","transferGatewayUrl":"https://df.ysepay.com/gateway.do","privateKeyFilePath":"","privateKeyPassword":"","ysepayPublicKeyFilePath":"","signType":"RSA","charset":"utf-8","version":"3.0"}', 'admin', NOW(), 'admin', NOW(), b'0', 1);
+
+ALTER TABLE `lb_user_bank_card`
+  ADD COLUMN IF NOT EXISTS `bank_province` VARCHAR(64) DEFAULT NULL COMMENT '开户省份' AFTER `account_name`,
+  ADD COLUMN IF NOT EXISTS `bank_city` VARCHAR(64) DEFAULT NULL COMMENT '开户城市' AFTER `bank_province`;
 
 INSERT INTO `system_sms_channel`
 (`id`, `signature`, `code`, `status`, `remark`, `api_key`, `api_secret`, `callback_url`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
