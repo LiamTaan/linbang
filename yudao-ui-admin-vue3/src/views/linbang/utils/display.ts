@@ -9,6 +9,27 @@ export const CHANNEL_TYPE_OPTIONS = [
   { label: '支付宝消息', value: 'ALIPAY' }
 ]
 
+export const MANUAL_MESSAGE_RECEIVER_SCOPE_OPTIONS = [
+  { label: '指定用户', value: 'SINGLE_USER' },
+  { label: '全部用户', value: 'ALL_USERS' }
+]
+
+export const MANUAL_MESSAGE_BIZ_TYPE_OPTIONS = [
+  { label: '管理员手动通知', value: 'ADMIN_MANUAL_NOTICE' },
+  { label: '系统通知', value: 'SYSTEM_NOTICE' },
+  { label: '订单状态通知', value: 'ORDER_STATUS_CHANGED' },
+  { label: '支付成功通知', value: 'FINANCE_PAYMENT_SUCCESS' },
+  { label: '退款结果通知', value: 'FINANCE_REFUND_SUCCESS' },
+  { label: '提现审核通知', value: 'FINANCE_WITHDRAW_AUDIT' },
+  { label: '提现到账通知', value: 'FINANCE_WITHDRAW_SUCCESS' },
+  { label: '佣金结算通知', value: 'FINANCE_COMMISSION_SETTLED' }
+]
+
+export const MANUAL_MESSAGE_ROUTE_TYPE_OPTIONS = [
+  { label: 'App 页面', value: 'APP_PAGE' },
+  { label: '无跳转', value: 'NONE' }
+]
+
 export const FLOW_TYPE_OPTIONS = [
   { label: '收入', value: 'IN' },
   { label: '支出', value: 'OUT' }
@@ -318,6 +339,18 @@ const PLATFORM_CONFIG_CATEGORY_LABELS: Record<string, string> = {
 }
 
 const BIZ_TYPE_LABELS: Record<string, string> = {
+  ADMIN_MANUAL_NOTICE: '管理员手动通知',
+  SYSTEM_NOTICE: '系统通知',
+  FINANCE_PAYMENT_SUCCESS: '支付成功通知',
+  FINANCE_REFUND_SUCCESS: '退款结果通知',
+  FINANCE_WITHDRAW_AUDIT: '提现审核通知',
+  FINANCE_WITHDRAW_SUCCESS: '提现到账通知',
+  FINANCE_COMMISSION_SETTLED: '佣金结算通知',
+  ORDER_STATUS_CHANGED: '订单状态通知',
+  DISPUTE_CREATED: '纠纷发起通知',
+  DISPUTE_RESULT: '纠纷结果通知',
+  VERIFY_SUCCESS: '核销成功通知',
+  VERIFY_EXCEPTION: '核销异常通知',
   ORDER: '订单',
   ORDER_INFO: '订单',
   ORDER_UNIT: '订单单元',

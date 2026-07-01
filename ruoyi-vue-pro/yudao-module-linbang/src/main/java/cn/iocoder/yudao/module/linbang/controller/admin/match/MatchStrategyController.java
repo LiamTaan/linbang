@@ -45,6 +45,7 @@ public class MatchStrategyController {
         respVO.setMaxStageCount(strategy.getMaxStageCount());
         respVO.setMaxRadiusKm(strategy.getMaxRadiusKm());
         respVO.setFlowAdviceTemplate(strategy.getFlowAdviceTemplate());
+        respVO.setAutoDispatchEnabled(strategy.getAutoDispatchEnabled());
         respVO.setAutoRefundEnabled(strategy.getAutoRefundEnabled());
         respVO.setAutoRefundRetryTimes(strategy.getAutoRefundRetryTimes());
         respVO.setStatus(strategy.getStatus());
@@ -62,6 +63,7 @@ public class MatchStrategyController {
                 .maxStageCount(reqVO.getMaxStageCount())
                 .maxRadiusKm(reqVO.getMaxRadiusKm())
                 .flowAdviceTemplate(reqVO.getFlowAdviceTemplate())
+                .autoDispatchEnabled(reqVO.getAutoDispatchEnabled())
                 .autoRefundEnabled(reqVO.getAutoRefundEnabled())
                 .autoRefundRetryTimes(reqVO.getAutoRefundRetryTimes())
                 .build());

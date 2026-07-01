@@ -5,7 +5,7 @@
       :model="queryParams"
       ref="queryFormRef"
       :inline="true"
-      label-width="84px"
+      label-width="104px"
     >
       <el-form-item label="类目名称" prop="categoryName">
         <el-input
@@ -228,7 +228,7 @@
         :formatter="dateFormatter"
         width="180px"
       />
-      <el-table-column label="操作" align="center" min-width="240">
+      <el-table-column label="操作" align="center" fixed="right" width="260">
         <template #default="{ row }">
           <el-button
             link
@@ -415,3 +415,15 @@ onMounted(() => {
   getList()
 })
 </script>
+
+<style lang="scss" scoped>
+.el-form {
+  :deep(.el-form-item) {
+    align-items: flex-start;
+  }
+
+  :deep(.el-form-item__label) {
+    line-height: 16px;
+  }
+}
+</style>

@@ -40,6 +40,9 @@
           </el-radio>
         </el-radio-group>
       </el-form-item>
+      <el-form-item label="自动派单" prop="dispatchEnabled">
+        <el-switch v-model="formData.dispatchEnabled" />
+      </el-form-item>
       <el-form-item label="信用分" prop="creditScore">
         <el-input v-model="formData.creditScore" placeholder="请输入信用分" />
       </el-form-item>
@@ -83,6 +86,7 @@ type FormData = {
   serviceScopeDesc?: string
   status?: string
   acceptStatus?: string
+  dispatchEnabled?: boolean
   creditScore?: number
   creditLevel?: string
 }
@@ -98,6 +102,7 @@ const formData = ref<FormData>({
   serviceScopeDesc: undefined,
   status: undefined,
   acceptStatus: undefined,
+  dispatchEnabled: true,
   creditScore: undefined,
   creditLevel: undefined
 })
@@ -108,6 +113,7 @@ const formRules = reactive({
   contactMobile: [{ required: true, message: '联系人手机号不能为空', trigger: 'blur' }],
   status: [{ required: true, message: '状态不能为空', trigger: 'blur' }],
   acceptStatus: [{ required: true, message: '接单状态不能为空', trigger: 'blur' }],
+  dispatchEnabled: [{ required: true, message: '自动派单不能为空', trigger: 'change' }],
   creditScore: [{ required: true, message: '信用分不能为空', trigger: 'blur' }]
 })
 const formRef = ref() // 表单 Ref
@@ -176,6 +182,7 @@ const resetForm = () => {
     serviceScopeDesc: undefined,
     status: undefined,
     acceptStatus: undefined,
+    dispatchEnabled: true,
     creditScore: undefined,
     creditLevel: undefined
   }
@@ -192,6 +199,7 @@ const buildFormData = (data: MerchantInfoDetail): FormData => ({
   serviceScopeDesc: data.serviceScopeDesc,
   status: data.status,
   acceptStatus: data.acceptStatus,
+  dispatchEnabled: data.dispatchEnabled,
   creditScore: data.creditScore,
   creditLevel: data.creditLevel
 })

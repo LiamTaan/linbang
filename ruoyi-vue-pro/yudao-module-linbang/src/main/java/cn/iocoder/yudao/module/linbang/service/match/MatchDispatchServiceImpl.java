@@ -74,6 +74,9 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void startInitialDispatch(Long orderId) {
+        if (!Boolean.TRUE.equals(matchStrategyService.isAutoDispatchEnabled())) {
+            return;
+        }
         OrderInfoDO order = orderInfoMapper.selectById(orderId);
         if (order == null || !Objects.equals(order.getStatus(), "PENDING_ACCEPT")) {
             return;
@@ -94,6 +97,9 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void processDispatchTick() {
+        if (!Boolean.TRUE.equals(matchStrategyService.isAutoDispatchEnabled())) {
+            return;
+        }
         for (MatchPushBatchDO batch : matchPushBatchMapper.selectExpiredActiveBatches(LocalDateTime.now())) {
             OrderUnitDO unit = orderUnitMapper.selectById(batch.getUnitId());
             if (unit == null) {
@@ -223,6 +229,7 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
         return merchantInfoMapper.selectBatchIds(merchantIds).stream()
                 .filter(item -> Objects.equals(item.getStatus(), "ENABLE"))
                 .filter(item -> Objects.equals(item.getAcceptStatus(), "ENABLE"))
+                .filter(item -> !Objects.equals(item.getUserId(), order.getUserId()))
                 .map(item -> buildCandidate(order, item, stageRule))
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(MerchantCandidate::sortKey, Comparator.reverseOrder())

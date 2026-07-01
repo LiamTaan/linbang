@@ -8,6 +8,7 @@ export interface MatchStrategy {
   maxStageCount: number
   maxRadiusKm: number
   flowAdviceTemplate: string
+  autoDispatchEnabled: boolean
   autoRefundEnabled: boolean
   autoRefundRetryTimes: number
   status?: string

@@ -13,6 +13,8 @@ public interface MatchStrategyService {
 
     String getFlowAdviceTemplate();
 
+    boolean isAutoDispatchEnabled();
+
     boolean isAutoRefundEnabled();
 
     int getAutoRefundRetryTimes();

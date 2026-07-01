@@ -34,7 +34,8 @@ export interface MessagePushTaskDetail extends MessagePushTask {
 }
 
 export interface MessagePushTaskManualSendReqVO {
-  receiverUserId: number
+  receiverScope?: string
+  receiverUserId?: number
   title: string
   content: string
   bizType?: string

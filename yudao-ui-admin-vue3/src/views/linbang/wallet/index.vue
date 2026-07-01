@@ -6,14 +6,14 @@
           <p class="wallet-hero__eyebrow">Finance Hub</p>
           <h2 class="wallet-hero__title">资金中心与统一聚合支付</h2>
           <p class="wallet-hero__desc">
-            微信、支付宝、H5、钱包展示入口等支付方式统一落到第三方聚合支付；资金中心聚焦支付订单、回调通知、退款审核、提现、银行卡、分账与托管凭证的运营闭环。
+            微信、支付宝、H5、钱包展示入口等支付方式统一落到第三方聚合支付；资金中心聚焦支付订单、退款审核、提现、银行卡、分账与托管凭证的运营闭环，支付配置与回调排障下沉到支付中心。
           </p>
         </div>
         <div class="wallet-hero__chips">
           <span>唯一聚合通道</span>
-          <span>回调通知</span>
           <span>订单对账</span>
           <span>钱包账务</span>
+          <span>退款与提现</span>
         </div>
       </div>
       <el-alert type="warning" :closable="false" show-icon>
@@ -30,9 +30,6 @@
       </el-tab-pane>
       <el-tab-pane label="退款审核" name="refund">
         <PayRefundIndex v-if="activeTab === 'refund'" />
-      </el-tab-pane>
-      <el-tab-pane label="回调通知" name="notify">
-        <PayNotifyIndex v-if="activeTab === 'notify'" />
       </el-tab-pane>
       <el-tab-pane label="转账单" name="transfer">
         <PayTransferIndex v-if="activeTab === 'transfer'" />
@@ -65,7 +62,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import PayNotifyIndex from '@/views/pay/notify/index.vue'
 import DivideRuleIndex from '../dividerule/index.vue'
 import EscrowProofIndex from '../escrowproof/index.vue'
 import OrderDivideRecordIndex from '../orderdividerecord/index.vue'

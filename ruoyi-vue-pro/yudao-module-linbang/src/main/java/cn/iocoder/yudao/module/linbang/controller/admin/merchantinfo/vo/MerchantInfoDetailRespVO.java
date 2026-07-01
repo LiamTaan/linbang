@@ -36,6 +36,9 @@ public class MerchantInfoDetailRespVO {
     @Schema(description = OpenApiSchemaConstants.MERCHANT_ACCEPT_STATUS, example = "ENABLE")
     private String acceptStatus;
 
+    @Schema(description = "是否参与系统自动派单")
+    private Boolean dispatchEnabled;
+
     @Schema(description = "信用分", example = "100")
     private Integer creditScore;
 

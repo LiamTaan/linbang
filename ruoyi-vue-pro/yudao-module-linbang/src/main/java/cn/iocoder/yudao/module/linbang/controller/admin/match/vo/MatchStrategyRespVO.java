@@ -30,6 +30,9 @@ public class MatchStrategyRespVO {
     @Schema(description = "流单建议模板")
     private String flowAdviceTemplate;
 
+    @Schema(description = "平台级自动派单总开关")
+    private Boolean autoDispatchEnabled;
+
     @Schema(description = "是否自动退款")
     private Boolean autoRefundEnabled;
 

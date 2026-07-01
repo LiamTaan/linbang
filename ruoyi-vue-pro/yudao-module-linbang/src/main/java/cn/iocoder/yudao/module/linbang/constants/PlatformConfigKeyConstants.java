@@ -40,6 +40,7 @@ public interface PlatformConfigKeyConstants {
     String COMPLAINT_SENSITIVE_STRATEGY = "linbang.sensitive.complaint-strategy";
     String APPEAL_SENSITIVE_STRATEGY = "linbang.sensitive.appeal-strategy";
     String ORDER_PUBLISH_SENSITIVE_STRATEGY = "linbang.sensitive.order-publish-strategy";
+    String OCR_ENABLED = "linbang.ocr.enabled";
     String OCR_PROVIDER = "linbang.ocr.provider";
     String OCR_FALLBACK_MODE = "linbang.ocr.fallback-mode";
     String OCR_GENERIC_ENDPOINT = "linbang.ocr.generic.endpoint";

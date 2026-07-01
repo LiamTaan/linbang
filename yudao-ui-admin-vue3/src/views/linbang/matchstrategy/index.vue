@@ -19,6 +19,9 @@
       <el-form-item label="流单建议模板">
         <el-input v-model="formData.flowAdviceTemplate" type="textarea" :rows="4" />
       </el-form-item>
+      <el-form-item label="自动派单总开关">
+        <el-switch v-model="formData.autoDispatchEnabled" />
+      </el-form-item>
       <el-form-item label="自动退款">
         <el-switch v-model="formData.autoRefundEnabled" />
       </el-form-item>
@@ -50,6 +53,7 @@ const formData = reactive<MatchStrategy>({
   maxStageCount: 5,
   maxRadiusKm: 5,
   flowAdviceTemplate: '',
+  autoDispatchEnabled: true,
   autoRefundEnabled: true,
   autoRefundRetryTimes: 3
 })

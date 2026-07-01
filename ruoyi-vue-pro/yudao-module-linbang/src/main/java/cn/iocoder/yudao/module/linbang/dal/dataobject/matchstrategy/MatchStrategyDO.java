@@ -39,6 +39,8 @@ public class MatchStrategyDO extends BaseDO {
 
     private String flowAdviceTemplate;
 
+    private Boolean autoDispatchEnabled;
+
     private Boolean autoRefundEnabled;
 
     private Integer autoRefundRetryTimes;

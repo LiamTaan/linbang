@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate;
 
+import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.util.validation.ValidationUtils;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.PayClientConfig;
 import lombok.Data;
@@ -89,7 +90,7 @@ public class AggregatePayClientConfig implements PayClientConfig {
     private String version = "3.0";
 
     public String getResolvedPartnerId() {
-        return partnerId != null && !partnerId.isBlank() ? partnerId : merchantNo;
+        return StrUtil.isNotBlank(partnerId) ? partnerId : merchantNo;
     }
 
     @Override

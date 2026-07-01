@@ -35,6 +35,10 @@ public class MatchStrategyUpdateReqVO {
     @NotBlank(message = "流单建议模板不能为空")
     private String flowAdviceTemplate;
 
+    @Schema(description = "平台级自动派单总开关", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "自动派单总开关不能为空")
+    private Boolean autoDispatchEnabled;
+
     @Schema(description = "是否自动退款", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "自动退款开关不能为空")
     private Boolean autoRefundEnabled;

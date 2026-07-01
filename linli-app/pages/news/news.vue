@@ -56,7 +56,7 @@
 
 <script>
 import tabBar from '@/components/tabBar/tabBar.vue'
-import { getMessageRecordPage, markAllMessageRead, markMessageRead } from '@/api/message'
+import { getMessageRecord, getMessageRecordPage, markAllMessageRead, markMessageRead } from '@/api/message'
 
 export default {
     components: {
@@ -80,10 +80,14 @@ export default {
         }
     },
     onLoad(options) {
-        const category = options && options.category ? options.category : ''
+        const cachedCategory = uni.getStorageSync('linbang_news_category')
+        const category = options && options.category ? options.category : cachedCategory || ''
         const targetIndex = this.tabs.findIndex((item) => item.code === category)
         if (targetIndex >= 0) {
             this.currentTab = targetIndex
+        }
+        if (cachedCategory) {
+            uni.removeStorageSync('linbang_news_category')
         }
     },
     onShow() {
@@ -127,9 +131,37 @@ export default {
                 title: item.title || '平台消息',
                 time: this.$fmt.formatDateTime(item.createTime || item.sendTime),
                 desc: item.contentSnapshot || '暂无内容',
-                detail: `${item.bizType || item.messageCategory || 'SYSTEM'} · ${item.sendStatus || 'SUCCESS'}`,
+                detail: `${this.formatBizType(item.bizType)} · ${this.formatSendStatus(item.sendStatus)}`,
                 unread: item.readStatus !== 'READ'
             }
+        },
+        formatBizType(value) {
+            const labels = {
+                ADMIN_MANUAL_NOTICE: '管理员手动通知',
+                SYSTEM_NOTICE: '系统通知',
+                ORDER_STATUS_CHANGED: '订单状态通知',
+                FINANCE_PAYMENT_SUCCESS: '支付成功通知',
+                FINANCE_REFUND_SUCCESS: '退款结果通知',
+                FINANCE_WITHDRAW_AUDIT: '提现审核通知',
+                FINANCE_WITHDRAW_SUCCESS: '提现到账通知',
+                FINANCE_COMMISSION_SETTLED: '佣金结算通知',
+                DISPUTE_CREATED: '纠纷发起通知',
+                DISPUTE_RESULT: '纠纷结果通知',
+                VERIFY_SUCCESS: '核销成功通知',
+                VERIFY_EXCEPTION: '核销异常通知'
+            }
+            if (!value) {
+                return '系统通知'
+            }
+            return labels[value] || value
+        },
+        formatSendStatus(value) {
+            const labels = {
+                SUCCESS: '发送成功',
+                FAILED: '发送失败',
+                PENDING: '待发送'
+            }
+            return labels[value] || '发送成功'
         },
         getMessageConfig(item) {
             if (item.messageCategory === 'FINANCE') {
@@ -178,6 +210,21 @@ export default {
                     news.unread = false
                 }
             } catch (error) {
+            }
+            let detail = null
+            try {
+                if (news.id) {
+                    detail = await getMessageRecord(news.id)
+                }
+            } catch (error) {
+            }
+            const routeType = detail && detail.routeType ? detail.routeType : news.routeType
+            const routeValue = detail && detail.routeValue ? detail.routeValue : news.routeValue
+            if (routeType === 'APP_PAGE' && routeValue) {
+                uni.navigateTo({
+                    url: routeValue
+                })
+                return
             }
             if (news.messageCategory === 'ORDER' && news.bizId) {
                 uni.navigateTo({

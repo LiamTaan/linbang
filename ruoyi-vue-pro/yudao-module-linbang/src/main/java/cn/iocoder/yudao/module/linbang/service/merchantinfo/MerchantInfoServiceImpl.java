@@ -9,9 +9,11 @@ import cn.iocoder.yudao.module.linbang.controller.admin.merchantinfo.vo.Merchant
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategory.MerchantServiceCategoryDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategoryrel.MerchantCategoryRelDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantentry.MerchantEntryDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantdispatchsetting.MerchantDispatchSettingDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.service.reviewcomment.MerchantReviewMetricsResp;
 import cn.iocoder.yudao.module.linbang.service.reviewcomment.ReviewCommentMetricsService;
+import cn.iocoder.yudao.module.linbang.service.match.MerchantDispatchSettingService;
 import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -60,12 +62,18 @@ public class MerchantInfoServiceImpl implements MerchantInfoService {
     private MemberUserMapper memberUserMapper;
     @Resource
     private ReviewCommentMetricsService reviewCommentMetricsService;
+    @Resource
+    private MerchantDispatchSettingService merchantDispatchSettingService;
 
     @Override
     public Long createMerchantInfo(MerchantInfoSaveReqVO createReqVO) {
         // 插入
         MerchantInfoDO merchantInfo = BeanUtils.toBean(createReqVO, MerchantInfoDO.class);
         merchantInfoMapper.insert(merchantInfo);
+        merchantDispatchSettingService.updateSetting(MerchantDispatchSettingDO.builder()
+                .merchantId(merchantInfo.getId())
+                .dispatchEnabled(createReqVO.getDispatchEnabled())
+                .build());
 
         // 返回
         return merchantInfo.getId();
@@ -78,6 +86,10 @@ public class MerchantInfoServiceImpl implements MerchantInfoService {
         // 更新
         MerchantInfoDO updateObj = BeanUtils.toBean(updateReqVO, MerchantInfoDO.class);
         merchantInfoMapper.updateById(updateObj);
+        merchantDispatchSettingService.updateSetting(MerchantDispatchSettingDO.builder()
+                .merchantId(updateReqVO.getId())
+                .dispatchEnabled(updateReqVO.getDispatchEnabled())
+                .build());
     }
 
     @Override
@@ -124,6 +136,8 @@ public class MerchantInfoServiceImpl implements MerchantInfoService {
                 .orderByDesc(MerchantServicePointDO::getId));
 
         MerchantInfoDetailRespVO respVO = BeanUtils.toBean(merchantInfo, MerchantInfoDetailRespVO.class);
+        MerchantDispatchSettingDO dispatchSetting = merchantDispatchSettingService.getOrCreate(merchantInfo.getId());
+        respVO.setDispatchEnabled(dispatchSetting.getDispatchEnabled());
         fillReviewMetrics(respVO, merchantInfo.getId());
         if (latestEntry != null) {
             respVO.setEntryId(latestEntry.getId());
@@ -175,6 +189,7 @@ public class MerchantInfoServiceImpl implements MerchantInfoService {
         if (StrUtil.isNotBlank(pageReqVO.getUserKeyword()) && CollUtil.isEmpty(matchedUserIds)) {
             return PageResult.empty();
         }
+        repairMerchantInfoByApprovedEntries();
         PageResult<MerchantInfoDO> pageResult = merchantInfoMapper.selectPage(pageReqVO, matchedUserIds);
         List<MerchantInfoRespVO> list = BeanUtils.toBean(pageResult.getList(), MerchantInfoRespVO.class);
         fillUserDisplayInfo(list);
@@ -195,6 +210,8 @@ public class MerchantInfoServiceImpl implements MerchantInfoService {
         Map<Long, MemberUserDO> userMap = userIds.isEmpty() ? Collections.emptyMap()
                 : convertMap(memberUserMapper.selectListByIds(userIds), MemberUserDO::getId);
         list.forEach(item -> {
+            MerchantDispatchSettingDO dispatchSetting = merchantDispatchSettingService.getOrCreate(item.getId());
+            item.setDispatchEnabled(dispatchSetting.getDispatchEnabled());
             MemberUserDO user = userMap.get(item.getUserId());
             if (user == null) {
                 return;
@@ -236,6 +253,34 @@ public class MerchantInfoServiceImpl implements MerchantInfoService {
         }
         return merchantServiceCategoryMapper.selectBatchIds(categoryIds).stream()
                 .collect(Collectors.toMap(MerchantServiceCategoryDO::getId, item -> item));
+    }
+
+    private void repairMerchantInfoByApprovedEntries() {
+        List<MerchantEntryDO> approvedEntries = merchantEntryMapper.selectList(new LambdaQueryWrapperX<MerchantEntryDO>()
+                .eq(MerchantEntryDO::getStatus, "APPROVED"));
+        for (MerchantEntryDO entry : approvedEntries) {
+            if (entry.getMerchantId() == null) {
+                continue;
+            }
+            MerchantInfoDO merchantInfo = merchantInfoMapper.selectById(entry.getMerchantId());
+            if (merchantInfo != null) {
+                continue;
+            }
+            MemberUserDO user = entry.getUserId() == null ? null : memberUserMapper.selectById(entry.getUserId());
+            MerchantInfoDO repair = MerchantInfoDO.builder()
+                    .id(entry.getMerchantId())
+                    .userId(entry.getUserId())
+                    .merchantName(user != null ? StrUtil.blankToDefault(user.getNickname(), "服务商" + entry.getMerchantId()) : "服务商" + entry.getMerchantId())
+                    .contactName(user != null ? user.getNickname() : "待补充")
+                    .contactMobile(user != null ? user.getMobile() : "")
+                    .serviceScopeDesc("")
+                    .status("ENABLE")
+                    .acceptStatus(Boolean.TRUE.equals(entry.getAcceptEnabled()) ? "ENABLE" : "DISABLE")
+                    .creditScore(100)
+                    .creditLevel("NORMAL")
+                    .build();
+            merchantInfoMapper.insert(repair);
+        }
     }
 
 }

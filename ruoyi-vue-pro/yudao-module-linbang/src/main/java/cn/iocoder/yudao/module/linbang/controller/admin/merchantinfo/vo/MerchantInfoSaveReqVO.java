@@ -40,6 +40,10 @@ public class MerchantInfoSaveReqVO {
     @NotEmpty(message = "接单状态不能为空")
     private String acceptStatus;
 
+    @Schema(description = "是否参与系统自动派单", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "自动派单参与开关不能为空")
+    private Boolean dispatchEnabled;
+
     @Schema(description = "信用分", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "信用分不能为空")
     private Integer creditScore;

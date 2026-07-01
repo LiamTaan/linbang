@@ -84,7 +84,9 @@ public class MemberUserController {
     @PreAuthorize("@ss.hasPermission('linbang:member-user:query')")
     public CommonResult<PageResult<MemberUserRespVO>> getMemberUserPage(@Valid MemberUserPageReqVO pageReqVO) {
         PageResult<MemberUserDO> pageResult = memberUserService.getMemberUserPage(pageReqVO);
-        return success(BeanUtils.toBean(pageResult, MemberUserRespVO.class));
+        List<MemberUserRespVO> list = BeanUtils.toBean(pageResult.getList(), MemberUserRespVO.class);
+        list.forEach(item -> item.setEnabledRoleCodes(memberUserService.getEnabledRoleCodes(item.getId())));
+        return success(new PageResult<>(list, pageResult.getTotal()));
     }
 
     @PostMapping("/restrict")

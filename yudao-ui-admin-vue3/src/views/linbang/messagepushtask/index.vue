@@ -122,12 +122,30 @@
 
   <Dialog v-model="manualSendVisible" title="手动发送通知" width="720px">
     <el-form ref="manualSendFormRef" :model="manualSendForm" :rules="manualSendRules" label-width="100px">
-      <el-form-item label="接收用户" prop="receiverUserId">
+      <el-form-item label="发送范围" prop="receiverScope">
+        <el-radio-group v-model="manualSendForm.receiverScope">
+          <el-radio
+            v-for="item in MANUAL_MESSAGE_RECEIVER_SCOPE_OPTIONS"
+            :key="item.value"
+            :label="item.value"
+          >
+            {{ item.label }}
+          </el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item v-if="manualSendForm.receiverScope === 'SINGLE_USER'" label="接收用户" prop="receiverUserId">
         <div class="flex w-full gap-10px">
           <el-input :value="selectedUserDisplay" readonly placeholder="请选择接收用户" />
           <el-button @click="openUserSelectDialog">选择用户</el-button>
         </div>
       </el-form-item>
+      <el-alert
+        v-else
+        title="将向当前平台全部用户发送一条站内通知，请确认内容和跳转页面无误。"
+        type="warning"
+        :closable="false"
+        class="mb-16px"
+      />
       <el-form-item label="消息标题" prop="title">
         <el-input v-model="manualSendForm.title" maxlength="255" show-word-limit placeholder="请输入消息标题" />
       </el-form-item>
@@ -142,13 +160,31 @@
         />
       </el-form-item>
       <el-form-item label="业务类型" prop="bizType">
-        <el-input v-model="manualSendForm.bizType" maxlength="64" placeholder="默认 ADMIN_MANUAL_NOTICE" />
+        <el-select v-model="manualSendForm.bizType" placeholder="请选择业务类型" class="!w-full" filterable>
+          <el-option
+            v-for="item in MANUAL_MESSAGE_BIZ_TYPE_OPTIONS"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item label="路由类型" prop="routeType">
-        <el-input v-model="manualSendForm.routeType" maxlength="32" placeholder="例如 APP_PAGE，可留空" />
+        <el-select v-model="manualSendForm.routeType" placeholder="请选择路由类型" class="!w-full">
+          <el-option
+            v-for="item in MANUAL_MESSAGE_ROUTE_TYPE_OPTIONS"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item label="路由值" prop="routeValue">
-        <el-input v-model="manualSendForm.routeValue" maxlength="255" placeholder="例如 /pages/message/detail，可留空" />
+        <el-input
+          v-model="manualSendForm.routeValue"
+          maxlength="255"
+          placeholder="例如 /pages/news/news?category=SYSTEM，可留空"
+        />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -218,6 +254,9 @@ import { MessagePushTaskApi, type MessagePushTask, type MessagePushTaskDetail } 
 import type { MemberUser } from '@/api/linbang/memberuser'
 import {
   CHANNEL_TYPE_OPTIONS,
+  MANUAL_MESSAGE_BIZ_TYPE_OPTIONS,
+  MANUAL_MESSAGE_RECEIVER_SCOPE_OPTIONS,
+  MANUAL_MESSAGE_ROUTE_TYPE_OPTIONS,
   formatBizType,
   formatChannelType,
   formatSendStatus,
@@ -249,15 +288,26 @@ const queryParams = reactive({
   createTime: [] as string[]
 })
 const manualSendForm = reactive({
+  receiverScope: 'SINGLE_USER',
   receiverUserId: undefined as number | undefined,
   title: '',
   content: '',
   bizType: 'ADMIN_MANUAL_NOTICE',
   routeType: 'APP_PAGE',
-  routeValue: '/pages/message/detail'
+  routeValue: '/pages/news/news?category=SYSTEM'
 })
 const manualSendRules: FormRules = {
-  receiverUserId: [{ required: true, message: '请选择接收用户', trigger: 'change' }],
+  receiverScope: [{ required: true, message: '请选择发送范围', trigger: 'change' }],
+  receiverUserId: [{
+    validator: (_rule, value, callback) => {
+      if (manualSendForm.receiverScope === 'SINGLE_USER' && !value) {
+        callback(new Error('请选择接收用户'))
+        return
+      }
+      callback()
+    },
+    trigger: 'change'
+  }],
   title: [{ required: true, message: '请输入消息标题', trigger: 'blur' }],
   content: [{ required: true, message: '请输入消息内容', trigger: 'blur' }]
 }
@@ -290,12 +340,13 @@ const resetQuery = () => {
 }
 
 const resetManualSendForm = () => {
+  manualSendForm.receiverScope = 'SINGLE_USER'
   manualSendForm.receiverUserId = undefined
   manualSendForm.title = ''
   manualSendForm.content = ''
   manualSendForm.bizType = 'ADMIN_MANUAL_NOTICE'
   manualSendForm.routeType = 'APP_PAGE'
-  manualSendForm.routeValue = '/pages/message/detail'
+  manualSendForm.routeValue = '/pages/news/news?category=SYSTEM'
   selectedUser.value = undefined
 }
 
@@ -316,12 +367,13 @@ const handleUserSelected = (row: MemberUser) => {
 const submitManualSend = async () => {
   await manualSendFormRef.value?.validate()
   await MessagePushTaskApi.manualSendMessagePushTask({
+    receiverScope: manualSendForm.receiverScope,
     receiverUserId: manualSendForm.receiverUserId!,
     title: manualSendForm.title,
     content: manualSendForm.content,
     bizType: manualSendForm.bizType || undefined,
-    routeType: manualSendForm.routeType || undefined,
-    routeValue: manualSendForm.routeValue || undefined
+    routeType: manualSendForm.routeType === 'NONE' ? undefined : manualSendForm.routeType || undefined,
+    routeValue: manualSendForm.routeType === 'NONE' ? undefined : manualSendForm.routeValue || undefined
   })
   message.success('通知已发送，推送任务记录已生成')
   manualSendVisible.value = false

@@ -4,12 +4,17 @@
             <view class="back-btn" @click="goBack">
                 <text class="iconfont icon-youjiantou back-icon"></text>
             </view>
-            <text class="title">拆分订单详情</text>
+            <text class="title">{{ pageTitle }}</text>
             <view class="placeholder"></view>
         </view>
 
-        <scroll-view class="content-scroll" scroll-y refresher-enabled :refresher-triggered="refreshing"
+        <scroll-view class="content-scroll" scroll-y :refresher-enabled="!isPreviewMode" :refresher-triggered="refreshing"
             @refresherrefresh="handleRefresh">
+            <view v-if="isPreviewMode" class="preview-banner">
+                <text class="preview-banner-title">订单预览</text>
+                <text class="preview-banner-desc">当前为发布前预览页，请确认金额、协议和拆单信息后再提交。</text>
+            </view>
+
             <view class="order-info-card">
                 <text class="order-no">订单编号：{{ orderDetail.orderNo || '--' }}</text>
                 <text class="order-title">{{ orderDetail.requireDesc || '订单详情' }}</text>
@@ -21,6 +26,12 @@
                     <text class="split-status">{{ orderStatusText }} · {{ splitStatusText }}</text>
                 </view>
                 <text class="order-address">{{ orderAddress }}</text>
+                <view class="preview-extra" v-if="isPreviewMode">
+                    <text class="preview-extra-item">类目：{{ orderDetail.categoryName || '--' }}</text>
+                    <text class="preview-extra-item">计价方式：{{ pricingModeText }}</text>
+                    <text class="preview-extra-item" v-if="invoiceReminder">{{ invoiceReminder }}</text>
+                    <text class="preview-extra-item" v-if="agreementTitle">协议：{{ agreementTitle }}</text>
+                </view>
             </view>
 
             <view v-for="unit in orderDetail.units || []" :key="unit.id" class="unit-card"
@@ -37,7 +48,7 @@
                     <text class="info-item" v-if="unit.finishTime">完成时间：{{ $fmt.formatDateTime(unit.finishTime) }}</text>
                     <text class="info-item" v-else>创建时间：{{ $fmt.formatDateTime(unit.createTime) }}</text>
                 </view>
-                <view class="unit-actions">
+                <view class="unit-actions" v-if="!isPreviewMode">
                     <view class="action-btn view-btn" @click="handleViewVoucher(unit)">
                         <text class="btn-text">查看核销码</text>
                     </view>
@@ -97,7 +108,16 @@
                 </view>
             </view>
 
-            <view class="bottom-actions">
+            <view class="bottom-actions" v-if="isPreviewMode">
+                <view class="bottom-btn contact-btn" @click="goBack">
+                    <text class="btn-text">返回修改</text>
+                </view>
+                <view class="bottom-btn refund-btn" @click="handlePublishPreview">
+                    <text class="btn-text">{{ publishing ? '发布中...' : '确认发布' }}</text>
+                </view>
+            </view>
+
+            <view class="bottom-actions" v-else>
                 <view class="bottom-btn contact-btn" @click="handleComplaint">
                     <text class="btn-text">投诉反馈</text>
                 </view>
@@ -114,23 +134,38 @@
 <script>
 import { uploadAppFile } from '@/api/infra'
 import {
+    createOrder,
     confirmOrderUnit,
     getOrderDetail,
     getOrderUnitVerifyCode,
     startOrderUnitService,
     uploadDeliveryProof
 } from '@/api/order'
-import { buildAddressText, extractUploadedFile, getOrderStatusLabel, getVerifyStatusLabel } from '@/utils/linbang'
+import {
+    buildAddressText,
+    extractUploadedFile,
+    getOrderStatusLabel,
+    getPricingModeLabel,
+    getVerifyStatusLabel
+} from '@/utils/linbang'
+
+const ORDER_PREVIEW_STORAGE_KEY = 'linbang_order_preview_snapshot'
 
 export default {
     data() {
         return {
             refreshing: false,
             orderId: null,
-            orderDetail: {}
+            orderDetail: {},
+            isPreviewMode: false,
+            previewSnapshot: null,
+            publishing: false
         }
     },
     computed: {
+        pageTitle() {
+            return this.isPreviewMode ? '订单预览' : '拆分订单详情'
+        },
         orderStatusText() {
             return getOrderStatusLabel(this.orderDetail.status)
         },
@@ -139,23 +174,127 @@ export default {
         },
         orderAddress() {
             return buildAddressText(this.orderDetail) || '地址待补充'
+        },
+        pricingModeText() {
+            const previewResult = (this.previewSnapshot && this.previewSnapshot.previewResult) || {}
+            return previewResult.pricingModeName || getPricingModeLabel(this.orderDetail.pricingMode)
+        },
+        invoiceReminder() {
+            const previewResult = (this.previewSnapshot && this.previewSnapshot.previewResult) || {}
+            return previewResult.invoiceImpactReminder || ''
+        },
+        agreementTitle() {
+            const previewResult = (this.previewSnapshot && this.previewSnapshot.previewResult) || {}
+            const guaranteeConfig = (this.previewSnapshot && this.previewSnapshot.guaranteeConfig) || {}
+            return previewResult.agreementTitle || guaranteeConfig.projectEscrowAgreementTitle || guaranteeConfig.agreementTitle || ''
         }
     },
     onLoad(options) {
+        this.isPreviewMode = `${options && options.preview}` === '1'
         this.orderId = options && options.orderId ? Number(options.orderId) : null
+        if (this.isPreviewMode) {
+            this.previewSnapshot = uni.getStorageSync(ORDER_PREVIEW_STORAGE_KEY) || null
+        }
     },
     onShow() {
+        if (this.isPreviewMode) {
+            this.loadPreviewDetail()
+            return
+        }
         this.loadOrderDetail()
     },
     methods: {
         getOrderStatusLabel,
         getVerifyStatusLabel,
         goBack() {
+            if (this.isPreviewMode && !this.publishing) {
+                this.previewSnapshot = uni.getStorageSync(ORDER_PREVIEW_STORAGE_KEY) || this.previewSnapshot
+            }
             uni.navigateBack()
         },
         handleRefresh() {
+            if (this.isPreviewMode) {
+                this.refreshing = false
+                return
+            }
             this.refreshing = true
             this.loadOrderDetail()
+        },
+        loadPreviewDetail() {
+            const snapshot = this.previewSnapshot || uni.getStorageSync(ORDER_PREVIEW_STORAGE_KEY)
+            if (!snapshot || !snapshot.previewResult || !snapshot.payload) {
+                uni.showToast({
+                    title: '预览信息已失效',
+                    icon: 'none'
+                })
+                setTimeout(() => {
+                    uni.navigateBack()
+                }, 300)
+                return
+            }
+            this.previewSnapshot = snapshot
+            const previewResult = snapshot.previewResult || {}
+            const payload = snapshot.payload || {}
+            const categoryName = previewResult.categoryName || snapshot.currentCategoryName || '邻里需求'
+            const createTime = new Date().toISOString()
+            const splitEnabled = !!payload.needSplit || !!previewResult.splitPreview
+            this.orderDetail = {
+                orderNo: '预览生成后显示',
+                requireDesc: payload.requireDesc,
+                orderAmount: previewResult.orderAmount || payload.budgetAmount || 0,
+                categoryName,
+                pricingMode: payload.pricingMode,
+                province: payload.province,
+                city: payload.city,
+                district: payload.district,
+                street: payload.street,
+                detailAddress: payload.detailAddress,
+                status: 'PENDING_PAY',
+                splitStatus: splitEnabled ? 'SPLIT' : 'UNSPLIT',
+                flowAdvice: previewResult.splitPreview && previewResult.splitPreview.ruleDesc
+                    ? previewResult.splitPreview.ruleDesc
+                    : '',
+                matchBatches: [],
+                timeline: [
+                    {
+                        timelineType: 'PREVIEW',
+                        bizId: 0,
+                        unitId: 0,
+                        title: '发单预览生成',
+                        content: '请确认需求描述、金额、协议与拆单结果',
+                        status: 'PREVIEW',
+                        eventTime: createTime
+                    }
+                ],
+                units: this.buildPreviewUnits(payload, previewResult, createTime)
+            }
+        },
+        buildPreviewUnits(payload, previewResult, createTime) {
+            const splitPreview = previewResult.splitPreview || {}
+            const splitUnits = Array.isArray(splitPreview.units) ? splitPreview.units : []
+            if (splitUnits.length) {
+                return splitUnits.map((unit, index) => ({
+                    id: `preview-${index + 1}`,
+                    unitSeq: unit.unitSeq || index + 1,
+                    unitNo: unit.unitNo || `预览单元-${index + 1}`,
+                    unitTitle: unit.unitTitle || `${payload.requireDesc || '订单需求'}-${index + 1}`,
+                    unitAmount: unit.unitAmount || unit.amount || previewResult.orderAmount || payload.budgetAmount || 0,
+                    status: 'PENDING_ACCEPT',
+                    verifyStatus: 'PENDING',
+                    createTime,
+                    lockReason: unit.lockReason || ''
+                }))
+            }
+            return [{
+                id: 'preview-1',
+                unitSeq: 1,
+                unitNo: '预览单元-1',
+                unitTitle: payload.requireDesc || '订单需求',
+                unitAmount: previewResult.orderAmount || payload.budgetAmount || 0,
+                status: 'PENDING_ACCEPT',
+                verifyStatus: 'PENDING',
+                createTime
+            }]
         },
         async loadOrderDetail() {
             if (!this.orderId) {
@@ -266,6 +405,43 @@ export default {
             uni.navigateTo({
                 url: `/pages/complaint/complaint?orderId=${this.orderId}`
             })
+        },
+        async handlePublishPreview() {
+            const snapshot = this.previewSnapshot || uni.getStorageSync(ORDER_PREVIEW_STORAGE_KEY)
+            if (!snapshot || !snapshot.payload || !snapshot.previewResult || !snapshot.previewResult.previewToken) {
+                uni.showToast({
+                    title: '预览信息已失效',
+                    icon: 'none'
+                })
+                return
+            }
+            if (this.publishing) {
+                return
+            }
+            try {
+                this.publishing = true
+                const guaranteeConfig = snapshot.guaranteeConfig || {}
+                const orderId = await createOrder({
+                    ...snapshot.payload,
+                    agreementConfirmed: true,
+                    agreementVersion: guaranteeConfig.agreementVersion || 'v2026.06',
+                    previewToken: snapshot.previewResult.previewToken,
+                    antiEscapeConfirmed: true
+                })
+                uni.removeStorageSync(ORDER_PREVIEW_STORAGE_KEY)
+                uni.showToast({
+                    title: '发布成功',
+                    icon: 'success'
+                })
+                setTimeout(() => {
+                    uni.redirectTo({
+                        url: `/pages/split_order_details/split_order_details?orderId=${orderId}`
+                    })
+                }, 300)
+            } catch (error) {
+            } finally {
+                this.publishing = false
+            }
         }
     }
 }
@@ -306,6 +482,28 @@ export default {
         flex: 1;
         padding: 20rpx;
         box-sizing: border-box;
+
+        .preview-banner {
+            background: linear-gradient(180deg, #fef7e8 0%, #fff9ef 100%);
+            border: 1rpx solid #f7d48b;
+            border-radius: 16rpx;
+            padding: 20rpx 24rpx;
+            margin-bottom: 16rpx;
+
+            .preview-banner-title {
+                display: block;
+                font-size: 28rpx;
+                font-weight: 600;
+                color: #a86a00;
+                margin-bottom: 8rpx;
+            }
+
+            .preview-banner-desc {
+                font-size: 24rpx;
+                color: #8c6a2b;
+                line-height: 34rpx;
+            }
+        }
 
         .order-info-card,
         .unit-card,
@@ -368,6 +566,21 @@ export default {
             font-size: 36rpx;
             font-weight: bold;
             color: #E53935;
+        }
+
+        .preview-extra {
+            margin-top: 20rpx;
+            padding-top: 16rpx;
+            border-top: 1rpx solid rgba(74, 144, 240, 0.12);
+            display: flex;
+            flex-direction: column;
+            gap: 8rpx;
+
+            .preview-extra-item {
+                font-size: 24rpx;
+                line-height: 34rpx;
+                color: #5c6980;
+            }
         }
 
         .unit-card {
@@ -462,10 +675,19 @@ export default {
 
         .bottom-actions {
             gap: 20rpx;
+            margin-top: 24rpx;
 
             .bottom-btn {
                 flex: 1;
+                min-width: 0;
+                min-height: 72rpx;
+                padding: 0 24rpx;
                 border: 2rpx solid #4A90F0;
+                border-radius: 12rpx;
+                box-sizing: border-box;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
 
             .contact-btn {
@@ -482,6 +704,13 @@ export default {
 
             .refund-btn .btn-text {
                 color: #fff;
+            }
+
+            .btn-text {
+                font-size: 30rpx;
+                font-weight: 600;
+                line-height: 1;
+                white-space: nowrap;
             }
         }
 
