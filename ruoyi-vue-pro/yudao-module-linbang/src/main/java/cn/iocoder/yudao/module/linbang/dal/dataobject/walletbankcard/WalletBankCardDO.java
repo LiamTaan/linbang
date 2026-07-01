@@ -56,6 +56,14 @@ public class WalletBankCardDO extends BaseDO {
      */
     private String accountName;
     /**
+     * 开户省份
+     */
+    private String bankProvince;
+    /**
+     * 开户城市
+     */
+    private String bankCity;
+    /**
      * 预留手机号
      */
     private String reservedMobile;

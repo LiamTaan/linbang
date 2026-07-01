@@ -60,8 +60,13 @@
     <el-descriptions :column="2" border>
       <el-descriptions-item label="开户银行">{{ detailData.bankCard?.bankName || '-' }}</el-descriptions-item>
       <el-descriptions-item label="银行编码">{{ detailData.bankCard?.bankCode || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="出款账号">
+        {{ detailData.bankCard?.transferAccount || '-' }}
+      </el-descriptions-item>
       <el-descriptions-item label="银行卡号">{{ detailData.bankCard?.cardNoMask || '-' }}</el-descriptions-item>
       <el-descriptions-item label="开户名">{{ detailData.bankCard?.accountName || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="开户省份">{{ detailData.bankCard?.bankProvince || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="开户城市">{{ detailData.bankCard?.bankCity || '-' }}</el-descriptions-item>
       <el-descriptions-item label="预留手机号">
         {{ detailData.bankCard?.reservedMobile || '-' }}
       </el-descriptions-item>

@@ -12,6 +12,8 @@ export interface WalletBankCard {
   cardNoEncrypt?: string
   cardNoMask?: string
   accountName?: string
+  bankProvince?: string
+  bankCity?: string
   reservedMobile?: string
   status?: string
   isDefault?: boolean
@@ -19,6 +21,7 @@ export interface WalletBankCard {
 }
 
 export interface WalletBankCardDetail extends WalletBankCard {
+  transferAccount?: string
   updateTime?: string
   userNo?: string
   userNickname?: string
@@ -66,6 +69,9 @@ export interface WalletBankCardFormData {
   cardNoEncrypt?: string
   cardNoMask?: string
   accountName?: string
+  transferAccount?: string
+  bankProvince?: string
+  bankCity?: string
   reservedMobile?: string
   status?: string
   isDefault?: boolean

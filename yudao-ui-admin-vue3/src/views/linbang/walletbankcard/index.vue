@@ -148,6 +148,8 @@
       <el-table-column label="银行名称" align="center" prop="bankName" />
       <el-table-column label="脱敏卡号" align="center" prop="cardNoMask" />
       <el-table-column label="开户名" align="center" prop="accountName" />
+      <el-table-column label="开户省份" align="center" prop="bankProvince" />
+      <el-table-column label="开户城市" align="center" prop="bankCity" />
       <el-table-column label="预留手机号" align="center" prop="reservedMobile" />
       <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">

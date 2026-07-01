@@ -163,7 +163,7 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
             throw exception(WALLET_WITHDRAW_NOT_EXISTS);
         }
         if (!Objects.equals(walletWithdraw.getAuditStatus(), "PENDING")) {
-            throw exception(WALLET_WITHDRAW_NOT_EXISTS);
+            throw exception(WALLET_WITHDRAW_AUDIT_STATUS_INVALID);
         }
         WalletWithdrawDO updateObj = new WalletWithdrawDO();
         updateObj.setId(reqVO.getId());
@@ -196,7 +196,7 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
         }
         if (!Objects.equals(withdraw.getAuditStatus(), "APPROVED")
                 || (!Objects.equals(withdraw.getStatus(), "FAILED") && !Objects.equals(withdraw.getStatus(), "APPROVED"))) {
-            throw exception(WALLET_WITHDRAW_NOT_EXISTS);
+            throw exception(WALLET_WITHDRAW_AUDIT_STATUS_INVALID);
         }
         walletWithdrawMapper.updateById(WalletWithdrawDO.builder()
                 .id(withdraw.getId())
@@ -211,16 +211,16 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
     public void updateWalletWithdrawTransferred(PayTransferNotifyReqDTO notifyReqDTO) {
         WalletWithdrawDO withdraw = walletWithdrawMapper.selectById(Long.valueOf(notifyReqDTO.getMerchantTransferId()));
         if (withdraw == null) {
-            throw exception(WALLET_WITHDRAW_NOT_EXISTS);
+            throw exception(WALLET_WITHDRAW_TRANSFER_NOTIFY_INVALID);
         }
         if (withdraw.getPayTransferId() != null
                 && !ObjectUtil.equal(withdraw.getPayTransferId(), notifyReqDTO.getPayTransferId())) {
-            throw exception(WALLET_WITHDRAW_NOT_EXISTS);
+            throw exception(WALLET_WITHDRAW_TRANSFER_NOTIFY_INVALID);
         }
         PayTransferRespDTO transfer = payTransferApi.getTransfer(notifyReqDTO.getPayTransferId());
         if (transfer == null
                 || !ObjectUtil.equal(transfer.getMerchantTransferId(), notifyReqDTO.getMerchantTransferId())) {
-            throw exception(WALLET_WITHDRAW_NOT_EXISTS);
+            throw exception(WALLET_WITHDRAW_TRANSFER_NOTIFY_INVALID);
         }
         WalletAccountDO walletAccount = walletAccountMapper.selectById(withdraw.getWalletAccountId());
         if (walletAccount == null) {
@@ -292,9 +292,10 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
 
     private Long createTransfer(WalletWithdrawDO withdraw) {
         WalletBankCardDO bankCard = withdraw.getBankCardId() == null ? null : walletBankCardMapper.selectById(withdraw.getBankCardId());
-        if (bankCard == null || StrUtil.isBlank(bankCard.getTransferAccount())) {
+        if (bankCard == null) {
             throw exception(WALLET_BANK_CARD_INVALID);
         }
+        validateTransferBankCard(bankCard);
         PayAppDO payApp = getEnabledPayApp();
         PayChannelDO channel = selectTransferChannel(payApp.getId());
         assertTransferChannelSupported(channel);
@@ -308,6 +309,7 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
                 .setPrice(toFen(withdraw.getRealAmount()))
                 .setUserAccount(bankCard.getTransferAccount())
                 .setUserName(bankCard.getAccountName())
+                .setChannelExtras(buildTransferExtras(bankCard))
                 .setChannelCode(channel.getCode());
         PayTransferCreateRespDTO transferRespDTO = payTransferApi.createTransfer(transferReqDTO);
         walletWithdrawMapper.updateById(WalletWithdrawDO.builder()
@@ -352,7 +354,7 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
                 return payApp;
             }
         }
-        throw exception(WALLET_WITHDRAW_NOT_EXISTS);
+        throw exception(WALLET_WITHDRAW_PAY_APP_NOT_CONFIGURED);
     }
 
     private PayChannelDO selectTransferChannel(Long appId) {
@@ -368,8 +370,26 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
     }
 
     private void assertTransferChannelSupported(PayChannelDO channel) {
-        if (PayChannelEnum.AGGREGATE.getCode().equals(channel.getCode())) {
-            throw exception(WALLET_WITHDRAW_TRANSFER_UNSUPPORTED);
+        // 聚合支付已支持通过银盛商户付款接口执行提现打款。
+    }
+
+    private Map<String, String> buildTransferExtras(WalletBankCardDO bankCard) {
+        Map<String, String> extras = new HashMap<>(8);
+        extras.put("bank_name", bankCard.getBankName());
+        extras.put("bank_code", bankCard.getBankCode());
+        extras.put("bank_province", bankCard.getBankProvince());
+        extras.put("bank_city", bankCard.getBankCity());
+        extras.put("bank_account_type", "personal");
+        extras.put("bank_card_type", "debit");
+        extras.put("bank_telephone_no", bankCard.getReservedMobile());
+        return extras;
+    }
+
+    private void validateTransferBankCard(WalletBankCardDO bankCard) {
+        if (StrUtil.hasBlank(bankCard.getTransferAccount(), bankCard.getBankName(), bankCard.getBankCode(),
+                bankCard.getAccountName(), bankCard.getBankProvince(), bankCard.getBankCity(),
+                bankCard.getReservedMobile())) {
+            throw exception(WALLET_BANK_CARD_INVALID);
         }
     }
 

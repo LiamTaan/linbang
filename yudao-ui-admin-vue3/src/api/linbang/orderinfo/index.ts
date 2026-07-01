@@ -41,6 +41,7 @@ export interface OrderInfo {
 
 export interface OrderInfoDetail extends OrderInfo {
   updateTime?: string | Dayjs
+  priceDetailEnabled?: boolean
   merchant?: {
     id?: number
     merchantName?: string
@@ -63,7 +64,25 @@ export interface OrderInfoDetail extends OrderInfo {
     expireTime?: string | Dayjs
     successTime?: string | Dayjs
     createTime?: string | Dayjs
-}
+  }
+  mallEntry?: {
+    enabled?: boolean
+    title?: string
+    url?: string
+  }
+  mallConsumeRelation?: {
+    consumeRecordId?: number
+    consumeRecordNo?: string
+    consumeAmount?: number
+    consumeStatus?: string
+  }
+  promoteDeduct?: {
+    deductAmount?: number
+    sourceType?: string
+    sourceId?: number
+    sourceNo?: string
+    payableAmountAfterDeduct?: number
+  }
   priceItems?: Array<{
     itemType?: string
     itemName?: string
@@ -90,6 +109,12 @@ export interface OrderInfoDetail extends OrderInfo {
     status?: string
     acceptDeadlineTime?: string | Dayjs
     finishTime?: string | Dayjs
+    appealExpireTime?: string | Dayjs
+    verifyStatus?: string
+    verifyCode?: string
+    verifyTime?: string | Dayjs
+    verifyBy?: number
+    verifyRemark?: string
     createTime?: string | Dayjs
   }>
   acceptRecords?: Array<{
@@ -168,7 +193,16 @@ export interface OrderInfoDetail extends OrderInfo {
     remark?: string
     operateTime?: string | Dayjs
   }>
-  }
+  timeline?: Array<{
+    timelineType?: string
+    bizId?: number
+    unitId?: number
+    title?: string
+    content?: string
+    status?: string
+    eventTime?: string | Dayjs
+  }>
+}
 
 // 订单主 API
 export const OrderInfoApi = {

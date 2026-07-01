@@ -21,7 +21,8 @@ public class WalletBankCardSaveReqVO {
     @NotEmpty(message = "银行名称不能为空")
     private String bankName;
 
-    @Schema(description = "银行编码")
+    @Schema(description = "银行编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "ICBC")
+    @NotEmpty(message = "银行编码不能为空")
     private String bankCode;
 
     @Schema(description = "加密卡号", requiredMode = Schema.RequiredMode.REQUIRED)
@@ -36,7 +37,20 @@ public class WalletBankCardSaveReqVO {
     @NotEmpty(message = "开户名不能为空")
     private String accountName;
 
-    @Schema(description = "预留手机号")
+    @Schema(description = "出款收款账号", requiredMode = Schema.RequiredMode.REQUIRED, example = "6222020202020202020")
+    @NotEmpty(message = "出款收款账号不能为空")
+    private String transferAccount;
+
+    @Schema(description = "开户省份，用于第三方提现出款", requiredMode = Schema.RequiredMode.REQUIRED, example = "广东省")
+    @NotEmpty(message = "开户省份不能为空")
+    private String bankProvince;
+
+    @Schema(description = "开户城市，用于第三方提现出款", requiredMode = Schema.RequiredMode.REQUIRED, example = "深圳市")
+    @NotEmpty(message = "开户城市不能为空")
+    private String bankCity;
+
+    @Schema(description = "预留手机号，用于第三方提现出款", requiredMode = Schema.RequiredMode.REQUIRED, example = "13800138000")
+    @NotEmpty(message = "预留手机号不能为空")
     private String reservedMobile;
 
     @Schema(description = OpenApiSchemaConstants.BANK_CARD_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "ENABLE")

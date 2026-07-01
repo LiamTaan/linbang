@@ -1926,6 +1926,8 @@ CREATE TABLE IF NOT EXISTS `lb_user_bank_card` (
   `transfer_account` VARCHAR(128) DEFAULT NULL COMMENT '出款收款账号',
   `card_no_mask` VARCHAR(64) NOT NULL COMMENT '脱敏卡号',
   `account_name` VARCHAR(64) NOT NULL COMMENT '开户名',
+  `bank_province` VARCHAR(64) DEFAULT NULL COMMENT '开户省份',
+  `bank_city` VARCHAR(64) DEFAULT NULL COMMENT '开户城市',
   `reserved_mobile` VARCHAR(20) DEFAULT NULL COMMENT '预留手机号',
   `status` VARCHAR(32) NOT NULL DEFAULT 'ENABLE' COMMENT '状态',
   `is_default` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否默认',

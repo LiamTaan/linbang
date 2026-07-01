@@ -57,8 +57,11 @@ export interface WalletWithdrawDetail extends WalletWithdraw {
     userId?: number
     bankName?: string
     bankCode?: string
+    transferAccount?: string
     cardNoMask?: string
     accountName?: string
+    bankProvince?: string
+    bankCity?: string
     reservedMobile?: string
     status?: string
     isDefault?: boolean

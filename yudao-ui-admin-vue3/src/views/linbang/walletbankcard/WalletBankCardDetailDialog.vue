@@ -6,6 +6,8 @@
       <el-descriptions-item label="银行编码">{{ detailData.bankCode || '-' }}</el-descriptions-item>
       <el-descriptions-item label="脱敏卡号">{{ detailData.cardNoMask || '-' }}</el-descriptions-item>
       <el-descriptions-item label="开户名">{{ detailData.accountName || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="开户省份">{{ detailData.bankProvince || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="开户城市">{{ detailData.bankCity || '-' }}</el-descriptions-item>
       <el-descriptions-item label="预留手机号">
         {{ detailData.reservedMobile || '-' }}
       </el-descriptions-item>

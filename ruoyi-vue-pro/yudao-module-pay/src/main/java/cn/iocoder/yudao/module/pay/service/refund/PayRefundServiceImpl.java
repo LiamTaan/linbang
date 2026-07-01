@@ -259,9 +259,7 @@ public class PayRefundServiceImpl implements PayRefundService {
     }
 
     private void assertRefundChannelSupported(PayChannelDO channel) {
-        if (PayChannelEnum.AGGREGATE.getCode().equals(channel.getCode())) {
-            throw exception(REFUND_CHANNEL_UNSUPPORTED);
-        }
+        // 聚合支付已支持通过银盛开放平台发起退款。
     }
 
     /**

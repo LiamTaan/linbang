@@ -114,9 +114,11 @@ rules:
         - CREATE_ORDER
         - QUERY_ORDER
         - PAY_SUCCESS_NOTIFY
-      unsupported_until_provider_doc:
         - REFUND
+        - QUERY_REFUND
         - TRANSFER
+        - QUERY_TRANSFER
+      unsupported_until_provider_doc:
         - BANK_CARD_BIND_VERIFY
     order_status_flow:
       - PENDING_PAY

@@ -37,7 +37,7 @@ public class WalletBankCardRespVO {
     @ExcelProperty("银行名称")
     private String bankName;
 
-    @Schema(description = "银行编码")
+    @Schema(description = "银行编码；提现出款时传给第三方通道识别收款银行", example = "ICBC")
     @ExcelProperty("银行编码")
     private String bankCode;
 
@@ -53,7 +53,15 @@ public class WalletBankCardRespVO {
     @ExcelProperty("开户名")
     private String accountName;
 
-    @Schema(description = "预留手机号")
+    @Schema(description = "开户省份；第三方出款需要的开户行省份", example = "广东省")
+    @ExcelProperty("开户省份")
+    private String bankProvince;
+
+    @Schema(description = "开户城市；第三方出款需要的开户行城市", example = "深圳市")
+    @ExcelProperty("开户城市")
+    private String bankCity;
+
+    @Schema(description = "银行预留手机号；第三方出款校验使用", example = "13800138000")
     @ExcelProperty("预留手机号")
     private String reservedMobile;
 
