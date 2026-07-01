@@ -132,7 +132,7 @@ function flattenCategories(list, depth = 0, target = []) {
 
 function buildAddressText(address) {
     if (!address) {
-        return '请选择服务区域'
+        return '请先新增地址信息'
     }
     return [
         address.province,
@@ -212,6 +212,9 @@ export default {
             return STATUS_LABELS[this.progressStatusKey] || this.progressStatusKey || '待处理'
         },
         selectedAddressText() {
+            if (!this.addressList.length) {
+                return '请先新增地址信息'
+            }
             const address = this.addressList[this.selectedAddressIndex]
             return buildAddressText(address)
         },
@@ -320,9 +323,17 @@ export default {
                 return
             }
             if (!this.addressList.length) {
-                uni.showToast({
+                uni.showModal({
                     title: '请先完善地址信息',
-                    icon: 'none'
+                    content: '服务区域来自地址管理中的已保存地址，是否现在去新增地址？',
+                    success: (res) => {
+                        if (!res.confirm) {
+                            return
+                        }
+                        uni.navigateTo({
+                            url: '/pages/address_management/address_management'
+                        })
+                    }
                 })
                 return
             }
