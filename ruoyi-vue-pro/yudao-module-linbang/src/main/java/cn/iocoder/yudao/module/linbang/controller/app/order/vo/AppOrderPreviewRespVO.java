@@ -32,8 +32,14 @@ public class AppOrderPreviewRespVO {
     @Schema(description = "订单应付金额，单位元")
     private BigDecimal orderAmount;
 
-    @Schema(description = "数量")
+    @Schema(description = "数量。不是全平台统一单位，具体口径由当前类目 quantityUnitLabel 决定")
     private BigDecimal quantity;
+
+    @Schema(description = "当前类目的数量口径，例如 小时/次/台/扇/平方米/单")
+    private String quantityUnitLabel;
+
+    @Schema(description = "当前类目是否允许按数量参与拆单；false 时数量仅用于展示和报价辅助")
+    private Boolean quantitySplitEnabled;
 
     @Schema(description = "服务人数")
     private Integer workerCount;

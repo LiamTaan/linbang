@@ -164,7 +164,7 @@ export default {
                     icon: 'success'
                 })
                 setTimeout(() => {
-                    uni.navigateBack()
+                    this.$navigateBack()
                 }, 600)
             } catch (error) {
             } finally {
@@ -175,7 +175,7 @@ export default {
             this.form[field] = event.detail.value || ''
         },
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         }
     }
 }
@@ -291,3 +291,4 @@ export default {
     height: 60rpx;
 }
 </style>
+

@@ -7,6 +7,7 @@ import cn.iocoder.yudao.module.linbang.controller.app.merchant.info.vo.AppMercha
 import cn.iocoder.yudao.module.linbang.controller.app.merchant.info.vo.AppMerchantProfileUpdateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.merchant.dispatchsetting.vo.AppMerchantDispatchSettingRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.merchant.dispatchsetting.vo.AppMerchantDispatchSettingUpdateReqVO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.certexemption.CertExemptionApplyDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategory.MerchantServiceCategoryDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategoryrel.MerchantCategoryRelDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantdispatchsetting.MerchantDispatchSettingDO;
@@ -15,6 +16,7 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoD
 import cn.iocoder.yudao.module.linbang.dal.dataobject.ordermatchrecord.OrderMatchRecordDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantservicepoint.MerchantServicePointDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberqualification.MemberUserQualificationDO;
+import cn.iocoder.yudao.module.linbang.dal.mysql.certexemption.CertExemptionApplyMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantcategory.MerchantServiceCategoryMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantcategoryrel.MerchantCategoryRelMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantdispatchsetting.MerchantDispatchSettingMapper;
@@ -65,6 +67,8 @@ public class AppMerchantInfoServiceImpl implements AppMerchantInfoService {
     private MerchantDispatchSettingService merchantDispatchSettingService;
     @Resource
     private MerchantDispatchSettingMapper merchantDispatchSettingMapper;
+    @Resource
+    private CertExemptionApplyMapper certExemptionApplyMapper;
     @Resource
     private PriorityPoolService priorityPoolService;
     @Resource
@@ -198,19 +202,20 @@ public class AppMerchantInfoServiceImpl implements AppMerchantInfoService {
         boolean bankCardBound = hasEnabledBankCard(merchantInfo.getUserId());
         boolean qualificationValid = memberQualificationExpiryService.canMerchantAccept(merchantInfo.getUserId());
         boolean acceptEligible = "ENABLE".equals(merchantInfo.getStatus())
-                && "ENABLE".equals(merchantInfo.getAcceptStatus())
                 && latestEntry != null
                 && Boolean.TRUE.equals(latestEntry.getAcceptEnabled())
                 && bankCardBound
                 && qualificationValid;
         respVO.setAcceptEligible(acceptEligible);
-        if (latestEntry != null && "APPROVED_WAIT_BANK_CARD".equals(latestEntry.getProgressStatus())) {
+        if (latestEntry != null && "APPROVED_WAIT_BANK_CARD".equals(latestEntry.getProgressStatus()) && !bankCardBound) {
             respVO.setBlockedReason("终审已通过，但尚未绑定有效银行卡");
             respVO.setNextAction("请先绑定有效银行卡");
         } else if (!qualificationValid) {
             respVO.setBlockedReason("必需证件已过期或待更新");
-            respVO.setNextAction("请先更新已过期证件或等待豁免审核");
-        } else if (latestEntry != null && latestEntry.getOnboardingBlockedReason() != null) {
+            respVO.setNextAction(resolveQualificationNextAction(merchantInfo.getUserId()));
+        } else if (latestEntry != null
+                && latestEntry.getOnboardingBlockedReason() != null
+                && !(bankCardBound && latestEntry.getOnboardingBlockedReason().contains("银行卡"))) {
             respVO.setBlockedReason(latestEntry.getOnboardingBlockedReason());
             respVO.setNextAction("请根据当前阻塞原因完成处理");
         }
@@ -310,6 +315,20 @@ public class AppMerchantInfoServiceImpl implements AppMerchantInfoService {
                 .eq(cn.iocoder.yudao.module.linbang.dal.dataobject.walletbankcard.WalletBankCardDO::getUserId, userId)
                 .eq(cn.iocoder.yudao.module.linbang.dal.dataobject.walletbankcard.WalletBankCardDO::getStatus, "ENABLE")
                 .last("LIMIT 1")) != null;
+    }
+
+    private String resolveQualificationNextAction(Long userId) {
+        List<MemberUserQualificationDO> qualifications = memberUserQualificationMapper.selectListByUserId(userId);
+        boolean hasPendingQualification = qualifications.stream().anyMatch(item -> Objects.equals(item.getAuditStatus(), "PENDING"));
+        if (hasPendingQualification) {
+            return "证件已重新提交，等待平台审核通过后恢复接单";
+        }
+        List<CertExemptionApplyDO> exemptions = certExemptionApplyMapper.selectListByUserId(userId);
+        boolean hasPendingExemption = exemptions.stream().anyMatch(item -> Objects.equals(item.getAuditStatus(), "PENDING"));
+        if (hasPendingExemption) {
+            return "证件豁免申请已提交，等待平台审核通过后恢复接单";
+        }
+        return "请先更新已过期证件或等待豁免审核";
     }
 
     private AppMerchantAcceptStatusRespVO.RecentPushItem convertRecentPush(OrderMatchRecordDO record) {

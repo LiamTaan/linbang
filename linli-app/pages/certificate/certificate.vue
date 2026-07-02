@@ -219,14 +219,6 @@ export default {
         },
         handleQualificationAction(item) {
             if (!item) return
-            if (item.status === 'APPROVED') {
-                uni.showModal({
-                    title: item.title,
-                    content: '当前资质已认证，暂不支持直接修改。',
-                    showCancel: false
-                })
-                return
-            }
             uni.navigateTo({
                 url: `/pages/certificate/qualification_edit?type=${item.key}`
             })
@@ -259,7 +251,7 @@ export default {
             })
         },
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         }
     }
 }
@@ -472,3 +464,4 @@ export default {
     color: #333333;
 }
 </style>
+

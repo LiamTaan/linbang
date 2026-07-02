@@ -68,6 +68,40 @@
           </el-radio>
         </el-radio-group>
       </el-form-item>
+      <el-form-item label="数量口径" prop="quantityUnitLabel">
+        <el-input v-model="formData.quantityUnitLabel" placeholder="如 小时 / 次 / 台 / 扇 / 平方米 / 单" />
+      </el-form-item>
+      <el-form-item label="按数量拆单" prop="quantitySplitEnabled">
+        <el-radio-group v-model="formData.quantitySplitEnabled">
+          <el-radio
+            v-for="item in BOOLEAN_YES_NO_OPTIONS"
+            :key="`quantity-split-${String(item.value)}`"
+            :value="item.value"
+          >
+            {{ item.label }}
+          </el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item label="默认拆分方式" prop="splitDefaultMode">
+        <el-select v-model="formData.splitDefaultMode" placeholder="请选择默认拆分方式" clearable>
+          <el-option label="直接单" value="DIRECT" />
+          <el-option label="按进度拆分" value="BY_PROGRESS" />
+          <el-option label="按工序拆分" value="BY_PROCESS" />
+          <el-option label="按内容拆分" value="BY_CONTENT" />
+          <el-option label="按多人拆分" value="BY_PERSON" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="是否工程类" prop="engineeringCategoryFlag">
+        <el-radio-group v-model="formData.engineeringCategoryFlag">
+          <el-radio
+            v-for="item in BOOLEAN_YES_NO_OPTIONS"
+            :key="`engineering-${String(item.value)}`"
+            :value="item.value"
+          >
+            {{ item.label }}
+          </el-radio>
+        </el-radio-group>
+      </el-form-item>
       <el-form-item label="是否支持开票" prop="supportInvoice">
         <el-radio-group v-model="formData.supportInvoice">
           <el-radio
@@ -162,6 +196,10 @@ type FormData = {
   defaultPricingMode?: string
   supportedPricingModes?: string[]
   supportSplit?: boolean
+  quantityUnitLabel?: string
+  quantitySplitEnabled?: boolean
+  splitDefaultMode?: string
+  engineeringCategoryFlag?: boolean
   supportInvoice?: boolean
   riskLevel?: string
   laborCategoryFlag?: boolean
@@ -180,6 +218,10 @@ const formData = ref<FormData>({
   defaultPricingMode: undefined,
   supportedPricingModes: [],
   supportSplit: false,
+  quantityUnitLabel: undefined,
+  quantitySplitEnabled: false,
+  splitDefaultMode: 'DIRECT',
+  engineeringCategoryFlag: false,
   supportInvoice: false,
   riskLevel: undefined,
   laborCategoryFlag: false,
@@ -193,6 +235,8 @@ const formRules = reactive({
   sortNo: [{ required: true, message: '排序不能为空', trigger: 'blur' }],
   supportedPricingModes: [{ required: true, message: '支持计价方式不能为空', trigger: 'change' }],
   supportSplit: [{ required: true, message: '是否支持拆单不能为空', trigger: 'change' }],
+  quantitySplitEnabled: [{ required: true, message: '是否按数量拆单不能为空', trigger: 'change' }],
+  engineeringCategoryFlag: [{ required: true, message: '是否工程类不能为空', trigger: 'change' }],
   supportInvoice: [{ required: true, message: '是否支持开票不能为空', trigger: 'change' }],
   laborCategoryFlag: [{ required: true, message: '是否用工类不能为空', trigger: 'change' }],
   forceAgreementType: [{ required: true, message: '强制协议类型不能为空', trigger: 'change' }],
@@ -258,6 +302,10 @@ const resetForm = () => {
     defaultPricingMode: undefined,
     supportedPricingModes: [],
     supportSplit: false,
+    quantityUnitLabel: undefined,
+    quantitySplitEnabled: false,
+    splitDefaultMode: 'DIRECT',
+    engineeringCategoryFlag: false,
     supportInvoice: false,
     riskLevel: undefined,
     laborCategoryFlag: false,
@@ -297,6 +345,10 @@ const buildFormData = (data: MerchantServiceCategory): FormData => ({
   defaultPricingMode: data.defaultPricingMode,
   supportedPricingModes: data.supportedPricingModes || [],
   supportSplit: data.supportSplit ?? false,
+  quantityUnitLabel: data.quantityUnitLabel,
+  quantitySplitEnabled: data.quantitySplitEnabled ?? false,
+  splitDefaultMode: data.splitDefaultMode || 'DIRECT',
+  engineeringCategoryFlag: data.engineeringCategoryFlag ?? false,
   supportInvoice: data.supportInvoice ?? false,
   riskLevel: data.riskLevel,
   laborCategoryFlag: data.laborCategoryFlag ?? false,

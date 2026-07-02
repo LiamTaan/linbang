@@ -251,7 +251,7 @@ public class AppReminderServiceImpl implements AppReminderService {
         respVO.setEditable(Boolean.FALSE);
         respVO.setBizId(qualification.getId());
         respVO.setRouteType("APP_PAGE");
-        respVO.setRouteValue("/pages/qualification/index");
+        respVO.setRouteValue("/pages/certificate/certificate");
         return respVO;
     }
 

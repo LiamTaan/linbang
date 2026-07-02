@@ -31,6 +31,18 @@ public class AppMerchantServiceCategoryRespVO {
     @Schema(description = "是否支持拆单", example = "false")
     private Boolean supportSplit;
 
+    @Schema(description = "该类目的数量口径，例如 小时/次/台/扇/平方米/单")
+    private String quantityUnitLabel;
+
+    @Schema(description = "是否允许按数量参与拆单；关闭后数量仅用于展示和报价辅助")
+    private Boolean quantitySplitEnabled;
+
+    @Schema(description = OpenApiSchemaConstants.ORDER_SPLIT_MODE)
+    private String splitDefaultMode;
+
+    @Schema(description = "是否工程类", example = "false")
+    private Boolean engineeringCategoryFlag;
+
     @Schema(description = "是否支持开票", example = "true")
     private Boolean supportInvoice;
 

@@ -171,7 +171,7 @@ export default {
             this.loadBills()
         },
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         }
     }
 }
@@ -362,3 +362,4 @@ export default {
     }
 }
 </style>
+

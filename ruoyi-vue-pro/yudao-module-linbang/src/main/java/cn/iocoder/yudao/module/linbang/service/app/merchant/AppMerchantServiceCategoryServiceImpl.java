@@ -91,6 +91,10 @@ public class AppMerchantServiceCategoryServiceImpl implements AppMerchantService
         respVO.setDefaultPricingMode(category.getDefaultPricingMode());
         respVO.setSupportedPricingModes(parseSupportedPricingModes(category));
         respVO.setSupportSplit(category.getSupportSplit());
+        respVO.setQuantityUnitLabel(category.getQuantityUnitLabel());
+        respVO.setQuantitySplitEnabled(category.getQuantitySplitEnabled());
+        respVO.setSplitDefaultMode(category.getSplitDefaultMode());
+        respVO.setEngineeringCategoryFlag(category.getEngineeringCategoryFlag());
         respVO.setSupportInvoice(category.getSupportInvoice());
         respVO.setLaborCategoryFlag(category.getLaborCategoryFlag());
         respVO.setForceAgreementType(category.getForceAgreementType());

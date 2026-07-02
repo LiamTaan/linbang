@@ -64,7 +64,7 @@ public class MemberQualificationExpiryService {
                         .isNotNull(MemberUserQualificationDO::getValidEndDate)
                         .orderByDesc(MemberUserQualificationDO::getValidEndDate, MemberUserQualificationDO::getId)
                         .last("LIMIT 1"));
-        return latestApproved == null || latestApproved.getValidEndDate().isAfter(LocalDate.now());
+        return latestApproved == null || !latestApproved.getValidEndDate().isBefore(LocalDate.now());
     }
 
     private void handleReminder(int daysBefore) {
@@ -95,7 +95,7 @@ public class MemberQualificationExpiryService {
         List<MemberUserQualificationDO> qualifications = memberUserQualificationMapper.selectList(
                 new LambdaQueryWrapperX<MemberUserQualificationDO>()
                         .eq(MemberUserQualificationDO::getAuditStatus, "APPROVED")
-                        .le(MemberUserQualificationDO::getValidEndDate, today)
+                        .lt(MemberUserQualificationDO::getValidEndDate, today)
                         .orderByAsc(MemberUserQualificationDO::getId));
         if (qualifications.isEmpty()) {
             return;

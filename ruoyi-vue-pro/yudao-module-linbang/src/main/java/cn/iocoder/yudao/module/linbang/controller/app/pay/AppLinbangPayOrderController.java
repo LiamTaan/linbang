@@ -1,6 +1,8 @@
 package cn.iocoder.yudao.module.linbang.controller.app.pay;
 
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
+import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangH5PaySubmitReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangH5PaySubmitRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderCreateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppOrderDepositInfoRespVO;
@@ -37,6 +39,12 @@ public class AppLinbangPayOrderController {
     @Operation(summary = "创建支付订单")
     public CommonResult<Long> createPayOrder(@Valid @RequestBody AppLinbangPayOrderCreateReqVO reqVO) {
         return success(appLinbangPayOrderService.createPayOrder(getLoginUserId(), reqVO));
+    }
+
+    @PostMapping("/h5/submit")
+    @Operation(summary = "提交聚合支付 H5 支付", description = "按聚合支付 H5 收银台方式发起支付，返回跳转链接；App 可直接用 WebView 或外部浏览器打开 displayContent")
+    public CommonResult<AppLinbangH5PaySubmitRespVO> submitH5Pay(@Valid @RequestBody AppLinbangH5PaySubmitReqVO reqVO) {
+        return success(appLinbangPayOrderService.submitH5Pay(getLoginUserId(), reqVO));
     }
 
     @PostMapping("/simulate-success")

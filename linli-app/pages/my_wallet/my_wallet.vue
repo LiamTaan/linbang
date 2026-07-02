@@ -125,7 +125,7 @@ export default {
             this.amountVisible = !this.amountVisible
         },
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         },
         goToDetail() {
             uni.navigateTo({ url: '/pages/detail_of_earnings/detail_of_earnings' })
@@ -411,3 +411,4 @@ export default {
     }
 }
 </style>
+

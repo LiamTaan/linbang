@@ -45,6 +45,7 @@
       </el-table-column>
       <el-table-column label="拆分方式" prop="splitMode" width="140" />
       <el-table-column label="金额阈值" prop="minOrderAmount" width="120" />
+      <el-table-column label="数量阈值" prop="minQuantity" width="120" />
       <el-table-column label="人数阈值" prop="minWorkerCount" width="120" />
       <el-table-column label="默认单元数" prop="defaultUnitCount" width="120" />
       <el-table-column label="单元金额上限" prop="unitAmountLimit" width="130" />

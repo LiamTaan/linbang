@@ -180,6 +180,8 @@ public class AppOrderServiceImpl implements AppOrderService {
         respVO.setBudgetAmount(reqVO.getBudgetAmount());
         respVO.setOrderAmount(orderAmount);
         respVO.setQuantity(reqVO.getQuantity());
+        respVO.setQuantityUnitLabel(resolveQuantityUnitLabel(category));
+        respVO.setQuantitySplitEnabled(Boolean.TRUE.equals(category.getQuantitySplitEnabled()));
         respVO.setWorkerCount(resolveWorkerCount(reqVO.getWorkerCount()));
         respVO.setRequireDesc(detectResult.getProcessedContent());
         respVO.setServiceDurationDesc(reqVO.getServiceDurationDesc());
@@ -276,6 +278,8 @@ public class AppOrderServiceImpl implements AppOrderService {
 
     @Override
     public AppOrderSplitRuleMatchRespVO matchSplitRule(AppOrderSplitRuleMatchReqVO reqVO) {
+        MerchantServiceCategoryDO category = reqVO.getCategoryId() != null
+                ? merchantServiceCategoryMapper.selectById(reqVO.getCategoryId()) : null;
         OrderSplitPlan splitPlan = orderSplitRuleService.matchRule(OrderSplitPreviewContext.builder()
                 .categoryId(reqVO.getCategoryId())
                 .pricingMode(reqVO.getPricingMode())
@@ -283,6 +287,11 @@ public class AppOrderServiceImpl implements AppOrderService {
                 .quantity(reqVO.getQuantity())
                 .workerCount(reqVO.getWorkerCount())
                 .requireDesc(reqVO.getRequireDesc())
+                .autoSplitEnabled(Boolean.TRUE)
+                .quantityUnitLabel(resolveQuantityUnitLabel(category))
+                .quantitySplitEnabled(category != null && Boolean.TRUE.equals(category.getQuantitySplitEnabled()))
+                .splitDefaultMode(category != null ? category.getSplitDefaultMode() : null)
+                .engineeringCategoryFlag(category != null && Boolean.TRUE.equals(category.getEngineeringCategoryFlag()))
                 .build());
         AppOrderSplitRuleMatchRespVO respVO = new AppOrderSplitRuleMatchRespVO();
         respVO.setMatched(splitPlan.isMatched());
@@ -294,6 +303,11 @@ public class AppOrderServiceImpl implements AppOrderService {
         respVO.setSplitMode(splitPlan.getSplitMode());
         respVO.setUnitAmountLimit(splitPlan.getUnitAmountLimit());
         respVO.setUnitCount(splitPlan.getUnitCount());
+        respVO.setQuantityUnitLabel(splitPlan.getQuantityUnitLabel());
+        respVO.setQuantitySplitEnabled(splitPlan.getQuantitySplitEnabled());
+        respVO.setSplitTriggerReasons(splitPlan.getSplitTriggerReasons());
+        respVO.setSplitRuleSummary(splitPlan.getSplitRuleSummary());
+        respVO.setRuleDesc(splitPlan.getSplitRuleSummary());
         respVO.setUnits(splitPlan.getUnits().stream().map(unit -> {
             AppOrderSplitRuleMatchRespVO.UnitPreviewRespVO item = new AppOrderSplitRuleMatchRespVO.UnitPreviewRespVO();
             item.setUnitSeq(unit.getUnitSeq());
@@ -473,6 +487,8 @@ public class AppOrderServiceImpl implements AppOrderService {
         respVO.setBudgetAmount(order.getBudgetAmount());
         respVO.setOrderAmount(order.getOrderAmount());
         respVO.setQuantity(order.getQuantity());
+        respVO.setQuantityUnitLabel(resolveQuantityUnitLabel(category));
+        respVO.setQuantitySplitEnabled(category != null && Boolean.TRUE.equals(category.getQuantitySplitEnabled()));
         respVO.setWorkerCount(order.getWorkerCount());
         respVO.setServiceDurationDesc(order.getServiceDurationDesc());
         respVO.setRequireDesc(order.getRequireDesc());
@@ -488,6 +504,8 @@ public class AppOrderServiceImpl implements AppOrderService {
         respVO.setSplitRuleId(order.getSplitRuleId());
         respVO.setSplitStatus(order.getSplitStatus());
         respVO.setSplitMode(order.getSplitMode());
+        respVO.setSplitTriggerReasons(resolveSplitTriggerReasons(order));
+        respVO.setSplitRuleSummary(resolveSplitRuleSummary(order));
         respVO.setAgreementConfirmed(order.getAgreementConfirmed());
         respVO.setTradeAgreementVersion(order.getTradeAgreementVersion());
         respVO.setTradeAgreementConfirmedTime(order.getTradeAgreementConfirmedTime());
@@ -1216,6 +1234,11 @@ public class AppOrderServiceImpl implements AppOrderService {
                 .quantity(reqVO.getQuantity())
                 .workerCount(reqVO.getWorkerCount())
                 .requireDesc(reqVO.getRequireDesc())
+                .autoSplitEnabled(reqVO.getNeedSplit())
+                .quantityUnitLabel(resolveQuantityUnitLabel(category))
+                .quantitySplitEnabled(Boolean.TRUE.equals(category.getQuantitySplitEnabled()))
+                .splitDefaultMode(category.getSplitDefaultMode())
+                .engineeringCategoryFlag(Boolean.TRUE.equals(category.getEngineeringCategoryFlag()))
                 .build());
     }
 
@@ -1227,6 +1250,11 @@ public class AppOrderServiceImpl implements AppOrderService {
                 .quantity(reqVO.getQuantity())
                 .workerCount(reqVO.getWorkerCount())
                 .requireDesc(reqVO.getRequireDesc())
+                .autoSplitEnabled(reqVO.getNeedSplit())
+                .quantityUnitLabel(resolveQuantityUnitLabel(category))
+                .quantitySplitEnabled(Boolean.TRUE.equals(category.getQuantitySplitEnabled()))
+                .splitDefaultMode(category.getSplitDefaultMode())
+                .engineeringCategoryFlag(Boolean.TRUE.equals(category.getEngineeringCategoryFlag()))
                 .build());
     }
 
@@ -1289,6 +1317,11 @@ public class AppOrderServiceImpl implements AppOrderService {
         respVO.setSplitMode(splitPlan.getSplitMode());
         respVO.setUnitAmountLimit(splitPlan.getUnitAmountLimit());
         respVO.setUnitCount(splitPlan.getUnitCount());
+        respVO.setQuantityUnitLabel(splitPlan.getQuantityUnitLabel());
+        respVO.setQuantitySplitEnabled(splitPlan.getQuantitySplitEnabled());
+        respVO.setSplitTriggerReasons(splitPlan.getSplitTriggerReasons());
+        respVO.setSplitRuleSummary(splitPlan.getSplitRuleSummary());
+        respVO.setRuleDesc(splitPlan.getSplitRuleSummary());
         respVO.setUnits(splitPlan.getUnits().stream().map(unit -> {
             AppOrderSplitRuleMatchRespVO.UnitPreviewRespVO item = new AppOrderSplitRuleMatchRespVO.UnitPreviewRespVO();
             item.setUnitSeq(unit.getUnitSeq());
@@ -1323,6 +1356,8 @@ public class AppOrderServiceImpl implements AppOrderService {
         tokenPayload.put("pricingMode", reqVO.getPricingMode());
         tokenPayload.put("budgetAmount", reqVO.getBudgetAmount());
         tokenPayload.put("quantity", reqVO.getQuantity());
+        tokenPayload.put("quantityUnitLabel", resolveQuantityUnitLabel(category));
+        tokenPayload.put("quantitySplitEnabled", Boolean.TRUE.equals(category.getQuantitySplitEnabled()));
         tokenPayload.put("workerCount", resolveWorkerCount(reqVO.getWorkerCount()));
         tokenPayload.put("needInvoice", reqVO.getNeedInvoice());
         tokenPayload.put("needSplit", reqVO.getNeedSplit());
@@ -1337,6 +1372,37 @@ public class AppOrderServiceImpl implements AppOrderService {
         tokenPayload.put("strategy", detectResult.getStrategy());
         tokenPayload.put("agreementType", resolveAgreementType(category));
         return DigestUtil.sha256Hex(JsonUtils.toJsonString(tokenPayload));
+    }
+
+    private String resolveQuantityUnitLabel(MerchantServiceCategoryDO category) {
+        if (category == null || StrUtil.isBlank(category.getQuantityUnitLabel())) {
+            return "份";
+        }
+        return category.getQuantityUnitLabel();
+    }
+
+    private List<String> resolveSplitTriggerReasons(OrderInfoDO order) {
+        Map<String, Object> snapshot = parseSplitRuleSnapshot(order);
+        Object reasons = snapshot.get("splitTriggerReasons");
+        if (!(reasons instanceof List)) {
+            return Collections.emptyList();
+        }
+        List<?> list = (List<?>) reasons;
+        return list.stream().filter(Objects::nonNull).map(String::valueOf).collect(Collectors.toList());
+    }
+
+    private String resolveSplitRuleSummary(OrderInfoDO order) {
+        Map<String, Object> snapshot = parseSplitRuleSnapshot(order);
+        Object summary = snapshot.get("splitRuleSummary");
+        return summary != null ? String.valueOf(summary) : null;
+    }
+
+    private Map<String, Object> parseSplitRuleSnapshot(OrderInfoDO order) {
+        if (order == null || StrUtil.isBlank(order.getSplitRuleSnapshot())) {
+            return Collections.emptyMap();
+        }
+        Map<String, Object> snapshot = JsonUtils.parseObject(order.getSplitRuleSnapshot(), Map.class);
+        return snapshot != null ? snapshot : Collections.emptyMap();
     }
 
     private void validatePreviewToken(MerchantServiceCategoryDO category, AppOrderCreateReqVO reqVO,

@@ -394,8 +394,9 @@ export default {
         async handleSubmit() {
             if (!this.canEditForm) {
                 if (this.progressStatusKey === 'APPROVED_ENABLED') {
-                    uni.navigateTo({
-                        url: '/pages/order/order?mode=accept'
+                    uni.setStorageSync('linbang_order_tab_mode', 'accept')
+                    uni.switchTab({
+                        url: '/pages/order/order'
                     })
                     return
                 }
@@ -437,7 +438,7 @@ export default {
             }
         },
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         }
     }
 }
@@ -473,6 +474,12 @@ export default {
     padding: 8rpx 18rpx;
     border-radius: 999rpx;
     background: rgba(255, 255, 255, 0.18);
+    min-width: 96rpx;
+    min-height: 48rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
 }
 
 .status-pill.status-PENDING_FIRST_AUDIT,
@@ -497,6 +504,8 @@ export default {
 .status-text {
     color: #fff;
     font-size: 22rpx;
+    line-height: 1;
+    text-align: center;
 }
 
 .status-pill.status-PENDING_FIRST_AUDIT .status-text,
@@ -774,3 +783,4 @@ export default {
     height: 80rpx;
 }
 </style>
+

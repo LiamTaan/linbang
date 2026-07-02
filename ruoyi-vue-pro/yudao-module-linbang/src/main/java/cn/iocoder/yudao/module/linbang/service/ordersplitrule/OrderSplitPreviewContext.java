@@ -21,4 +21,14 @@ public class OrderSplitPreviewContext {
 
     private String requireDesc;
 
+    private Boolean autoSplitEnabled;
+
+    private String quantityUnitLabel;
+
+    private Boolean quantitySplitEnabled;
+
+    private String splitDefaultMode;
+
+    private Boolean engineeringCategoryFlag;
+
 }

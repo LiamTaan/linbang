@@ -28,6 +28,14 @@ public class OrderSplitPlan {
 
     private Integer unitCount;
 
+    private String quantityUnitLabel;
+
+    private Boolean quantitySplitEnabled;
+
+    private List<String> splitTriggerReasons;
+
+    private String splitRuleSummary;
+
     private String ruleSnapshot;
 
     private List<OrderSplitUnitPlan> units;

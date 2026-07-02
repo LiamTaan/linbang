@@ -1,6 +1,6 @@
 import App from './App'
 import { isPublicPage } from './config/app'
-import { ensurePageAuth } from './utils/navigation'
+import { ensurePageAuth, navigateBack } from './utils/navigation'
 import * as format from './utils/format'
 
 function buildFullPath(route, options) {
@@ -27,6 +27,7 @@ Vue.mixin({
   }
 })
 Vue.prototype.$fmt = format
+Vue.prototype.$navigateBack = navigateBack
 const app = new Vue({
   ...App
 })
@@ -48,6 +49,7 @@ export function createApp() {
     }
   })
   app.config.globalProperties.$fmt = format
+  app.config.globalProperties.$navigateBack = navigateBack
   return {
     app
   }

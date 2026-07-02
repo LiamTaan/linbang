@@ -264,7 +264,7 @@ export default {
             })
         },
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         }
     }
 }
@@ -689,3 +689,4 @@ export default {
     }
 }
 </style>
+

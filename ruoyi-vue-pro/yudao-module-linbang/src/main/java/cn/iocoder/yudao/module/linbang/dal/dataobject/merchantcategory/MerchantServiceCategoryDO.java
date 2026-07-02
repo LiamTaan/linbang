@@ -57,6 +57,22 @@ public class MerchantServiceCategoryDO extends BaseDO {
      */
     private Boolean supportSplit;
     /**
+     * 数量口径标签，例如 小时/次/台/扇/平方米/单
+     */
+    private String quantityUnitLabel;
+    /**
+     * 是否允许数量参与拆单
+     */
+    private Boolean quantitySplitEnabled;
+    /**
+     * 默认拆分方式
+     */
+    private String splitDefaultMode;
+    /**
+     * 是否工程类
+     */
+    private Boolean engineeringCategoryFlag;
+    /**
      * 是否支持开票
      */
     private Boolean supportInvoice;

@@ -24,6 +24,10 @@ export function getAddress(id) {
   return get('/member/address/get', { id })
 }
 
+export function getAreaTree(options = {}) {
+  return get('/system/area/tree', {}, options)
+}
+
 export function resolveAddressLocation(data) {
   return post('/member/address/resolve-location', data)
 }

@@ -164,7 +164,7 @@ export default {
             this.loadList()
         },
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         }
     }
 }
@@ -346,3 +346,4 @@ export default {
     height: 60rpx;
 }
 </style>
+

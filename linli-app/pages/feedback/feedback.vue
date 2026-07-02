@@ -287,7 +287,7 @@ export default {
             uni.makePhoneCall({ phoneNumber: phone })
         },
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         }
     }
 }
@@ -635,3 +635,4 @@ export default {
     height: 42rpx;
 }
 </style>
+

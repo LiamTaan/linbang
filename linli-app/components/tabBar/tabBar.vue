@@ -7,13 +7,24 @@
             :class="{ active: currentIndex === index }"
             @click="switchTab(index)"
         >
-            <image class="tab-icon" :src="currentIndex === index ? item.selectedIcon : item.icon" />
+            <view class="tab-icon-wrap">
+                <image class="tab-icon" :src="currentIndex === index ? item.selectedIcon : item.icon" />
+                <view v-if="item.key === 'message' && unreadCount > 0" class="tab-badge">
+                    <text v-if="unreadCount > 0" class="tab-badge-text">{{ unreadBadgeText }}</text>
+                </view>
+            </view>
             <text class="tab-text">{{ item.text }}</text>
         </view>
     </view>
 </template>
 
 <script>
+import {
+    MESSAGE_UNREAD_CHANGED_EVENT,
+    getCachedMessageUnreadCount,
+    syncMessageUnreadCount
+} from '@/services/message-unread'
+
 export default {
     props: {
         currentIndex: {
@@ -38,6 +49,7 @@ export default {
                 },
                 {
                     text: '消息',
+                    key: 'message',
                     icon: '/static/img/tabBar/news.png',
                     selectedIcon: '/static/img/tabBar/news_pitch_on.png',
                     path: '/pages/news/news'
@@ -48,7 +60,29 @@ export default {
                     selectedIcon: '/static/img/tabBar/my_pitch_on.png',
                     path: '/pages/my/my'
                 }
-            ]
+            ],
+            unreadCount: getCachedMessageUnreadCount()
+        }
+    },
+    computed: {
+        unreadBadgeText() {
+            return this.unreadCount > 99 ? '99+' : `${this.unreadCount}`
+        }
+    },
+    created() {
+        this.handleUnreadChange = (count) => {
+            this.unreadCount = Number(count || 0)
+        }
+        uni.$on(MESSAGE_UNREAD_CHANGED_EVENT, this.handleUnreadChange)
+    },
+    mounted() {
+        syncMessageUnreadCount({ silent: true }).then((count) => {
+            this.unreadCount = Number(count || 0)
+        })
+    },
+    beforeUnmount() {
+        if (this.handleUnreadChange) {
+            uni.$off(MESSAGE_UNREAD_CHANGED_EVENT, this.handleUnreadChange)
         }
     },
     methods: {
@@ -88,6 +122,10 @@ export default {
         flex: 1;
         height: 100%;
         transition: all 0.3s;
+        .tab-icon-wrap {
+            position: relative;
+            margin-bottom: 6rpx;
+        }
 
         &.active {
             .tab-text {
@@ -98,7 +136,29 @@ export default {
         .tab-icon {
             width: 48rpx;
             height: 48rpx;
-            margin-bottom: 6rpx;
+        }
+
+        .tab-badge {
+            position: absolute;
+            top: -10rpx;
+            right: -18rpx;
+            min-width: 32rpx;
+            height: 32rpx;
+            padding: 0 8rpx;
+            border-radius: 16rpx;
+            background: #FF4D4F;
+            border: 2rpx solid #fff;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+        }
+
+        .tab-badge-text {
+            font-size: 18rpx;
+            line-height: 1;
+            color: #fff;
         }
 
         .tab-text {

@@ -117,6 +117,7 @@ import tabBar from '@/components/tabBar/tabBar.vue'
 import { acceptOrder, getAcceptOrderPage, getGuaranteeConfig, getOrderPage } from '@/api/order'
 import { getServiceCategoryList } from '@/api/merchant'
 import { getRoleContext } from '@/api/member'
+import { syncMessageUnreadCount } from '@/services/message-unread'
 import { hasLogin } from '@/utils/auth'
 import {
     getBusinessCategoryLabel,
@@ -204,6 +205,7 @@ export default {
     },
     onShow() {
         uni.hideTabBar()
+        syncMessageUnreadCount({ silent: true })
         const pendingMode = uni.getStorageSync('linbang_order_tab_mode')
         if (pendingMode) {
             uni.removeStorageSync('linbang_order_tab_mode')

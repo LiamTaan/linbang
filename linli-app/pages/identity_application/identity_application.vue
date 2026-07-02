@@ -326,7 +326,7 @@ export default {
         },
         getRoleApplyStatusLabel,
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         }
     }
 }
@@ -612,3 +612,4 @@ export default {
     height: 60rpx;
 }
 </style>
+

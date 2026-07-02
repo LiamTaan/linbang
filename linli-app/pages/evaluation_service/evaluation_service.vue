@@ -110,7 +110,7 @@ export default {
     },
     methods: {
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         },
         async loadPendingUnits() {
             try {
@@ -194,7 +194,7 @@ export default {
                 await this.loadPendingUnits()
                 if (!this.pendingUnits.length) {
                     setTimeout(() => {
-                        uni.navigateBack()
+                        this.$navigateBack()
                     }, 600)
                 }
             } catch (error) {
@@ -418,3 +418,4 @@ export default {
     }
 }
 </style>
+

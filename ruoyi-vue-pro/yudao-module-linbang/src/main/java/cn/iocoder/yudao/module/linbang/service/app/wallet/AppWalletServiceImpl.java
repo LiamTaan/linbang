@@ -20,6 +20,7 @@ import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppWalletWithdra
 import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppWalletWithdrawRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.creditlevelbenefit.CreditLevelBenefitDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantentry.MerchantEntryDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberrealname.MemberUserRealNameDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.promoter.PromoterDO;
@@ -27,6 +28,7 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.walletaccount.WalletAccoun
 import cn.iocoder.yudao.module.linbang.dal.dataobject.walletbankcard.WalletBankCardDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.walletflow.WalletFlowDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.walletwithdraw.WalletWithdrawDO;
+import cn.iocoder.yudao.module.linbang.dal.mysql.merchantentry.MerchantEntryMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.promoter.PromoterMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberrealname.MemberUserRealNameMapper;
@@ -36,6 +38,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.walletflow.WalletFlowMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.walletwithdraw.WalletWithdrawMapper;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.service.creditrecord.CreditLevelBenefitService;
+import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -66,6 +69,8 @@ public class AppWalletServiceImpl implements AppWalletService {
     @Resource
     private MerchantInfoMapper merchantInfoMapper;
     @Resource
+    private MerchantEntryMapper merchantEntryMapper;
+    @Resource
     private MemberUserRealNameMapper memberUserRealNameMapper;
     @Resource
     private WalletAccountMapper walletAccountMapper;
@@ -79,6 +84,8 @@ public class AppWalletServiceImpl implements AppWalletService {
     private PromoterMapper promoterMapper;
     @Resource
     private CreditLevelBenefitService creditLevelBenefitService;
+    @Resource
+    private MessagePushDispatchService messagePushDispatchService;
 
     @Override
     public AppWalletAccountRespVO getWalletAccount(Long authUserId) {
@@ -257,6 +264,7 @@ public class AppWalletServiceImpl implements AppWalletService {
                 .isDefault(reqVO.getIsDefault())
                 .build();
         walletBankCardMapper.insert(bankCard);
+        enableMerchantAcceptIfReady(loginUser.getId());
         return bankCard.getId();
     }
 
@@ -275,6 +283,7 @@ public class AppWalletServiceImpl implements AppWalletService {
                 .reservedMobile(reqVO.getReservedMobile())
                 .isDefault(reqVO.getIsDefault())
                 .build());
+        enableMerchantAcceptIfReady(bankCard.getUserId());
     }
 
     @Override
@@ -286,6 +295,7 @@ public class AppWalletServiceImpl implements AppWalletService {
                 .id(bankCard.getId())
                 .isDefault(Boolean.TRUE)
                 .build());
+        enableMerchantAcceptIfReady(bankCard.getUserId());
     }
 
     @Override
@@ -406,6 +416,38 @@ public class AppWalletServiceImpl implements AppWalletService {
         walletBankCardMapper.update(null, new LambdaUpdateWrapper<WalletBankCardDO>()
                 .eq(WalletBankCardDO::getUserId, userId)
                 .set(WalletBankCardDO::getIsDefault, Boolean.FALSE));
+    }
+
+    private void enableMerchantAcceptIfReady(Long userId) {
+        MerchantEntryDO latestEntry = merchantEntryMapper.selectOne(new LambdaQueryWrapperX<MerchantEntryDO>()
+                .eq(MerchantEntryDO::getUserId, userId)
+                .orderByDesc(MerchantEntryDO::getId)
+                .last("LIMIT 1"));
+        if (latestEntry == null
+                || !"APPROVED_WAIT_BANK_CARD".equals(latestEntry.getProgressStatus())
+                || !"APPROVED".equals(latestEntry.getFinalAuditStatus())) {
+            return;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        merchantEntryMapper.updateById(MerchantEntryDO.builder()
+                .id(latestEntry.getId())
+                .progressStatus("APPROVED_ENABLED")
+                .currentStageName("已开通接单权限")
+                .currentStageTime(now)
+                .acceptEnabled(Boolean.TRUE)
+                .bankCardRequired(Boolean.TRUE)
+                .onboardingBlockedReason(null)
+                .build());
+        if (latestEntry.getMerchantId() != null) {
+            merchantInfoMapper.updateById(MerchantInfoDO.builder()
+                    .id(latestEntry.getMerchantId())
+                    .status("ENABLE")
+                    .acceptStatus("ENABLE")
+                    .build());
+        }
+        memberUserService.updateMemberUserRole(userId, "MERCHANT");
+        messagePushDispatchService.dispatchSingle("lb_merchant_accept_enabled", "接单权限开通提醒", "MERCHANT_ENTRY",
+                latestEntry.getId(), userId, "用户绑卡后自动开通接单权限");
     }
 
     private WalletBankCardDO getValidatedBankCard(Long authUserId, Long id) {

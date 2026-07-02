@@ -155,7 +155,7 @@ export default {
     methods: {
         toYuanFromFen,
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         },
         handleRefresh() {
             this.refreshing = true
@@ -448,3 +448,4 @@ export default {
     }
 }
 </style>
+

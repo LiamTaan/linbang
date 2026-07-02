@@ -39,8 +39,14 @@ public class AppOrderDetailRespVO {
     @Schema(description = "订单应付金额")
     private BigDecimal orderAmount;
 
-    @Schema(description = "数量")
+    @Schema(description = "数量。不是全平台统一单位，具体口径由当前类目 quantityUnitLabel 决定")
     private BigDecimal quantity;
+
+    @Schema(description = "当前类目的数量口径，例如 小时/次/台/扇/平方米/单")
+    private String quantityUnitLabel;
+
+    @Schema(description = "当前类目是否允许按数量参与拆单；false 时数量仅用于展示和报价辅助")
+    private Boolean quantitySplitEnabled;
 
     @Schema(description = "服务人数")
     private Integer workerCount;
@@ -75,7 +81,7 @@ public class AppOrderDetailRespVO {
     @Schema(description = "是否需要发票。当前仅作为订单标记字段")
     private Boolean needInvoice;
 
-    @Schema(description = "是否需要拆单。当前版本下新订单统一为 false，不自动拆单")
+    @Schema(description = "是否允许系统应用拆单规则。false 时即使命中规则也仅提示，不会自动拆出多个单元")
     private Boolean needSplit;
 
     @Schema(description = "命中拆单规则 ID")
@@ -86,6 +92,12 @@ public class AppOrderDetailRespVO {
 
     @Schema(description = OpenApiSchemaConstants.ORDER_SPLIT_MODE, example = "DIRECT")
     private String splitMode;
+
+    @Schema(description = "本次拆单触发来源摘要，例如 金额达到阈值、工程类默认拆分、人数达到阈值")
+    private List<String> splitTriggerReasons;
+
+    @Schema(description = "拆单规则摘要，说明命中原因、最终单元数、是否因未勾选拆单而仅提示")
+    private String splitRuleSummary;
 
     @Schema(description = "是否已确认服务协议")
     private Boolean agreementConfirmed;

@@ -1,6 +1,8 @@
 package cn.iocoder.yudao.module.linbang.service.app.pay;
 
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderCreateReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangH5PaySubmitReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangH5PaySubmitRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppOrderDepositInfoRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppOrderDepositStatusRespVO;
@@ -11,6 +13,8 @@ import javax.validation.Valid;
 public interface AppLinbangPayOrderService {
 
     Long createPayOrder(Long authUserId, @Valid AppLinbangPayOrderCreateReqVO reqVO);
+
+    AppLinbangH5PaySubmitRespVO submitH5Pay(Long authUserId, @Valid AppLinbangH5PaySubmitReqVO reqVO);
 
     Long simulatePaySuccess(Long authUserId, @Valid AppLinbangPayOrderCreateReqVO reqVO);
 

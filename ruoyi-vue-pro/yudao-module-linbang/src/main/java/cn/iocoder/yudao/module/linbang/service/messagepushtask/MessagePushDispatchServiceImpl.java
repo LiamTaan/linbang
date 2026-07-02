@@ -19,8 +19,6 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.messagetemplate.MessageTemplate
 import cn.iocoder.yudao.module.linbang.service.messagefeedback.MessageFeedbackStatService;
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchTarget;
 import cn.iocoder.yudao.module.linbang.service.messagescene.MessageSceneService;
-import cn.iocoder.yudao.module.system.api.notify.NotifyMessageSendApi;
-import cn.iocoder.yudao.module.system.api.notify.dto.NotifySendSingleToUserReqDTO;
 import cn.iocoder.yudao.module.system.api.sms.SmsSendApi;
 import cn.iocoder.yudao.module.system.api.sms.dto.send.SmsSendSingleToUserReqDTO;
 import cn.iocoder.yudao.module.system.api.social.SocialClientApi;
@@ -73,8 +71,6 @@ public class MessagePushDispatchServiceImpl implements MessagePushDispatchServic
     private AppMessageSettingMapper appMessageSettingMapper;
     @Resource
     private MessageFeedbackStatService messageFeedbackStatService;
-    @Resource
-    private NotifyMessageSendApi notifyMessageSendApi;
     @Resource
     private SmsSendApi smsSendApi;
     @Resource
@@ -218,7 +214,7 @@ public class MessagePushDispatchServiceImpl implements MessagePushDispatchServic
                 .title(StrUtil.blankToDefault(template.getTitleTemplate(), campaign.getCampaignName()))
                 .contentSnapshot(content)
                 .routeType(template.getRouteType())
-                .routeValue(template.getRouteValue())
+                .routeValue(normalizeRouteValue(template.getRouteType(), template.getRouteValue()))
                 .readStatus(MessageCenterConstants.READ_STATUS_UNREAD)
                 .voiceText(resolveVoiceText(template, content))
                 .build();
@@ -227,12 +223,7 @@ public class MessagePushDispatchServiceImpl implements MessagePushDispatchServic
     private void sendRecord(MessageRecordDO record, MessageTemplateDO template) {
         try {
             if (MessageCenterConstants.CHANNEL_APP_POPUP.equals(template.getChannelType())) {
-                NotifySendSingleToUserReqDTO reqDTO = new NotifySendSingleToUserReqDTO();
-                reqDTO.setUserId(record.getReceiverUserId());
-                reqDTO.setTemplateCode(resolveNotifyTemplateCode(template));
-                reqDTO.setTemplateParams(Collections.emptyMap());
-                Long providerId = notifyMessageSendApi.sendSingleMessageToMember(reqDTO);
-                record.setProviderMessageId(providerId == null ? null : String.valueOf(providerId));
+                record.setProviderMessageId(record.getId() == null ? null : String.valueOf(record.getId()));
             } else if (MessageCenterConstants.CHANNEL_SMS.equals(template.getChannelType())) {
                 SmsSendSingleToUserReqDTO reqDTO = new SmsSendSingleToUserReqDTO();
                 reqDTO.setUserId(record.getReceiverUserId());
@@ -267,6 +258,16 @@ public class MessagePushDispatchServiceImpl implements MessagePushDispatchServic
         return content;
     }
 
+    private String normalizeRouteValue(String routeType, String routeValue) {
+        if (!StrUtil.equals("APP_PAGE", routeType) || StrUtil.isBlank(routeValue)) {
+            return routeValue;
+        }
+        if (StrUtil.equals(routeValue, "/pages/qualification/index")) {
+            return "/pages/certificate/certificate";
+        }
+        return routeValue;
+    }
+
     private Map<String, Object> buildTemplateParams(MessageRecordDO record) {
         Map<String, Object> params = new HashMap<>();
         params.put("title", StrUtil.blankToDefault(record.getTitle(), ""));
@@ -285,10 +286,6 @@ public class MessagePushDispatchServiceImpl implements MessagePushDispatchServic
                 .queryParamIfPresent("targetUrl", java.util.Optional.ofNullable(record.getRouteValue()))
                 .build()
                 .toUriString();
-    }
-
-    private String resolveNotifyTemplateCode(MessageTemplateDO template) {
-        return StrUtil.blankToDefault(template.getTemplateCode(), "linbang_message_default");
     }
 
     private String resolveSmsTemplateCode(MessageTemplateDO template) {

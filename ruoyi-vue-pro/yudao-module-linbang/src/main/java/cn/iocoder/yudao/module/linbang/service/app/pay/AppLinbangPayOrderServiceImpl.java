@@ -7,6 +7,8 @@ import cn.iocoder.yudao.framework.common.util.servlet.ServletUtils;
 import cn.iocoder.yudao.framework.security.config.SecurityProperties;
 import cn.iocoder.yudao.module.linbang.constants.LinbangRiskConstants;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangH5PaySubmitReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangH5PaySubmitRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderCreateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppOrderDepositInfoRespVO;
@@ -25,6 +27,7 @@ import cn.iocoder.yudao.module.pay.api.notify.dto.PayOrderNotifyReqDTO;
 import cn.iocoder.yudao.module.pay.api.order.PayOrderApi;
 import cn.iocoder.yudao.module.pay.api.order.dto.PayOrderCreateReqDTO;
 import cn.iocoder.yudao.module.pay.api.order.dto.PayOrderRespDTO;
+import cn.iocoder.yudao.module.pay.controller.admin.order.vo.PayOrderSubmitRespVO;
 import cn.iocoder.yudao.module.pay.controller.admin.order.vo.PayOrderSubmitReqVO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.app.PayAppDO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.order.PayOrderDO;
@@ -113,6 +116,27 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
         saveOperateLog(order.getId(), null, "CREATE_PAY_ORDER", "USER", loginUser.getId(),
                 order.getStatus(), order.getStatus(), "用户创建支付单");
         return payOrderId;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AppLinbangH5PaySubmitRespVO submitH5Pay(Long authUserId, @Valid AppLinbangH5PaySubmitReqVO reqVO) {
+        AppLinbangPayOrderCreateReqVO createReqVO = new AppLinbangPayOrderCreateReqVO();
+        createReqVO.setOrderId(reqVO.getOrderId());
+        Long payOrderId = createPayOrder(authUserId, createReqVO);
+
+        PayOrderSubmitReqVO submitReqVO = new PayOrderSubmitReqVO();
+        submitReqVO.setId(payOrderId);
+        submitReqVO.setChannelCode(PayChannelEnum.AGGREGATE.getCode());
+        submitReqVO.setReturnUrl(reqVO.getReturnUrl());
+        PayOrderSubmitRespVO submitRespVO = payOrderService.submitOrder(submitReqVO, ServletUtils.getClientIP());
+
+        AppLinbangH5PaySubmitRespVO respVO = new AppLinbangH5PaySubmitRespVO();
+        respVO.setPayOrderId(payOrderId);
+        respVO.setStatus(submitRespVO.getStatus());
+        respVO.setDisplayMode(submitRespVO.getDisplayMode());
+        respVO.setDisplayContent(submitRespVO.getDisplayContent());
+        return respVO;
     }
 
     @Override

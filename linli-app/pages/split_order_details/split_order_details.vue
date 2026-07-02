@@ -34,6 +34,16 @@
                 </view>
             </view>
 
+            <view class="rule-card" v-if="splitExplainVisible">
+                <text class="rule-title">拆单说明</text>
+                <view class="rule-list">
+                    <text class="rule-item">· 数量口径：{{ quantityUnitLabel }}</text>
+                    <text class="rule-item">· 按数量拆单：{{ quantitySplitEnabled ? '已开启' : '未开启，仅作说明' }}</text>
+                    <text class="rule-item" v-if="splitRuleSummary">· {{ splitRuleSummary }}</text>
+                    <text class="rule-item" v-for="(item, index) in splitTriggerReasons" :key="`trigger-${index}`">· {{ item }}</text>
+                </view>
+            </view>
+
             <view v-for="unit in orderDetail.units || []" :key="unit.id" class="unit-card"
                 :class="resolveUnitCardClass(unit.status)">
                 <view class="unit-header">
@@ -194,6 +204,27 @@ export default {
             const guaranteeConfig = (this.previewSnapshot && this.previewSnapshot.guaranteeConfig) || {}
             return previewResult.agreementTitle || guaranteeConfig.projectEscrowAgreementTitle || guaranteeConfig.agreementTitle || ''
         },
+        quantityUnitLabel() {
+            const previewResult = (this.previewSnapshot && this.previewSnapshot.previewResult) || {}
+            return this.orderDetail.quantityUnitLabel || previewResult.quantityUnitLabel || '份'
+        },
+        quantitySplitEnabled() {
+            const previewResult = (this.previewSnapshot && this.previewSnapshot.previewResult) || {}
+            return !!(this.orderDetail.quantitySplitEnabled || previewResult.quantitySplitEnabled)
+        },
+        splitTriggerReasons() {
+            const previewResult = (this.previewSnapshot && this.previewSnapshot.previewResult) || {}
+            const splitPreview = previewResult.splitPreview || {}
+            return this.orderDetail.splitTriggerReasons || splitPreview.splitTriggerReasons || []
+        },
+        splitRuleSummary() {
+            const previewResult = (this.previewSnapshot && this.previewSnapshot.previewResult) || {}
+            const splitPreview = previewResult.splitPreview || {}
+            return this.orderDetail.splitRuleSummary || splitPreview.splitRuleSummary || splitPreview.ruleDesc || ''
+        },
+        splitExplainVisible() {
+            return !!this.quantityUnitLabel || !!this.splitRuleSummary || (this.splitTriggerReasons || []).length > 0
+        },
         showRefundAction() {
             return ['PENDING_ACCEPT', 'ACCEPTED', 'SERVING', 'PENDING_CONFIRM', 'FINISHED', 'AFTER_SALE'].includes(this.orderDetail.status)
         },
@@ -228,7 +259,7 @@ export default {
             if (this.isPreviewMode && !this.publishing) {
                 this.previewSnapshot = uni.getStorageSync(ORDER_PREVIEW_STORAGE_KEY) || this.previewSnapshot
             }
-            uni.navigateBack()
+            this.$navigateBack()
         },
         handleRefresh() {
             if (this.isPreviewMode) {
@@ -246,7 +277,7 @@ export default {
                     icon: 'none'
                 })
                 setTimeout(() => {
-                    uni.navigateBack()
+                    this.$navigateBack()
                 }, 300)
                 return
             }
@@ -262,6 +293,8 @@ export default {
                 orderAmount: previewResult.orderAmount || payload.budgetAmount || 0,
                 categoryName,
                 pricingMode: payload.pricingMode,
+                quantityUnitLabel: previewResult.quantityUnitLabel || '份',
+                quantitySplitEnabled: !!previewResult.quantitySplitEnabled,
                 province: payload.province,
                 city: payload.city,
                 district: payload.district,
@@ -269,8 +302,12 @@ export default {
                 detailAddress: payload.detailAddress,
                 status: 'PENDING_PAY',
                 splitStatus: splitEnabled ? 'SPLIT' : 'UNSPLIT',
-                flowAdvice: previewResult.splitPreview && previewResult.splitPreview.ruleDesc
-                    ? previewResult.splitPreview.ruleDesc
+                splitTriggerReasons: (previewResult.splitPreview && previewResult.splitPreview.splitTriggerReasons) || [],
+                splitRuleSummary: previewResult.splitPreview && (previewResult.splitPreview.splitRuleSummary || previewResult.splitPreview.ruleDesc)
+                    ? (previewResult.splitPreview.splitRuleSummary || previewResult.splitPreview.ruleDesc)
+                    : '',
+                flowAdvice: previewResult.splitPreview && (previewResult.splitPreview.splitRuleSummary || previewResult.splitPreview.ruleDesc)
+                    ? (previewResult.splitPreview.splitRuleSummary || previewResult.splitPreview.ruleDesc)
                     : '',
                 matchBatches: [],
                 timeline: [
@@ -830,3 +867,4 @@ export default {
     }
 }
 </style>
+

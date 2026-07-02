@@ -56,7 +56,19 @@
 
 <script>
 import tabBar from '@/components/tabBar/tabBar.vue'
-import { getMessageRecord, getMessageRecordPage, markAllMessageRead, markMessageRead } from '@/api/message'
+import {
+    getMessageRecord,
+    getMessageRecordPage,
+    markAllMessageRead,
+    markMessageRead,
+    submitMessageClickFeedback
+} from '@/api/message'
+import { syncMessageUnreadCount } from '@/services/message-unread'
+
+const TAB_BAR_PAGES = ['/pages/index/index', '/pages/order/order', '/pages/news/news', '/pages/my/my']
+const ROUTE_ALIAS_MAP = {
+    '/pages/qualification/index': '/pages/certificate/certificate'
+}
 
 export default {
     components: {
@@ -92,6 +104,7 @@ export default {
     },
     onShow() {
         uni.hideTabBar()
+        syncMessageUnreadCount({ silent: true })
         this.reloadList()
     },
     methods: {
@@ -111,6 +124,7 @@ export default {
                 const page = await getMessageRecordPage({
                     pageNo: this.pageNo,
                     pageSize: this.pageSize,
+                    sendStatus: 'SUCCESS',
                     messageCategory: current.code || undefined
                 })
                 const list = (page.list || []).map((item) => this.mapMessageItem(item))
@@ -131,9 +145,16 @@ export default {
                 title: item.title || '平台消息',
                 time: this.$fmt.formatDateTime(item.createTime || item.sendTime),
                 desc: item.contentSnapshot || '暂无内容',
-                detail: `${this.formatBizType(item.bizType)} · ${this.formatSendStatus(item.sendStatus)}`,
+                detail: this.buildMessageDetail(item),
                 unread: item.readStatus !== 'READ'
             }
+        },
+        buildMessageDetail(item) {
+            const labels = [this.formatBizType(item.bizType)]
+            if (item.messageCategory === 'SYSTEM') {
+                labels.push('点击查看')
+            }
+            return labels.filter(Boolean).join(' · ')
         },
         formatBizType(value) {
             const labels = {
@@ -148,20 +169,17 @@ export default {
                 DISPUTE_CREATED: '纠纷发起通知',
                 DISPUTE_RESULT: '纠纷结果通知',
                 VERIFY_SUCCESS: '核销成功通知',
-                VERIFY_EXCEPTION: '核销异常通知'
+                VERIFY_EXCEPTION: '核销异常通知',
+                MEMBER_QUALIFICATION: '资质审核通知',
+                CERT_EXEMPTION: '证件豁免通知',
+                QUALIFICATION_EXPIRY: '证件到期提醒',
+                QUALIFICATION_EXPIRE_DISABLE: '证件过期限制通知',
+                APP_MESSAGE: '站内消息'
             }
             if (!value) {
                 return '系统通知'
             }
             return labels[value] || value
-        },
-        formatSendStatus(value) {
-            const labels = {
-                SUCCESS: '发送成功',
-                FAILED: '发送失败',
-                PENDING: '待发送'
-            }
-            return labels[value] || '发送成功'
         },
         getMessageConfig(item) {
             if (item.messageCategory === 'FINANCE') {
@@ -195,6 +213,7 @@ export default {
             const current = this.tabs[this.currentTab] || this.tabs[0]
             try {
                 await markAllMessageRead(current.code || undefined)
+                await syncMessageUnreadCount({ silent: true })
                 uni.showToast({
                     title: '未读已清空',
                     icon: 'success'
@@ -208,6 +227,7 @@ export default {
                 if (news.unread && news.id) {
                     await markMessageRead(news.id)
                     news.unread = false
+                    await syncMessageUnreadCount({ silent: true })
                 }
             } catch (error) {
             }
@@ -218,31 +238,111 @@ export default {
                 }
             } catch (error) {
             }
-            const routeType = detail && detail.routeType ? detail.routeType : news.routeType
-            const routeValue = detail && detail.routeValue ? detail.routeValue : news.routeValue
-            if (routeType === 'APP_PAGE' && routeValue) {
+            try {
+                if (news.id) {
+                    await submitMessageClickFeedback({ recordId: news.id })
+                }
+            } catch (error) {
+            }
+            const current = detail || news
+            if (this.navigateByRoute(current)) {
+                return
+            }
+            if (current.messageCategory === 'ORDER' && current.bizId) {
                 uni.navigateTo({
-                    url: routeValue
+                    url: `/pages/split_order_details/split_order_details?orderId=${current.bizId}`
                 })
                 return
             }
-            if (news.messageCategory === 'ORDER' && news.bizId) {
+            if (current.messageCategory === 'DISPUTE' && current.bizId) {
                 uni.navigateTo({
-                    url: `/pages/split_order_details/split_order_details?orderId=${news.bizId}`
+                    url: `/pages/complaint/complaint?id=${current.bizId}`
                 })
                 return
             }
-            if (news.messageCategory === 'DISPUTE' && news.bizId) {
-                uni.navigateTo({
-                    url: `/pages/complaint/complaint?id=${news.bizId}`
-                })
-                return
-            }
-            if (news.messageCategory === 'FINANCE') {
+            if (current.messageCategory === 'FINANCE') {
                 uni.navigateTo({
                     url: '/pages/detail_of_earnings/detail_of_earnings'
                 })
+                return
             }
+            if (this.navigateByGuess(current)) {
+                return
+            }
+            this.showMessageFallback(current)
+        },
+        navigateByRoute(message) {
+            const routeValue = this.normalizeRouteValue(message && message.routeValue ? String(message.routeValue).trim() : '')
+            if (!routeValue) {
+                return false
+            }
+            if (!routeValue.startsWith('/')) {
+                return false
+            }
+            const pagePath = routeValue.split('?')[0]
+            if (TAB_BAR_PAGES.includes(pagePath)) {
+                uni.switchTab({ url: pagePath })
+                return true
+            }
+            uni.navigateTo({ url: routeValue })
+            return true
+        },
+        normalizeRouteValue(routeValue) {
+            if (!routeValue) {
+                return ''
+            }
+            const pagePath = routeValue.split('?')[0]
+            if (!ROUTE_ALIAS_MAP[pagePath]) {
+                return routeValue
+            }
+            return routeValue.replace(pagePath, ROUTE_ALIAS_MAP[pagePath])
+        },
+        navigateByGuess(message) {
+            const route = this.guessMessageRoute(message)
+            if (!route) {
+                return false
+            }
+            if (TAB_BAR_PAGES.includes(route)) {
+                uni.switchTab({ url: route })
+                return true
+            }
+            uni.navigateTo({ url: route })
+            return true
+        },
+        guessMessageRoute(message) {
+            const text = [
+                message.bizType,
+                message.sceneCode,
+                message.title,
+                message.contentSnapshot,
+                message.template && message.template.templateCode,
+                message.template && message.template.templateName
+            ]
+                .filter(Boolean)
+                .join(' ')
+            if (/资质|证件|实名认证|认证|qualification|cert/i.test(text)) {
+                return '/pages/certificate/certificate'
+            }
+            if (/银行卡|绑卡/i.test(text)) {
+                return '/pages/bank_card_management/bank_card_management'
+            }
+            if (/入驻|服务商/i.test(text)) {
+                return '/pages/merchant_entry/merchant_entry'
+            }
+            if (/身份申请|角色申请/i.test(text)) {
+                return '/pages/identity_application/identity_application'
+            }
+            if (/钱包|提现|佣金|收支/i.test(text)) {
+                return '/pages/detail_of_earnings/detail_of_earnings'
+            }
+            return ''
+        },
+        showMessageFallback(message) {
+            uni.showModal({
+                title: message.title || '消息详情',
+                content: message.contentSnapshot || '暂无可查看的更多内容',
+                showCancel: false
+            })
         },
         loadMore() {
             this.loadMessages()

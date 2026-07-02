@@ -187,14 +187,34 @@
           {{ formatBooleanYesNo(scope.row.supportSplit) }}
         </template>
       </el-table-column>
+      <el-table-column label="数量口径" align="center" prop="quantityUnitLabel" width="110">
+        <template #default="{ row }">
+          {{ row.quantityUnitLabel || '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column label="按数量拆单" align="center" prop="quantitySplitEnabled" width="120">
+        <template #default="{ row }">
+          {{ formatBooleanYesNo(row.quantitySplitEnabled) }}
+        </template>
+      </el-table-column>
       <el-table-column label="支持计价方式" align="center" min-width="180">
         <template #default="{ row }">
           <span>{{ (row.supportedPricingModes || []).join(' / ') || '-' }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="默认拆分方式" align="center" prop="splitDefaultMode" width="130">
+        <template #default="{ row }">
+          {{ row.splitDefaultMode || '-' }}
+        </template>
+      </el-table-column>
       <el-table-column label="是否支持开票" align="center" prop="supportInvoice" width="120">
         <template #default="scope">
           {{ formatBooleanYesNo(scope.row.supportInvoice) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="是否工程类" align="center" prop="engineeringCategoryFlag" width="120">
+        <template #default="{ row }">
+          {{ formatBooleanYesNo(row.engineeringCategoryFlag) }}
         </template>
       </el-table-column>
       <el-table-column label="是否用工类" align="center" prop="laborCategoryFlag" width="120">
@@ -389,6 +409,10 @@ const handleStatusChanged = async (row: MerchantServiceCategory, value: string |
       defaultPricingMode: row.defaultPricingMode,
       supportedPricingModes: row.supportedPricingModes,
       supportSplit: row.supportSplit,
+      quantityUnitLabel: row.quantityUnitLabel,
+      quantitySplitEnabled: row.quantitySplitEnabled,
+      splitDefaultMode: row.splitDefaultMode,
+      engineeringCategoryFlag: row.engineeringCategoryFlag,
       supportInvoice: row.supportInvoice,
       riskLevel: row.riskLevel,
       laborCategoryFlag: row.laborCategoryFlag,

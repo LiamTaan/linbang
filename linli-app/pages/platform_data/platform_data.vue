@@ -15,7 +15,7 @@
 export default {
     methods: {
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         }
     }
 }
@@ -72,3 +72,4 @@ export default {
     font-weight: bold;
 }
 </style>
+

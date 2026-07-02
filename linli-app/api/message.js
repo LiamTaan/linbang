@@ -1,7 +1,7 @@
 import { get, post, put } from '@/utils/request'
 
-export function getMessageRecordPage(params) {
-  return get('/message/record/page', params)
+export function getMessageRecordPage(params, options = {}) {
+  return get('/message/record/page', params, options)
 }
 
 export function getMessageRecord(id) {
@@ -34,4 +34,8 @@ export function submitMessageClickFeedback(data) {
 
 export function submitMessageExposeFeedback(data) {
   return post('/message/record/feedback/expose', data)
+}
+
+export function submitVoicePlayedFeedback(data) {
+  return post('/message/record/feedback/voice-played', data)
 }

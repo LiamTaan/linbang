@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.service.app.message;
 
+import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.linbang.constants.LinbangRiskConstants;
@@ -56,6 +57,9 @@ public class AppMessageServiceImpl implements AppMessageService {
 
     @Override
     public PageResult<MessageRecordDO> getMessageRecordPage(Long userId, AppMessageRecordPageReqVO reqVO) {
+        if (StrUtil.isBlank(reqVO.getSendStatus())) {
+            reqVO.setSendStatus("SUCCESS");
+        }
         return messageRecordMapper.selectAppPage(userId, reqVO);
     }
 
@@ -102,6 +106,7 @@ public class AppMessageServiceImpl implements AppMessageService {
     public Long getUnreadCount(Long userId) {
         return messageRecordMapper.selectCount(new LambdaQueryWrapperX<MessageRecordDO>()
                 .eq(MessageRecordDO::getReceiverUserId, userId)
+                .eq(MessageRecordDO::getSendStatus, "SUCCESS")
                 .eq(MessageRecordDO::getReadStatus, MessageCenterConstants.READ_STATUS_UNREAD));
     }
 
@@ -123,6 +128,7 @@ public class AppMessageServiceImpl implements AppMessageService {
     public void markAllRead(Long userId, String messageCategory) {
         for (MessageRecordDO record : messageRecordMapper.selectList(new LambdaQueryWrapperX<MessageRecordDO>()
                 .eq(MessageRecordDO::getReceiverUserId, userId)
+                .eq(MessageRecordDO::getSendStatus, "SUCCESS")
                 .eqIfPresent(MessageRecordDO::getMessageCategory, messageCategory)
                 .eq(MessageRecordDO::getReadStatus, MessageCenterConstants.READ_STATUS_UNREAD))) {
             markRead(userId, record.getId());

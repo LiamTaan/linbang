@@ -41,6 +41,7 @@
       </el-form-item>
       <el-form-item label="最小数量" prop="minQuantity">
         <el-input-number v-model="formData.minQuantity" :min="0" :precision="2" class="!w-220px" />
+        <div class="form-tip">仅对“按数量拆单”的类目生效，数量单位以服务类目配置为准。</div>
       </el-form-item>
       <el-form-item label="最小人数" prop="minWorkerCount">
         <el-input-number v-model="formData.minWorkerCount" :min="1" class="!w-220px" />
@@ -53,6 +54,7 @@
           <el-option label="按内容拆分" value="BY_CONTENT" />
           <el-option label="按多人拆分" value="BY_PERSON" />
         </el-select>
+        <div class="form-tip">多人拆单仅在 BY_PERSON 下按人数推高单元数；工程类可由类目默认拆分方式兜底。</div>
       </el-form-item>
       <el-form-item label="默认单元数" prop="defaultUnitCount">
         <el-input-number v-model="formData.defaultUnitCount" :min="1" class="!w-220px" />
@@ -198,3 +200,12 @@ const loadCategoryTree = async () => {
   categoryTree.value = handleTree(categories, 'id', 'parentId', 'children')
 }
 </script>
+
+<style scoped>
+.form-tip {
+  margin-top: 6px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+</style>

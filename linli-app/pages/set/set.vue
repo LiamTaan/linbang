@@ -13,67 +13,147 @@
                 <view class="card-header">
                     <text class="header-title">账号安全</text>
                 </view>
-                <view class="set-item" @click="handleUpdatePassword">
-                    <image class="item-icon" src="/static/img/set/password@3x.png" />
-                    <text class="item-title">修改密码</text>
-                    <text class="item-value action">发送验证码并修改</text>
+                <view class="set-item clickable" @click="handleUpdatePassword">
+                    <view class="item-main">
+                        <image class="item-icon" src="/static/img/set/password@3x.png" />
+                        <view class="item-copy">
+                            <text class="item-title">修改密码</text>
+                            <text class="item-desc">短信验证码校验后修改登录密码</text>
+                        </view>
+                    </view>
+                    <text class="item-value action">立即修改</text>
                 </view>
                 <view class="set-item">
-                    <image class="item-icon" src="/static/img/set/phone@3x.png" />
-                    <text class="item-title">绑定手机</text>
+                    <view class="item-main">
+                        <image class="item-icon" src="/static/img/set/phone@3x.png" />
+                        <view class="item-copy">
+                            <text class="item-title">绑定手机</text>
+                            <text class="item-desc">当前登录账号手机号</text>
+                        </view>
+                    </view>
                     <text class="item-value">{{ $fmt.maskMobile(profile.mobile) || '未绑定' }}</text>
                 </view>
-                <view class="set-item" @click="handleWechatTip">
-                    <image class="item-icon" src="/static/img/set/wechat@3x.png" />
-                    <text class="item-title">社交登录</text>
-                    <text class="item-value action">微信/支付宝可在登录页发起</text>
+                <view class="set-item disabled-item" @click="handleSocialTip">
+                    <view class="item-main">
+                        <image class="item-icon" src="/static/img/set/wechat@3x.png" />
+                        <view class="item-copy">
+                            <text class="item-title">绑定微信 / 支付宝</text>
+                            <text class="item-desc">当前阶段暂不开放账号绑定</text>
+                        </view>
+                    </view>
+                    <text class="item-tag">暂未开放</text>
                 </view>
             </view>
 
             <view class="set-card">
                 <view class="card-header">
-                    <text class="header-title">消息设置</text>
+                    <text class="header-title">消息与通知</text>
+                </view>
+                <view class="set-item clickable" @click="handleNotificationPermission">
+                    <view class="item-main">
+                        <image class="item-icon" src="/static/img/set/message@3x.png" />
+                        <view class="item-copy">
+                            <text class="item-title">系统通知权限</text>
+                            <text class="item-desc">控制系统通知、角标和设备弹窗是否允许</text>
+                        </view>
+                    </view>
+                    <text class="item-value" :class="deviceState.notificationEnabled ? 'status-on' : 'status-off'">
+                        {{ deviceState.notificationLabel }}
+                    </text>
                 </view>
                 <view class="set-item">
-                    <image class="item-icon" src="/static/img/set/order@3x.png" />
-                    <text class="item-title">语音朗读</text>
-                    <switch :checked="messageSetting.voiceReadEnabled" color="#4A90F0" @change="toggleSetting('voiceReadEnabled', $event.detail.value)" />
+                    <view class="item-main">
+                        <image class="item-icon" src="/static/img/set/order@3x.png" />
+                        <view class="item-copy">
+                            <text class="item-title">语音朗读</text>
+                            <text class="item-desc">控制订单提醒声音播报与设备响铃反馈</text>
+                        </view>
+                    </view>
+                    <switch :checked="messageSetting.voiceReadEnabled" color="#2F86F6" @change="toggleSetting('voiceReadEnabled', $event.detail.value)" />
                 </view>
                 <view class="set-item">
-                    <image class="item-icon" src="/static/img/set/fund@3x.png" />
-                    <text class="item-title">弹窗提醒</text>
-                    <switch :checked="messageSetting.popupEnabled" color="#4A90F0" @change="toggleSetting('popupEnabled', $event.detail.value)" />
+                    <view class="item-main">
+                        <image class="item-icon" src="/static/img/set/fund@3x.png" />
+                        <view class="item-copy">
+                            <text class="item-title">弹窗提醒</text>
+                            <text class="item-desc">控制 App 内推送弹窗和桌面提醒</text>
+                        </view>
+                    </view>
+                    <switch :checked="messageSetting.popupEnabled" color="#2F86F6" @change="toggleSetting('popupEnabled', $event.detail.value)" />
                 </view>
                 <view class="set-item">
-                    <image class="item-icon" src="/static/img/set/message@3x.png" />
-                    <text class="item-title">营销消息</text>
-                    <switch :checked="messageSetting.marketingEnabled" color="#4A90F0" @change="toggleSetting('marketingEnabled', $event.detail.value)" />
+                    <view class="item-main">
+                        <image class="item-icon" src="/static/img/set/message@3x.png" />
+                        <view class="item-copy">
+                            <text class="item-title">营销消息</text>
+                            <text class="item-desc">控制活动、权益和推广类业务消息</text>
+                        </view>
+                    </view>
+                    <switch :checked="messageSetting.marketingEnabled" color="#2F86F6" @change="toggleSetting('marketingEnabled', $event.detail.value)" />
                 </view>
             </view>
 
             <view class="set-card">
                 <view class="card-header">
-                    <text class="header-title">平台信息</text>
+                    <text class="header-title">隐私与协议</text>
                 </view>
-                <view class="set-item">
-                    <image class="item-icon" src="/static/img/set/about@3x.png" />
-                    <text class="item-title">客服电话</text>
-                    <text class="item-value">{{ appSettings.serviceHotline || '--' }}</text>
+                <view class="set-item clickable" @click="openAgreement('privacy')">
+                    <view class="item-main">
+                        <image class="item-icon" src="/static/img/set/cache@3x.png" />
+                        <view class="item-copy">
+                            <text class="item-title">隐私政策</text>
+                            <text class="item-desc">查看平台当前隐私协议正文</text>
+                        </view>
+                    </view>
+                    <text class="item-value action">查看</text>
                 </view>
-                <view class="set-item" @click="copyWechat">
-                    <image class="item-icon" src="/static/img/set/wechat@3x.png" />
-                    <text class="item-title">客服微信</text>
-                    <text class="item-value action">{{ appSettings.serviceWechat || '未配置' }}</text>
+                <view class="set-item clickable" @click="openAgreement('service')">
+                    <view class="item-main">
+                        <image class="item-icon" src="/static/img/set/about@3x.png" />
+                        <view class="item-copy">
+                            <text class="item-title">用户协议</text>
+                            <text class="item-desc">查看平台注册与服务协议内容</text>
+                        </view>
+                    </view>
+                    <text class="item-value action">
+                        {{ agreement.registerAgreementVersion || '查看' }}
+                    </text>
                 </view>
-                <view class="set-item">
-                    <image class="item-icon" src="/static/img/set/update@3x.png" />
-                    <text class="item-title">版本更新</text>
-                    <text class="item-value">v1.0.0</text>
+            </view>
+
+            <view class="set-card">
+                <view class="card-header">
+                    <text class="header-title">设备信息</text>
                 </view>
-                <view class="set-item">
-                    <image class="item-icon" src="/static/img/set/cache@3x.png" />
-                    <text class="item-title">关于我们</text>
-                    <text class="item-value about">{{ appSettings.aboutUs || '暂无说明' }}</text>
+                <view class="set-item clickable" @click="handleVersionUpdate">
+                    <view class="item-main">
+                        <image class="item-icon" src="/static/img/set/update@3x.png" />
+                        <view class="item-copy">
+                            <text class="item-title">应用版本</text>
+                            <text class="item-desc">当前安装包版本，可跳转下载最新地址</text>
+                        </view>
+                    </view>
+                    <text class="item-value action">{{ deviceState.versionName }}</text>
+                </view>
+                <view class="set-item clickable" @click="clearLocalCache">
+                    <view class="item-main">
+                        <image class="item-icon" src="/static/img/set/cache@3x.png" />
+                        <view class="item-copy">
+                            <text class="item-title">清理缓存</text>
+                            <text class="item-desc">清理设备本地缓存文件，不影响登录状态</text>
+                        </view>
+                    </view>
+                    <text class="item-value action">{{ deviceState.cacheSizeLabel }}</text>
+                </view>
+                <view class="set-item clickable" @click="showAboutUs">
+                    <view class="item-main">
+                        <image class="item-icon" src="/static/img/set/about@3x.png" />
+                        <view class="item-copy">
+                            <text class="item-title">关于我们</text>
+                            <text class="item-desc">查看平台介绍与服务说明</text>
+                        </view>
+                    </view>
+                    <text class="item-value action">查看</text>
                 </view>
             </view>
 
@@ -90,6 +170,8 @@
 import { logout, sendSmsCode } from '@/api/auth'
 import { getProfile, updatePassword } from '@/api/member'
 import { getMessageSetting, updateMessageSetting } from '@/api/message'
+import { getAgreement } from '@/api/platform'
+import { notifyReminderSettingChanged } from '@/services/app-order-reminder'
 import { getPlatformSettings } from '@/utils/auth'
 import { loadPlatformSettings } from '@/services/app-bootstrap'
 import { logoutSession } from '@/services/session'
@@ -105,6 +187,93 @@ function promptInput(title, placeholder = '') {
     })
 }
 
+function isAppRuntimeReady() {
+    return typeof plus !== 'undefined'
+}
+
+function formatSize(size) {
+    const value = Number(size || 0)
+    if (!Number.isFinite(value) || value <= 0) {
+        return '0 KB'
+    }
+    const units = ['B', 'KB', 'MB', 'GB']
+    let current = value
+    let unitIndex = 0
+    while (current >= 1024 && unitIndex < units.length - 1) {
+        current = current / 1024
+        unitIndex += 1
+    }
+    return `${current.toFixed(current >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
+}
+
+function resolveVersionName() {
+    if (isAppRuntimeReady() && plus.runtime && plus.runtime.version) {
+        return `v${plus.runtime.version}`
+    }
+    return 'v1.0.0'
+}
+
+function getDownloadUrl(appSettings = {}) {
+    if (!isAppRuntimeReady() || !plus.os) {
+        return appSettings.androidDownloadUrl || appSettings.iosDownloadUrl || ''
+    }
+    const osName = String(plus.os.name || '').toLowerCase()
+    return osName === 'ios'
+        ? (appSettings.iosDownloadUrl || '')
+        : (appSettings.androidDownloadUrl || '')
+}
+
+function getNotificationStatus() {
+    if (!isAppRuntimeReady()) {
+        return {
+            enabled: true,
+            label: '跟随浏览器'
+        }
+    }
+    if (plus.os && String(plus.os.name || '').toLowerCase() === 'android' && plus.android) {
+        try {
+            const main = plus.android.runtimeMainActivity()
+            const context = main.getApplicationContext ? main.getApplicationContext() : main
+            let NotificationManagerCompat = null
+            try {
+                NotificationManagerCompat = plus.android.importClass('androidx.core.app.NotificationManagerCompat')
+            } catch (error) {
+                NotificationManagerCompat = plus.android.importClass('android.support.v4.app.NotificationManagerCompat')
+            }
+            const enabled = !!NotificationManagerCompat.from(context).areNotificationsEnabled()
+            return {
+                enabled,
+                label: enabled ? '已开启' : '未开启'
+            }
+        } catch (error) {
+        }
+    }
+    return {
+        enabled: true,
+        label: '去系统查看'
+    }
+}
+
+function calculateCacheSize() {
+    return new Promise((resolve) => {
+        if (!isAppRuntimeReady() || !plus.cache || !plus.cache.calculate) {
+            resolve('0 KB')
+            return
+        }
+        plus.cache.calculate((size) => resolve(formatSize(size)))
+    })
+}
+
+function clearAppCache() {
+    return new Promise((resolve, reject) => {
+        if (!isAppRuntimeReady() || !plus.cache || !plus.cache.clear) {
+            resolve()
+            return
+        }
+        plus.cache.clear(resolve, reject)
+    })
+}
+
 export default {
     data() {
         return {
@@ -114,7 +283,14 @@ export default {
                 popupEnabled: true,
                 marketingEnabled: false
             },
-            appSettings: {}
+            appSettings: {},
+            agreement: {},
+            deviceState: {
+                notificationEnabled: true,
+                notificationLabel: '检测中',
+                versionName: 'v1.0.0',
+                cacheSizeLabel: '0 KB'
+            }
         }
     },
     onShow() {
@@ -123,17 +299,32 @@ export default {
     methods: {
         async loadPageData() {
             try {
-                const [profile, messageSetting] = await Promise.all([
+                const [profile, messageSetting, appSettings, agreement] = await Promise.all([
                     getProfile(),
-                    getMessageSetting().catch(() => null)
+                    getMessageSetting().catch(() => null),
+                    loadPlatformSettings(true).catch(() => getPlatformSettings() || {}),
+                    getAgreement().catch(() => ({}))
                 ])
                 this.profile = profile || {}
                 this.messageSetting = messageSetting || this.messageSetting
-                this.appSettings = await loadPlatformSettings(true).catch(() => getPlatformSettings() || {})
+                this.appSettings = appSettings || {}
+                this.agreement = agreement || {}
+                await this.refreshDeviceState()
             } catch (error) {
             }
         },
+        async refreshDeviceState() {
+            const notification = getNotificationStatus()
+            const cacheSizeLabel = await calculateCacheSize()
+            this.deviceState = {
+                notificationEnabled: notification.enabled,
+                notificationLabel: notification.label,
+                versionName: resolveVersionName(),
+                cacheSizeLabel
+            }
+        },
         async toggleSetting(field, value) {
+            const previousValue = this.messageSetting[field]
             const nextValue = {
                 ...this.messageSetting,
                 [field]: value
@@ -141,12 +332,19 @@ export default {
             this.messageSetting = nextValue
             try {
                 await updateMessageSetting(nextValue)
+                notifyReminderSettingChanged()
+                if (field === 'popupEnabled' && value) {
+                    await this.handleNotificationPermission(false)
+                }
                 uni.showToast({
                     title: '设置已保存',
                     icon: 'success'
                 })
             } catch (error) {
-                this.loadPageData()
+                this.messageSetting = {
+                    ...this.messageSetting,
+                    [field]: previousValue
+                }
             }
         },
         async handleUpdatePassword() {
@@ -178,18 +376,136 @@ export default {
             } catch (error) {
             }
         },
-        handleWechatTip() {
+        handleSocialTip() {
             uni.showToast({
-                title: '微信和支付宝授权请在登录页发起',
+                title: '微信和支付宝绑定暂未开放',
                 icon: 'none'
             })
         },
-        copyWechat() {
-            if (!this.appSettings.serviceWechat) {
+        async handleNotificationPermission(showToast = true) {
+            if (!isAppRuntimeReady()) {
+                if (showToast) {
+                    uni.showToast({
+                        title: '请在设备系统设置中管理通知权限',
+                        icon: 'none'
+                    })
+                }
+                return
+            }
+            try {
+                if (plus.os && String(plus.os.name || '').toLowerCase() === 'android' && plus.android && plus.android.requestPermissions) {
+                    plus.android.requestPermissions(['android.permission.POST_NOTIFICATIONS'], () => {
+                        this.refreshDeviceState()
+                    }, () => {
+                        this.refreshDeviceState()
+                    })
+                }
+            } catch (error) {
+            }
+            const status = getNotificationStatus()
+            if (!status.enabled) {
+                uni.showModal({
+                    title: '通知权限未开启',
+                    content: '打开系统设置后开启通知，订单提醒和设备弹窗才能正常工作。',
+                    success: (res) => {
+                        if (res.confirm) {
+                            this.openSystemSettings()
+                        }
+                    }
+                })
+                return
+            }
+            if (showToast) {
+                uni.showToast({
+                    title: '通知权限已开启',
+                    icon: 'success'
+                })
+            }
+            this.refreshDeviceState()
+        },
+        openSystemSettings() {
+            if (!isAppRuntimeReady()) {
+                return
+            }
+            try {
+                if (plus.os && String(plus.os.name || '').toLowerCase() === 'ios') {
+                    plus.runtime.openURL('app-settings:')
+                    return
+                }
+                const main = plus.android.runtimeMainActivity()
+                const Intent = plus.android.importClass('android.content.Intent')
+                const Settings = plus.android.importClass('android.provider.Settings')
+                const Uri = plus.android.importClass('android.net.Uri')
+                const intent = new Intent()
+                intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                const uri = Uri.fromParts('package', main.getPackageName(), null)
+                intent.setData(uri)
+                main.startActivity(intent)
+            } catch (error) {
+            }
+        },
+        openAgreement(type) {
+            const isPrivacy = type === 'privacy'
+            const title = isPrivacy ? '隐私政策' : (this.agreement.registerAgreementTitle || '用户协议')
+            const content = isPrivacy
+                ? (this.agreement.privacyAgreement || '平台暂未配置隐私协议')
+                : (this.agreement.registerAgreementContent || this.agreement.serviceAgreement || '平台暂未配置用户协议')
+            uni.showModal({
+                title,
+                content,
+                showCancel: false,
+                confirmText: '知道了'
+            })
+        },
+        handleVersionUpdate() {
+            const downloadUrl = getDownloadUrl(this.appSettings)
+            if (!downloadUrl) {
+                uni.showToast({
+                    title: '暂未配置新版下载地址',
+                    icon: 'none'
+                })
+                return
+            }
+            if (isAppRuntimeReady() && plus.runtime && plus.runtime.openURL) {
+                plus.runtime.openURL(downloadUrl)
                 return
             }
             uni.setClipboardData({
-                data: this.appSettings.serviceWechat
+                data: downloadUrl,
+                success: () => {
+                    uni.showToast({
+                        title: '下载地址已复制',
+                        icon: 'success'
+                    })
+                }
+            })
+        },
+        clearLocalCache() {
+            uni.showModal({
+                title: '清理缓存',
+                content: '将清理 App 本地缓存文件，不会退出当前登录。',
+                success: async (res) => {
+                    if (!res.confirm) {
+                        return
+                    }
+                    try {
+                        await clearAppCache()
+                        await this.refreshDeviceState()
+                        uni.showToast({
+                            title: '缓存已清理',
+                            icon: 'success'
+                        })
+                    } catch (error) {
+                    }
+                }
+            })
+        },
+        showAboutUs() {
+            uni.showModal({
+                title: '关于我们',
+                content: this.appSettings.aboutUs || '暂无说明',
+                showCancel: false,
+                confirmText: '知道了'
             })
         },
         handleLogout() {
@@ -212,7 +528,7 @@ export default {
             })
         },
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         }
     }
 }
@@ -221,110 +537,158 @@ export default {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: #F5F5F5;
+    background:
+        radial-gradient(circle at top right, rgba(64, 145, 255, 0.22), transparent 34%),
+        linear-gradient(180deg, #eef5ff 0%, #f8fbff 32%, #f4f6f8 100%);
+}
 
-    .header {
-        background: #fff;
-        padding: 60rpx 30rpx 30rpx;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+.header {
+    padding: 72rpx 32rpx 26rpx;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 
-        .back-btn,
-        .placeholder {
-            width: 60rpx;
-        }
+.back-btn,
+.placeholder {
+    width: 60rpx;
+}
 
-        .back-icon {
-            font-size: 40rpx;
-            color: #333;
-            transform: rotate(180deg);
-        }
+.back-icon {
+    font-size: 40rpx;
+    color: #19324d;
+    transform: rotate(180deg);
+}
 
-        .title {
-            font-size: 34rpx;
-            font-weight: bold;
-            color: #333;
-        }
-    }
+.title {
+    font-size: 34rpx;
+    font-weight: 700;
+    color: #19324d;
+}
 
-    .content-scroll {
-        padding: 20rpx;
-        box-sizing: border-box;
+.content-scroll {
+    padding: 0 24rpx 36rpx;
+    box-sizing: border-box;
+}
 
-        .set-card {
-            background: #fff;
-            border-radius: 16rpx;
-            margin-bottom: 20rpx;
-            overflow: hidden;
-        }
+.set-card {
+    margin-bottom: 22rpx;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1rpx solid rgba(208, 223, 239, 0.9);
+    border-radius: 24rpx;
+    overflow: hidden;
+    box-shadow: 0 10rpx 30rpx rgba(55, 96, 147, 0.06);
+}
 
-        .card-header {
-            padding: 24rpx 32rpx;
-            border-bottom: 1rpx solid #F0F0F0;
+.card-header {
+    padding: 26rpx 30rpx 14rpx;
+}
 
-            .header-title {
-                font-size: 26rpx;
-                color: #999;
-            }
-        }
+.header-title {
+    font-size: 24rpx;
+    font-weight: 700;
+    color: #6a7f96;
+    letter-spacing: 2rpx;
+}
 
-        .set-item {
-            padding: 24rpx 32rpx;
-            display: flex;
-            align-items: center;
-            border-bottom: 1rpx solid #F0F0F0;
-            gap: 20rpx;
+.set-item {
+    padding: 24rpx 30rpx;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18rpx;
+    border-top: 1rpx solid #edf3f8;
+}
 
-            &:last-child {
-                border-bottom: none;
-            }
+.set-item.clickable:active {
+    background: #f6faff;
+}
 
-            .item-icon {
-                width: 30rpx;
-                height: 30rpx;
-            }
+.item-main {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 20rpx;
+}
 
-            .item-title {
-                flex: 1;
-                font-size: 28rpx;
-                color: #333;
-            }
+.item-icon {
+    width: 34rpx;
+    height: 34rpx;
+}
 
-            .item-value {
-                font-size: 24rpx;
-                color: #999;
-                max-width: 340rpx;
-                text-align: right;
+.item-copy {
+    min-width: 0;
+    flex: 1;
+}
 
-                &.action {
-                    color: #4A90F0;
-                }
+.item-title {
+    display: block;
+    font-size: 29rpx;
+    color: #20354d;
+    font-weight: 600;
+}
 
-                &.about {
-                    white-space: normal;
-                    line-height: 1.5;
-                }
-            }
-        }
+.item-desc {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    line-height: 32rpx;
+    color: #8a9caf;
+}
 
-        .logout-btn {
-            margin-top: 40rpx;
-            padding: 28rpx;
-            border: 2rpx solid #E53935;
-            border-radius: 12rpx;
-            text-align: center;
+.item-value {
+    max-width: 240rpx;
+    text-align: right;
+    font-size: 24rpx;
+    line-height: 34rpx;
+    color: #7d8fa4;
+}
 
-            .logout-text {
-                font-size: 30rpx;
-                color: #E53935;
-                font-weight: bold;
-            }
-        }
+.item-value.action {
+    color: #2f86f6;
+    font-weight: 600;
+}
 
-        .bottom-space {
-            height: 60rpx;
-        }
-    }
+.item-tag {
+    padding: 10rpx 18rpx;
+    border-radius: 999rpx;
+    background: #edf4ff;
+    font-size: 22rpx;
+    color: #5b8fd8;
+}
+
+.disabled-item {
+    opacity: 0.92;
+}
+
+.status-on {
+    color: #20a162;
+    font-weight: 600;
+}
+
+.status-off {
+    color: #e35d4f;
+    font-weight: 600;
+}
+
+.logout-btn {
+    margin-top: 36rpx;
+    padding: 28rpx;
+    border-radius: 20rpx;
+    background: #fff;
+    border: 2rpx solid rgba(227, 93, 79, 0.28);
+    text-align: center;
+    box-shadow: 0 10rpx 24rpx rgba(206, 86, 74, 0.08);
+}
+
+.logout-text {
+    font-size: 30rpx;
+    color: #e35d4f;
+    font-weight: 700;
+}
+
+.bottom-space {
+    height: 56rpx;
 }
 </style>

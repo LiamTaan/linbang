@@ -24,10 +24,12 @@
                         <view class="switch-dot"></view>
                     </view>
                 </view>
-                <text class="status-desc">
-                    {{ acceptStatus.acceptEligible === false && !isOnline ? (acceptStatus.blockedReason || '暂不可接单') : '系统会按当前半径和派单设置推送订单' }}
+                <text class="status-desc" :class="{ actionable: !!statusActionTarget }" @click="handleStatusAction">
+                    {{ statusDescription }}
                 </text>
-                <text class="status-tip" v-if="acceptStatus.nextAction">{{ acceptStatus.nextAction }}</text>
+                <text class="status-tip" :class="{ actionable: !!statusActionTarget }" v-if="acceptStatus.nextAction" @click="handleStatusAction">
+                    {{ acceptStatus.nextAction }}
+                </text>
             </view>
 
             <view class="data-card">
@@ -120,6 +122,7 @@
 
 <script>
 import { getServiceCategoryList, getMerchantAcceptStatus, getMerchantDispatchSetting, updateMerchantAcceptStatus, updateMerchantDispatchSetting } from '@/api/merchant'
+import { notifyReminderSettingChanged } from '@/services/app-order-reminder'
 import { getOrderPage } from '@/api/order'
 import { getOrderStatusLabel } from '@/utils/linbang'
 
@@ -151,6 +154,22 @@ export default {
                 return '暂无类目'
             }
             return `平台已开放 ${this.categories.length} 类`
+        },
+        statusDescription() {
+            if (this.acceptStatus.acceptEligible === false && !this.isOnline) {
+                return this.acceptStatus.blockedReason || '暂不可接单'
+            }
+            return '系统会按当前半径和派单设置推送订单'
+        },
+        statusActionTarget() {
+            const actionText = `${this.acceptStatus.nextAction || ''} ${this.acceptStatus.blockedReason || ''}`
+            if (/银行卡|绑卡/i.test(actionText)) {
+                return '/pages/bank_card_management/bank_card_management'
+            }
+            if (/入驻/i.test(actionText)) {
+                return '/pages/merchant_entry/merchant_entry'
+            }
+            return ''
         }
     },
     onShow() {
@@ -159,7 +178,7 @@ export default {
     methods: {
         getOrderStatusLabel,
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         },
         handleRefresh() {
             this.refreshing = true
@@ -219,8 +238,17 @@ export default {
             }
         },
         handleViewAll() {
+            uni.setStorageSync('linbang_order_tab_mode', 'serving')
+            uni.switchTab({
+                url: '/pages/order/order'
+            })
+        },
+        handleStatusAction() {
+            if (!this.statusActionTarget) {
+                return
+            }
             uni.navigateTo({
-                url: '/pages/order/order?mode=serving'
+                url: this.statusActionTarget
             })
         },
         handleCategory() {
@@ -272,6 +300,7 @@ export default {
                     title: successTitle,
                     icon: 'success'
                 })
+                notifyReminderSettingChanged()
                 this.loadPageData()
             } catch (error) {
             }
@@ -422,6 +451,10 @@ export default {
             .status-tip {
                 margin-top: 10rpx;
                 color: #2E83F0;
+            }
+
+            .actionable {
+                text-decoration: underline;
             }
         }
 
@@ -595,3 +628,4 @@ export default {
     }
 }
 </style>
+

@@ -246,7 +246,7 @@ export default {
             })
         },
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         },
         goDetail() {
             uni.navigateTo({ url: '/pages/detail_of_earnings/detail_of_earnings' })
@@ -583,3 +583,4 @@ export default {
     }
 }
 </style>
+

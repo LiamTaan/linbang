@@ -69,7 +69,12 @@
                 </view>
 
                 <view class="surface-card pricing-section">
-                    <text class="section-title">计价方式</text>
+                    <view class="section-title-row">
+                        <text class="section-title compact">计价方式</text>
+                        <view class="pricing-tip-trigger" @click="handlePricingTip">
+                            <text class="pricing-tip-trigger-text">!</text>
+                        </view>
+                    </view>
                     <view class="pricing-options">
                         <view v-for="item in pricingOptions" :key="item.value" class="pricing-item"
                             :class="{ active: form.pricingMode === item.value }" @click="selectPricing(item.value)">
@@ -94,13 +99,13 @@
 
                     <view class="form-row compact-row">
                         <view class="form-item small">
-                            <input class="input-box compact-input" placeholder="工期" v-model="form.serviceDurationDesc" />
+                            <input class="input-box compact-input" :placeholder="durationPlaceholder" v-model="form.serviceDurationDesc" />
                         </view>
                         <view class="form-item small">
-                            <input class="input-box compact-input" type="digit" placeholder="数量" v-model="form.quantity" />
+                            <input class="input-box compact-input" type="digit" :placeholder="quantityPlaceholder" v-model="form.quantity" />
                         </view>
                         <view class="form-item small">
-                            <input class="input-box compact-input" type="digit" placeholder="预算金额" v-model="form.budgetAmount" />
+                            <input class="input-box compact-input" type="digit" :placeholder="budgetPlaceholder" v-model="form.budgetAmount" />
                         </view>
                     </view>
 
@@ -192,6 +197,7 @@ import { createOrder, getGuaranteeConfig, previewOrder } from '@/api/order'
 import { getAppSettings } from '@/api/platform'
 import { getPlatformSettings, hasLogin, setPlatformSettings } from '@/utils/auth'
 import { getAmapJsKey, getAmapSecurityJsCode } from '@/config/app'
+import { syncMessageUnreadCount } from '@/services/message-unread'
 import {
     buildAddressText,
     extractUploadedFile,
@@ -330,6 +336,87 @@ export default {
                 }
             })
         },
+        quantityUnitLabel() {
+            const current = this.currentCategory || {}
+            return current.quantityUnitLabel || ''
+        },
+        quantitySplitEnabled() {
+            const current = this.currentCategory || {}
+            if (typeof current.quantitySplitEnabled === 'boolean') {
+                return current.quantitySplitEnabled
+            }
+            return null
+        },
+        hasQuantitySplitConfig() {
+            const current = this.currentCategory || {}
+            return !!current.quantityUnitLabel || typeof current.quantitySplitEnabled === 'boolean'
+        },
+        durationPlaceholder() {
+            const mapping = {
+                HOURLY: '服务时段',
+                BY_UNIT: '预计工期',
+                CONTRACT: '承接周期',
+                OUTSOURCING: '交付周期',
+                FIXED_PRICE: '预计工期'
+            }
+            return mapping[this.form.pricingMode] || '工期说明'
+        },
+        quantityPlaceholder() {
+            if (this.quantityUnitLabel) {
+                return `请输入${this.quantityUnitLabel}数`
+            }
+            const mapping = {
+                HOURLY: '服务小时数',
+                BY_UNIT: '服务数量',
+                CONTRACT: '份数/批次',
+                OUTSOURCING: '任务数量',
+                FIXED_PRICE: '服务数量'
+            }
+            return mapping[this.form.pricingMode] || '服务数量'
+        },
+        budgetPlaceholder() {
+            const mapping = {
+                HOURLY: '总预算金额',
+                BY_UNIT: '预算金额',
+                CONTRACT: '承包预算',
+                OUTSOURCING: '外包预算',
+                FIXED_PRICE: '一口价预算'
+            }
+            return mapping[this.form.pricingMode] || '预算金额'
+        },
+        durationExample() {
+            const mapping = {
+                HOURLY: '例：今天下午2点到5点',
+                BY_UNIT: '例：周六上午上门',
+                CONTRACT: '例：3天内完成',
+                OUTSOURCING: '例：本周内交付',
+                FIXED_PRICE: '例：今晚7点后上门'
+            }
+            return mapping[this.form.pricingMode] || '例：填写服务时间安排'
+        },
+        quantityExample() {
+            if (this.quantitySplitEnabled === true && this.quantityUnitLabel) {
+                return `例：按${this.quantityUnitLabel}填写`
+            }
+            const mapping = {
+                HOURLY: '例：3小时填3',
+                BY_UNIT: '例：6扇窗填6',
+                CONTRACT: '例：1批填1',
+                OUTSOURCING: '例：2项任务填2',
+                FIXED_PRICE: '例：1单填1'
+            }
+            return mapping[this.form.pricingMode] || '例：按服务数量填写'
+        },
+        budgetExample() {
+            const mapping = {
+                HOURLY: '例：总预算180元',
+                BY_UNIT: '例：预算300元',
+                CONTRACT: '例：承包预算2000元',
+                OUTSOURCING: '例：外包预算1500元',
+                FIXED_PRICE: '例：一口价160元'
+            }
+            return mapping[this.form.pricingMode] || '例：填写愿意支付的总金额'
+        },
         selectedAddressLabel() {
             return buildAddressText(this.form)
         },
@@ -345,6 +432,7 @@ export default {
     },
     onShow() {
         uni.hideTabBar()
+        syncMessageUnreadCount({ silent: true })
         this.loadPageData()
     },
     beforeUnmount() {
@@ -531,6 +619,9 @@ export default {
             }
             if (current && current.supportSplit === false) {
                 this.form.needSplit = false
+            }
+            if (!current || current.quantitySplitEnabled === false) {
+                this.form.quantity = this.form.quantity || '1'
             }
         },
         ensureAddressSelection() {
@@ -1076,6 +1167,23 @@ export default {
                 this.submitting = false
             }
         },
+        handlePricingTip() {
+            const durationExample = this.durationExample || '按实际上门时间或工期填写'
+            let quantityExample = ''
+            if (!this.hasQuantitySplitConfig) {
+                quantityExample = `当前类目的数量口径和拆单配置还未同步到页面，先按业务理解填写，例如：${this.quantityExample.replace(/^例：/, '')}。是否参与拆单以后端类目配置为准。`
+            } else if (this.quantitySplitEnabled === true) {
+                quantityExample = `数量按“${this.quantityUnitLabel}”填写，例如：${this.quantityExample.replace(/^例：/, '')}。填写后会参与拆单判断。`
+            } else {
+                quantityExample = `数量按“${this.quantityUnitLabel}”填写，例如：${this.quantityExample.replace(/^例：/, '')}。填写后只用于报价和需求说明，不会单独触发拆单。`
+            }
+            const budgetExample = this.budgetExample || '填写愿意支付的总金额'
+            uni.showModal({
+                title: '计价说明',
+                content: `服务时段示例：${durationExample.replace(/^例：/, '')}\n${quantityExample}\n预算示例：${budgetExample.replace(/^例：/, '')}`,
+                showCancel: false
+            })
+        },
         async handleSwitchRole() {
             if (!this.switchableRoles.length) {
                 uni.showToast({
@@ -1350,12 +1458,42 @@ export default {
                 }
             }
 
+            .section-title-row {
+                display: flex;
+                align-items: center;
+                gap: 12rpx;
+                margin-bottom: 18rpx;
+            }
+
             .section-title {
                 font-size: 30rpx;
                 font-weight: 600;
                 color: #253248;
                 display: block;
                 margin-bottom: 18rpx;
+
+                &.compact {
+                    margin-bottom: 0;
+                }
+            }
+
+            .pricing-tip-trigger {
+                width: 32rpx;
+                height: 32rpx;
+                border-radius: 50%;
+                background: #ffd978;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+                box-shadow: 0 6rpx 14rpx rgba(248, 177, 93, 0.18);
+
+                .pricing-tip-trigger-text {
+                    font-size: 22rpx;
+                    line-height: 1;
+                    color: #8e5600;
+                    font-weight: 700;
+                }
             }
 
             .pricing-options {

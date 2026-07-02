@@ -98,16 +98,41 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
 
     private OrderSplitPlan buildRulePlan(OrderSplitRuleDO rule, OrderSplitPreviewContext context,
                                          BigDecimal orderAmount, int safeWorkerCount) {
-        if ("DIRECT".equalsIgnoreCase(rule.getSplitMode())) {
-            return buildDirectPlan(context, orderAmount, safeWorkerCount);
+        String resolvedSplitMode = resolveSplitMode(rule, context);
+        List<String> triggerReasons = buildTriggerReasons(rule, context, orderAmount, safeWorkerCount);
+        int suggestedUnitCount = resolveUnitCount(rule, context, orderAmount, safeWorkerCount);
+        if (suggestedUnitCount <= 1) {
+            suggestedUnitCount = Math.max(OptionalValue.of(rule.getDefaultUnitCount(), 2), 2);
         }
-        int unitCount = resolveUnitCount(rule, context, orderAmount, safeWorkerCount);
-        if (unitCount <= 1) {
-            unitCount = Math.max(OptionalValue.of(rule.getDefaultUnitCount(), 2), 2);
+        String ruleSummary = buildRuleSummary(rule, context, triggerReasons, suggestedUnitCount);
+        if (!Boolean.TRUE.equals(context.getAutoSplitEnabled())) {
+            List<OrderSplitPlan.OrderSplitUnitPlan> units = buildUnits(context,
+                    Collections.singletonList(orderAmount), "DIRECT", safeWorkerCount, null, Collections.emptyMap());
+            return OrderSplitPlan.builder()
+                    .matched(true)
+                    .splitRequired(false)
+                    .ruleId(rule.getId())
+                    .ruleName(rule.getRuleName())
+                    .ruleCode(rule.getRuleCode())
+                    .matchMode(rule.getMatchMode())
+                    .splitMode(resolvedSplitMode)
+                    .unitAmountLimit(OptionalValue.of(rule.getUnitAmountLimit(), DEFAULT_LIMIT))
+                    .unitCount(1)
+                    .quantityUnitLabel(context.getQuantityUnitLabel())
+                    .quantitySplitEnabled(context.getQuantitySplitEnabled())
+                    .splitTriggerReasons(triggerReasons)
+                    .splitRuleSummary(ruleSummary + "；当前订单未开启自动拆单，因此本次仅提示不自动拆分。")
+                    .ruleSnapshot(null)
+                    .units(units)
+                    .build();
         }
+        if ("DIRECT".equalsIgnoreCase(resolvedSplitMode)) {
+            return buildDirectPlan(context, orderAmount, safeWorkerCount, true, triggerReasons, ruleSummary);
+        }
+        int unitCount = suggestedUnitCount;
         BigDecimal limit = OptionalValue.of(rule.getUnitAmountLimit(), DEFAULT_LIMIT);
         List<BigDecimal> amounts = splitAmounts(orderAmount, unitCount, limit);
-        List<OrderSplitPlan.OrderSplitUnitPlan> units = buildUnits(context, amounts, rule.getSplitMode(),
+        List<OrderSplitPlan.OrderSplitUnitPlan> units = buildUnits(context, amounts, resolvedSplitMode,
                 safeWorkerCount, limit, parseUnitTemplate(rule.getUnitTemplate()));
         Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put("ruleId", rule.getId());
@@ -119,10 +144,15 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
         snapshot.put("minOrderAmount", rule.getMinOrderAmount());
         snapshot.put("minQuantity", rule.getMinQuantity());
         snapshot.put("minWorkerCount", rule.getMinWorkerCount());
-        snapshot.put("splitMode", rule.getSplitMode());
+        snapshot.put("splitMode", resolvedSplitMode);
         snapshot.put("defaultUnitCount", rule.getDefaultUnitCount());
         snapshot.put("unitAmountLimit", limit);
         snapshot.put("unitTemplate", parseUnitTemplate(rule.getUnitTemplate()));
+        snapshot.put("quantityUnitLabel", context.getQuantityUnitLabel());
+        snapshot.put("quantitySplitEnabled", context.getQuantitySplitEnabled());
+        snapshot.put("engineeringCategoryFlag", context.getEngineeringCategoryFlag());
+        snapshot.put("splitTriggerReasons", triggerReasons);
+        snapshot.put("splitRuleSummary", ruleSummary);
         snapshot.put("generatedUnitCount", unitCount);
         return OrderSplitPlan.builder()
                 .matched(true)
@@ -131,23 +161,37 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
                 .ruleName(rule.getRuleName())
                 .ruleCode(rule.getRuleCode())
                 .matchMode(rule.getMatchMode())
-                .splitMode(rule.getSplitMode())
+                .splitMode(resolvedSplitMode)
                 .unitAmountLimit(limit)
                 .unitCount(unitCount)
+                .quantityUnitLabel(context.getQuantityUnitLabel())
+                .quantitySplitEnabled(context.getQuantitySplitEnabled())
+                .splitTriggerReasons(triggerReasons)
+                .splitRuleSummary(ruleSummary)
                 .ruleSnapshot(JsonUtils.toJsonString(snapshot))
                 .units(units)
                 .build();
     }
 
     private OrderSplitPlan buildDirectPlan(OrderSplitPreviewContext context, BigDecimal orderAmount, int safeWorkerCount) {
+        return buildDirectPlan(context, orderAmount, safeWorkerCount, false, Collections.emptyList(),
+                "当前订单按直单处理，不生成拆分单元。");
+    }
+
+    private OrderSplitPlan buildDirectPlan(OrderSplitPreviewContext context, BigDecimal orderAmount, int safeWorkerCount,
+                                           boolean matched, List<String> triggerReasons, String ruleSummary) {
         List<OrderSplitPlan.OrderSplitUnitPlan> units = buildUnits(context,
                 Collections.singletonList(orderAmount), "DIRECT", safeWorkerCount, null, Collections.emptyMap());
         return OrderSplitPlan.builder()
-                .matched(false)
+                .matched(matched)
                 .splitRequired(false)
                 .splitMode("DIRECT")
                 .unitAmountLimit(null)
                 .unitCount(1)
+                .quantityUnitLabel(context.getQuantityUnitLabel())
+                .quantitySplitEnabled(context.getQuantitySplitEnabled())
+                .splitTriggerReasons(triggerReasons)
+                .splitRuleSummary(ruleSummary)
                 .ruleSnapshot(null)
                 .units(units)
                 .build();
@@ -246,13 +290,18 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
                 ? orderAmount.divide(limit, 0, RoundingMode.UP).intValue()
                 : 1;
         int quantityCount = 1;
-        if (rule.getMinQuantity() != null && rule.getMinQuantity().compareTo(BigDecimal.ZERO) > 0
+        if (Boolean.TRUE.equals(context.getQuantitySplitEnabled())
+                && rule.getMinQuantity() != null && rule.getMinQuantity().compareTo(BigDecimal.ZERO) > 0
                 && context.getQuantity() != null && context.getQuantity().compareTo(rule.getMinQuantity()) >= 0) {
             quantityCount = context.getQuantity().divide(rule.getMinQuantity(), 0, RoundingMode.UP).intValue();
         }
         int workerCount = "BY_PERSON".equalsIgnoreCase(rule.getSplitMode())
                 ? safeWorkerCount : 1;
-        return Math.max(Math.max(amountCount, quantityCount), Math.max(workerCount, OptionalValue.of(rule.getDefaultUnitCount(), 1)));
+        int defaultUnitCount = OptionalValue.of(rule.getDefaultUnitCount(), 1);
+        if (!Boolean.TRUE.equals(context.getEngineeringCategoryFlag())) {
+            defaultUnitCount = Math.min(defaultUnitCount, 1);
+        }
+        return Math.max(Math.max(amountCount, quantityCount), Math.max(workerCount, defaultUnitCount));
     }
 
     private boolean matchesRule(OrderSplitRuleDO rule, OrderSplitPreviewContext context, int safeWorkerCount) {
@@ -263,7 +312,7 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
         if (rule.getMinOrderAmount() != null) {
             conditions.add(context.getOrderAmount() != null && context.getOrderAmount().compareTo(rule.getMinOrderAmount()) >= 0);
         }
-        if (rule.getMinQuantity() != null) {
+        if (rule.getMinQuantity() != null && Boolean.TRUE.equals(context.getQuantitySplitEnabled())) {
             conditions.add(context.getQuantity() != null && context.getQuantity().compareTo(rule.getMinQuantity()) >= 0);
         }
         if (rule.getMinWorkerCount() != null) {
@@ -279,6 +328,49 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
             return conditions.stream().allMatch(Boolean.TRUE::equals);
         }
         return conditions.stream().anyMatch(Boolean.TRUE::equals);
+    }
+
+    private String resolveSplitMode(OrderSplitRuleDO rule, OrderSplitPreviewContext context) {
+        if (StrUtil.isNotBlank(rule.getSplitMode()) && !"DIRECT".equalsIgnoreCase(rule.getSplitMode())) {
+            return rule.getSplitMode();
+        }
+        if (StrUtil.isNotBlank(context.getSplitDefaultMode())) {
+            return context.getSplitDefaultMode();
+        }
+        return StrUtil.blankToDefault(rule.getSplitMode(), "DIRECT");
+    }
+
+    private List<String> buildTriggerReasons(OrderSplitRuleDO rule, OrderSplitPreviewContext context,
+                                             BigDecimal orderAmount, int safeWorkerCount) {
+        List<String> reasons = new ArrayList<>();
+        if (rule.getMinOrderAmount() != null && orderAmount != null
+                && orderAmount.compareTo(rule.getMinOrderAmount()) >= 0) {
+            reasons.add("金额达到阈值 " + rule.getMinOrderAmount() + " 元");
+        }
+        if (Boolean.TRUE.equals(context.getQuantitySplitEnabled())
+                && rule.getMinQuantity() != null && context.getQuantity() != null
+                && context.getQuantity().compareTo(rule.getMinQuantity()) >= 0) {
+            String unit = StrUtil.blankToDefault(context.getQuantityUnitLabel(), "单位");
+            reasons.add("数量达到阈值 " + rule.getMinQuantity() + unit);
+        }
+        if (rule.getMinWorkerCount() != null && safeWorkerCount >= rule.getMinWorkerCount()) {
+            reasons.add("服务人数达到阈值 " + rule.getMinWorkerCount() + " 人");
+        }
+        if (Boolean.TRUE.equals(context.getEngineeringCategoryFlag())
+                && OptionalValue.of(rule.getDefaultUnitCount(), 0) > 1) {
+            reasons.add("工程类按默认单元数兜底拆分");
+        }
+        if (reasons.isEmpty() && rule.getCategoryId() != null && context.getCategoryId() != null) {
+            reasons.add("命中类目拆单规则");
+        }
+        return reasons;
+    }
+
+    private String buildRuleSummary(OrderSplitRuleDO rule, OrderSplitPreviewContext context,
+                                    List<String> triggerReasons, int suggestedUnitCount) {
+        String mode = resolveSplitMode(rule, context);
+        String reasons = CollUtil.isEmpty(triggerReasons) ? "命中拆单规则" : String.join("；", triggerReasons);
+        return reasons + "；拆分方式为 " + mode + "；预计生成 " + suggestedUnitCount + " 个单元。";
     }
 
     private boolean matchesCategory(Long ruleCategoryId, Long orderCategoryId) {

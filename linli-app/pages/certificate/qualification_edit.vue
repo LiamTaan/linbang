@@ -20,11 +20,19 @@
                 </view>
                 <view class="field-item">
                     <text class="field-label">有效开始日期</text>
-                    <input class="field-input" v-model="form.validStartDate" placeholder="例如 2026-01-01" />
+                    <picker mode="date" :value="form.validStartDate" @change="handleDateChange('validStartDate', $event)">
+                        <view class="field-input picker-input" :class="{ 'is-placeholder': !form.validStartDate }">
+                            {{ form.validStartDate || '例如 2026-01-01' }}
+                        </view>
+                    </picker>
                 </view>
                 <view class="field-item">
                     <text class="field-label">有效结束日期</text>
-                    <input class="field-input" v-model="form.validEndDate" placeholder="例如 2028-12-31" />
+                    <picker mode="date" :value="form.validEndDate" @change="handleDateChange('validEndDate', $event)">
+                        <view class="field-input picker-input" :class="{ 'is-placeholder': !form.validEndDate }">
+                            {{ form.validEndDate || '例如 2028-12-31' }}
+                        </view>
+                    </picker>
                 </view>
             </view>
 
@@ -225,6 +233,10 @@ export default {
                 return null
             }
         },
+        handleDateChange(field, event) {
+            const value = event && event.detail ? event.detail.value : ''
+            this.form[field] = value
+        },
         async handleSubmit() {
             if (this.submitting) return
             if (!this.form.qualificationName || !this.form.fileId) {
@@ -250,7 +262,7 @@ export default {
                     icon: 'success'
                 })
                 setTimeout(() => {
-                    uni.navigateBack()
+                    this.$navigateBack()
                 }, 600)
             } catch (error) {
             } finally {
@@ -258,7 +270,7 @@ export default {
             }
         },
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         }
     }
 }
@@ -314,6 +326,13 @@ export default {
     font-size: 26rpx;
     color: #22324A;
 }
+.picker-input {
+    display: flex;
+    align-items: center;
+}
+.picker-input.is-placeholder {
+    color: #8B95A7;
+}
 .upload-item {
     margin-top: 16rpx;
     min-height: 100rpx;
@@ -353,3 +372,4 @@ export default {
     height: 60rpx;
 }
 </style>
+

@@ -113,7 +113,7 @@ export default {
             return labels[status] || status || '--'
         },
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         }
     }
 }
@@ -313,3 +313,4 @@ export default {
     height: 40rpx;
 }
 </style>
+

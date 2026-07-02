@@ -28,40 +28,17 @@
           class="!w-220px"
         />
       </el-form-item>
-      <el-form-item label="省" prop="province">
-        <el-input
-          v-model="queryParams.province"
-          placeholder="请输入省"
+      <el-form-item label="地区" prop="areaCodes">
+        <el-cascader
+          v-model="queryParams.areaCodes"
+          :options="areaOptions"
+          :props="areaProps"
           clearable
-          @keyup.enter="handleQuery"
-          class="!w-180px"
-        />
-      </el-form-item>
-      <el-form-item label="市" prop="city">
-        <el-input
-          v-model="queryParams.city"
-          placeholder="请输入市"
-          clearable
-          @keyup.enter="handleQuery"
-          class="!w-180px"
-        />
-      </el-form-item>
-      <el-form-item label="区" prop="district">
-        <el-input
-          v-model="queryParams.district"
-          placeholder="请输入区"
-          clearable
-          @keyup.enter="handleQuery"
-          class="!w-180px"
-        />
-      </el-form-item>
-      <el-form-item label="详细地址" prop="detailAddress">
-        <el-input
-          v-model="queryParams.detailAddress"
-          placeholder="请输入详细地址"
-          clearable
-          @keyup.enter="handleQuery"
+          collapse-tags
+          collapse-tags-tooltip
           class="!w-260px"
+          placeholder="请选择省 / 市 / 区"
+          @change="handleAreaChange"
         />
       </el-form-item>
       <el-form-item label="是否默认" prop="isDefault">
@@ -187,6 +164,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { isEmpty } from '@/utils/is'
 import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
+import { getAreaTree } from '@/api/system/area'
 import { useI18n } from '@/hooks/web/useI18n'
 import { useMessage } from '@/hooks/web/useMessage'
 import { MemberUserAddressApi, type MemberUserAddress } from '@/api/linbang/memberaddress'
@@ -207,15 +185,26 @@ const queryParams = reactive({
   userKeyword: undefined as string | undefined,
   receiverName: undefined as string | undefined,
   receiverMobile: undefined as string | undefined,
+  areaCodes: undefined as number[] | undefined,
   province: undefined as string | undefined,
   city: undefined as string | undefined,
   district: undefined as string | undefined,
   detailAddress: undefined as string | undefined,
+  adcode: undefined as string | undefined,
   isDefault: undefined as boolean | undefined,
   createTime: [] as string[]
 })
 const queryFormRef = ref()
 const exportLoading = ref(false)
+const areaOptions = ref<any[]>([])
+
+const areaProps = {
+  label: 'name',
+  value: 'id',
+  children: 'children',
+  emitPath: true,
+  checkStrictly: true
+}
 
 const formatIdFallback = (userId?: number) => {
   return userId ? '用户信息缺失' : '-'
@@ -241,8 +230,24 @@ const handleQuery = () => {
   getList()
 }
 
+const handleAreaChange = (value?: number[]) => {
+  if (!value || value.length === 0) {
+    queryParams.province = undefined
+    queryParams.city = undefined
+    queryParams.district = undefined
+    queryParams.adcode = undefined
+    return
+  }
+  const nodes = findAreaNodes(value, areaOptions.value)
+  queryParams.province = nodes[0]?.name
+  queryParams.city = nodes[1]?.name
+  queryParams.district = nodes[2]?.name
+  queryParams.adcode = nodes.length >= 3 ? String(nodes[nodes.length - 1].id) : undefined
+}
+
 const resetQuery = () => {
   queryFormRef.value.resetFields()
+  handleAreaChange()
   handleQuery()
 }
 
@@ -287,7 +292,24 @@ const handleExport = async () => {
   }
 }
 
+const findAreaNodes = (ids: number[], nodes: any[]) => {
+  const path: any[] = []
+  let currentNodes = nodes
+  ids.forEach((id) => {
+    const match = currentNodes.find((item) => item.id === id)
+    if (!match) {
+      return
+    }
+    path.push(match)
+    currentNodes = match.children || []
+  })
+  return path
+}
+
 onMounted(() => {
+  getAreaTree().then((data) => {
+    areaOptions.value = data || []
+  })
   getList()
 })
 </script>

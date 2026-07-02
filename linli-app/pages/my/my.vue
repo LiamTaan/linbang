@@ -79,12 +79,13 @@
 <script>
 import tabBar from '@/components/tabBar/tabBar.vue'
 import { switchRole, getProfile, getQualificationPage, getRoleContext } from '@/api/member'
-import { getUnreadCount } from '@/api/message'
 import { getAcceptOrderPage, getOrderPage } from '@/api/order'
 import { getMerchantAcceptStatus, getMerchantOnboardingProgress } from '@/api/merchant'
 import { getPromoteCenter, getTeamStats } from '@/api/promote'
 import { getPartnerWorkbench } from '@/api/partner'
 import { getPendingReviewUnits } from '@/api/review'
+import { syncMessageUnreadCount } from '@/services/message-unread'
+import { loadPlatformSettings } from '@/services/app-bootstrap'
 import { getWalletAccount } from '@/api/wallet'
 import { hasLogin } from '@/utils/auth'
 import { getCreditLevelLabel } from '@/utils/linbang'
@@ -321,6 +322,7 @@ export default {
     },
     onShow() {
         uni.hideTabBar()
+        syncMessageUnreadCount({ silent: true })
         this.loadPageData()
     },
     onPullDownRefresh() {
@@ -356,7 +358,7 @@ export default {
                     getProfile({ silent: true }),
                     getRoleContext({ silent: true }),
                     getWalletAccount({ silent: true }),
-                    getUnreadCount({ silent: true }).catch(() => 0),
+                    syncMessageUnreadCount({ silent: true }).catch(() => 0),
                     getMerchantOnboardingProgress({ silent: true }).catch(() => ({})),
                     getQualificationPage({ pageNo: 1, pageSize: 1 }, { silent: true }).catch(() => ({ total: 0, list: [] }))
                 ])
@@ -465,7 +467,7 @@ export default {
                 promote_center: () => this.navigateTo('/pages/promotion_center/promotion_center'),
                 settings: () => this.navigateTo('/pages/set/set'),
                 feedback: () => this.navigateTo('/pages/feedback/feedback'),
-                service: () => this.navigateTo('/pages/feedback/feedback?mode=service'),
+                service: () => this.openCustomerService(),
                 merchant_accept_status: () => this.navigateTo('/pages/order_receiving_status/order_receiving_status'),
                 merchant_order_hall: () => this.goToOrderTab('accept'),
                 merchant_entry_progress: () => this.navigateTo('/pages/merchant_entry/merchant_entry'),
@@ -527,6 +529,55 @@ export default {
                         title: '页面暂不可达',
                         icon: 'none'
                     })
+                }
+            })
+        },
+        async openCustomerService() {
+            const settings = await loadPlatformSettings(true).catch(() => ({}))
+            const serviceWechat = String((settings && settings.serviceWechat) || '').trim()
+            const serviceHotline = String((settings && settings.serviceHotline) || '').trim()
+            const itemList = []
+            const actions = []
+            if (serviceWechat) {
+                itemList.push('在线客服')
+                actions.push(() => {
+                    uni.setClipboardData({
+                        data: serviceWechat,
+                        success: () => {
+                            uni.showToast({
+                                title: '客服微信已复制',
+                                icon: 'success'
+                            })
+                        }
+                    })
+                })
+            }
+            if (serviceHotline) {
+                itemList.push('电话客服')
+                actions.push(() => {
+                    uni.makePhoneCall({
+                        phoneNumber: serviceHotline
+                    })
+                })
+            }
+            if (!itemList.length) {
+                uni.showToast({
+                    title: '客服暂未配置',
+                    icon: 'none'
+                })
+                return
+            }
+            if (itemList.length === 1) {
+                actions[0]()
+                return
+            }
+            uni.showActionSheet({
+                itemList,
+                success: ({ tapIndex }) => {
+                    const action = actions[tapIndex]
+                    if (action) {
+                        action()
+                    }
                 }
             })
         },

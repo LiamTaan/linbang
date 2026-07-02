@@ -38,6 +38,21 @@ public class AppOrderSplitRuleMatchRespVO {
     @Schema(description = "预计生成单元数")
     private Integer unitCount;
 
+    @Schema(description = "当前类目的数量口径，例如 小时/次/台/扇/平方米/单")
+    private String quantityUnitLabel;
+
+    @Schema(description = "当前类目是否允许按数量参与拆单；false 时数量仅用于展示和报价辅助")
+    private Boolean quantitySplitEnabled;
+
+    @Schema(description = "本次拆单触发来源摘要，例如 金额达到阈值、工程类默认拆分、人数达到阈值")
+    private List<String> splitTriggerReasons;
+
+    @Schema(description = "拆单规则摘要，说明命中原因、最终单元数、是否因未勾选拆单而仅提示")
+    private String splitRuleSummary;
+
+    @Schema(description = "兼容旧前端的规则说明文案，值等同 splitRuleSummary")
+    private String ruleDesc;
+
     @Schema(description = "预计生成的单元列表")
     private List<UnitPreviewRespVO> units;
 

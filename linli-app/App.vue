@@ -1,6 +1,7 @@
 <script>
 import { APP_CONFIG } from '@/config/app'
 import { bootstrapSession, loadPlatformSettings } from '@/services/app-bootstrap'
+import { refreshAppOrderReminder, startAppOrderReminder } from '@/services/app-order-reminder'
 
 let lastRuntimeArgs = ''
 
@@ -33,8 +34,10 @@ export default {
 	onLaunch: function () {
 		loadPlatformSettings().catch(() => null)
 		bootstrapSession().catch(() => null)
+		startAppOrderReminder()
 	},
 	onShow: function () {
+		refreshAppOrderReminder().catch(() => null)
 		// #ifdef APP-PLUS
 		const options = parseRuntimeCallback(plus.runtime.arguments)
 		if (options) {

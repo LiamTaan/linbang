@@ -50,10 +50,18 @@
                 <text class="form-title">{{ editingId ? '编辑地址' : '新增地址' }}</text>
                 <input class="form-input" v-model="form.receiverName" placeholder="联系人" />
                 <input class="form-input" v-model="form.receiverMobile" type="number" placeholder="联系电话" />
-                <input class="form-input" v-model="form.province" placeholder="省" />
-                <input class="form-input" v-model="form.city" placeholder="市" />
-                <input class="form-input" v-model="form.district" placeholder="区" />
-                <input class="form-input" v-model="form.street" placeholder="街道" />
+                <picker
+                    mode="multiSelector"
+                    :range="areaColumns"
+                    range-key="name"
+                    :value="areaIndexes"
+                    @change="handleAreaPickerChange"
+                    @columnchange="handleAreaColumnChange">
+                    <view class="form-input picker-input" :class="{ placeholder: !selectedAreaText }">
+                        {{ selectedAreaText || '请选择省 / 市 / 区' }}
+                    </view>
+                </picker>
+                <input class="form-input" v-model="form.street" placeholder="街道 / 乡镇" />
                 <input class="form-input" v-model="form.detailAddress" placeholder="详细地址" />
                 <view class="default-switch" @click="toggleFormDefault">
                     <text class="default-label">设为默认地址</text>
@@ -87,6 +95,7 @@
 import {
     createAddress,
     deleteAddress,
+    getAreaTree,
     getAddressPage,
     updateAddress
 } from '@/api/member'
@@ -100,6 +109,7 @@ function createEmptyForm() {
         district: '',
         street: '',
         detailAddress: '',
+        adcode: '',
         isDefault: false
     }
 }
@@ -110,15 +120,22 @@ export default {
             addressList: [],
             formVisible: false,
             editingId: null,
-            form: createEmptyForm()
+            form: createEmptyForm(),
+            areaTree: [],
+            areaColumns: [[], [], []],
+            areaIndexes: [0, 0, 0]
         }
     },
     onShow() {
         this.loadAddresses()
+        this.ensureAreaTree()
     },
     computed: {
         canCreateAddress() {
             return this.addressList.length < 10
+        },
+        selectedAreaText() {
+            return [this.form.province, this.form.city, this.form.district].filter(Boolean).join(' / ')
         }
     },
     methods: {
@@ -132,7 +149,7 @@ export default {
             } catch (error) {
             }
         },
-        handleAddAddress() {
+        async handleAddAddress() {
             if (!this.canCreateAddress) {
                 uni.showToast({
                     title: '最多只能保存10个地址',
@@ -142,9 +159,12 @@ export default {
             }
             this.editingId = null
             this.form = createEmptyForm()
+            await this.ensureAreaTree()
+            this.resetAreaPicker()
             this.formVisible = true
         },
-        handleEdit(item) {
+        async handleEdit(item) {
+            await this.ensureAreaTree()
             this.editingId = item.id
             this.form = {
                 receiverName: item.receiverName || '',
@@ -154,8 +174,10 @@ export default {
                 district: item.district || '',
                 street: item.street || '',
                 detailAddress: item.detailAddress || '',
+                adcode: item.adcode || '',
                 isDefault: !!item.isDefault
             }
+            this.syncAreaPickerFromForm()
             this.formVisible = true
         },
         toggleFormDefault() {
@@ -165,11 +187,19 @@ export default {
             this.formVisible = false
             this.editingId = null
             this.form = createEmptyForm()
+            this.resetAreaPicker()
         },
         async submitForm() {
-            if (!this.form.receiverName || !this.form.receiverMobile || !this.form.detailAddress) {
+            if (!this.form.receiverName || !this.form.receiverMobile || !this.form.province || !this.form.city || !this.form.district || !this.form.detailAddress) {
                 uni.showToast({
                     title: '请填写完整地址信息',
+                    icon: 'none'
+                })
+                return
+            }
+            if (!/^1[3-9]\d{9}$/.test(`${this.form.receiverMobile || ''}`)) {
+                uni.showToast({
+                    title: '请填写正确的联系电话',
                     icon: 'none'
                 })
                 return
@@ -213,6 +243,7 @@ export default {
                     district: item.district,
                     street: item.street,
                     detailAddress: item.detailAddress,
+                    adcode: item.adcode,
                     isDefault: true
                 })
                 uni.showToast({
@@ -249,6 +280,112 @@ export default {
             normalized.isDefault = !!defaultFlag
             return normalized
         },
+        async ensureAreaTree() {
+            if (this.areaTree.length) {
+                return
+            }
+            try {
+                this.areaTree = (await getAreaTree({ silent: true })) || []
+                this.resetAreaPicker()
+            } catch (error) {
+                this.areaTree = []
+                this.areaColumns = [[], [], []]
+            }
+        },
+        resetAreaPicker() {
+            const provinceList = this.areaTree || []
+            const cityList = (provinceList[0] && provinceList[0].children) || []
+            const districtList = (cityList[0] && cityList[0].children) || []
+            this.areaColumns = [provinceList, cityList, districtList]
+            this.areaIndexes = [0, 0, 0]
+        },
+        buildAreaColumns(indexes = [0, 0, 0]) {
+            const provinceList = this.areaTree || []
+            const provinceIndex = Math.min(indexes[0] || 0, Math.max(provinceList.length - 1, 0))
+            const cityList = (provinceList[provinceIndex] && provinceList[provinceIndex].children) || []
+            const cityIndex = Math.min(indexes[1] || 0, Math.max(cityList.length - 1, 0))
+            const districtList = (cityList[cityIndex] && cityList[cityIndex].children) || []
+            return [provinceList, cityList, districtList]
+        },
+        handleAreaColumnChange(event) {
+            const { column, value } = event.detail || {}
+            const nextIndexes = [...this.areaIndexes]
+            nextIndexes[column] = value
+            if (column === 0) {
+                nextIndexes[1] = 0
+                nextIndexes[2] = 0
+            } else if (column === 1) {
+                nextIndexes[2] = 0
+            }
+            this.areaColumns = this.buildAreaColumns(nextIndexes)
+            this.areaIndexes = nextIndexes
+        },
+        handleAreaPickerChange(event) {
+            const indexes = (event.detail && event.detail.value) || [0, 0, 0]
+            this.areaColumns = this.buildAreaColumns(indexes)
+            this.areaIndexes = indexes
+            const [provinceList, cityList, districtList] = this.areaColumns
+            const province = provinceList[indexes[0]]
+            const city = cityList[indexes[1]]
+            const district = districtList[indexes[2]]
+            this.form.province = province && province.name ? province.name : ''
+            this.form.city = city && city.name ? city.name : ''
+            this.form.district = district && district.name ? district.name : ''
+            this.form.adcode = district && district.id ? `${district.id}` : ''
+        },
+        syncAreaPickerFromForm() {
+            if (!this.areaTree.length) {
+                return
+            }
+            const path = this.findAreaPath(this.areaTree, {
+                adcode: this.form.adcode,
+                province: this.form.province,
+                city: this.form.city,
+                district: this.form.district
+            })
+            if (!path) {
+                this.resetAreaPicker()
+                return
+            }
+            const indexes = [
+                path.provinceIndex,
+                path.cityIndex,
+                path.districtIndex
+            ]
+            this.areaColumns = this.buildAreaColumns(indexes)
+            this.areaIndexes = indexes
+            this.form.adcode = path.district && path.district.id ? `${path.district.id}` : this.form.adcode
+        },
+        findAreaPath(provinceList, target) {
+            for (let provinceIndex = 0; provinceIndex < provinceList.length; provinceIndex += 1) {
+                const province = provinceList[provinceIndex]
+                if (target.province && province.name !== target.province) {
+                    continue
+                }
+                const cityList = province.children || []
+                for (let cityIndex = 0; cityIndex < cityList.length; cityIndex += 1) {
+                    const city = cityList[cityIndex]
+                    if (target.city && city.name !== target.city) {
+                        continue
+                    }
+                    const districtList = city.children || []
+                    for (let districtIndex = 0; districtIndex < districtList.length; districtIndex += 1) {
+                        const district = districtList[districtIndex]
+                        const codeMatched = target.adcode && `${district.id}` === `${target.adcode}`
+                        const nameMatched = target.district && district.name === target.district
+                        if (codeMatched || nameMatched) {
+                            return {
+                                provinceIndex,
+                                cityIndex,
+                                districtIndex,
+                                district
+                            }
+                        }
+                    }
+                }
+            }
+            return undefined
+        },
         buildAddressText(item) {
             if (!item) {
                 return ''
@@ -272,7 +409,7 @@ export default {
             return `${value.slice(0, 3)}****${value.slice(7)}`
         },
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         }
     }
 }
@@ -500,6 +637,15 @@ export default {
         box-sizing: border-box;
     }
 
+    .picker-input {
+        display: flex;
+        align-items: center;
+    }
+
+    .picker-input.placeholder {
+        color: #999;
+    }
+
     .default-switch {
         display: flex;
         justify-content: space-between;
@@ -606,3 +752,4 @@ export default {
     }
 }
 </style>
+

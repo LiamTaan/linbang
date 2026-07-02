@@ -42,6 +42,20 @@ public class MerchantServiceCategorySaveReqVO {
     @NotNull(message = "是否支持拆单不能为空")
     private Boolean supportSplit;
 
+    @Schema(description = "该类目的数量口径，例如 小时/次/台/扇/平方米/单", example = "台")
+    private String quantityUnitLabel;
+
+    @Schema(description = "是否允许按数量参与拆单；关闭后数量仅做展示和报价辅助", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "是否允许按数量拆单不能为空")
+    private Boolean quantitySplitEnabled;
+
+    @Schema(description = OpenApiSchemaConstants.ORDER_SPLIT_MODE + "；为空时默认按规则决定", example = "BY_PROCESS")
+    private String splitDefaultMode;
+
+    @Schema(description = "是否工程类；工程类可触发默认拆分方式和默认单元数兜底", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotNull(message = "是否工程类不能为空")
+    private Boolean engineeringCategoryFlag;
+
     @Schema(description = "是否支持开票", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "是否支持开票不能为空")
     private Boolean supportInvoice;

@@ -183,7 +183,7 @@ export default {
                     icon: 'success'
                 })
                 setTimeout(() => {
-                    uni.navigateBack()
+                    this.$navigateBack()
                 }, 500)
             } catch (error) {
             } finally {
@@ -191,7 +191,7 @@ export default {
             }
         },
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         }
     }
 }
@@ -354,3 +354,4 @@ export default {
     height: 60rpx;
 }
 </style>
+

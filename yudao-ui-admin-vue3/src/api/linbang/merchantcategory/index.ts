@@ -11,6 +11,10 @@ export interface MerchantServiceCategory {
   defaultPricingMode?: string // 默认计价方式
   supportedPricingModes?: string[] // 支持计价方式
   supportSplit?: boolean // 是否支持拆单
+  quantityUnitLabel?: string // 数量口径
+  quantitySplitEnabled?: boolean // 是否按数量拆单
+  splitDefaultMode?: string // 默认拆分方式
+  engineeringCategoryFlag?: boolean // 是否工程类
   supportInvoice?: boolean // 是否支持开票
   riskLevel?: string // 风险等级
   laborCategoryFlag?: boolean // 是否用工类

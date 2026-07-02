@@ -167,7 +167,7 @@ export default {
     },
     methods: {
         goBack() {
-            uni.navigateBack()
+            this.$navigateBack()
         },
         async loadPageData() {
             try {
@@ -530,3 +530,4 @@ export default {
     }
 }
 </style>
+

@@ -28,7 +28,7 @@ public class AppOrderCreateReqVO {
     @DecimalMin(value = "0.00", message = "预算金额不能小于 0")
     private BigDecimal budgetAmount;
 
-    @Schema(description = "数量。按件/次/小时等业务口径传值，具体口径由类目和计价方式决定", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = "数量。不是全平台统一单位，按当前类目 quantityUnitLabel 对应的件/次/小时/台等口径传值；是否参与拆单由类目 quantitySplitEnabled 决定", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     @NotNull(message = "数量不能为空")
     @DecimalMin(value = "0.01", message = "数量必须大于 0")
     private BigDecimal quantity;
@@ -75,7 +75,7 @@ public class AppOrderCreateReqVO {
     @NotNull(message = "是否需要发票不能为空")
     private Boolean needInvoice;
 
-    @Schema(description = "是否需要拆单。当前版本暂不启用自动拆单，传 true/false 都只会生成 1 个订单单元", requiredMode = Schema.RequiredMode.REQUIRED, example = "false")
+    @Schema(description = "是否允许系统应用拆单规则。false 时即使命中规则也仅提示，不自动拆出多个单元；true 时才会按规则真正生成多个单元", requiredMode = Schema.RequiredMode.REQUIRED, example = "false")
     @NotNull(message = "是否需要拆单不能为空")
     private Boolean needSplit;
 
