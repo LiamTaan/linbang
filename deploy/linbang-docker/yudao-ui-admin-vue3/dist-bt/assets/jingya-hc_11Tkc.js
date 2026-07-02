@@ -1,1 +1,0 @@
-var e=`/assets/jingya-DsukK6zH.png`;export{e as default};

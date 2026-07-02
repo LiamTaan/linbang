@@ -6,6 +6,7 @@ import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
 import cn.iocoder.yudao.framework.common.util.servlet.ServletUtils;
 import cn.iocoder.yudao.framework.security.config.SecurityProperties;
 import cn.iocoder.yudao.module.linbang.constants.LinbangRiskConstants;
+import cn.iocoder.yudao.module.linbang.enums.PayWayEnum;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangH5PaySubmitReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangH5PaySubmitRespVO;
@@ -31,6 +32,7 @@ import cn.iocoder.yudao.module.pay.controller.admin.order.vo.PayOrderSubmitRespV
 import cn.iocoder.yudao.module.pay.controller.admin.order.vo.PayOrderSubmitReqVO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.app.PayAppDO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.order.PayOrderDO;
+import cn.iocoder.yudao.module.pay.dal.dataobject.order.PayOrderExtensionDO;
 import cn.iocoder.yudao.module.pay.enums.PayChannelEnum;
 import cn.iocoder.yudao.module.pay.enums.order.PayOrderStatusEnum;
 import cn.iocoder.yudao.module.pay.service.app.PayAppService;
@@ -44,7 +46,9 @@ import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -128,11 +132,36 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
         PayOrderSubmitReqVO submitReqVO = new PayOrderSubmitReqVO();
         submitReqVO.setId(payOrderId);
         submitReqVO.setChannelCode(PayChannelEnum.AGGREGATE.getCode());
+        submitReqVO.setChannelExtras(buildPayChannelExtras(reqVO.getPayWay()));
         submitReqVO.setReturnUrl(reqVO.getReturnUrl());
         PayOrderSubmitRespVO submitRespVO = payOrderService.submitOrder(submitReqVO, ServletUtils.getClientIP());
 
         AppLinbangH5PaySubmitRespVO respVO = new AppLinbangH5PaySubmitRespVO();
         respVO.setPayOrderId(payOrderId);
+        respVO.setPayWay(reqVO.getPayWay());
+        respVO.setPayWayName(resolvePayWayName(reqVO.getPayWay()));
+        respVO.setStatus(submitRespVO.getStatus());
+        respVO.setDisplayMode(submitRespVO.getDisplayMode());
+        respVO.setDisplayContent(submitRespVO.getDisplayContent());
+        return respVO;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AppLinbangH5PaySubmitRespVO submitDepositH5Pay(Long authUserId, @Valid AppLinbangH5PaySubmitReqVO reqVO) {
+        Long payOrderId = createDepositPayOrder(authUserId, reqVO.getOrderId());
+
+        PayOrderSubmitReqVO submitReqVO = new PayOrderSubmitReqVO();
+        submitReqVO.setId(payOrderId);
+        submitReqVO.setChannelCode(PayChannelEnum.AGGREGATE.getCode());
+        submitReqVO.setChannelExtras(buildPayChannelExtras(reqVO.getPayWay()));
+        submitReqVO.setReturnUrl(reqVO.getReturnUrl());
+        PayOrderSubmitRespVO submitRespVO = payOrderService.submitOrder(submitReqVO, ServletUtils.getClientIP());
+
+        AppLinbangH5PaySubmitRespVO respVO = new AppLinbangH5PaySubmitRespVO();
+        respVO.setPayOrderId(payOrderId);
+        respVO.setPayWay(reqVO.getPayWay());
+        respVO.setPayWayName(resolvePayWayName(reqVO.getPayWay()));
         respVO.setStatus(submitRespVO.getStatus());
         respVO.setDisplayMode(submitRespVO.getDisplayMode());
         respVO.setDisplayContent(submitRespVO.getDisplayContent());
@@ -401,10 +430,18 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
     }
 
     private AppLinbangPayOrderRespVO toPayOrderRespVO(PayOrderDO payOrder, Long orderId) {
+        PayOrderExtensionDO extension = payOrder.getExtensionId() != null
+                ? payOrderService.getOrderExtension(payOrder.getExtensionId())
+                : payOrderService.getLatestOrderExtension(payOrder.getId());
         AppLinbangPayOrderRespVO respVO = new AppLinbangPayOrderRespVO();
         respVO.setId(payOrder.getId());
         respVO.setOrderId(orderId);
         respVO.setChannelCode(payOrder.getChannelCode());
+        if (extension != null && extension.getChannelExtras() != null) {
+            String payWay = extension.getChannelExtras().get("payWay");
+            respVO.setPayWay(payWay);
+            respVO.setPayWayName(resolvePayWayName(payWay));
+        }
         respVO.setMerchantOrderId(payOrder.getMerchantOrderId());
         respVO.setSubject(payOrder.getSubject());
         respVO.setPrice(payOrder.getPrice());
@@ -433,6 +470,17 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
             return PayOrderStatusEnum.CLOSED.getName();
         }
         return "UNKNOWN";
+    }
+
+    private Map<String, String> buildPayChannelExtras(String payWay) {
+        Map<String, String> extras = new HashMap<>(2);
+        extras.put("payWay", payWay);
+        return extras;
+    }
+
+    private String resolvePayWayName(String payWay) {
+        PayWayEnum payWayEnum = PayWayEnum.getByCode(payWay);
+        return payWayEnum == null ? null : payWayEnum.getName();
     }
 
 }

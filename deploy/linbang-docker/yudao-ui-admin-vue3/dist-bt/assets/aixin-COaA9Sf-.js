@@ -1,1 +1,0 @@
-var e=`/assets/aixin-UoJKe-pp.png`;export{e as default};

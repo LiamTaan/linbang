@@ -42,6 +42,20 @@ public class AggregatePayClientConfig implements PayClientConfig {
     private String partnerId;
 
     /**
+     * 微信子渠道商户号。
+     *
+     * <p>用于前端选择微信支付入口时，帮助中间层或银盛路由识别微信收单子商户。</p>
+     */
+    private String wechatMerchantNo;
+
+    /**
+     * 支付宝子渠道商户号。
+     *
+     * <p>用于前端选择支付宝支付入口时，帮助中间层或银盛路由识别支付宝收单子商户。</p>
+     */
+    private String alipayMerchantNo;
+
+    /**
      * 银盛线上交易网关地址，退款与退款查询使用。
      */
     @NotBlank(message = "退款网关地址不能为空")

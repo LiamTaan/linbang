@@ -54,6 +54,14 @@ import java.util.TreeMap;
  */
 public class AggregatePayClient extends AbstractPayClient<AggregatePayClientConfig> {
 
+    static final String BIZ_PAY_WAY_WECHAT_H5 = "WECHAT_H5";
+    static final String BIZ_PAY_WAY_ALIPAY_H5 = "ALIPAY_H5";
+    static final String BIZ_PAY_WAY_UNIONPAY_WAP = "UNIONPAY_WAP";
+
+    static final String YSEPAY_PAY_WAY_WECHAT_H5 = "10010001";
+    static final String YSEPAY_PAY_WAY_ALIPAY_H5 = "10000012";
+    static final String YSEPAY_PAY_WAY_UNIONPAY_WAP = "10810001";
+
     private static final String CREATE_ORDER_PATH = "/manage/pay/add-order";
     private static final String QUERY_ORDER_PATH = "/manage/pay/info/query-order";
 
@@ -89,13 +97,7 @@ public class AggregatePayClient extends AbstractPayClient<AggregatePayClientConf
 
     @Override
     protected PayOrderRespDTO doUnifiedOrder(PayOrderUnifiedReqDTO reqDTO) {
-        Map<String, Object> request = new HashMap<>(8);
-        request.put("orderId", reqDTO.getOutTradeNo());
-        request.put("shh", config.getMerchantNo());
-        request.put("money", fenToYuan(reqDTO.getPrice()));
-        request.put("merchantName", config.getMerchantName());
-        request.put("notifyUrl", reqDTO.getNotifyUrl());
-
+        Map<String, Object> request = buildCreateOrderRequest(reqDTO);
         String responseText = postJson(CREATE_ORDER_PATH, request);
         JsonNode response = JsonUtils.parseTree(responseText);
         if (!isSuccessResponse(response)) {
@@ -109,6 +111,31 @@ public class AggregatePayClient extends AbstractPayClient<AggregatePayClientConf
         }
         return PayOrderRespDTO.waitingOf(PayOrderDisplayModeEnum.URL.getMode(), payUrl,
                 reqDTO.getOutTradeNo(), responseText);
+    }
+
+    private Map<String, Object> buildCreateOrderRequest(PayOrderUnifiedReqDTO reqDTO) {
+        Map<String, Object> request = new HashMap<>(12);
+        request.put("orderId", reqDTO.getOutTradeNo());
+        request.put("shh", config.getMerchantNo());
+        request.put("money", fenToYuan(reqDTO.getPrice()));
+        request.put("merchantName", config.getMerchantName());
+        request.put("notifyUrl", reqDTO.getNotifyUrl());
+        String bizPayWay = resolveBizPayWay(reqDTO);
+        if (StrUtil.isNotBlank(bizPayWay)) {
+            request.put("bizPayWay", bizPayWay);
+            request.put("payWay", resolveYsepayPayWay(bizPayWay));
+        }
+        String channelMerchantNo = resolveChannelMerchantNo(bizPayWay);
+        if (StrUtil.isNotBlank(channelMerchantNo)) {
+            request.put("channelMerchantNo", channelMerchantNo);
+        }
+        if (StrUtil.isNotBlank(config.getWechatMerchantNo())) {
+            request.put("wechatMerchantNo", config.getWechatMerchantNo());
+        }
+        if (StrUtil.isNotBlank(config.getAlipayMerchantNo())) {
+            request.put("alipayMerchantNo", config.getAlipayMerchantNo());
+        }
+        return request;
     }
 
     @Override
@@ -534,6 +561,45 @@ public class AggregatePayClient extends AbstractPayClient<AggregatePayClientConf
             return defaultValue;
         }
         return StrUtil.blankToDefault(reqDTO.getChannelExtras().get(key), defaultValue);
+    }
+
+    private String resolveBizPayWay(PayOrderUnifiedReqDTO reqDTO) {
+        if (reqDTO.getChannelExtras() == null) {
+            return null;
+        }
+        return StrUtil.blankToDefault(reqDTO.getChannelExtras().get("payWay"), null);
+    }
+
+    private String resolveYsepayPayWay(String bizPayWay) {
+        if (StrUtil.isBlank(bizPayWay)) {
+            return null;
+        }
+        switch (bizPayWay) {
+            case BIZ_PAY_WAY_WECHAT_H5:
+                return YSEPAY_PAY_WAY_WECHAT_H5;
+            case BIZ_PAY_WAY_ALIPAY_H5:
+                return YSEPAY_PAY_WAY_ALIPAY_H5;
+            case BIZ_PAY_WAY_UNIONPAY_WAP:
+                return YSEPAY_PAY_WAY_UNIONPAY_WAP;
+            default:
+                throw new IllegalArgumentException("未知的聚合支付方式：" + bizPayWay);
+        }
+    }
+
+    private String resolveChannelMerchantNo(String bizPayWay) {
+        if (StrUtil.isBlank(bizPayWay)) {
+            return null;
+        }
+        switch (bizPayWay) {
+            case BIZ_PAY_WAY_WECHAT_H5:
+                return StrUtil.blankToDefault(config.getWechatMerchantNo(), config.getMerchantNo());
+            case BIZ_PAY_WAY_ALIPAY_H5:
+                return StrUtil.blankToDefault(config.getAlipayMerchantNo(), config.getMerchantNo());
+            case BIZ_PAY_WAY_UNIONPAY_WAP:
+                return config.getMerchantNo();
+            default:
+                throw new IllegalArgumentException("未知的聚合支付方式：" + bizPayWay);
+        }
     }
 
     private String postJson(String path, Map<String, Object> request) {

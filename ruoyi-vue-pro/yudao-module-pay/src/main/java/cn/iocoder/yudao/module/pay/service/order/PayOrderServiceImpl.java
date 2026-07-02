@@ -42,6 +42,7 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -478,6 +479,14 @@ public class PayOrderServiceImpl implements PayOrderService {
     @Override
     public PayOrderExtensionDO getOrderExtensionByNo(String no) {
         return orderExtensionMapper.selectByNo(no);
+    }
+
+    @Override
+    public PayOrderExtensionDO getLatestOrderExtension(Long orderId) {
+        List<PayOrderExtensionDO> extensions = orderExtensionMapper.selectListByOrderId(orderId);
+        return extensions.stream()
+                .max(Comparator.comparing(PayOrderExtensionDO::getId))
+                .orElse(null);
     }
 
     @Override

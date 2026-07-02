@@ -1,1 +1,0 @@
-var e=`/assets/outu-DiPPfeNV.png`;export{e as default};

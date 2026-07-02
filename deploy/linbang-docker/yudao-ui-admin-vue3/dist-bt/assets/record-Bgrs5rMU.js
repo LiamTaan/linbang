@@ -1,1 +1,0 @@
-import{un as e}from"./index-DzXA_nY_.js";var t={generateAutoCode:async(t,n)=>await e.post({url:`/mes/md/auto-code-record/generate`,data:{ruleCode:t,inputChar:n}})};export{t};

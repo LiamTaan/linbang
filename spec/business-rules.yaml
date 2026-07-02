@@ -146,7 +146,7 @@ rules:
     require_enabled_bank_card: true
     status_flow:
       - PENDING
-      - APPROVED
+      - PROCESSING
       - SUCCESS
       - REJECTED
       - FAILED

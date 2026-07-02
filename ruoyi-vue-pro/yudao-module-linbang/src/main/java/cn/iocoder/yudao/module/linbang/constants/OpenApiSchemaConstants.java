@@ -78,7 +78,8 @@ public interface OpenApiSchemaConstants {
                     + "ELECTRICIAN 电工证、WELDER 焊工证、HVAC_TECHNICIAN 空调制冷证。";
 
     String WITHDRAW_STATUS =
-            "提现状态：PENDING 待审核、APPROVED 审核通过待打款、REJECTED 审核驳回、SUCCESS 打款成功、FAILED 打款失败。";
+            "提现状态：PENDING 待审核、PROCESSING 打款中（审核通过后已提交聚合支付代付，等待银盛打款结果）、"
+                    + "REJECTED 审核驳回、SUCCESS 打款成功、FAILED 打款失败。银行卡账户仅作为提现收款账户，不代表付款绑卡。";
 
     String COMPLAINT_STATUS =
             "投诉状态：PENDING 待受理、PROCESSING 处理中、FINISHED 已完结、REJECTED 已驳回。";

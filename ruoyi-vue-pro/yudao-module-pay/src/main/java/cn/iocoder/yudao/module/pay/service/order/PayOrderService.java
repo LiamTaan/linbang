@@ -149,6 +149,14 @@ public interface PayOrderService {
     PayOrderExtensionDO getOrderExtensionByNo(String no);
 
     /**
+     * 获得指定支付单最新一次提交的支付拓展单
+     *
+     * @param orderId 支付单编号
+     * @return 最新支付拓展单
+     */
+    PayOrderExtensionDO getLatestOrderExtension(Long orderId);
+
+    /**
      * 同步订单的支付状态
      *
      * @param minCreateTime 最小创建时间

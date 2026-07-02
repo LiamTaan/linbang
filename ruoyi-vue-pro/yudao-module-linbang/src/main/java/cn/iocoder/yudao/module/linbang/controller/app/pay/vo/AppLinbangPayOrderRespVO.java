@@ -18,6 +18,12 @@ public class AppLinbangPayOrderRespVO {
     @Schema(description = "支付渠道编码")
     private String channelCode;
 
+    @Schema(description = "前端支付方式：WECHAT_H5 微信支付、ALIPAY_H5 支付宝支付、UNIONPAY_WAP 银行卡/云闪付；仅表示用户选择的支付入口，不代表提现银行卡账户")
+    private String payWay;
+
+    @Schema(description = "支付方式名称")
+    private String payWayName;
+
     @Schema(description = "商户订单号")
     private String merchantOrderId;
 

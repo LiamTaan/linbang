@@ -64,6 +64,10 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
     private static final String[] PREFERRED_TRANSFER_CHANNELS = {
             PayChannelEnum.AGGREGATE.getCode()
     };
+    private static final String WITHDRAW_STATUS_PROCESSING = "PROCESSING";
+    private static final String WITHDRAW_STATUS_FAILED = "FAILED";
+    private static final String AUDIT_STATUS_APPROVED = "APPROVED";
+    private static final String AUDIT_STATUS_REJECTED = "REJECTED";
 
     @Resource
     private WalletWithdrawMapper walletWithdrawMapper;
@@ -172,15 +176,15 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
         updateObj.setRejectReason(reqVO.getRejectReason());
         updateObj.setAuditBy(SecurityFrameworkUtils.getLoginUserId());
         updateObj.setAuditTime(LocalDateTime.now());
-        if ("APPROVED".equals(reqVO.getAuditStatus())) {
-            updateObj.setStatus("APPROVED");
-        } else if ("REJECTED".equals(reqVO.getAuditStatus())) {
+        if (AUDIT_STATUS_APPROVED.equals(reqVO.getAuditStatus())) {
+            updateObj.setStatus(WITHDRAW_STATUS_PROCESSING);
+        } else if (AUDIT_STATUS_REJECTED.equals(reqVO.getAuditStatus())) {
             updateObj.setStatus("REJECTED");
         }
         walletWithdrawMapper.updateById(updateObj);
-        if ("APPROVED".equals(reqVO.getAuditStatus())) {
+        if (AUDIT_STATUS_APPROVED.equals(reqVO.getAuditStatus())) {
             createTransfer(walletWithdraw);
-        } else if ("REJECTED".equals(reqVO.getAuditStatus())) {
+        } else if (AUDIT_STATUS_REJECTED.equals(reqVO.getAuditStatus())) {
             rollbackRejectedWithdraw(walletWithdraw);
         }
         messagePushDispatchService.dispatchSingle("lb_withdraw_audited", "提现审核结果通知", "WITHDRAW",
@@ -194,13 +198,14 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
         if (withdraw == null) {
             throw exception(WALLET_WITHDRAW_NOT_EXISTS);
         }
-        if (!Objects.equals(withdraw.getAuditStatus(), "APPROVED")
-                || (!Objects.equals(withdraw.getStatus(), "FAILED") && !Objects.equals(withdraw.getStatus(), "APPROVED"))) {
+        if (!Objects.equals(withdraw.getAuditStatus(), AUDIT_STATUS_APPROVED)
+                || (!Objects.equals(withdraw.getStatus(), WITHDRAW_STATUS_FAILED)
+                && !Objects.equals(withdraw.getStatus(), WITHDRAW_STATUS_PROCESSING))) {
             throw exception(WALLET_WITHDRAW_AUDIT_STATUS_INVALID);
         }
         walletWithdrawMapper.updateById(WalletWithdrawDO.builder()
                 .id(withdraw.getId())
-                .status("APPROVED")
+                .status(WITHDRAW_STATUS_PROCESSING)
                 .transferErrorMsg(null)
                 .build());
         return createTransfer(withdraw);

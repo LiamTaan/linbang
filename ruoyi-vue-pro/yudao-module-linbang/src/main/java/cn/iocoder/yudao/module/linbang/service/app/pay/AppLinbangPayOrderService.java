@@ -24,6 +24,8 @@ public interface AppLinbangPayOrderService {
 
     Long createDepositPayOrder(Long authUserId, Long orderId);
 
+    AppLinbangH5PaySubmitRespVO submitDepositH5Pay(Long authUserId, @Valid AppLinbangH5PaySubmitReqVO reqVO);
+
     AppOrderDepositStatusRespVO getDepositStatus(Long authUserId, Long orderId, Boolean sync);
 
     void updatePaid(@Valid PayOrderNotifyReqDTO notifyReqDTO);

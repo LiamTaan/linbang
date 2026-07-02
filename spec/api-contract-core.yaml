@@ -170,7 +170,7 @@ components:
         feeAmount: { type: number, format: double, description: 提现手续费，单位元 }
         realAmount: { type: number, format: double, description: 实际到账金额，单位元 }
         auditStatus: { type: string, description: 审核状态 PENDING/APPROVED/REJECTED }
-        status: { type: string, description: 提现状态 PENDING/APPROVED/SUCCESS/REJECTED/FAILED }
+        status: { type: string, description: 提现状态 PENDING 待审核、PROCESSING 打款中、SUCCESS 打款成功、REJECTED 审核驳回、FAILED 打款失败 }
         payTime: { type: string, format: date-time, description: 打款成功时间 }
         rejectReason: { type: string, description: 驳回或失败原因 }
     RefundRecord:

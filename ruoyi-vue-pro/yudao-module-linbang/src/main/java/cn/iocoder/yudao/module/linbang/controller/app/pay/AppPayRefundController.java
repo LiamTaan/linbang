@@ -32,19 +32,22 @@ public class AppPayRefundController {
     private AppPayRefundService appPayRefundService;
 
     @PostMapping("/create")
-    @Operation(summary = "创建退款申请")
+    @Operation(summary = "创建退款申请",
+            description = "仅允许对原支付单发起退款申请；退款需要后台审核，审核通过后由支付模块按原支付单渠道发起原路退款，用户不能选择退款渠道。支持整单退款和单元维度退款，退款成功回调后冲减托管金额并同步订单/单元状态。")
     public CommonResult<Long> createRefund(@Valid @RequestBody AppPayRefundCreateReqVO reqVO) {
         return success(appPayRefundService.createRefund(getLoginUserId(), reqVO));
     }
 
     @GetMapping("/page")
-    @Operation(summary = "获取退款记录分页")
+    @Operation(summary = "获取退款记录分页",
+            description = "查询当前用户退款申请。退款状态来自支付模块，审核状态表示平台审核进度；退款始终原路退回，不返回也不接收退款渠道选择。")
     public CommonResult<PageResult<AppPayRefundRespVO>> getRefundPage(@Valid AppPayRefundPageReqVO reqVO) {
         return success(appPayRefundService.getRefundPage(getLoginUserId(), reqVO));
     }
 
     @GetMapping("/get")
-    @Operation(summary = "获取退款记录详情")
+    @Operation(summary = "获取退款记录详情",
+            description = "查看单笔退款申请详情。退款成功表示聚合支付通道已确认原路退款成功；退款失败时查看 channelErrorMsg 获取第三方失败原因。")
     public CommonResult<AppPayRefundRespVO> getRefund(@RequestParam("id") Long id) {
         return success(appPayRefundService.getRefund(getLoginUserId(), id));
     }

@@ -87,7 +87,7 @@ public class WalletWithdrawRespVO {
 
     @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "PENDING")
     @ExcelProperty(value = "审核状态", converter = DictConvert.class)
-    @DictFormat("lb_withdraw_status") // TODO 代码优化：建议设置到对应的 DictTypeConstants 枚举类中
+    @DictFormat("lb_audit_status") // TODO 代码优化：建议设置到对应的 DictTypeConstants 枚举类中
     private String auditStatus;
 
     @Schema(description = "审核备注", example = "你猜")

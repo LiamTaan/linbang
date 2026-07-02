@@ -1,1 +1,0 @@
-var e=`/assets/xinsui-DAcLsI5n.png`;export{e as default};

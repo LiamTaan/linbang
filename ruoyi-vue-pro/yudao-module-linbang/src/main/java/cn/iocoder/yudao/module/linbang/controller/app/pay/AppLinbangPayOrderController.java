@@ -42,7 +42,7 @@ public class AppLinbangPayOrderController {
     }
 
     @PostMapping("/h5/submit")
-    @Operation(summary = "提交聚合支付 H5 支付", description = "按聚合支付 H5 收银台方式发起支付，返回跳转链接；App 可直接用 WebView 或外部浏览器打开 displayContent")
+    @Operation(summary = "提交聚合支付 H5 支付", description = "前端传入 WECHAT_H5、ALIPAY_H5、UNIONPAY_WAP 三种支付入口之一，后端统一提交到 aggregate 聚合支付通道，返回 H5 收银台跳转地址")
     public CommonResult<AppLinbangH5PaySubmitRespVO> submitH5Pay(@Valid @RequestBody AppLinbangH5PaySubmitReqVO reqVO) {
         return success(appLinbangPayOrderService.submitH5Pay(getLoginUserId(), reqVO));
     }
@@ -78,6 +78,12 @@ public class AppLinbangPayOrderController {
     @Parameter(name = "orderId", required = true, description = "业务订单 ID")
     public CommonResult<Long> createDepositPayOrder(@RequestParam("orderId") Long orderId) {
         return success(appLinbangPayOrderService.createDepositPayOrder(getLoginUserId(), orderId));
+    }
+
+    @PostMapping("/deposit/h5/submit")
+    @Operation(summary = "提交订单保证金聚合支付 H5 支付", description = "保证金支付与普通支付共用三种前端支付入口：WECHAT_H5、ALIPAY_H5、UNIONPAY_WAP；后端统一提交到 aggregate 聚合支付通道")
+    public CommonResult<AppLinbangH5PaySubmitRespVO> submitDepositH5Pay(@Valid @RequestBody AppLinbangH5PaySubmitReqVO reqVO) {
+        return success(appLinbangPayOrderService.submitDepositH5Pay(getLoginUserId(), reqVO));
     }
 
     @GetMapping("/deposit/status")

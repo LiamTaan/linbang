@@ -1,1 +1,0 @@
-var e=`/assets/ziya-CboVHjBH.png`;export{e as default};

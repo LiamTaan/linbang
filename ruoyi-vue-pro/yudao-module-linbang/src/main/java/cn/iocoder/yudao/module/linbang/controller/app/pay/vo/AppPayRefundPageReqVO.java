@@ -15,10 +15,10 @@ import static cn.iocoder.yudao.framework.common.util.date.DateUtils.FORMAT_YEAR_
 @EqualsAndHashCode(callSuper = true)
 public class AppPayRefundPageReqVO extends PageParam {
 
-    @Schema(description = "订单 ID", example = "1001")
+    @Schema(description = "业务订单 ID；用于筛选该订单下的整单退款或单元退款记录", example = "1001")
     private Long orderId;
 
-    @Schema(description = "审核状态：PENDING 待审核、APPROVED 已通过、REJECTED 已驳回", example = "PENDING")
+    @Schema(description = "审核状态：PENDING 待审核、APPROVED 已通过并发起原路退款、REJECTED 已驳回", example = "PENDING")
     private String auditStatus;
 
     @Schema(description = "创建时间")

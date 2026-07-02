@@ -194,7 +194,7 @@ VALUES
 INSERT INTO `pay_channel`
 (`id`, `code`, `status`, `fee_rate`, `remark`, `app_id`, `config`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
 VALUES
-(1, 'aggregate', 0, 0, '邻里互助唯一聚合支付通道；baseUrl 按生产聚合支付网关补齐，退款/提现需补充银盛证书与网关配置', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate.AggregatePayClientConfig","baseUrl":"","merchantNo":"826584873720104","merchantName":"深圳市旺佳盈科技有限公司","partnerId":"826584873720104","openApiGatewayUrl":"https://openapi.ysepay.com/gateway.do","transferGatewayUrl":"https://df.ysepay.com/gateway.do","privateKeyFilePath":"","privateKeyPassword":"","ysepayPublicKeyFilePath":"","signType":"RSA","charset":"utf-8","version":"3.0"}', 'admin', NOW(), 'admin', NOW(), b'0', 1),
+(1, 'aggregate', 0, 0, '邻里互助唯一聚合支付通道；微信、支付宝、银行卡/云闪付前端入口统一路由到该通道，退款与提现复用银盛官方网关', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate.AggregatePayClientConfig","baseUrl":"https://openapi.ysepay.com","merchantNo":"826584873720104","merchantName":"深圳市旺佳盈科技有限公司","partnerId":"826584873720104","wechatMerchantNo":"904252515","alipayMerchantNo":"208878041871068","openApiGatewayUrl":"https://openapi.ysepay.com/gateway.do","transferGatewayUrl":"https://df.ysepay.com/gateway.do","privateKeyFilePath":"","privateKeyPassword":"","ysepayPublicKeyFilePath":"","signType":"RSA","charset":"utf-8","version":"3.0"}', 'admin', NOW(), 'admin', NOW(), b'0', 1),
 (2, 'mock', 0, 0, '开发联调模拟支付通道，仅在本地 mock-enable 开启时用于跑通支付后派送流程', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.NonePayClientConfig"}', 'admin', NOW(), 'admin', NOW(), b'0', 1);
 
 INSERT INTO `system_sms_channel`
@@ -522,7 +522,7 @@ VALUES
 (910037, 4, '退款成功', 'SUCCESS', 'lb_refund_status', 0, 'success', '', '退款成功', 'admin', NOW(), 'admin', NOW(), b'0'),
 (910038, 5, '退款失败', 'FAILED', 'lb_refund_status', 0, 'danger', '', '退款失败', 'admin', NOW(), 'admin', NOW(), b'0'),
 (910039, 1, '待审核', 'PENDING', 'lb_withdraw_status', 0, 'warning', '', '待审核', 'admin', NOW(), 'admin', NOW(), b'0'),
-(910040, 2, '审核通过', 'APPROVED', 'lb_withdraw_status', 0, 'primary', '', '审核通过', 'admin', NOW(), 'admin', NOW(), b'0'),
+(910040, 2, '打款中', 'PROCESSING', 'lb_withdraw_status', 0, 'primary', '', '审核通过后已提交聚合支付代付，等待银盛打款结果', 'admin', NOW(), 'admin', NOW(), b'0'),
 (910041, 3, '审核驳回', 'REJECTED', 'lb_withdraw_status', 0, 'danger', '', '审核驳回', 'admin', NOW(), 'admin', NOW(), b'0'),
 (910042, 4, '打款成功', 'SUCCESS', 'lb_withdraw_status', 0, 'success', '', '打款成功', 'admin', NOW(), 'admin', NOW(), b'0'),
 (910043, 5, '打款失败', 'FAILED', 'lb_withdraw_status', 0, 'danger', '', '打款失败', 'admin', NOW(), 'admin', NOW(), b'0'),

@@ -1,6 +1,7 @@
 package cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate;
 
 import cn.iocoder.yudao.framework.test.core.ut.BaseMockitoUnitTest;
+import cn.iocoder.yudao.module.pay.framework.pay.core.client.dto.order.PayOrderUnifiedReqDTO;
 import cn.iocoder.yudao.module.pay.enums.refund.PayRefundStatusEnum;
 import cn.iocoder.yudao.module.pay.enums.transfer.PayTransferStatusEnum;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.dto.refund.PayRefundRespDTO;
@@ -10,8 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AggregatePayClientTest extends BaseMockitoUnitTest {
 
@@ -110,5 +113,33 @@ class AggregatePayClientTest extends BaseMockitoUnitTest {
     void parseDateTime_blank_returnsNull() {
         LocalDateTime parsed = ReflectionTestUtils.invokeMethod(client, "parseDateTime", "");
         assertThat(parsed).isNull();
+    }
+
+    @Test
+    void buildCreateOrderRequest_wechat_containsMappedPayWayAndMerchantNo() {
+        AggregatePayClientConfig config = new AggregatePayClientConfig();
+        config.setMerchantNo("826584873720104");
+        config.setWechatMerchantNo("904252515");
+        client = new AggregatePayClient(1L, config);
+
+        PayOrderUnifiedReqDTO reqDTO = new PayOrderUnifiedReqDTO()
+                .setOutTradeNo("202607020001")
+                .setPrice(1234)
+                .setNotifyUrl("https://linbang.local/pay/notify/order")
+                .setChannelExtras(Map.of("payWay", AggregatePayClient.BIZ_PAY_WAY_WECHAT_H5));
+
+        Object result = ReflectionTestUtils.invokeMethod(client, "buildCreateOrderRequest", reqDTO);
+
+        assertThat(result).asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP)
+                .containsEntry("bizPayWay", AggregatePayClient.BIZ_PAY_WAY_WECHAT_H5)
+                .containsEntry("payWay", AggregatePayClient.YSEPAY_PAY_WAY_WECHAT_H5)
+                .containsEntry("channelMerchantNo", "904252515");
+    }
+
+    @Test
+    void resolveYsepayPayWay_unknown_throwsException() {
+        assertThatThrownBy(() -> ReflectionTestUtils.invokeMethod(client, "resolveYsepayPayWay", "UNKNOWN"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("未知的聚合支付方式");
     }
 }

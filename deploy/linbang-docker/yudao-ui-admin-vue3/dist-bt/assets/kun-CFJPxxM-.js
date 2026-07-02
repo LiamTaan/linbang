@@ -1,1 +1,0 @@
-var e=`/assets/kun-BeICuggt.png`;export{e as default};
