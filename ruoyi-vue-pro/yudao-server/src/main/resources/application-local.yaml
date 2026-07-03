@@ -87,7 +87,7 @@ spring:
     host: 127.0.0.1 # 地址
     port: 6379 # 端口
     database: 2 # 数据库索引
-    password: TanLiMing123! # 密码，建议生产环境开启
+#    password: TanLiMing123! # 密码，建议生产环境开启
 
 --- #################### 定时任务相关配置 ####################
 
@@ -239,13 +239,16 @@ yudao:
   sms:
     template-api-validate: false # 本地联调关闭短信平台模板校验，避免占位模板编号阻塞
   security:
-    mock-enable: false # true走模拟支付，false则关闭模拟支付；
+    mock-enable: true # true走模拟支付，false则关闭模拟支付；
   api-encrypt:
     enable: false
   pay:
-    order-notify-url: ${LINBANG_PAY_ORDER_NOTIFY_URL:https://yutou.mynatapp.cc/admin-api/pay/notify/order} # 支付渠道的【支付】回调地址
-    refund-notify-url: ${LINBANG_PAY_REFUND_NOTIFY_URL:https://yutou.mynatapp.cc/admin-api/pay/notify/refund} # 支付渠道的【退款】回调地址
-    transfer-notify-url: ${LINBANG_PAY_TRANSFER_NOTIFY_URL:https://yutou.mynatapp.cc/admin-api/pay/notify/transfer} # 支付渠道的【转账】回调地址
+#    order-notify-url: ${LINBANG_PAY_ORDER_NOTIFY_URL:https://yutou.mynatapp.cc/admin-api/pay/notify/order} # 支付渠道的【支付】回调地址
+#    refund-notify-url: ${LINBANG_PAY_REFUND_NOTIFY_URL:https://yutou.mynatapp.cc/admin-api/pay/notify/refund} # 支付渠道的【退款】回调地址
+#    transfer-notify-url: ${LINBANG_PAY_TRANSFER_NOTIFY_URL:https://yutou.mynatapp.cc/admin-api/pay/notify/transfer} # 支付渠道的【转账】回调地址
+    order-notify-url: ${LINBANG_PAY_ORDER_NOTIFY_URL:http://127.0.0.1/admin-api/pay/notify/order} # 支付渠道的【支付】回调地址
+    refund-notify-url: ${LINBANG_PAY_REFUND_NOTIFY_URL:https://127.0.0.1/admin-api/pay/notify/refund} # 支付渠道的【退款】回调地址
+    transfer-notify-url: ${LINBANG_PAY_TRANSFER_NOTIFY_URL:https://127.0.0.1/admin-api/pay/notify/transfer} # 支付渠道的【转账】回调地址
   access-log: # 访问日志的配置项
     enable: false
   demo: false # 关闭演示模式

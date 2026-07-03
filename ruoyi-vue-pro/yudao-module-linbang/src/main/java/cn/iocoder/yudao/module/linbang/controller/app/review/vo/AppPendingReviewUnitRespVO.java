@@ -37,7 +37,7 @@ public class AppPendingReviewUnitRespVO {
     @Schema(description = "评价目标手机号", example = "13800138000")
     private String toUserMobile;
 
-    @Schema(description = "角色方向：TO_MERCHANT 评价服务商、TO_USER 评价用户", example = "TO_MERCHANT")
+    @Schema(description = "角色方向：TO_MERCHANT 评价服务商", example = "TO_MERCHANT")
     private String reviewDirection;
 
     @Schema(description = "完成时间")

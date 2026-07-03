@@ -3,6 +3,7 @@ package cn.iocoder.yudao.module.linbang.controller.app.member.address;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressCreateReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressNearbyPoiRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressResolveLocationReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressResolveLocationRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressRespVO;
@@ -16,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
+import java.math.BigDecimal;
+import java.util.List;
 
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
 import static cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
@@ -51,6 +54,15 @@ public class AppMemberAddressController {
     @Operation(summary = "根据坐标解析标准化地址")
     public CommonResult<AppMemberAddressResolveLocationRespVO> resolveLocation(@Valid @RequestBody AppMemberAddressResolveLocationReqVO reqVO) {
         return success(appMemberAddressService.resolveLocation(reqVO));
+    }
+
+    @GetMapping("/nearby-pois")
+    @Operation(summary = "根据坐标查询附近地点")
+    public CommonResult<List<AppMemberAddressNearbyPoiRespVO>> searchNearbyPois(@RequestParam("longitude") BigDecimal longitude,
+                                                                                @RequestParam("latitude") BigDecimal latitude,
+                                                                                @RequestParam(value = "keywords", required = false) String keywords,
+                                                                                @RequestParam(value = "radiusMeters", required = false) Integer radiusMeters) {
+        return success(appMemberAddressService.searchNearbyPois(longitude, latitude, keywords, radiusMeters));
     }
 
     @PutMapping("/update")

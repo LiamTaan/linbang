@@ -11,13 +11,16 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategory.MerchantS
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategoryrel.MerchantCategoryRelDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantentry.MerchantEntryDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantservicepoint.MerchantServicePointDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.walletbankcard.WalletBankCardDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberqualification.MemberUserQualificationMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantcategory.MerchantServiceCategoryMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantcategoryrel.MerchantCategoryRelMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantentry.MerchantEntryMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.merchantservicepoint.MerchantServicePointMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.walletbankcard.WalletBankCardMapper;
+import cn.iocoder.yudao.module.linbang.service.map.AmapLocationService;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +28,7 @@ import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,7 +58,11 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
     @Resource
     private MerchantInfoMapper merchantInfoMapper;
     @Resource
+    private MerchantServicePointMapper merchantServicePointMapper;
+    @Resource
     private WalletBankCardMapper walletBankCardMapper;
+    @Resource
+    private AmapLocationService amapLocationService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -108,6 +116,7 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
                     .status("ENABLE")
                     .build());
         }
+        syncDefaultServicePoint(merchantInfo.getId(), reqVO.getRegionCode());
 
         MerchantEntryDO entry = MerchantEntryDO.builder()
                 .merchantId(merchantInfo.getId())
@@ -246,6 +255,45 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
                 .map(MerchantCategoryRelDO::getCategoryId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    private void syncDefaultServicePoint(Long merchantId, String regionCode) {
+        if (merchantId == null || org.apache.commons.lang3.StringUtils.isBlank(regionCode)) {
+            return;
+        }
+        List<MerchantServicePointDO> existedPoints = merchantServicePointMapper.selectListByMerchantId(merchantId);
+        if (!existedPoints.isEmpty()) {
+            return;
+        }
+        AmapLocationService.DistrictInfo districtInfo = amapLocationService.resolveDistrict(regionCode);
+        if (districtInfo == null || org.apache.commons.lang3.StringUtils.isBlank(districtInfo.getCenter())) {
+            return;
+        }
+        String[] center = districtInfo.getCenter().split(",");
+        if (center.length != 2) {
+            return;
+        }
+        BigDecimal longitude = new BigDecimal(center[0]);
+        BigDecimal latitude = new BigDecimal(center[1]);
+        AmapLocationService.ResolvedAddress resolvedAddress = amapLocationService.resolveAddress(AmapLocationService.ResolveAddressRequest.builder()
+                .longitude(longitude)
+                .latitude(latitude)
+                .detailAddress(districtInfo.getName())
+                .adcode(districtInfo.getAdcode())
+                .build());
+        merchantServicePointMapper.insert(MerchantServicePointDO.builder()
+                .merchantId(merchantId)
+                .pointName("默认服务区域")
+                .province(resolvedAddress.getProvince())
+                .city(resolvedAddress.getCity())
+                .district(resolvedAddress.getDistrict())
+                .street(resolvedAddress.getStreet())
+                .detailAddress(districtInfo.getName())
+                .longitude(resolvedAddress.getLongitude())
+                .latitude(resolvedAddress.getLatitude())
+                .serviceRadiusKm(new BigDecimal("10"))
+                .status("ENABLE")
+                .build());
     }
 
 }

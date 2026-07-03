@@ -65,6 +65,8 @@ import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_PAY
 @Validated
 public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService {
 
+    private static final long PAY_ORDER_EXPIRE_MINUTES = 30L;
+
     @Resource
     private MemberUserService memberUserService;
     @Resource
@@ -95,31 +97,46 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
         OrderInfoDO order = validateAccessibleOrder(loginUser.getId(), reqVO.getOrderId());
         if (order.getPayOrderId() != null) {
-            return order.getPayOrderId();
+            PayOrderDO existingPayOrder = payOrderService.getOrder(order.getPayOrderId());
+            if (existingPayOrder != null) {
+                return ensurePayOrderReadyForSubmit(existingPayOrder).getId();
+            }
         }
         if (!Objects.equals(order.getStatus(), "PENDING_PAY")) {
             throw exception(ORDER_PAY_STATUS_NOT_ALLOWED);
         }
 
+        PayOrderDO payOrder = createOrRefreshPayOrder(loginUser, String.valueOf(order.getId()),
+                buildSubject(order),
+                StrUtil.maxLength(StrUtil.blankToDefault(order.getRequireDesc(), "邻里互助订单"), 128),
+                toFen(order.getOrderAmount()));
+        orderInfoMapper.updateById(OrderInfoDO.builder()
+                .id(order.getId())
+                .payOrderId(payOrder.getId())
+                .build());
+        saveOperateLog(order.getId(), null, "CREATE_PAY_ORDER", "USER", loginUser.getId(),
+                order.getStatus(), order.getStatus(), "用户创建支付单");
+        return payOrder.getId();
+    }
+
+    private PayOrderDO createOrRefreshPayOrder(MemberUserDO loginUser, String merchantOrderId,
+                                               String subject, String body, Integer price) {
         PayAppDO payApp = getEnabledPayApp();
         Long payOrderId = payOrderApi.createOrder(new PayOrderCreateReqDTO()
                 .setAppKey(payApp.getAppKey())
                 .setUserIp(ServletUtils.getClientIP())
                 .setUserId(loginUser.getId())
                 .setUserType(UserTypeEnum.MEMBER.getValue())
-                .setMerchantOrderId(String.valueOf(order.getId()))
-                .setSubject(buildSubject(order))
-                .setBody(StrUtil.maxLength(StrUtil.blankToDefault(order.getRequireDesc(), "邻里互助订单"), 128))
-                .setPrice(toFen(order.getOrderAmount()))
-                .setExpireTime(LocalDateTime.now().plusMinutes(30)));
-
-        orderInfoMapper.updateById(OrderInfoDO.builder()
-                .id(order.getId())
-                .payOrderId(payOrderId)
-                .build());
-        saveOperateLog(order.getId(), null, "CREATE_PAY_ORDER", "USER", loginUser.getId(),
-                order.getStatus(), order.getStatus(), "用户创建支付单");
-        return payOrderId;
+                .setMerchantOrderId(merchantOrderId)
+                .setSubject(subject)
+                .setBody(body)
+                .setPrice(price)
+                .setExpireTime(nextPayExpireTime()));
+        PayOrderDO payOrder = payOrderService.getOrder(payOrderId);
+        if (payOrder == null) {
+            throw exception(ORDER_PAY_ORDER_NOT_EXISTS);
+        }
+        return ensurePayOrderReadyForSubmit(payOrder);
     }
 
     @Override
@@ -131,8 +148,10 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
 
         PayOrderSubmitReqVO submitReqVO = new PayOrderSubmitReqVO();
         submitReqVO.setId(payOrderId);
-        submitReqVO.setChannelCode(PayChannelEnum.AGGREGATE.getCode());
-        submitReqVO.setChannelExtras(buildPayChannelExtras(reqVO.getPayWay()));
+        submitReqVO.setChannelCode(resolveSubmitChannelCode());
+        if (PayChannelEnum.AGGREGATE.getCode().equals(submitReqVO.getChannelCode())) {
+            submitReqVO.setChannelExtras(buildPayChannelExtras(reqVO.getPayWay()));
+        }
         submitReqVO.setReturnUrl(reqVO.getReturnUrl());
         PayOrderSubmitRespVO submitRespVO = payOrderService.submitOrder(submitReqVO, ServletUtils.getClientIP());
 
@@ -143,6 +162,10 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
         respVO.setStatus(submitRespVO.getStatus());
         respVO.setDisplayMode(submitRespVO.getDisplayMode());
         respVO.setDisplayContent(submitRespVO.getDisplayContent());
+        if (PayChannelEnum.MOCK.getCode().equals(submitReqVO.getChannelCode())) {
+            respVO.setDisplayMode("mock");
+            respVO.setDisplayContent("MOCK_SUCCESS");
+        }
         return respVO;
     }
 
@@ -153,8 +176,10 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
 
         PayOrderSubmitReqVO submitReqVO = new PayOrderSubmitReqVO();
         submitReqVO.setId(payOrderId);
-        submitReqVO.setChannelCode(PayChannelEnum.AGGREGATE.getCode());
-        submitReqVO.setChannelExtras(buildPayChannelExtras(reqVO.getPayWay()));
+        submitReqVO.setChannelCode(resolveSubmitChannelCode());
+        if (PayChannelEnum.AGGREGATE.getCode().equals(submitReqVO.getChannelCode())) {
+            submitReqVO.setChannelExtras(buildPayChannelExtras(reqVO.getPayWay()));
+        }
         submitReqVO.setReturnUrl(reqVO.getReturnUrl());
         PayOrderSubmitRespVO submitRespVO = payOrderService.submitOrder(submitReqVO, ServletUtils.getClientIP());
 
@@ -165,6 +190,10 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
         respVO.setStatus(submitRespVO.getStatus());
         respVO.setDisplayMode(submitRespVO.getDisplayMode());
         respVO.setDisplayContent(submitRespVO.getDisplayContent());
+        if (PayChannelEnum.MOCK.getCode().equals(submitReqVO.getChannelCode())) {
+            respVO.setDisplayMode("mock");
+            respVO.setDisplayContent("MOCK_SUCCESS");
+        }
         return respVO;
     }
 
@@ -246,30 +275,23 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
         }
         if (order.getDepositPayOrderId() != null) {
             PayOrderDO oldOrder = payOrderService.getOrder(order.getDepositPayOrderId());
-            if (oldOrder != null && PayOrderStatusEnum.isWaiting(oldOrder.getStatus())) {
-                return oldOrder.getId();
+            if (oldOrder != null) {
+                return ensurePayOrderReadyForSubmit(oldOrder).getId();
             }
         }
 
-        PayAppDO payApp = getEnabledPayApp();
-        Long payOrderId = payOrderApi.createOrder(new PayOrderCreateReqDTO()
-                .setAppKey(payApp.getAppKey())
-                .setUserIp(ServletUtils.getClientIP())
-                .setUserId(loginUser.getId())
-                .setUserType(UserTypeEnum.MEMBER.getValue())
-                .setMerchantOrderId(buildDepositMerchantOrderId(order.getId()))
-                .setSubject(buildDepositSubject(order))
-                .setBody(StrUtil.maxLength("邻里互助大额订单保证金", 128))
-                .setPrice(toFen(order.getDepositAmount()))
-                .setExpireTime(LocalDateTime.now().plusMinutes(30)));
+        PayOrderDO payOrder = createOrRefreshPayOrder(loginUser, buildDepositMerchantOrderId(order.getId()),
+                buildDepositSubject(order),
+                StrUtil.maxLength("邻里互助大额订单保证金", 128),
+                toFen(order.getDepositAmount()));
         orderInfoMapper.updateById(OrderInfoDO.builder()
                 .id(order.getId())
-                .depositPayOrderId(payOrderId)
+                .depositPayOrderId(payOrder.getId())
                 .depositPayStatus(LinbangRiskConstants.DEPOSIT_PAY_STATUS_UNPAID)
                 .build());
         saveOperateLog(order.getId(), null, "CREATE_DEPOSIT_PAY_ORDER", "USER", loginUser.getId(),
                 order.getDepositPayStatus(), LinbangRiskConstants.DEPOSIT_PAY_STATUS_UNPAID, "用户创建保证金支付单");
-        return payOrderId;
+        return payOrder.getId();
     }
 
     @Override
@@ -360,12 +382,39 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
                 .orElseThrow(() -> exception(ORDER_PAY_ORDER_NOT_EXISTS));
     }
 
+    private String resolveSubmitChannelCode() {
+        return Boolean.TRUE.equals(securityProperties.getMockEnable())
+                ? PayChannelEnum.MOCK.getCode()
+                : PayChannelEnum.AGGREGATE.getCode();
+    }
+
     private String buildSubject(OrderInfoDO order) {
         return StrUtil.maxLength(StrUtil.blankToDefault(order.getRequireDesc(), "邻里互助订单支付"), 32);
     }
 
     private String buildDepositSubject(OrderInfoDO order) {
         return StrUtil.maxLength("订单保证金-" + StrUtil.blankToDefault(order.getOrderNo(), String.valueOf(order.getId())), 32);
+    }
+
+    private PayOrderDO ensurePayOrderReadyForSubmit(PayOrderDO payOrder) {
+        if (payOrder == null) {
+            throw exception(ORDER_PAY_ORDER_NOT_EXISTS);
+        }
+        if (PayOrderStatusEnum.isSuccess(payOrder.getStatus()) || PayOrderStatusEnum.isRefund(payOrder.getStatus())) {
+            return payOrder;
+        }
+        if (!PayOrderStatusEnum.isWaiting(payOrder.getStatus())
+                || payOrder.getExpireTime() == null
+                || payOrder.getExpireTime().isBefore(LocalDateTime.now())) {
+            LocalDateTime nextExpireTime = nextPayExpireTime();
+            payOrderService.refreshOrderForSubmit(payOrder.getId(), nextExpireTime);
+            payOrder = payOrderService.getOrder(payOrder.getId());
+        }
+        return payOrder;
+    }
+
+    private LocalDateTime nextPayExpireTime() {
+        return LocalDateTime.now().plusMinutes(PAY_ORDER_EXPIRE_MINUTES);
     }
 
     private int toFen(BigDecimal amount) {

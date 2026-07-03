@@ -340,16 +340,13 @@ public class AppReviewServiceImpl implements AppReviewService {
     @Override
     public List<AppPendingReviewUnitRespVO> getPendingReviewUnits(Long authUserId) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
-        MerchantInfoDO merchant = getMerchantByAuthUserId(authUserId);
         List<Long> orderIds = resolveOrderIdsForUser(loginUser.getId());
-        if (CollUtil.isEmpty(orderIds) && merchant == null) {
+        if (CollUtil.isEmpty(orderIds)) {
             return Collections.emptyList();
         }
         List<OrderUnitDO> units = orderUnitMapper.selectList(new LambdaQueryWrapperX<OrderUnitDO>()
                 .eq(OrderUnitDO::getStatus, UNIT_STATUS_FINISHED)
-                .and(wrapper -> wrapper
-                        .in(CollUtil.isNotEmpty(orderIds), OrderUnitDO::getOrderId, orderIds)
-                        .or(merchant != null, w -> w.eq(OrderUnitDO::getMerchantId, merchant.getId())))
+                .in(CollUtil.isNotEmpty(orderIds), OrderUnitDO::getOrderId, orderIds)
                 .orderByDesc(OrderUnitDO::getFinishTime, OrderUnitDO::getId));
         if (units.isEmpty()) {
             return Collections.emptyList();
@@ -375,12 +372,6 @@ public class AppReviewServiceImpl implements AppReviewService {
             if (Objects.equals(order.getUserId(), loginUser.getId())) {
                 AppPendingReviewUnitRespVO item = buildPendingUnit(unit, order, loginUser.getId(),
                         unit.getMerchantId() == null ? null : getMerchantUserId(unit.getMerchantId()), "TO_MERCHANT");
-                if (item != null && !reviewMap.containsKey(buildUnitUserKey(unit.getId(), loginUser.getId()))) {
-                    result.add(item);
-                }
-            }
-            if (merchant != null && Objects.equals(unit.getMerchantId(), merchant.getId())) {
-                AppPendingReviewUnitRespVO item = buildPendingUnit(unit, order, loginUser.getId(), order.getUserId(), "TO_USER");
                 if (item != null && !reviewMap.containsKey(buildUnitUserKey(unit.getId(), loginUser.getId()))) {
                     result.add(item);
                 }
@@ -531,11 +522,10 @@ public class AppReviewServiceImpl implements AppReviewService {
         MerchantInfoDO merchant = unit.getMerchantId() == null ? null : merchantInfoMapper.selectById(unit.getMerchantId());
         Long merchantUserId = merchant != null ? merchant.getUserId() : null;
         boolean isOrderUser = Objects.equals(order.getUserId(), loginUserId);
-        boolean isMerchantUser = merchantUserId != null && Objects.equals(merchantUserId, loginUserId);
-        if (!isOrderUser && !isMerchantUser) {
+        if (!isOrderUser) {
             throw exception(REVIEW_ACCESS_DENIED);
         }
-        Long expectedTargetUserId = isOrderUser ? merchantUserId : order.getUserId();
+        Long expectedTargetUserId = merchantUserId;
         if (expectedTargetUserId == null || !Objects.equals(expectedTargetUserId, toUserId) || Objects.equals(loginUserId, toUserId)) {
             throw exception(REVIEW_ACCESS_DENIED);
         }

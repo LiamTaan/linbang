@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.dividerule.DivideRuleDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberqualification.MemberUserQualificationDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderdividerecord.OrderDivideRecordDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderinfo.OrderInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderunit.OrderUnitDO;
@@ -13,6 +14,7 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.walletflow.WalletFlowDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.walletwithdraw.WalletWithdrawDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.dividerule.DivideRuleMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberqualification.MemberUserQualificationMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderdividerecord.OrderDivideRecordMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.walletaccount.WalletAccountMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.walletflow.WalletFlowMapper;
@@ -48,6 +50,8 @@ public class LinbangFinanceServiceImpl implements LinbangFinanceService {
     private OrderDivideRecordMapper orderDivideRecordMapper;
     @Resource
     private MemberUserQualificationMapper memberUserQualificationMapper;
+    @Resource
+    private MerchantInfoMapper merchantInfoMapper;
     @Resource
     private EscrowProofService escrowProofService;
     @Resource
@@ -89,7 +93,11 @@ public class LinbangFinanceServiceImpl implements LinbangFinanceService {
         if (order == null || unit == null || unit.getMerchantId() == null) {
             return;
         }
-        WalletAccountDO merchantWallet = getOrCreateWalletAccount(unit.getMerchantId(), "MERCHANT");
+        Long merchantUserId = resolveMerchantUserId(unit.getMerchantId());
+        if (merchantUserId == null) {
+            return;
+        }
+        WalletAccountDO merchantWallet = getOrCreateWalletAccount(merchantUserId, "MERCHANT");
         BigDecimal unitAmount = defaultAmount(unit.getUnitAmount());
         BigDecimal beforeAvailable = defaultAmount(merchantWallet.getAvailableAmount());
         walletAccountMapper.updateById(WalletAccountDO.builder()
@@ -99,7 +107,7 @@ public class LinbangFinanceServiceImpl implements LinbangFinanceService {
                 .build());
         walletFlowMapper.insert(WalletFlowDO.builder()
                 .flowNo("LBF" + IdUtil.getSnowflakeNextIdStr())
-                .userId(unit.getMerchantId())
+                .userId(merchantUserId)
                 .walletAccountId(merchantWallet.getId())
                 .bizType("SETTLEMENT_UNLOCK")
                 .flowType("IN")
@@ -121,6 +129,14 @@ public class LinbangFinanceServiceImpl implements LinbangFinanceService {
         escrowProofService.unlockProof(order.getId(), null, "单元完成并确认，释放托管金额");
         messagePushDispatchService.dispatchSingle("lb_escrow_unlocked", "托管解锁通知", "ORDER",
                 order.getId(), order.getUserId(), "单元完成后提醒用户托管资金已解锁");
+    }
+
+    private Long resolveMerchantUserId(Long merchantId) {
+        if (merchantId == null) {
+            return null;
+        }
+        MerchantInfoDO merchant = merchantInfoMapper.selectById(merchantId);
+        return merchant != null ? merchant.getUserId() : null;
     }
 
     @Override

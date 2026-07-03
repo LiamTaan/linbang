@@ -613,7 +613,7 @@ export default {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: #F5F5F5;
+    background: linear-gradient(180deg, #eef6ff 0%, #f7fbff 220rpx, #f2f7fd 100%);
     padding-bottom: 120rpx;
 
     .page-container-header {
@@ -762,10 +762,11 @@ export default {
     .stats-card {
         width: 85%;
         margin: -140rpx auto 20rpx;
-        background: #fff;
+        background: rgba(255, 255, 255, 0.96);
         border-radius: 24rpx;
         padding: 32rpx 40rpx;
         display: flex;
+        box-shadow: 0 12rpx 30rpx rgba(74, 144, 240, 0.08);
         justify-content: space-around;
         box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
         z-index: 2;
@@ -798,10 +799,11 @@ export default {
     }
 
         .quick-entry {
-            background: #fff;
+            background: rgba(255, 255, 255, 0.96);
             margin: 20rpx 30rpx;
             border-radius: 16rpx;
             padding: 30rpx 18rpx 28rpx;
+            box-shadow: 0 10rpx 26rpx rgba(74, 144, 240, 0.06);
             display: flex;
             justify-content: space-between;
 
@@ -862,10 +864,11 @@ export default {
     }
 
     .function-list {
-        background: #fff;
+        background: rgba(255, 255, 255, 0.96);
         margin: 20rpx 30rpx;
         border-radius: 16rpx;
         overflow: hidden;
+        box-shadow: 0 10rpx 26rpx rgba(74, 144, 240, 0.06);
 
         .function-item {
             display: flex;

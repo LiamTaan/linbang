@@ -117,14 +117,50 @@
 
             <view class="bottom-space"></view>
         </scroll-view>
+
+        <view v-if="categoryPanelVisible" class="panel-mask" @click="closeCategoryPanel">
+            <view class="category-panel" @click.stop>
+                <view class="panel-header">
+                    <text class="panel-title">接收品类</text>
+                    <text class="panel-close" @click="closeCategoryPanel">关闭</text>
+                </view>
+                <text class="panel-desc">入驻类目决定您能做什么；这里设置的是您当前要接什么，只能从已入驻类目里选择。</text>
+                <scroll-view class="panel-list" scroll-y>
+                    <view
+                        v-for="item in flatCategoryOptions"
+                        :key="item.id"
+                        class="panel-item"
+                        :class="{ active: selectedCategoryIds.includes(item.id) }"
+                        @click="toggleCategory(item.id)">
+                        <text class="panel-item-text">{{ item.displayName }}</text>
+                        <text class="panel-item-check">{{ selectedCategoryIds.includes(item.id) ? '✓' : '' }}</text>
+                    </view>
+                </scroll-view>
+                <view class="panel-actions">
+                    <view class="panel-btn ghost" @click="closeCategoryPanel">取消</view>
+                    <view class="panel-btn primary" @click="saveCategories">保存</view>
+                </view>
+            </view>
+        </view>
     </view>
 </template>
 
 <script>
-import { getServiceCategoryList, getMerchantAcceptStatus, getMerchantDispatchSetting, updateMerchantAcceptStatus, updateMerchantDispatchSetting } from '@/api/merchant'
+import { getMerchantAcceptStatus, getMerchantDispatchSetting, getMerchantProfile, getServiceCategoryList, updateMerchantAcceptStatus, updateMerchantDispatchSetting, updateSelectedCategory } from '@/api/merchant'
 import { notifyReminderSettingChanged } from '@/services/app-order-reminder'
 import { getOrderPage } from '@/api/order'
 import { getOrderStatusLabel } from '@/utils/linbang'
+
+function flattenCategories(list, depth = 0, target = []) {
+    ;(list || []).forEach((item) => {
+        target.push({
+            ...item,
+            displayName: `${'　'.repeat(depth)}${item.categoryName || '--'}`
+        })
+        flattenCategories(item.children || [], depth + 1, target)
+    })
+    return target
+}
 
 export default {
     data() {
@@ -133,7 +169,11 @@ export default {
             acceptStatus: {},
             dispatchSetting: {},
             activeOrders: [],
-            categories: [],
+            categoryTree: [],
+            merchantProfile: {},
+            selectedCategoryIds: [],
+            categoryPanelVisible: false,
+            categorySaving: false,
             stats: {
                 accepted: 0,
                 finished: 0,
@@ -150,16 +190,23 @@ export default {
             return radius ? `${radius}km 内` : '未设置'
         },
         categorySummary() {
-            if (!this.categories.length) {
-                return '暂无类目'
+            const names = (this.merchantProfile.categories || [])
+                .filter((item) => item.dispatchSelected)
+                .map((item) => item.categoryName)
+                .filter(Boolean)
+            if (!names.length) {
+                return '未设置'
             }
-            return `平台已开放 ${this.categories.length} 类`
+            return names.length <= 2 ? names.join('、') : `${names.slice(0, 2).join('、')} 等 ${names.length} 类`
         },
         statusDescription() {
             if (this.acceptStatus.acceptEligible === false && !this.isOnline) {
                 return this.acceptStatus.blockedReason || '暂不可接单'
             }
             return '系统会按当前半径和派单设置推送订单'
+        },
+        flatCategoryOptions() {
+            return flattenCategories(this.categoryTree || [])
         },
         statusActionTarget() {
             const actionText = `${this.acceptStatus.nextAction || ''} ${this.acceptStatus.blockedReason || ''}`
@@ -186,13 +233,14 @@ export default {
         },
         async loadPageData() {
             try {
-                const [acceptStatus, dispatchSetting, servingPage, acceptedPage, finishedPage, categories] = await Promise.all([
+                const [acceptStatus, dispatchSetting, servingPage, acceptedPage, finishedPage, categoryTree, merchantProfile] = await Promise.all([
                     getMerchantAcceptStatus().catch(() => ({})),
                     getMerchantDispatchSetting().catch(() => ({})),
                     getOrderPage({ pageNo: 1, pageSize: 3, businessCategory: 'IN_SERVICE' }).catch(() => ({ list: [], total: 0 })),
                     getOrderPage({ pageNo: 1, pageSize: 1, status: 'ACCEPTED' }).catch(() => ({ total: 0 })),
                     getOrderPage({ pageNo: 1, pageSize: 1, status: 'FINISHED' }).catch(() => ({ total: 0 })),
-                    getServiceCategoryList().catch(() => [])
+                    getServiceCategoryList().catch(() => []),
+                    getMerchantProfile({ silent: true }).catch(() => ({}))
                 ])
                 this.acceptStatus = acceptStatus || {}
                 this.dispatchSetting = {
@@ -207,7 +255,12 @@ export default {
                     finished: Number((finishedPage && finishedPage.total) || 0),
                     serving: Number((servingPage && servingPage.total) || 0)
                 }
-                this.categories = categories || []
+                this.categoryTree = categoryTree || []
+                this.merchantProfile = merchantProfile || {}
+                this.selectedCategoryIds = ((merchantProfile && merchantProfile.categories) || [])
+                    .filter((item) => item.dispatchSelected)
+                    .map((item) => item.categoryId)
+                    .filter((item) => item !== undefined && item !== null)
             } catch (error) {
             } finally {
                 this.refreshing = false
@@ -252,12 +305,7 @@ export default {
             })
         },
         handleCategory() {
-            const list = (this.categories || []).slice(0, 12).map((item) => item.categoryName)
-            uni.showModal({
-                title: '当前可接品类',
-                content: list.length ? list.join('、') : '暂无可接品类',
-                showCancel: false
-            })
+            this.categoryPanelVisible = true
         },
         handleDistance() {
             const options = ['3km 以内', '5km 以内', '10km 以内', '20km 以内']
@@ -303,6 +351,50 @@ export default {
                 notifyReminderSettingChanged()
                 this.loadPageData()
             } catch (error) {
+            }
+        },
+        closeCategoryPanel() {
+            if (this.categorySaving) {
+                return
+            }
+            this.categoryPanelVisible = false
+            this.selectedCategoryIds = ((this.merchantProfile.categories || [])
+                .filter((item) => item.dispatchSelected)
+                .map((item) => item.categoryId))
+                .filter((item) => item !== undefined && item !== null)
+        },
+        toggleCategory(id) {
+            if (this.categorySaving) {
+                return
+            }
+            if (this.selectedCategoryIds.includes(id)) {
+                this.selectedCategoryIds = this.selectedCategoryIds.filter((item) => item !== id)
+            } else {
+                this.selectedCategoryIds = this.selectedCategoryIds.concat(id)
+            }
+        },
+        async saveCategories() {
+            if (!this.selectedCategoryIds.length) {
+                uni.showToast({
+                    title: '请至少选择一个接收品类',
+                    icon: 'none'
+                })
+                return
+            }
+            try {
+                this.categorySaving = true
+                await updateSelectedCategory({
+                    serviceCategoryIds: this.selectedCategoryIds
+                })
+                uni.showToast({
+                    title: '接收品类已更新',
+                    icon: 'success'
+                })
+                this.categoryPanelVisible = false
+                this.loadPageData()
+            } catch (error) {
+            } finally {
+                this.categorySaving = false
             }
         }
     }
@@ -625,6 +717,112 @@ export default {
         .bottom-space {
             height: 60rpx;
         }
+    }
+
+    .panel-mask {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.38);
+        display: flex;
+        align-items: flex-end;
+        z-index: 30;
+    }
+
+    .category-panel {
+        width: 100%;
+        max-height: 72vh;
+        background: #fff;
+        border-radius: 28rpx 28rpx 0 0;
+        padding: 24rpx 24rpx 32rpx;
+        box-sizing: border-box;
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12rpx;
+    }
+
+    .panel-title {
+        font-size: 30rpx;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .panel-close,
+    .panel-desc,
+    .panel-item-text,
+    .panel-item-check {
+        font-size: 24rpx;
+    }
+
+    .panel-close {
+        color: #4A90F0;
+    }
+
+    .panel-desc {
+        color: #8a9099;
+        line-height: 1.6;
+        display: block;
+        margin-bottom: 16rpx;
+    }
+
+    .panel-list {
+        max-height: 44vh;
+    }
+
+    .panel-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 22rpx 8rpx;
+        border-bottom: 1rpx solid #f0f0f0;
+    }
+
+    .panel-item.active {
+        .panel-item-text,
+        .panel-item-check {
+            color: #2E83F0;
+            font-weight: 600;
+        }
+    }
+
+    .panel-item-text {
+        color: #333;
+        line-height: 1.5;
+        padding-right: 20rpx;
+    }
+
+    .panel-item-check {
+        color: #c0c7d2;
+    }
+
+    .panel-actions {
+        display: flex;
+        gap: 16rpx;
+        margin-top: 20rpx;
+    }
+
+    .panel-btn {
+        flex: 1;
+        height: 84rpx;
+        border-radius: 14rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28rpx;
+        font-weight: 600;
+    }
+
+    .panel-btn.ghost {
+        background: #f2f4f7;
+        color: #333;
+    }
+
+    .panel-btn.primary {
+        background: #4A90F0;
+        color: #fff;
     }
 }
 </style>

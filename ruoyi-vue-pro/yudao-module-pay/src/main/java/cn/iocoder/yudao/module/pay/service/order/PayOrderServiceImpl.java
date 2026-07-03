@@ -7,6 +7,7 @@ import cn.hutool.extra.spring.SpringUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.date.LocalDateTimeUtils;
 import cn.iocoder.yudao.framework.common.util.number.MoneyUtils;
+import cn.iocoder.yudao.framework.security.config.SecurityProperties;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.PayClient;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.dto.order.PayOrderRespDTO;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.dto.order.PayOrderUnifiedReqDTO;
@@ -63,6 +64,8 @@ public class PayOrderServiceImpl implements PayOrderService {
 
     @Resource
     private PayProperties payProperties;
+    @Resource
+    private SecurityProperties securityProperties;
 
     @Resource
     private PayOrderMapper orderMapper;
@@ -238,6 +241,9 @@ public class PayOrderServiceImpl implements PayOrderService {
      */
     @VisibleForTesting
     void validateOrderActuallyPaid(Long id) {
+        if (Boolean.TRUE.equals(securityProperties.getMockEnable())) {
+            return;
+        }
         List<PayOrderExtensionDO> orderExtensions = orderExtensionMapper.selectListByOrderId(id);
         orderExtensions.forEach(orderExtension -> {
             // 情况一：校验数据库中的 orderExtension 是不是已支付
@@ -469,6 +475,22 @@ public class PayOrderServiceImpl implements PayOrderService {
         }
 
         orderMapper.updateById(new PayOrderDO().setId(order.getId()).setPrice(payPrice));
+    }
+
+    @Override
+    public void refreshOrderForSubmit(Long id, LocalDateTime expireTime) {
+        PayOrderDO order = orderMapper.selectById(id);
+        if (order == null) {
+            throw exception(PAY_ORDER_NOT_FOUND);
+        }
+        if (PayOrderStatusEnum.isSuccess(order.getStatus()) || PayOrderStatusEnum.isRefund(order.getStatus())) {
+            return;
+        }
+        PayOrderDO updateObj = new PayOrderDO()
+                .setId(order.getId())
+                .setStatus(PayOrderStatusEnum.WAITING.getStatus())
+                .setExpireTime(expireTime);
+        orderMapper.updateById(updateObj);
     }
 
     @Override

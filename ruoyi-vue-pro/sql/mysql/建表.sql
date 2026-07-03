@@ -2443,6 +2443,28 @@ CREATE TABLE IF NOT EXISTS `lb_merchant_price_report` (
   KEY `idx_lb_merchant_price_report_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='服务商价格申报表';
 
+DROP TABLE IF EXISTS `lb_merchant_reference_price`;
+CREATE TABLE IF NOT EXISTS `lb_merchant_reference_price` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `merchant_id` BIGINT NOT NULL COMMENT '服务商ID',
+  `category_id` BIGINT NOT NULL COMMENT '服务类目ID',
+  `price_unit_label` VARCHAR(64) NOT NULL COMMENT '价格单位文案',
+  `reference_price_min` DECIMAL(10,2) NOT NULL COMMENT '参考最低价',
+  `reference_price_max` DECIMAL(10,2) NOT NULL COMMENT '参考最高价',
+  `reference_price_desc` VARCHAR(500) DEFAULT NULL COMMENT '参考价格说明',
+  `status` VARCHAR(32) NOT NULL DEFAULT 'ENABLE' COMMENT '状态',
+  `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `tenant_id` BIGINT NOT NULL DEFAULT 0 COMMENT '租户编号',
+  PRIMARY KEY (`id`),
+  KEY `idx_lb_merchant_reference_price_merchant_id` (`merchant_id`),
+  KEY `idx_lb_merchant_reference_price_category_id` (`category_id`),
+  KEY `idx_lb_merchant_reference_price_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='服务商参考价格表';
+
 DROP TABLE IF EXISTS `lb_message_template`;
 CREATE TABLE IF NOT EXISTS `lb_message_template` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',

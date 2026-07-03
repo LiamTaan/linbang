@@ -41,11 +41,26 @@
                     <text class="field-label">联系电话</text>
                     <input class="field-input" :disabled="!canEditForm" v-model="form.contactMobile" type="number" placeholder="请输入联系电话" />
                 </view>
-                <view class="field-item select-field" @click="handleSelectAddress">
+                <picker
+                    v-if="canEditForm"
+                    mode="multiSelector"
+                    :range="areaColumns"
+                    range-key="name"
+                    :value="areaIndexes"
+                    @change="handleAreaPickerChange"
+                    @columnchange="handleAreaColumnChange">
+                    <view class="field-item select-field">
+                        <text class="field-label">服务区域</text>
+                        <view class="select-box">
+                            <text class="select-text" :class="{ placeholder: !selectedRegionTextValue }">{{ selectedRegionText }}</text>
+                            <text class="select-arrow">▼</text>
+                        </view>
+                    </view>
+                </picker>
+                <view v-else class="field-item select-field">
                     <text class="field-label">服务区域</text>
-                    <view class="select-box">
-                        <text class="select-text">{{ selectedAddressText }}</text>
-                        <text class="select-arrow">▼</text>
+                    <view class="select-box disabled">
+                        <text class="select-text">{{ selectedRegionText }}</text>
                     </view>
                 </view>
                 <view class="field-item textarea-field">
@@ -98,7 +113,17 @@
                 <text class="section-title">已选摘要</text>
                 <text class="summary-line">类目：{{ selectedCategoryText }}</text>
                 <text class="summary-line">资质：{{ selectedQualificationText }}</text>
-                <text class="summary-line">区域：{{ selectedAddressText }}</text>
+                <text class="summary-line">区域：{{ selectedRegionText }}</text>
+            </view>
+
+            <view class="form-card" v-if="showBusinessManageSection">
+                <view class="section-row">
+                    <text class="section-title">经营服务范围</text>
+                    <text class="manage-link" @click="goBusinessProfile">去管理</text>
+                </view>
+                <text class="summary-line">主服务区域：{{ selectedRegionText }}</text>
+                <text class="summary-line">当前服务点：{{ serviceAreaSummary }}</text>
+                <text class="summary-line">说明：入驻资料里的主区域用于审核归属，实际接单范围请在经营资料里按服务点维护。</text>
             </view>
 
             <view class="submit-area">
@@ -116,7 +141,7 @@
 </template>
 
 <script>
-import { getAddressPage, getProfile, getQualificationPage } from '@/api/member'
+import { getAreaTree, getProfile, getQualificationPage } from '@/api/member'
 import { createMerchantEntry, getMerchantEntry, getMerchantOnboardingProgress, getServiceCategoryList } from '@/api/merchant'
 
 function flattenCategories(list, depth = 0, target = []) {
@@ -128,19 +153,6 @@ function flattenCategories(list, depth = 0, target = []) {
         flattenCategories(item.children || [], depth + 1, target)
     })
     return target
-}
-
-function buildAddressText(address) {
-    if (!address) {
-        return '请先新增地址信息'
-    }
-    return [
-        address.province,
-        address.city,
-        address.district,
-        address.street,
-        address.detailAddress
-    ].filter(Boolean).join(' ') || '请选择服务区域'
 }
 
 const STATUS_LABELS = {
@@ -160,10 +172,16 @@ export default {
             profile: {},
             currentEntry: null,
             onboardingProgress: null,
-            addressList: [],
             serviceCategories: [],
             qualificationOptions: [],
-            selectedAddressIndex: 0,
+            areaTree: [],
+            areaColumns: [[], [], []],
+            areaIndexes: [0, 0, 0],
+            selectedRegion: {
+                province: '',
+                city: '',
+                district: ''
+            },
             form: {
                 merchantName: '',
                 contactName: '',
@@ -211,12 +229,11 @@ export default {
         progressStatusLabel() {
             return STATUS_LABELS[this.progressStatusKey] || this.progressStatusKey || '待处理'
         },
-        selectedAddressText() {
-            if (!this.addressList.length) {
-                return '请先新增地址信息'
-            }
-            const address = this.addressList[this.selectedAddressIndex]
-            return buildAddressText(address)
+        selectedRegionTextValue() {
+            return [this.selectedRegion.province, this.selectedRegion.city, this.selectedRegion.district].filter(Boolean).join(' / ')
+        },
+        selectedRegionText() {
+            return this.selectedRegionTextValue || '请选择省 / 市 / 区'
         },
         selectedCategoryText() {
             const names = this.serviceCategories
@@ -244,6 +261,19 @@ export default {
         },
         submitDisabled() {
             return this.submitting
+        },
+        showBusinessManageSection() {
+            return ['APPROVED_WAIT_BANK_CARD', 'APPROVED_ENABLED'].includes(this.progressStatusKey)
+                || ((this.profile && this.profile.serviceAreas) || []).length > 0
+        },
+        serviceAreaSummary() {
+            const areas = ((this.profile && this.profile.serviceAreas) || []).filter(Boolean)
+            if (!areas.length) {
+                return '暂无服务点'
+            }
+            return areas.length <= 2
+                ? areas.map((item) => item.pointName || item.district || '服务点').join('、')
+                : `${areas[0].pointName || areas[0].district || '服务点'} 等 ${areas.length} 个服务点`
         }
     },
     onShow() {
@@ -252,18 +282,17 @@ export default {
     methods: {
         async loadPageData() {
             try {
-                const [profile, currentEntry, onboardingProgress, addressPage, categories, qualificationPage] = await Promise.all([
+                const [, profile, currentEntry, onboardingProgress, categories, qualificationPage] = await Promise.all([
+                    this.ensureAreaTree(),
                     getProfile({ silent: true }).catch(() => ({})),
                     getMerchantEntry({ silent: true }).catch(() => null),
                     getMerchantOnboardingProgress({ silent: true }).catch(() => null),
-                    getAddressPage({ pageNo: 1, pageSize: 20 }, { silent: true }).catch(() => ({ list: [] })),
                     getServiceCategoryList({ silent: true }).catch(() => []),
                     getQualificationPage({ pageNo: 1, pageSize: 100 }, { silent: true }).catch(() => ({ list: [] }))
                 ])
                 this.profile = profile || {}
                 this.currentEntry = currentEntry || null
                 this.onboardingProgress = onboardingProgress || null
-                this.addressList = (addressPage && addressPage.list) || []
                 this.serviceCategories = flattenCategories(categories || [])
                 this.qualificationOptions = ((qualificationPage && qualificationPage.list) || [])
                     .filter((item) => !item.auditStatus || item.auditStatus === 'APPROVED')
@@ -283,14 +312,7 @@ export default {
                     qualificationIds: Array.isArray(this.currentEntry.qualificationIds) ? [...this.currentEntry.qualificationIds] : [],
                     bankCardId: this.currentEntry.bankCardId || null
                 }
-                const matchedIndex = this.addressList.findIndex((item) => {
-                    return `${item.adcode || item.regionCode || ''}` === `${this.form.regionCode || ''}`
-                })
-                if (matchedIndex >= 0) {
-                    this.pickAddressByIndex(matchedIndex)
-                } else if (this.addressList.length) {
-                    this.pickAddressByIndex(0)
-                }
+                this.syncRegionPickerFromCode()
                 return
             }
             this.form = {
@@ -303,46 +325,117 @@ export default {
                 qualificationIds: [],
                 bankCardId: null
             }
-            const defaultIndex = this.addressList.findIndex((item) => item.isDefault)
-            this.pickAddressByIndex(defaultIndex >= 0 ? defaultIndex : 0)
+            this.clearRegionSelection()
+            this.resetAreaPicker()
         },
-        pickAddressByIndex(index) {
-            if (index < 0 || index >= this.addressList.length) {
+        async ensureAreaTree() {
+            if (this.areaTree.length) {
                 return
             }
-            this.selectedAddressIndex = index
-            const address = this.addressList[index]
-            this.form.regionCode = address.adcode || address.regionCode || ''
-            if (!this.currentEntry) {
-                this.form.contactName = address.receiverName || this.form.contactName
-                this.form.contactMobile = address.receiverMobile || this.form.contactMobile
+            try {
+                this.areaTree = (await getAreaTree({ silent: true })) || []
+                this.resetAreaPicker()
+            } catch (error) {
+                this.areaTree = []
+                this.areaColumns = [[], [], []]
+                this.areaIndexes = [0, 0, 0]
             }
         },
-        handleSelectAddress() {
-            if (!this.canEditForm) {
+        clearRegionSelection() {
+            this.selectedRegion = {
+                province: '',
+                city: '',
+                district: ''
+            }
+        },
+        resetAreaPicker() {
+            const provinceList = this.areaTree || []
+            const cityList = (provinceList[0] && provinceList[0].children) || []
+            const districtList = (cityList[0] && cityList[0].children) || []
+            this.areaColumns = [provinceList, cityList, districtList]
+            this.areaIndexes = [0, 0, 0]
+        },
+        buildAreaColumns(indexes = [0, 0, 0]) {
+            const provinceList = this.areaTree || []
+            const provinceIndex = Math.min(indexes[0] || 0, Math.max(provinceList.length - 1, 0))
+            const cityList = (provinceList[provinceIndex] && provinceList[provinceIndex].children) || []
+            const cityIndex = Math.min(indexes[1] || 0, Math.max(cityList.length - 1, 0))
+            const districtList = (cityList[cityIndex] && cityList[cityIndex].children) || []
+            return [provinceList, cityList, districtList]
+        },
+        handleAreaColumnChange(event) {
+            const { column, value } = event.detail || {}
+            const nextIndexes = [...this.areaIndexes]
+            nextIndexes[column] = value
+            if (column === 0) {
+                nextIndexes[1] = 0
+                nextIndexes[2] = 0
+            } else if (column === 1) {
+                nextIndexes[2] = 0
+            }
+            this.areaColumns = this.buildAreaColumns(nextIndexes)
+            this.areaIndexes = nextIndexes
+        },
+        handleAreaPickerChange(event) {
+            const indexes = (event.detail && event.detail.value) || [0, 0, 0]
+            this.areaColumns = this.buildAreaColumns(indexes)
+            this.areaIndexes = indexes
+            const [provinceList, cityList, districtList] = this.areaColumns
+            const province = provinceList[indexes[0]]
+            const city = cityList[indexes[1]]
+            const district = districtList[indexes[2]]
+            this.selectedRegion = {
+                province: province && province.name ? province.name : '',
+                city: city && city.name ? city.name : '',
+                district: district && district.name ? district.name : ''
+            }
+            this.form.regionCode = district && district.id ? `${district.id}` : ''
+        },
+        syncRegionPickerFromCode() {
+            if (!this.form.regionCode || !this.areaTree.length) {
+                this.clearRegionSelection()
+                this.resetAreaPicker()
                 return
             }
-            if (!this.addressList.length) {
-                uni.showModal({
-                    title: '请先完善地址信息',
-                    content: '服务区域来自地址管理中的已保存地址，是否现在去新增地址？',
-                    success: (res) => {
-                        if (!res.confirm) {
-                            return
+            const path = this.findAreaPath(this.areaTree, this.form.regionCode)
+            if (!path) {
+                this.clearRegionSelection()
+                this.resetAreaPicker()
+                return
+            }
+            const indexes = [path.provinceIndex, path.cityIndex, path.districtIndex]
+            this.areaColumns = this.buildAreaColumns(indexes)
+            this.areaIndexes = indexes
+            this.selectedRegion = {
+                province: path.province.name || '',
+                city: path.city.name || '',
+                district: path.district.name || ''
+            }
+            this.form.regionCode = path.district.id ? `${path.district.id}` : this.form.regionCode
+        },
+        findAreaPath(provinceList, regionCode) {
+            for (let provinceIndex = 0; provinceIndex < provinceList.length; provinceIndex += 1) {
+                const province = provinceList[provinceIndex]
+                const cityList = province.children || []
+                for (let cityIndex = 0; cityIndex < cityList.length; cityIndex += 1) {
+                    const city = cityList[cityIndex]
+                    const districtList = city.children || []
+                    for (let districtIndex = 0; districtIndex < districtList.length; districtIndex += 1) {
+                        const district = districtList[districtIndex]
+                        if (`${district.id}` === `${regionCode}`) {
+                            return {
+                                provinceIndex,
+                                cityIndex,
+                                districtIndex,
+                                province,
+                                city,
+                                district
+                            }
                         }
-                        uni.navigateTo({
-                            url: '/pages/address_management/address_management'
-                        })
                     }
-                })
-                return
-            }
-            uni.showActionSheet({
-                itemList: this.addressList.map((item) => buildAddressText(item)),
-                success: ({ tapIndex }) => {
-                    this.pickAddressByIndex(tapIndex)
                 }
-            })
+            }
+            return undefined
         },
         isCategorySelected(id) {
             return this.form.serviceCategoryIds.includes(id)
@@ -439,6 +532,11 @@ export default {
         },
         goBack() {
             this.$navigateBack()
+        },
+        goBusinessProfile() {
+            uni.navigateTo({
+                url: '/pages/merchant_business/merchant_business'
+            })
         }
     }
 }
@@ -540,6 +638,17 @@ export default {
     padding: 24rpx;
     margin-bottom: 20rpx;
     box-shadow: 0 10rpx 24rpx rgba(21, 84, 166, 0.06);
+}
+
+.section-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.manage-link {
+    color: #2e83f0;
+    font-size: 24rpx;
 }
 
 .hero-title {
@@ -662,9 +771,17 @@ export default {
     color: #183153;
 }
 
+.select-text.placeholder {
+    color: #92a0b5;
+}
+
 .select-arrow {
     font-size: 20rpx;
     color: #92a0b5;
+}
+
+.select-box.disabled {
+    justify-content: flex-start;
 }
 
 .chip-grid {

@@ -83,9 +83,6 @@
                         </view>
                         <view class="info-item" v-if="mode !== 'accept'">
                             <text class="status-chip">{{ resolveStatusText(order) }}</text>
-                            <text class="business-chip" v-if="order.businessCategory">
-                                {{ getBusinessCategoryLabel(order.businessCategory) }}
-                            </text>
                         </view>
                     </view>
                     <view class="order-btn" :class="{ secondary: mode !== 'accept' }" @click.stop="handleOrder(order)">
@@ -93,9 +90,11 @@
                     </view>
                 </view>
 
-                <view class="order-meta" v-if="mode === 'accept'">
+                <view class="order-meta" v-if="mode === 'accept' || shouldShowPublisherDispatch(order)">
                     <text class="meta-text">{{ getDispatchStatusLabel(order.dispatchStatus) }}</text>
-                    <text class="meta-text" v-if="order.countdownSeconds">剩余 {{ order.countdownSeconds }} 秒</text>
+                    <text class="meta-text" v-if="hasCountdown(order)">剩余 {{ formatCountdown(order.countdownSeconds) }}</text>
+                    <text class="meta-text" v-if="mode !== 'accept' && order.acceptDeadlineTime">截止 {{ $fmt.formatShortDateTime(order.acceptDeadlineTime) }}</text>
+                    <text class="meta-text" v-if="mode !== 'accept' && getDispatchStageText(order)">{{ getDispatchStageText(order) }}</text>
                     <text class="meta-text" v-if="order.priorityLayer">{{ order.priorityLayer }}</text>
                 </view>
             </view>
@@ -159,6 +158,7 @@ export default {
             finished: false,
             isLoggedIn: false,
             canAcceptOrders: false,
+            currentRoleCode: 'USER',
             pageNo: 1,
             pageSize: 10,
             total: 0,
@@ -240,6 +240,7 @@ export default {
                     value: item.id
                 })))
                 this.guaranteeConfig = guaranteeConfig || {}
+                this.currentRoleCode = (roleContext && roleContext.currentRoleCode) || 'USER'
                 this.canAcceptOrders = ((roleContext && roleContext.enabledRoleCodes) || []).includes('MERCHANT')
             } catch (error) {
             }
@@ -369,10 +370,52 @@ export default {
                 return order.serviceDurationDesc ? `工期：${order.serviceDurationDesc}` : '工期待确认'
             }
             const dateText = this.$fmt.formatShortDateTime(order.createTime)
-            return `${getOrderStatusLabel(order.status)} · ${dateText}`
+            return `${this.resolveStatusText(order)} · ${dateText}`
         },
         resolveStatusText(order) {
+            if (this.mode !== 'accept' && order && order.businessCategory) {
+                return getBusinessCategoryLabel(order.businessCategory)
+            }
+            if (order && order.status === 'PENDING_ACCEPT' && order.dispatchStatus) {
+                return getDispatchStatusLabel(order.dispatchStatus)
+            }
             return getOrderStatusLabel(order.status)
+        },
+        shouldShowPublisherDispatch(order) {
+            return this.mode !== 'accept'
+                && order
+                && order.status === 'PENDING_ACCEPT'
+                && !!(order.dispatchStatus || order.acceptDeadlineTime || order.stageNo || order.pushBatchNo)
+        },
+        hasCountdown(order) {
+            return order && order.countdownSeconds !== null && order.countdownSeconds !== undefined
+        },
+        formatCountdown(totalSeconds) {
+            if (totalSeconds === null || totalSeconds === undefined || totalSeconds <= 0) {
+                return '0秒'
+            }
+            const hours = Math.floor(totalSeconds / 3600)
+            const minutes = Math.floor((totalSeconds % 3600) / 60)
+            const seconds = totalSeconds % 60
+            if (hours > 0) {
+                return `${hours}小时${minutes}分`
+            }
+            if (minutes > 0) {
+                return `${minutes}分${seconds}秒`
+            }
+            return `${seconds}秒`
+        },
+        getDispatchStageText(order) {
+            if (!order) {
+                return ''
+            }
+            if (order.stageNo && order.pushBatchNo) {
+                return `第 ${order.stageNo} 阶段 / 第 ${order.pushBatchNo} 批`
+            }
+            if (order.pushBatchNo) {
+                return `当前第 ${order.pushBatchNo} 批`
+            }
+            return ''
         },
         resolveTagClass(order) {
             const categoryName = `${order.categoryName || ''}`
@@ -392,8 +435,15 @@ export default {
             if (!orderId) {
                 return
             }
+            const unitId = order.unitId || ''
+            if (this.mode === 'accept') {
+                uni.navigateTo({
+                    url: `/pages/accept_order_detail/accept_order_detail?orderId=${orderId}${unitId ? `&unitId=${unitId}` : ''}`
+                })
+                return
+            }
             uni.navigateTo({
-                url: `/pages/split_order_details/split_order_details?orderId=${orderId}`
+                url: `/pages/split_order_details/split_order_details?orderId=${orderId}${unitId ? `&unitId=${unitId}` : ''}`
             })
         },
         async handleOrder(order) {

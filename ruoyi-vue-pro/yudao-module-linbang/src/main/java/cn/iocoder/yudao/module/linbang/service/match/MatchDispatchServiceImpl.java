@@ -10,6 +10,7 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoD
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantservicepoint.MerchantServicePointDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderinfo.OrderInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.ordermatchrecord.OrderMatchRecordDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.orderoperatelog.OrderOperateLogDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderunit.OrderUnitDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.matchpushbatch.MatchPushBatchMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberqualification.MemberUserQualificationMapper;
@@ -18,6 +19,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantservicepoint.MerchantServicePointMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderinfo.OrderInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.ordermatchrecord.OrderMatchRecordMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.orderoperatelog.OrderOperateLogMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderunit.OrderUnitMapper;
 import cn.iocoder.yudao.module.linbang.service.app.pay.AutoFlowRefundService;
 import cn.iocoder.yudao.module.linbang.service.map.AmapLocationService;
@@ -50,6 +52,8 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
     private OrderInfoMapper orderInfoMapper;
     @Resource
     private OrderUnitMapper orderUnitMapper;
+    @Resource
+    private OrderOperateLogMapper orderOperateLogMapper;
     @Resource
     private MerchantInfoMapper merchantInfoMapper;
     @Resource
@@ -171,7 +175,7 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
                 .id(unit.getId())
                 .dispatchStatus("PUSHING")
                 .currentBatchNo(stageNo)
-                .acceptDeadlineTime(now.plusMinutes(5))
+                .acceptDeadlineTime(expiredAt)
                 .build());
         pushToMerchants(order, unit, stageNo, stageRule, expiredAt);
     }
@@ -332,15 +336,35 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
 
     private void flowUnit(OrderUnitDO unit) {
         LocalDateTime now = LocalDateTime.now();
+        OrderInfoDO order = orderInfoMapper.selectById(unit.getOrderId());
         orderUnitMapper.updateById(OrderUnitDO.builder()
                 .id(unit.getId())
                 .dispatchStatus("FLOWED")
                 .flowTime(now)
-                .flowReason("5分钟无人接单自动流单")
+                .flowReason("当前派单批次无人接单，系统自动流单并发起退款")
                 .autoRefundStatus("PROCESSING")
                 .build());
+        if (order != null && Objects.equals(order.getStatus(), "PENDING_ACCEPT")) {
+            orderInfoMapper.updateById(OrderInfoDO.builder()
+                    .id(order.getId())
+                    .status("AFTER_SALE")
+                    .build());
+            orderOperateLogMapper.insert(OrderOperateLogDO.builder()
+                    .orderId(order.getId())
+                    .unitId(unit.getId())
+                    .operateType("ORDER_FLOW")
+                    .operateRole("SYSTEM")
+                    .operateBy(0L)
+                    .beforeStatus(order.getStatus())
+                    .afterStatus("AFTER_SALE")
+                    .remark("订单最终流单，系统自动发起退款")
+                    .operateTime(now)
+                    .build());
+            messagePushDispatchService.dispatchSingle("ORDER_STATUS_CHANGED", "订单状态通知", "ORDER",
+                    order.getId(), order.getUserId(), "订单已截止，系统正在自动退款");
+        }
         messagePushDispatchService.dispatchSingleIdempotent("lb_order_flow_advice", "流单建议通知",
-                "ORDER_FLOW", unit.getId(), orderInfoMapper.selectById(unit.getOrderId()).getUserId(),
+                "ORDER_FLOW", unit.getId(), order != null ? order.getUserId() : null,
                 "流单后建议通知", "lb_order_flow_advice:" + unit.getId() + ":" + now.toLocalDate());
         autoFlowRefundService.createAutoRefund(unit.getOrderId(), unit.getId(), now);
     }

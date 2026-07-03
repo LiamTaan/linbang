@@ -1,870 +1,1127 @@
 <template>
-    <view class="page-container">
-        <view class="header">
-            <view class="back-btn" @click="goBack">
-                <text class="iconfont icon-youjiantou back-icon"></text>
+  <view class="page-container">
+    <view class="header">
+      <view class="back-btn" @click="$navigateBack()">
+        <text class="iconfont icon-youjiantou back-icon"></text>
+      </view>
+      <text class="title">订单详情</text>
+      <view class="placeholder"></view>
+    </view>
+
+    <scroll-view class="content-scroll" scroll-y refresher-enabled :refresher-triggered="refreshing" @refresherrefresh="loadDetail">
+      <view v-if="errorText" class="summary-card">
+        <text class="card-title">当前订单暂时无法查看</text>
+        <text class="summary-text">{{ errorText }}</text>
+      </view>
+
+      <block v-else-if="orderDetail.id">
+        <view class="summary-card">
+          <view class="summary-top">
+            <view class="summary-main">
+              <text class="order-no">订单编号：{{ orderDetail.orderNo || '--' }}</text>
+              <text class="order-title">{{ orderDetail.requireDesc || '邻里订单' }}</text>
             </view>
-            <text class="title">{{ pageTitle }}</text>
-            <view class="placeholder"></view>
+            <view class="summary-status">{{ orderStatusText }}</view>
+          </view>
+          <view class="summary-row">
+            <text class="total-amount">{{ totalAmountText }}</text>
+            <text class="split-tip">{{ splitTipText }}</text>
+          </view>
+          <text class="summary-label">订单总额</text>
+          <text class="summary-address">{{ orderAddress }}</text>
         </view>
 
-        <scroll-view class="content-scroll" scroll-y :refresher-enabled="!isPreviewMode" :refresher-triggered="refreshing"
-            @refresherrefresh="handleRefresh">
-            <view v-if="isPreviewMode" class="preview-banner">
-                <text class="preview-banner-title">订单预览</text>
-                <text class="preview-banner-desc">当前为发布前预览页，请确认金额、协议和拆单信息后再提交。</text>
+        <view
+          v-for="unit in displayUnits"
+          :key="unit.id"
+          class="unit-card"
+          :class="resolveUnitCardClass(unit)">
+          <view class="unit-head">
+            <view class="unit-seq">{{ resolveUnitSeqLabel(unit) }}</view>
+            <text class="unit-head-status">{{ buildUnitHeadStatus(unit) }}</text>
+          </view>
+          <text class="unit-title">{{ unit.unitTitle || unit.unitNo || '订单单元' }}</text>
+          <view class="unit-grid">
+            <view class="unit-cell">
+              <text class="cell-label">单元金额</text>
+              <text class="cell-value">{{ formatAmount(unit.unitAmount) }}</text>
             </view>
-
-            <view class="order-info-card">
-                <text class="order-no">订单编号：{{ orderDetail.orderNo || '--' }}</text>
-                <text class="order-title">{{ orderDetail.requireDesc || '订单详情' }}</text>
-                <view class="amount-row">
-                    <view class="amount-left">
-                        <text class="amount-label">总金额：</text>
-                        <text class="amount-value">¥{{ $fmt.formatMoney(orderDetail.orderAmount) }}</text>
-                    </view>
-                    <text class="split-status">{{ orderStatusText }} · {{ splitStatusText }}</text>
-                </view>
-                <text class="order-address">{{ orderAddress }}</text>
-                <view class="preview-extra" v-if="isPreviewMode">
-                    <text class="preview-extra-item">类目：{{ orderDetail.categoryName || '--' }}</text>
-                    <text class="preview-extra-item">计价方式：{{ pricingModeText }}</text>
-                    <text class="preview-extra-item" v-if="invoiceReminder">{{ invoiceReminder }}</text>
-                    <text class="preview-extra-item" v-if="agreementTitle">协议：{{ agreementTitle }}</text>
-                </view>
+            <view class="unit-cell">
+              <text class="cell-label">验收状态</text>
+              <text class="cell-value">{{ getUnitAcceptanceText(unit) }}</text>
             </view>
-
-            <view class="rule-card" v-if="splitExplainVisible">
-                <text class="rule-title">拆单说明</text>
-                <view class="rule-list">
-                    <text class="rule-item">· 数量口径：{{ quantityUnitLabel }}</text>
-                    <text class="rule-item">· 按数量拆单：{{ quantitySplitEnabled ? '已开启' : '未开启，仅作说明' }}</text>
-                    <text class="rule-item" v-if="splitRuleSummary">· {{ splitRuleSummary }}</text>
-                    <text class="rule-item" v-for="(item, index) in splitTriggerReasons" :key="`trigger-${index}`">· {{ item }}</text>
-                </view>
+            <view class="unit-cell cell-wide">
+              <text class="cell-label">派单动态</text>
+              <text class="cell-value">{{ buildUnitStatusDetail(unit) }}</text>
             </view>
-
-            <view v-for="unit in orderDetail.units || []" :key="unit.id" class="unit-card"
-                :class="resolveUnitCardClass(unit.status)">
-                <view class="unit-header">
-                    <view class="unit-tag">单元 {{ unit.unitSeq || 1 }}</view>
-                    <text class="unit-status">{{ getOrderStatusLabel(unit.status) }}</text>
-                </view>
-                <text class="unit-title">{{ unit.unitTitle || unit.unitNo }}</text>
-                <view class="unit-info">
-                    <text class="info-item">金额：¥{{ $fmt.formatMoney(unit.unitAmount) }}</text>
-                    <text class="info-item">核销：{{ getVerifyStatusLabel(unit.verifyStatus) }}</text>
-                    <text class="info-item" v-if="unit.lockReason">锁定原因：{{ unit.lockReason }}</text>
-                    <text class="info-item" v-if="unit.finishTime">完成时间：{{ $fmt.formatDateTime(unit.finishTime) }}</text>
-                    <text class="info-item" v-else>创建时间：{{ $fmt.formatDateTime(unit.createTime) }}</text>
-                </view>
-                <view class="unit-actions" v-if="!isPreviewMode">
-                    <view class="action-btn view-btn" @click="handleViewVoucher(unit)">
-                        <text class="btn-text">查看核销码</text>
-                    </view>
-                    <view class="action-btn upload-btn" @click="handleUploadVoucher(unit)">
-                        <text class="btn-text">上传凭证</text>
-                    </view>
-                    <view class="action-btn confirm-btn" v-if="unit.status === 'ACCEPTED'" @click="handleStartService(unit)">
-                        <text class="btn-text">开始服务</text>
-                    </view>
-                    <view class="action-btn confirm-btn" v-else-if="['SERVING', 'PENDING_CONFIRM'].includes(unit.status)"
-                        @click="handleConfirmComplete(unit)">
-                        <text class="btn-text">确认完工</text>
-                    </view>
-                </view>
+            <view class="unit-cell cell-wide">
+              <text class="cell-label">时间节点</text>
+              <text class="cell-value">{{ buildUnitTimeText(unit) }}</text>
             </view>
+          </view>
+          <text class="unit-meta lock-text" v-if="unit.lockReason">锁定原因：{{ unit.lockReason }}</text>
 
-            <view class="rule-card" v-if="orderDetail.flowAdvice || (orderDetail.matchBatches || []).length">
-                <text class="rule-title">调度与建议</text>
-                <view class="rule-list">
-                    <text class="rule-item" v-if="orderDetail.flowAdvice">· {{ orderDetail.flowAdvice }}</text>
-                    <text class="rule-item" v-for="item in orderDetail.matchBatches || []" :key="`${item.stageNo}-${item.pushBatchNo}`">
-                        · 第 {{ item.stageNo }} 阶段 / 第 {{ item.pushBatchNo }} 批：{{ item.status }}
-                    </text>
-                </view>
+          <view v-if="getUnitProofs(unit).length" class="proof-list">
+            <view
+              v-for="proof in getUnitProofs(unit)"
+              :key="proof.id"
+              class="proof-item">
+              <image
+                class="proof-image"
+                :src="proof.fileUrl"
+                mode="aspectFill"
+                @click="previewProofs(getUnitProofs(unit), proof.fileUrl)" />
+              <view
+                v-if="canDeleteProof(unit, proof)"
+                class="proof-delete"
+                @click.stop="handleDeleteProof(unit, proof)">
+                <text class="proof-delete-text">×</text>
+              </view>
             </view>
+          </view>
 
-            <view class="section-card" v-if="(orderDetail.refunds || []).length">
-                <text class="section-title">退款记录</text>
-                <view v-for="item in orderDetail.refunds" :key="item.id" class="record-item">
-                    <text class="record-title">{{ item.reason }}</text>
-                    <text class="record-desc">{{ item.statusName || item.auditStatus }} · {{ $fmt.formatShortDateTime(item.createTime) }}</text>
-                </view>
+          <view v-if="getUnitReviews(unit).length" class="review-list">
+            <view
+              v-for="review in getUnitReviews(unit)"
+              :key="review.id"
+              class="review-card">
+              <view class="review-head">
+                <text class="review-title">{{ review.displayTitle || '评价记录' }}</text>
+                <text class="review-meta">{{ formatReviewStars(review.starLevel) }}</text>
+              </view>
+              <text class="review-content">{{ review.content || '暂无评价内容' }}</text>
+              <text class="review-time">{{ $fmt.formatDateTime(review.createTime) }}</text>
             </view>
+          </view>
 
-            <view class="section-card" v-if="(orderDetail.complaints || []).length">
-                <text class="section-title">投诉记录</text>
-                <view v-for="item in orderDetail.complaints" :key="item.id" class="record-item">
-                    <text class="record-title">{{ item.complaintType }}</text>
-                    <text class="record-desc">{{ item.status }} · {{ item.content }}</text>
-                </view>
+          <view class="hint-box" v-if="showUnitFlowHint(unit)">
+            <text class="link-text">{{ getUnitFlowHint(unit) }}</text>
+          </view>
+
+          <view class="unit-actions" v-if="unitActionItems(unit).length">
+            <view
+              v-for="action in unitActionItems(unit)"
+              :key="action.key"
+              class="unit-btn"
+              :class="action.variant"
+              @click="action.onClick">
+              <text>{{ action.label }}</text>
             </view>
+          </view>
+        </view>
 
-            <view class="section-card" v-if="(orderDetail.appeals || []).length">
-                <text class="section-title">申诉记录</text>
-                <view v-for="item in orderDetail.appeals" :key="item.id" class="record-item">
-                    <text class="record-title">{{ item.appealType }}</text>
-                    <text class="record-desc">{{ item.status }} · {{ item.content }}</text>
-                </view>
-            </view>
+        <view class="rule-card" v-if="splitExplainItems.length">
+          <text class="rule-title">拆分规则说明</text>
+          <text v-for="item in splitExplainItems" :key="item" class="rule-text">{{ item }}</text>
+        </view>
+      </block>
 
-            <view class="section-card" v-if="(orderDetail.timeline || []).length">
-                <text class="section-title">订单时间线</text>
-                <view v-for="item in orderDetail.timeline" :key="`${item.timelineType}-${item.bizId}-${item.eventTime}`" class="timeline-item">
-                    <text class="timeline-title">{{ item.title }}</text>
-                    <text class="timeline-desc">{{ item.content }}</text>
-                    <text class="timeline-time">{{ $fmt.formatDateTime(item.eventTime) }}</text>
-                </view>
-            </view>
+      <view class="bottom-space"></view>
+    </scroll-view>
 
-            <view class="bottom-actions" v-if="isPreviewMode">
-                <view class="bottom-btn contact-btn" @click="goBack">
-                    <text class="btn-text">返回修改</text>
-                </view>
-                <view class="bottom-btn refund-btn" @click="handlePublishPreview">
-                    <text class="btn-text">{{ publishing ? '发布中...' : '确认发布' }}</text>
-                </view>
-            </view>
-
-            <view class="bottom-actions" v-else-if="showBottomActions">
-                <view class="bottom-btn pay-btn" v-if="showPayAction" @click="handlePay">
-                    <text class="btn-text">{{ paying ? '支付中...' : '立即支付' }}</text>
-                </view>
-                <view class="bottom-btn contact-btn" v-if="showComplaintAction" @click="handleComplaint">
-                    <text class="btn-text">投诉反馈</text>
-                </view>
-                <view class="bottom-btn refund-btn" v-if="showRefundAction" @click="handleRefund">
-                    <text class="btn-text">申请退款</text>
-                </view>
-            </view>
-
-            <view class="bottom-space"></view>
-        </scroll-view>
+    <view class="footer-actions" v-if="footerActions.length">
+      <view
+        v-for="action in footerActions"
+        :key="action.key"
+        class="footer-btn"
+        :class="action.variant"
+        @click="action.onClick">
+        <text>{{ action.label }}</text>
+      </view>
     </view>
+  </view>
 </template>
 
 <script>
 import { uploadAppFile } from '@/api/infra'
+import { getProfile } from '@/api/member'
+import { getMerchantProfile } from '@/api/merchant'
 import {
-    createOrder,
-    confirmOrderUnit,
-    getOrderDetail,
-    getOrderUnitVerifyCode,
-    startOrderUnitService,
-    uploadDeliveryProof
+  confirmOrderUnit,
+  deleteDeliveryProof,
+  getOrderDetail,
+  startOrderUnitService,
+  uploadDeliveryProof
 } from '@/api/order'
-import { createPayOrder, getPayOrder, submitPayOrder } from '@/api/pay'
+import { loadPlatformSettings } from '@/services/app-bootstrap'
 import {
-    buildAddressText,
-    extractUploadedFile,
-    getOrderStatusLabel,
-    getPricingModeLabel,
-    getVerifyStatusLabel
+  buildAddressText,
+  extractUploadedFile,
+  formatOrderSplitModeLabel,
+  getDispatchStatusLabel,
+  getOrderStatusLabel,
+  getOrderUnitStatusLabel
 } from '@/utils/linbang'
 
-const ORDER_PREVIEW_STORAGE_KEY = 'linbang_order_preview_snapshot'
-
 export default {
-    data() {
-        return {
-            refreshing: false,
-            orderId: null,
-            orderDetail: {},
-            isPreviewMode: false,
-            previewSnapshot: null,
-            publishing: false,
-            paying: false,
-            payChecking: false
-        }
-    },
-    computed: {
-        pageTitle() {
-            return this.isPreviewMode ? '订单预览' : '拆分订单详情'
-        },
-        orderStatusText() {
-            return getOrderStatusLabel(this.orderDetail.status)
-        },
-        splitStatusText() {
-            return this.orderDetail.splitStatus === 'SPLIT' ? '已拆单' : '未拆单'
-        },
-        orderAddress() {
-            return buildAddressText(this.orderDetail) || '地址待补充'
-        },
-        pricingModeText() {
-            const previewResult = (this.previewSnapshot && this.previewSnapshot.previewResult) || {}
-            return previewResult.pricingModeName || getPricingModeLabel(this.orderDetail.pricingMode)
-        },
-        invoiceReminder() {
-            const previewResult = (this.previewSnapshot && this.previewSnapshot.previewResult) || {}
-            return previewResult.invoiceImpactReminder || ''
-        },
-        agreementTitle() {
-            const previewResult = (this.previewSnapshot && this.previewSnapshot.previewResult) || {}
-            const guaranteeConfig = (this.previewSnapshot && this.previewSnapshot.guaranteeConfig) || {}
-            return previewResult.agreementTitle || guaranteeConfig.projectEscrowAgreementTitle || guaranteeConfig.agreementTitle || ''
-        },
-        quantityUnitLabel() {
-            const previewResult = (this.previewSnapshot && this.previewSnapshot.previewResult) || {}
-            return this.orderDetail.quantityUnitLabel || previewResult.quantityUnitLabel || '份'
-        },
-        quantitySplitEnabled() {
-            const previewResult = (this.previewSnapshot && this.previewSnapshot.previewResult) || {}
-            return !!(this.orderDetail.quantitySplitEnabled || previewResult.quantitySplitEnabled)
-        },
-        splitTriggerReasons() {
-            const previewResult = (this.previewSnapshot && this.previewSnapshot.previewResult) || {}
-            const splitPreview = previewResult.splitPreview || {}
-            return this.orderDetail.splitTriggerReasons || splitPreview.splitTriggerReasons || []
-        },
-        splitRuleSummary() {
-            const previewResult = (this.previewSnapshot && this.previewSnapshot.previewResult) || {}
-            const splitPreview = previewResult.splitPreview || {}
-            return this.orderDetail.splitRuleSummary || splitPreview.splitRuleSummary || splitPreview.ruleDesc || ''
-        },
-        splitExplainVisible() {
-            return !!this.quantityUnitLabel || !!this.splitRuleSummary || (this.splitTriggerReasons || []).length > 0
-        },
-        showRefundAction() {
-            return ['PENDING_ACCEPT', 'ACCEPTED', 'SERVING', 'PENDING_CONFIRM', 'FINISHED', 'AFTER_SALE'].includes(this.orderDetail.status)
-        },
-        showComplaintAction() {
-            return ['PENDING_ACCEPT', 'ACCEPTED', 'SERVING', 'PENDING_CONFIRM', 'FINISHED', 'AFTER_SALE'].includes(this.orderDetail.status)
-        },
-        showPayAction() {
-            return !this.isPreviewMode && this.orderDetail.status === 'PENDING_PAY'
-        },
-        showBottomActions() {
-            return this.showPayAction || this.showRefundAction || this.showComplaintAction
-        }
-    },
-    onLoad(options) {
-        this.isPreviewMode = `${options && options.preview}` === '1'
-        this.orderId = options && options.orderId ? Number(options.orderId) : null
-        if (this.isPreviewMode) {
-            this.previewSnapshot = uni.getStorageSync(ORDER_PREVIEW_STORAGE_KEY) || null
-        }
-    },
-    onShow() {
-        if (this.isPreviewMode) {
-            this.loadPreviewDetail()
-            return
-        }
-        this.syncPayAndLoadOrder()
-    },
-    methods: {
-        getOrderStatusLabel,
-        getVerifyStatusLabel,
-        goBack() {
-            if (this.isPreviewMode && !this.publishing) {
-                this.previewSnapshot = uni.getStorageSync(ORDER_PREVIEW_STORAGE_KEY) || this.previewSnapshot
-            }
-            this.$navigateBack()
-        },
-        handleRefresh() {
-            if (this.isPreviewMode) {
-                this.refreshing = false
-                return
-            }
-            this.refreshing = true
-            this.syncPayAndLoadOrder()
-        },
-        loadPreviewDetail() {
-            const snapshot = this.previewSnapshot || uni.getStorageSync(ORDER_PREVIEW_STORAGE_KEY)
-            if (!snapshot || !snapshot.previewResult || !snapshot.payload) {
-                uni.showToast({
-                    title: '预览信息已失效',
-                    icon: 'none'
-                })
-                setTimeout(() => {
-                    this.$navigateBack()
-                }, 300)
-                return
-            }
-            this.previewSnapshot = snapshot
-            const previewResult = snapshot.previewResult || {}
-            const payload = snapshot.payload || {}
-            const categoryName = previewResult.categoryName || snapshot.currentCategoryName || '邻里需求'
-            const createTime = new Date().toISOString()
-            const splitEnabled = !!payload.needSplit || !!previewResult.splitPreview
-            this.orderDetail = {
-                orderNo: '预览生成后显示',
-                requireDesc: payload.requireDesc,
-                orderAmount: previewResult.orderAmount || payload.budgetAmount || 0,
-                categoryName,
-                pricingMode: payload.pricingMode,
-                quantityUnitLabel: previewResult.quantityUnitLabel || '份',
-                quantitySplitEnabled: !!previewResult.quantitySplitEnabled,
-                province: payload.province,
-                city: payload.city,
-                district: payload.district,
-                street: payload.street,
-                detailAddress: payload.detailAddress,
-                status: 'PENDING_PAY',
-                splitStatus: splitEnabled ? 'SPLIT' : 'UNSPLIT',
-                splitTriggerReasons: (previewResult.splitPreview && previewResult.splitPreview.splitTriggerReasons) || [],
-                splitRuleSummary: previewResult.splitPreview && (previewResult.splitPreview.splitRuleSummary || previewResult.splitPreview.ruleDesc)
-                    ? (previewResult.splitPreview.splitRuleSummary || previewResult.splitPreview.ruleDesc)
-                    : '',
-                flowAdvice: previewResult.splitPreview && (previewResult.splitPreview.splitRuleSummary || previewResult.splitPreview.ruleDesc)
-                    ? (previewResult.splitPreview.splitRuleSummary || previewResult.splitPreview.ruleDesc)
-                    : '',
-                matchBatches: [],
-                timeline: [
-                    {
-                        timelineType: 'PREVIEW',
-                        bizId: 0,
-                        unitId: 0,
-                        title: '发单预览生成',
-                        content: '请确认需求描述、金额、协议与拆单结果',
-                        status: 'PREVIEW',
-                        eventTime: createTime
-                    }
-                ],
-                units: this.buildPreviewUnits(payload, previewResult, createTime)
-            }
-        },
-        buildPreviewUnits(payload, previewResult, createTime) {
-            const splitPreview = previewResult.splitPreview || {}
-            const splitUnits = Array.isArray(splitPreview.units) ? splitPreview.units : []
-            if (splitUnits.length) {
-                return splitUnits.map((unit, index) => ({
-                    id: `preview-${index + 1}`,
-                    unitSeq: unit.unitSeq || index + 1,
-                    unitNo: unit.unitNo || `预览单元-${index + 1}`,
-                    unitTitle: unit.unitTitle || `${payload.requireDesc || '订单需求'}-${index + 1}`,
-                    unitAmount: unit.unitAmount || unit.amount || previewResult.orderAmount || payload.budgetAmount || 0,
-                    status: 'PENDING_ACCEPT',
-                    verifyStatus: 'PENDING',
-                    createTime,
-                    lockReason: unit.lockReason || ''
-                }))
-            }
-            return [{
-                id: 'preview-1',
-                unitSeq: 1,
-                unitNo: '预览单元-1',
-                unitTitle: payload.requireDesc || '订单需求',
-                unitAmount: previewResult.orderAmount || payload.budgetAmount || 0,
-                status: 'PENDING_ACCEPT',
-                verifyStatus: 'PENDING',
-                createTime
-            }]
-        },
-        async loadOrderDetail() {
-            if (!this.orderId) {
-                this.refreshing = false
-                return
-            }
-            try {
-                this.orderDetail = await getOrderDetail(this.orderId)
-            } catch (error) {
-            } finally {
-                this.refreshing = false
-            }
-        },
-        async syncPayAndLoadOrder() {
-            if (!this.orderId) {
-                this.refreshing = false
-                return
-            }
-            if (this.payChecking) {
-                this.refreshing = false
-                return
-            }
-            try {
-                this.payChecking = true
-                await getPayOrder({
-                    orderId: this.orderId,
-                    sync: true
-                }, { silent: true })
-            } catch (error) {
-            } finally {
-                this.payChecking = false
-                this.loadOrderDetail()
-            }
-        },
-        openPayUrl(url) {
-            if (!url) {
-                return
-            }
-            if (typeof plus !== 'undefined' && plus.runtime && plus.runtime.openURL) {
-                plus.runtime.openURL(url)
-                return
-            }
-            if (typeof window !== 'undefined') {
-                window.location.href = url
-                return
-            }
-            uni.setClipboardData({
-                data: url,
-                success: () => {
-                    uni.showToast({
-                        title: '支付链接已复制',
-                        icon: 'none'
-                    })
-                }
-            })
-        },
-        async handlePay() {
-            if (!this.orderId || this.paying) {
-                return
-            }
-            try {
-                this.paying = true
-                const payOrderId = await createPayOrder({
-                    orderId: this.orderId
-                })
-                const submitResult = await submitPayOrder({
-                    id: payOrderId,
-                    channelCode: 'aggregate',
-                    displayMode: 'url'
-                })
-                if (submitResult && submitResult.status === 10) {
-                    uni.showToast({
-                        title: '支付成功',
-                        icon: 'success'
-                    })
-                    this.syncPayAndLoadOrder()
-                    return
-                }
-                if (!submitResult || !submitResult.displayContent) {
-                    uni.showToast({
-                        title: '暂未获取到支付链接',
-                        icon: 'none'
-                    })
-                    return
-                }
-                this.openPayUrl(submitResult.displayContent)
-                uni.showModal({
-                    title: '请完成支付',
-                    content: '支付完成后返回本页，系统会自动更新订单状态并开始派送。',
-                    showCancel: false,
-                    success: () => {
-                        this.syncPayAndLoadOrder()
-                    }
-                })
-            } catch (error) {
-            } finally {
-                this.paying = false
-            }
-        },
-        resolveUnitCardClass(status) {
-            if (status === 'FINISHED') {
-                return 'green'
-            }
-            if (['SERVING', 'PENDING_CONFIRM', 'ACCEPTED'].includes(status)) {
-                return 'orange'
-            }
-            return 'blue'
-        },
-        async handleViewVoucher(unit) {
-            try {
-                const verifyResp = await getOrderUnitVerifyCode(unit.id)
-                uni.showModal({
-                    title: verifyResp.unitNo || unit.unitNo || '核销码',
-                    content: [
-                        `核销码：${verifyResp.verifyCode || '暂无'}`,
-                        `状态：${getVerifyStatusLabel(verifyResp.verifyStatus)}`,
-                        verifyResp.verifyRemark || ''
-                    ].filter(Boolean).join('\n'),
-                    showCancel: false
-                })
-            } catch (error) {
-            }
-        },
-        async handleUploadVoucher(unit) {
-            const chooseImage = () => new Promise((resolve, reject) => {
-                uni.chooseImage({
-                    count: 6,
-                    success: resolve,
-                    fail: reject
-                })
-            })
-            try {
-                const result = await chooseImage()
-                const paths = result.tempFilePaths || []
-                const fileIds = []
-                for (let i = 0; i < paths.length; i++) {
-                    const uploadResp = await uploadAppFile(paths[i])
-                    const file = extractUploadedFile(uploadResp, paths[i])
-                    if (file.fileId) {
-                        fileIds.push(file.fileId)
-                    }
-                }
-                if (!fileIds.length) {
-                    return
-                }
-                await uploadDeliveryProof({
-                    unitId: unit.id,
-                    proofType: 'DELIVERY_IMAGE',
-                    proofDesc: 'App 上传交付凭证',
-                    fileIds
-                })
-                uni.showToast({
-                    title: '凭证已上传',
-                    icon: 'success'
-                })
-                this.loadOrderDetail()
-            } catch (error) {
-            }
-        },
-        async handleStartService(unit) {
-            try {
-                await startOrderUnitService({
-                    unitId: unit.id,
-                    startRemark: 'App 发起开始服务'
-                })
-                uni.showToast({
-                    title: '已开始服务',
-                    icon: 'success'
-                })
-                this.loadOrderDetail()
-            } catch (error) {
-            }
-        },
-        async handleConfirmComplete(unit) {
-            try {
-                await confirmOrderUnit({
-                    unitId: unit.id,
-                    confirmRemark: 'App 确认完工'
-                })
-                uni.showToast({
-                    title: '已确认完工',
-                    icon: 'success'
-                })
-                this.loadOrderDetail()
-            } catch (error) {
-            }
-        },
-        handleRefund() {
-            uni.navigateTo({
-                url: `/pages/refund/refund?orderId=${this.orderId}`
-            })
-        },
-        handleComplaint() {
-            uni.navigateTo({
-                url: `/pages/complaint/complaint?orderId=${this.orderId}`
-            })
-        },
-        async handlePublishPreview() {
-            const snapshot = this.previewSnapshot || uni.getStorageSync(ORDER_PREVIEW_STORAGE_KEY)
-            if (!snapshot || !snapshot.payload || !snapshot.previewResult || !snapshot.previewResult.previewToken) {
-                uni.showToast({
-                    title: '预览信息已失效',
-                    icon: 'none'
-                })
-                return
-            }
-            if (this.publishing) {
-                return
-            }
-            try {
-                this.publishing = true
-                const guaranteeConfig = snapshot.guaranteeConfig || {}
-                const orderId = await createOrder({
-                    ...snapshot.payload,
-                    agreementConfirmed: true,
-                    agreementVersion: guaranteeConfig.agreementVersion || 'v2026.06',
-                    previewToken: snapshot.previewResult.previewToken,
-                    antiEscapeConfirmed: true
-                })
-                uni.removeStorageSync(ORDER_PREVIEW_STORAGE_KEY)
-                uni.showToast({
-                    title: '发布成功',
-                    icon: 'success'
-                })
-                setTimeout(() => {
-                    uni.redirectTo({
-                        url: `/pages/split_order_details/split_order_details?orderId=${orderId}`
-                    })
-                }, 300)
-            } catch (error) {
-            } finally {
-                this.publishing = false
-            }
-        }
+  data() {
+    return {
+      orderId: null,
+      unitId: null,
+      currentUserId: null,
+      currentMerchantId: null,
+      orderDetail: {},
+      refreshing: false,
+      errorText: ''
     }
+  },
+  computed: {
+    isPublisherViewer() {
+      return !!(this.currentUserId && this.orderDetail.userId && `${this.currentUserId}` === `${this.orderDetail.userId}`)
+    },
+    isAssignedMerchantViewer() {
+      return !!(this.currentMerchantId && this.orderDetail.merchantId
+        && `${this.currentMerchantId}` === `${this.orderDetail.merchantId}`)
+    },
+    displayUnits() {
+      const units = Array.isArray(this.orderDetail.units) ? this.orderDetail.units.slice() : []
+      return units.sort((a, b) => {
+        const seqA = Number(a.unitSeq || 0)
+        const seqB = Number(b.unitSeq || 0)
+        if (seqA !== seqB) {
+          return seqA - seqB
+        }
+        return Number(a.id || 0) - Number(b.id || 0)
+      })
+    },
+    totalAmountText() {
+      return `¥${this.$fmt.formatMoney(this.orderDetail.orderAmount)}`
+    },
+    splitTipText() {
+      const unitCount = this.displayUnits.length
+      if (unitCount <= 1) {
+        return '未拆分'
+      }
+      return `已拆分为${unitCount}个单元`
+    },
+    hasRefundRecord() {
+      return Array.isArray(this.orderDetail.refunds) && this.orderDetail.refunds.length > 0
+    },
+    latestRefundRecord() {
+      const list = Array.isArray(this.orderDetail.refunds) ? this.orderDetail.refunds.slice() : []
+      if (!list.length) {
+        return null
+      }
+      return list.sort((a, b) => new Date(b.createTime || 0).getTime() - new Date(a.createTime || 0).getTime())[0]
+    },
+    isFullyFlowedOrder() {
+      const units = this.displayUnits
+      if (!units.length) {
+        return false
+      }
+      const hasFlowedUnit = units.some((item) => item && ['FLOWED', 'EXPIRED'].includes(item.dispatchStatus))
+      const hasActiveFulfillmentUnit = units.some((item) => item && ['ACCEPTED', 'SERVING', 'PENDING_CONFIRM', 'FINISHED'].includes(item.status))
+      return hasFlowedUnit && !hasActiveFulfillmentUnit
+    },
+    effectiveOrderStatusText() {
+      if (!this.isFullyFlowedOrder) {
+        return getOrderStatusLabel(this.orderDetail.status)
+      }
+      if (this.latestRefundRecord && this.latestRefundRecord.statusName) {
+        return this.latestRefundRecord.statusName
+      }
+      if (this.latestRefundRecord) {
+        return '退款中'
+      }
+      return '已过期'
+    },
+    orderStatusText() {
+      return this.effectiveOrderStatusText
+    },
+    orderAddress() {
+      return buildAddressText(this.orderDetail) || '服务地址待补充'
+    },
+    splitExplainItems() {
+      const items = []
+      const triggerReasons = Array.isArray(this.orderDetail.splitTriggerReasons) ? this.orderDetail.splitTriggerReasons : []
+      triggerReasons.forEach((item) => {
+        if (item) {
+          items.push(item)
+        }
+      })
+      if (this.orderDetail.splitMode) {
+        items.push(`拆分方式：${formatOrderSplitModeLabel(this.orderDetail.splitMode)}`)
+      }
+      const unitLimit = this.resolveUnitAmountLimit()
+      if (unitLimit) {
+        items.push(`单元限额：每个单元≤ ${unitLimit}`)
+      }
+      if (this.orderDetail.splitRuleSummary) {
+        items.unshift(this.orderDetail.splitRuleSummary)
+      }
+      return items
+    },
+    footerActions() {
+      const actions = [
+        {
+          key: 'contact',
+          label: '联系平台',
+          variant: 'secondary',
+          onClick: this.openPlatformService
+        }
+      ]
+      if (this.isPublisherViewer && this.isFullyFlowedOrder) {
+        if (this.hasRefundRecord) {
+          actions.push({
+            key: 'refund',
+            label: '查看退款',
+            variant: 'secondary',
+            onClick: this.openRefund
+          })
+        }
+      } else if (this.isPublisherViewer && ['PENDING_ACCEPT', 'ACCEPTED'].includes(this.orderDetail.status)) {
+        actions.push({
+          key: 'refund',
+          label: this.hasRefundRecord ? '查看退款' : '申请退款',
+          variant: 'secondary',
+          onClick: this.openRefund
+        })
+      } else if (this.isPublisherViewer && ['SERVING', 'PENDING_CONFIRM', 'FINISHED', 'AFTER_SALE'].includes(this.orderDetail.status)) {
+        actions.push({
+          key: 'complaint',
+          label: '投诉反馈',
+          variant: 'secondary',
+          onClick: this.openComplaint
+        })
+      }
+      return actions
+    }
+  },
+  onLoad(options) {
+    this.orderId = options && options.orderId ? Number(options.orderId) : null
+    this.unitId = options && options.unitId ? Number(options.unitId) : null
+  },
+  onShow() {
+    this.loadDetail()
+  },
+  methods: {
+    getOrderUnitStatusLabel,
+    async loadDetail() {
+      if (!this.orderId) {
+        return
+      }
+      try {
+        this.refreshing = true
+        const [detail, profile, merchantProfile] = await Promise.all([
+          getOrderDetail(this.orderId, { silent: true }),
+          getProfile({ silent: true }).catch(() => ({})),
+          getMerchantProfile({ silent: true }).catch(() => ({}))
+        ])
+        this.orderDetail = detail || {}
+        this.currentUserId = (profile && profile.id) || null
+        this.currentMerchantId = (merchantProfile && merchantProfile.merchantId) || null
+        this.errorText = ''
+      } catch (error) {
+        this.errorText = (error && error.message) || '当前订单已无法访问'
+      } finally {
+        this.refreshing = false
+      }
+    },
+    resolveUnitSeqLabel(unit) {
+      const seq = unit && unit.unitSeq ? unit.unitSeq : ''
+      return seq ? `单元${this.toChineseSeq(seq)}` : '单元'
+    },
+    toChineseSeq(value) {
+      const map = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九']
+      const number = Number(value || 0)
+      if (number > 0 && number < 10) {
+        return map[number]
+      }
+      return String(value || '')
+    },
+    resolveUnitCardClass(unit) {
+      if (!unit) {
+        return 'card-default'
+      }
+      if (this.isFullyFlowedOrder) {
+        return ['FLOWED', 'EXPIRED'].includes(unit.dispatchStatus) ? 'card-flowed' : 'card-muted'
+      }
+      if (unit.status === 'FINISHED') {
+        return 'card-finished'
+      }
+      if (['SERVING', 'PENDING_CONFIRM'].includes(unit.status)) {
+        return 'card-serving'
+      }
+      return 'card-default'
+    },
+    buildUnitStatusDetail(unit) {
+      if (!unit) {
+        return '--'
+      }
+      if (this.isFullyFlowedOrder) {
+        if (['FLOWED', 'EXPIRED'].includes(unit.dispatchStatus)) {
+          return this.hasRefundRecord ? '整单已流单，系统正在按整单退款' : '整单已流单，当前单元派单已过期'
+        }
+        if (unit.status === 'PENDING_CREATE' || unit.isLocked) {
+          return '整单已流单，后续单元不再继续派单'
+        }
+      }
+      const statusTexts = []
+      if (unit.dispatchStatus && unit.status === 'PENDING_ACCEPT') {
+        statusTexts.push(getDispatchStatusLabel(unit.dispatchStatus))
+      }
+      if (unit.status) {
+        statusTexts.push(getOrderUnitStatusLabel(unit.status))
+      }
+      return statusTexts.join(' · ')
+    },
+    buildUnitTimeText(unit) {
+      if (!unit) {
+        return '--'
+      }
+      if (this.isFullyFlowedOrder && unit.flowTime) {
+        return `流单时间：${this.$fmt.formatDateTime(unit.flowTime)}`
+      }
+      if (unit.finishTime) {
+        return `完成时间：${this.$fmt.formatDateTime(unit.finishTime)}`
+      }
+      if (unit.acceptDeadlineTime && unit.status === 'PENDING_ACCEPT') {
+        return `接单截止：${this.$fmt.formatDateTime(unit.acceptDeadlineTime)}`
+      }
+      return `创建时间：${this.$fmt.formatDateTime(unit.createTime)}`
+    },
+    showUnitFlowHint(unit) {
+      return !!this.getUnitFlowHint(unit)
+    },
+    getUnitFlowHint(unit) {
+      if (!unit) {
+        return ''
+      }
+      if (this.isFullyFlowedOrder) {
+        if (['FLOWED', 'EXPIRED'].includes(unit.dispatchStatus)) {
+          return unit.flowReason || this.orderDetail.flowAdvice || '当前订单无人接单，系统已按整单发起退款'
+        }
+        if (unit.status === 'PENDING_CREATE' || unit.isLocked) {
+          return '前置单元已流单，后续单元自动终止'
+        }
+      }
+      if (['FLOWED', 'EXPIRED'].includes(unit.dispatchStatus) && unit.flowReason) {
+        return unit.flowReason
+      }
+      if (unit.dispatchStatus && unit.status === 'PENDING_ACCEPT') {
+        return `派单动态：${getDispatchStatusLabel(unit.dispatchStatus)}`
+      }
+      if (unit.lockReason) {
+        return `上一单元完成前暂不可继续`
+      }
+      return ''
+    },
+    getUnitProofs(unit) {
+      const list = Array.isArray(this.orderDetail.proofs) ? this.orderDetail.proofs : []
+      return list.filter((item) => `${item.unitId}` === `${unit && unit.id}`)
+    },
+    getUnitReviews(unit) {
+      const list = Array.isArray(this.orderDetail.reviews) ? this.orderDetail.reviews : []
+      return list.filter((item) => `${item.unitId}` === `${unit && unit.id}`)
+    },
+    formatReviewStars(starLevel) {
+      const score = Number(starLevel || 0)
+      if (!score) {
+        return '未评分'
+      }
+      return `${'★'.repeat(score)}${'☆'.repeat(Math.max(0, 5 - score))}`
+    },
+    previewProofs(proofs, currentUrl) {
+      const urls = (proofs || []).map((item) => item.fileUrl).filter(Boolean)
+      if (!urls.length) {
+        return
+      }
+      uni.previewImage({
+        urls,
+        current: currentUrl || urls[0]
+      })
+    },
+    unitActionItems(unit) {
+      if (!unit) {
+        return []
+      }
+      if (this.isAssignedMerchantViewer) {
+        return this.buildMerchantUnitActions(unit)
+      }
+      if (this.isPublisherViewer) {
+        return this.buildPublisherUnitActions(unit)
+      }
+      return []
+    },
+    buildMerchantUnitActions(unit) {
+      const actions = []
+      if (unit.status === 'ACCEPTED') {
+        actions.push(this.createAction('start-service', '开始服务', 'primary', () => this.handleStartService(unit)))
+      }
+      if (['ACCEPTED', 'SERVING', 'PENDING_CONFIRM'].includes(unit.status)) {
+        actions.push(this.createAction('upload-proof', '上传凭证', 'secondary', () => this.handleUploadProof(unit)))
+      }
+      if (unit.status === 'PENDING_CONFIRM') {
+        actions.push(this.createAction('wait-confirm', '待用户验收', 'primary-light'))
+      } else if (unit.status === 'FINISHED') {
+        actions.push(this.createAction('done', '已完成', 'disabled'))
+      }
+      return actions
+    },
+    buildPublisherUnitActions(unit) {
+      const actions = []
+      const hasProof = this.getUnitProofs(unit).length > 0
+      if (hasProof) {
+        actions.push(this.createAction('view-proof', '查看凭证', 'secondary', () => this.previewFirstProof(unit)))
+      }
+      if (unit.status === 'PENDING_CONFIRM') {
+        actions.push(this.createAction('confirm-complete', '确认完工', 'primary', () => this.handleConfirmComplete(unit)))
+      } else if (unit.status === 'FINISHED') {
+        actions.push(this.createAction('done', '已完成', 'disabled'))
+      }
+      return actions
+    },
+    createAction(key, label, variant, onClick) {
+      return {
+        key,
+        label,
+        variant,
+        onClick: typeof onClick === 'function' ? onClick : () => {}
+      }
+    },
+    previewFirstProof(unit) {
+      const proofs = this.getUnitProofs(unit)
+      if (!proofs.length) {
+        uni.showToast({
+          title: '当前还没有凭证',
+          icon: 'none'
+        })
+        return
+      }
+      this.previewProofs(proofs, proofs[0].fileUrl)
+    },
+    async handleStartService(unit) {
+      try {
+        await startOrderUnitService({
+          unitId: unit.id,
+          startRemark: 'App 发起开始服务'
+        })
+        uni.showToast({ title: '已开始服务', icon: 'success' })
+        this.loadDetail()
+      } catch (error) {
+      }
+    },
+    async handleUploadProof(unit) {
+      try {
+        const chooseResp = await new Promise((resolve, reject) => {
+          uni.chooseImage({
+            count: 3,
+            success: resolve,
+            fail: reject
+          })
+        })
+        const tempFiles = chooseResp && chooseResp.tempFiles ? chooseResp.tempFiles : []
+        if (!tempFiles.length) {
+          return
+        }
+        const uploadedIds = []
+        for (const file of tempFiles) {
+          const uploadResp = await uploadAppFile(file.path)
+          const uploadedFile = extractUploadedFile(uploadResp)
+          const fileId = uploadedFile && (uploadedFile.id || uploadedFile.fileId)
+          if (fileId) {
+            uploadedIds.push(fileId)
+          }
+        }
+        if (!uploadedIds.length) {
+          return
+        }
+        await uploadDeliveryProof({
+          unitId: unit.id,
+          proofType: 'DELIVERY_IMAGE',
+          proofDesc: 'App 上传交付凭证',
+          fileIds: uploadedIds
+        })
+        uni.showToast({ title: '凭证已上传', icon: 'success' })
+        this.loadDetail()
+      } catch (error) {
+      }
+    },
+    async handleConfirmComplete(unit) {
+      uni.showModal({
+        title: '确认完工',
+        content: '确认后该单元将进入已完成，并触发对应单元结算，是否继续？',
+        success: async ({ confirm }) => {
+          if (!confirm) {
+            return
+          }
+          try {
+            await confirmOrderUnit({
+              unitId: unit.id,
+              confirmRemark: '用户在拆分单详情确认完工'
+            })
+            uni.showToast({ title: '已确认完工', icon: 'success' })
+            this.loadDetail()
+          } catch (error) {
+          }
+        }
+      })
+    },
+    resolveUnitAmountLimit() {
+      const unit = this.displayUnits.find((item) => item.maxAmountLimit !== undefined && item.maxAmountLimit !== null)
+      if (!unit || unit.maxAmountLimit === undefined || unit.maxAmountLimit === null) {
+        return ''
+      }
+      return this.formatAmount(unit.maxAmountLimit)
+    },
+    formatAmount(value) {
+      return `¥ ${this.$fmt.formatMoney(value)}`
+    },
+    getUnitAcceptanceText(unit) {
+      if (!unit) {
+        return '--'
+      }
+      if (unit.verifyStatus === 'VERIFIED') {
+        return '已验收'
+      }
+      if (this.isFullyFlowedOrder) {
+        return '不适用'
+      }
+      if (unit.status === 'PENDING_CONFIRM') {
+        return '待用户验收'
+      }
+      if (unit.status === 'FINISHED') {
+        return '已验收'
+      }
+      if (unit.status === 'SERVING') {
+        return '服务进行中'
+      }
+      if (unit.status === 'ACCEPTED') {
+        return '待开始服务'
+      }
+      return getOrderUnitStatusLabel(unit.status)
+    },
+    buildUnitHeadStatus(unit) {
+      if (!unit) {
+        return '--'
+      }
+      if (this.isFullyFlowedOrder) {
+        if (['FLOWED', 'EXPIRED'].includes(unit.dispatchStatus)) {
+          return '已过期'
+        }
+        if (unit.status === 'PENDING_CREATE' || unit.isLocked) {
+          return '未执行'
+        }
+      }
+      return getOrderUnitStatusLabel(unit.status)
+    },
+    openRefund() {
+      uni.navigateTo({
+        url: `/pages/refund/refund?orderId=${this.orderId}`
+      })
+    },
+    openComplaint() {
+      uni.navigateTo({
+        url: `/pages/complaint/complaint?orderId=${this.orderId}`
+      })
+    },
+    canDeleteProof(unit, proof) {
+      if (!this.isAssignedMerchantViewer || !unit || !proof) {
+        return false
+      }
+      return ['ACCEPTED', 'SERVING', 'PENDING_CONFIRM'].includes(unit.status)
+    },
+    async handleDeleteProof(unit, proof) {
+      uni.showModal({
+        title: '删除凭证',
+        content: '删除后该图片将不再作为完工凭证，是否继续？',
+        success: async ({ confirm }) => {
+          if (!confirm) {
+            return
+          }
+          try {
+            await deleteDeliveryProof({
+              proofId: proof.id
+            })
+            uni.showToast({ title: '已删除', icon: 'success' })
+            this.loadDetail()
+          } catch (error) {
+          }
+        }
+      })
+    },
+    async openPlatformService() {
+      const settings = await loadPlatformSettings(true).catch(() => ({}))
+      const serviceWechat = String((settings && settings.serviceWechat) || '').trim()
+      const serviceHotline = String((settings && settings.serviceHotline) || '').trim()
+      const itemList = []
+      const actions = []
+      if (serviceWechat) {
+        itemList.push('在线客服')
+        actions.push(() => {
+          uni.setClipboardData({
+            data: serviceWechat,
+            success: () => {
+              uni.showToast({ title: '客服微信已复制', icon: 'success' })
+            }
+          })
+        })
+      }
+      if (serviceHotline) {
+        itemList.push('电话客服')
+        actions.push(() => {
+          uni.makePhoneCall({
+            phoneNumber: serviceHotline
+          })
+        })
+      }
+      if (!itemList.length) {
+        uni.showToast({
+          title: '客服暂未配置',
+          icon: 'none'
+        })
+        return
+      }
+      if (itemList.length === 1) {
+        actions[0]()
+        return
+      }
+      uni.showActionSheet({
+        itemList,
+        success: ({ tapIndex }) => {
+          const action = actions[tapIndex]
+          if (action) {
+            action()
+          }
+        }
+      })
+    },
+  }
 }
 </script>
 
 <style lang="scss" scoped>
 .page-container {
-    min-height: 100vh;
-    background: #F5F5F5;
+  min-height: 100vh;
+  background: #f7f9fc;
+}
 
-    .header {
-        background: #fff;
-        padding: 60rpx 30rpx 30rpx;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1rpx solid #F0F0F0;
+.header {
+  background: #fff;
+  padding: 60rpx 30rpx 26rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1rpx solid #eef2f7;
+}
 
-        .back-btn,
-        .placeholder {
-            width: 60rpx;
-        }
+.back-btn,
+.placeholder {
+  width: 60rpx;
+}
 
-        .back-icon {
-            font-size: 40rpx;
-            color: #333;
-            transform: rotate(180deg);
-        }
+.back-icon {
+  font-size: 40rpx;
+  color: #333;
+  transform: rotate(180deg);
+}
 
-        .title {
-            font-size: 34rpx;
-            font-weight: bold;
-            color: #333;
-        }
-    }
+.title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #1f2937;
+}
 
-    .content-scroll {
-        flex: 1;
-        padding: 20rpx;
-        box-sizing: border-box;
+.content-scroll {
+  padding: 20rpx 24rpx 0;
+  box-sizing: border-box;
+}
 
-        .preview-banner {
-            background: linear-gradient(180deg, #fef7e8 0%, #fff9ef 100%);
-            border: 1rpx solid #f7d48b;
-            border-radius: 16rpx;
-            padding: 20rpx 24rpx;
-            margin-bottom: 16rpx;
+.summary-card,
+.rule-card,
+.unit-card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+}
 
-            .preview-banner-title {
-                display: block;
-                font-size: 28rpx;
-                font-weight: 600;
-                color: #a86a00;
-                margin-bottom: 8rpx;
-            }
+.summary-card {
+  background: linear-gradient(180deg, #eaf3ff 0%, #f8fbff 100%);
+}
 
-            .preview-banner-desc {
-                font-size: 24rpx;
-                color: #8c6a2b;
-                line-height: 34rpx;
-            }
-        }
+.order-no,
+.summary-text,
+.unit-meta,
+.rule-text,
+.link-text {
+  display: block;
+  font-size: 24rpx;
+  color: #7b8794;
+  line-height: 1.7;
+}
 
-        .order-info-card,
-        .unit-card,
-        .rule-card,
-        .section-card {
-            background: #fff;
-            border-radius: 16rpx;
-            padding: 24rpx;
-            margin-bottom: 16rpx;
-        }
+.card-title,
+.order-title,
+.rule-title,
+.unit-title {
+  display: block;
+  color: #111827;
+  font-weight: 600;
+}
 
-        .order-info-card {
-            background: #E8F4FD;
-        }
+.card-title,
+.rule-title {
+  font-size: 30rpx;
+  margin-bottom: 12rpx;
+}
 
-        .order-no,
-        .order-address,
-        .record-desc,
-        .timeline-desc,
-        .timeline-time {
-            font-size: 24rpx;
-            color: #666;
-            display: block;
-        }
+.order-title {
+  font-size: 34rpx;
+  margin: 10rpx 0 16rpx;
+}
 
-        .order-title,
-        .section-title,
-        .rule-title {
-            font-size: 32rpx;
-            font-weight: bold;
-            color: #333;
-            display: block;
-            margin-bottom: 16rpx;
-        }
+.summary-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20rpx;
+}
 
-        .amount-row,
-        .unit-header,
-        .unit-actions,
-        .bottom-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+.summary-main {
+  flex: 1;
+}
 
-        .amount-left {
-            display: flex;
-            align-items: baseline;
-            gap: 8rpx;
-        }
+.summary-status {
+  min-width: 120rpx;
+  height: 52rpx;
+  padding: 0 18rpx;
+  border-radius: 16rpx;
+  background: rgba(46, 131, 240, 0.12);
+  color: #2e83f0;
+  font-size: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-        .amount-label,
-        .split-status,
-        .info-item,
-        .rule-item {
-            font-size: 26rpx;
-            color: #666;
-        }
+.summary-row,
+.unit-head,
+.unit-actions,
+.footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
-        .amount-value {
-            font-size: 36rpx;
-            font-weight: bold;
-            color: #E53935;
-        }
+.total-amount {
+  font-size: 44rpx;
+  color: #ef4444;
+  font-weight: 700;
+}
 
-        .preview-extra {
-            margin-top: 20rpx;
-            padding-top: 16rpx;
-            border-top: 1rpx solid rgba(74, 144, 240, 0.12);
-            display: flex;
-            flex-direction: column;
-            gap: 8rpx;
+.split-tip {
+  font-size: 24rpx;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  padding: 10rpx 18rpx;
+  border-radius: 14rpx;
+}
 
-            .preview-extra-item {
-                font-size: 24rpx;
-                line-height: 34rpx;
-                color: #5c6980;
-            }
-        }
+.summary-label,
+.summary-address {
+  display: block;
+  color: #7b8794;
+  font-size: 24rpx;
+  line-height: 1.7;
+}
 
-        .unit-card {
-            border: 2rpx solid #D6E4FF;
+.summary-label {
+  margin-top: 8rpx;
+}
 
-            &.green {
-                border-color: #52C41A;
-            }
+.summary-address {
+  margin-top: 12rpx;
+}
 
-            &.orange {
-                border-color: #FA9D3B;
-            }
+.unit-card {
+  border: 2rpx solid #d8e1ee;
+  box-shadow: 0 12rpx 28rpx rgba(31, 41, 55, 0.05);
+}
 
-            .unit-tag {
-                padding: 6rpx 16rpx;
-                border-radius: 6rpx;
-                background: #4A90F0;
-                font-size: 22rpx;
-                color: #fff;
-                font-weight: bold;
-            }
+.card-finished {
+  border-color: #32b357;
+}
 
-            .unit-status,
-            .record-title,
-            .timeline-title {
-                font-size: 26rpx;
-                font-weight: bold;
-                color: #333;
-            }
+.card-serving {
+  border-color: #f4ab23;
+}
 
-            .unit-title {
-                font-size: 30rpx;
-                font-weight: bold;
-                color: #333;
-                display: block;
-                margin: 16rpx 0;
-            }
+.card-flowed {
+  border-color: #f59e0b;
+}
 
-            .unit-info {
-                display: flex;
-                flex-direction: column;
-                gap: 8rpx;
-                margin-bottom: 20rpx;
-            }
+.card-muted {
+  border-color: #d8e1ee;
+  opacity: 0.9;
+}
 
-            .action-btn,
-            .bottom-btn {
-                padding: 16rpx 24rpx;
-                border-radius: 8rpx;
-                text-align: center;
-            }
+.unit-seq {
+  min-width: 112rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 10rpx;
+  color: #fff;
+  font-size: 24rpx;
+  text-align: center;
+  background: #64748b;
+}
 
-            .view-btn {
-                background: #F5F5F5;
-            }
+.card-finished .unit-seq {
+  background: #21a048;
+}
 
-            .upload-btn {
-                background: #FFF7E6;
-            }
+.card-serving .unit-seq {
+  background: #f59e0b;
+}
 
-            .confirm-btn {
-                background: #4A90F0;
-            }
+.card-flowed .unit-seq {
+  background: #f59e0b;
+}
 
-            .btn-text {
-                font-size: 24rpx;
-                font-weight: bold;
-                color: #333;
-            }
+.card-muted .unit-seq {
+  background: #94a3b8;
+}
 
-            .confirm-btn .btn-text {
-                color: #fff;
-            }
-        }
+.unit-head-status {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #64748b;
+}
 
-        .rule-list,
-        .timeline-item {
-            display: flex;
-            flex-direction: column;
-            gap: 8rpx;
-        }
+.card-finished .unit-head-status {
+  color: #21a048;
+}
 
-        .record-item,
-        .timeline-item {
-            padding: 16rpx 0;
-            border-bottom: 1rpx solid #F0F0F0;
+.card-serving .unit-head-status {
+  color: #f59e0b;
+}
 
-            &:last-child {
-                border-bottom: none;
-            }
-        }
+.card-flowed .unit-head-status {
+  color: #f59e0b;
+}
 
-        .bottom-actions {
-            gap: 20rpx;
-            margin-top: 24rpx;
+.unit-title {
+  font-size: 32rpx;
+  margin: 20rpx 0 12rpx;
+}
 
-            .bottom-btn {
-                flex: 1;
-                min-width: 0;
-                min-height: 72rpx;
-                padding: 0 24rpx;
-                border: 2rpx solid #4A90F0;
-                border-radius: 12rpx;
-                box-sizing: border-box;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
+.unit-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
 
-            .contact-btn {
-                background: #fff;
-            }
+.unit-cell {
+  width: calc(50% - 8rpx);
+  padding: 18rpx 20rpx;
+  border-radius: 16rpx;
+  background: #f8fafc;
+  box-sizing: border-box;
+}
 
-            .refund-btn {
-                background: #4A90F0;
-            }
+.cell-wide {
+  width: 100%;
+}
 
-            .pay-btn {
-                background: #FA9D3B;
-                border-color: #FA9D3B;
-            }
+.cell-label,
+.cell-value {
+  display: block;
+}
 
-            .contact-btn .btn-text {
-                color: #4A90F0;
-            }
+.cell-label {
+  font-size: 22rpx;
+  color: #94a3b8;
+}
 
-            .pay-btn .btn-text,
-            .refund-btn .btn-text {
-                color: #fff;
-            }
+.cell-value {
+  margin-top: 8rpx;
+  color: #334155;
+  font-size: 25rpx;
+  line-height: 1.6;
+}
 
-            .btn-text {
-                font-size: 30rpx;
-                font-weight: 600;
-                line-height: 1;
-                white-space: nowrap;
-            }
-        }
+.lock-text,
+.link-text {
+  margin-top: 6rpx;
+}
 
-        .bottom-space {
-            height: 60rpx;
-        }
-    }
+.link-text {
+  color: #94a3b8;
+}
+
+.hint-box {
+  margin-top: 18rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 16rpx;
+  background: #fff7e8;
+}
+
+.proof-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 18rpx;
+}
+
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-top: 18rpx;
+}
+
+.review-card {
+  padding: 18rpx 20rpx;
+  border-radius: 16rpx;
+  background: #f8fafc;
+}
+
+.review-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.review-title {
+  font-size: 24rpx;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.review-meta {
+  font-size: 22rpx;
+  color: #f59e0b;
+}
+
+.review-content {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #334155;
+}
+
+.review-time {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #94a3b8;
+}
+
+.proof-item {
+  position: relative;
+}
+
+.proof-image {
+  width: 132rpx;
+  height: 132rpx;
+  border-radius: 14rpx;
+  background: #eef2f7;
+}
+
+.proof-delete {
+  position: absolute;
+  top: -10rpx;
+  right: -10rpx;
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.proof-delete-text {
+  color: #fff;
+  font-size: 26rpx;
+  line-height: 1;
+}
+
+.unit-actions {
+  gap: 16rpx;
+  margin-top: 22rpx;
+}
+
+.unit-btn {
+  flex: 1;
+  height: 72rpx;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+}
+
+.unit-btn.secondary {
+  background: #fff7e8;
+  color: #d9822b;
+}
+
+.unit-btn.primary {
+  background: #2e83f0;
+  color: #fff;
+}
+
+.unit-btn.primary-light {
+  background: #eaf2ff;
+  color: #90a4c2;
+}
+
+.unit-btn.disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+.rule-card {
+  border: 1rpx solid #e5edf8;
+}
+
+.rule-title {
+  margin-bottom: 14rpx;
+}
+
+.rule-text {
+  padding-left: 22rpx;
+  position: relative;
+}
+
+.rule-text::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 16rpx;
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 50%;
+  background: #2e83f0;
+}
+
+.footer-actions {
+  position: fixed;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: calc(24rpx + env(safe-area-inset-bottom));
+  gap: 16rpx;
+}
+
+.footer-btn {
+  flex: 1;
+  height: 88rpx;
+  border-radius: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30rpx;
+}
+
+.footer-btn.secondary {
+  background: #edf5ff;
+  color: #4c89df;
+}
+
+.bottom-space {
+  height: 160rpx;
 }
 </style>
-

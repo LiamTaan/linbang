@@ -67,9 +67,6 @@ public class ReviewAutoEvaluateService {
         if (!hasReviewFrom(reviews, order.getUserId())) {
             appReviewService.createAutoReview(unit, order.getUserId(), merchantUserId);
         }
-        if (!hasReviewFrom(reviews, merchantUserId)) {
-            appReviewService.createAutoReview(unit, merchantUserId, order.getUserId());
-        }
     }
 
     private boolean hasReviewFrom(List<ReviewCommentDO> reviews, Long fromUserId) {

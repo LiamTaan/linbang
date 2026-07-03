@@ -15,6 +15,8 @@ public interface AppOrderService {
 
     PageResult<AppOrderAcceptPageItemRespVO> getAcceptOrderPage(Long authUserId, AppOrderAcceptPageReqVO reqVO);
 
+    AppOrderAcceptDetailRespVO getAcceptOrderDetail(Long authUserId, Long orderId, Long unitId);
+
     PageResult<AppOrderPageItemRespVO> getOrderPage(Long authUserId, AppOrderPageReqVO reqVO);
 
     AppOrderDetailRespVO getOrderDetail(Long authUserId, Long orderId);
@@ -40,6 +42,8 @@ public interface AppOrderService {
     AppOrderAcceptRespVO acceptOrder(Long authUserId, @Valid AppOrderAcceptCreateReqVO reqVO);
 
     Boolean uploadDeliveryProof(Long authUserId, @Valid AppDeliveryProofUploadReqVO reqVO);
+
+    Boolean deleteDeliveryProof(Long authUserId, @Valid AppDeliveryProofDeleteReqVO reqVO);
 
     AppOrderAppealProgressRespVO getAppealProgress(Long authUserId, Long appealId);
 

@@ -26,6 +26,9 @@ public class AppOrderPageItemRespVO {
     @Schema(description = OpenApiSchemaConstants.PRICING_MODE, example = "FIXED_PRICE")
     private String pricingMode;
 
+    @Schema(description = "需求描述，列表卡片标题来源")
+    private String requireDesc;
+
     @Schema(description = "订单金额，单位元")
     private BigDecimal orderAmount;
 
@@ -61,5 +64,20 @@ public class AppOrderPageItemRespVO {
 
     @Schema(description = "创建时间")
     private LocalDateTime createTime;
+
+    @Schema(description = "派单状态：WAITING 待派单、PUSHING 派单中、FLOWED 已流单、ACCEPTED 已接单、EXPIRED 已过期、FINISHED 已结束")
+    private String dispatchStatus;
+
+    @Schema(description = "当前阶段号", example = "1")
+    private Integer stageNo;
+
+    @Schema(description = "当前推送批次号", example = "1")
+    private Integer pushBatchNo;
+
+    @Schema(description = "接单剩余倒计时秒数；仅待接单阶段有值", example = "52")
+    private Integer countdownSeconds;
+
+    @Schema(description = "当前轮派单截止时间")
+    private LocalDateTime acceptDeadlineTime;
 
 }

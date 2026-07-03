@@ -120,13 +120,28 @@ export default {
         }
     },
     computed: {
+        isFullyFlowedOrder() {
+            const units = Array.isArray(this.orderDetail.units) ? this.orderDetail.units : []
+            if (!units.length) {
+                return false
+            }
+            const hasFlowedUnit = units.some((item) => item && ['FLOWED', 'EXPIRED'].includes(item.dispatchStatus))
+            const hasActiveFulfillmentUnit = units.some((item) => item && ['ACCEPTED', 'SERVING', 'PENDING_CONFIRM', 'FINISHED'].includes(item.status))
+            return hasFlowedUnit && !hasActiveFulfillmentUnit
+        },
         unitOptions() {
+            if (this.isFullyFlowedOrder) {
+                return []
+            }
             return (this.orderDetail.units || []).filter((item) => ['PENDING_ACCEPT', 'ACCEPTED'].includes(item.status))
         },
         currentUnit() {
             return this.unitOptions.find((item) => `${item.id}` === `${this.unitId}`) || null
         },
         refundAmount() {
+            if (this.isFullyFlowedOrder) {
+                return this.orderDetail.orderAmount || 0
+            }
             if (this.currentUnit && this.currentUnit.unitAmount !== undefined) {
                 return this.currentUnit.unitAmount
             }
@@ -136,6 +151,9 @@ export default {
             return this.orderDetail.requireDesc || this.orderDetail.orderNo || '请选择订单'
         },
         currentOrderStatus() {
+            if (this.isFullyFlowedOrder) {
+                return '已过期'
+            }
             return getOrderStatusLabel(this.orderDetail.status)
         },
         currentUnitTitle() {
@@ -183,6 +201,10 @@ export default {
         async loadOrderDetail() {
             const detail = await getOrderDetail(this.orderId)
             this.orderDetail = detail || {}
+            if (this.isFullyFlowedOrder) {
+                this.unitId = null
+                return
+            }
             if (!this.unitId && this.unitOptions.length === 1) {
                 this.unitId = this.unitOptions[0].id
             }

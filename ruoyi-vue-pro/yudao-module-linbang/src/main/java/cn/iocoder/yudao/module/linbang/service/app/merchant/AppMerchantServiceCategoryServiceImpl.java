@@ -71,13 +71,22 @@ public class AppMerchantServiceCategoryServiceImpl implements AppMerchantService
         MerchantInfoDO merchantInfo = getCurrentMerchant(authUserId);
         List<Long> categoryIds = normalizeCategoryIds(reqVO.getServiceCategoryIds());
         validateCategories(categoryIds);
-        merchantCategoryRelMapper.delete(new LambdaQueryWrapperX<MerchantCategoryRelDO>()
-                .eq(MerchantCategoryRelDO::getMerchantId, merchantInfo.getId()));
-        for (Long categoryId : categoryIds) {
-            merchantCategoryRelMapper.insert(MerchantCategoryRelDO.builder()
-                    .merchantId(merchantInfo.getId())
-                    .categoryId(categoryId)
-                    .status("ENABLE")
+        List<MerchantCategoryRelDO> currentRels = merchantCategoryRelMapper.selectListByMerchantId(merchantInfo.getId());
+        if (currentRels.isEmpty()) {
+            throw exception(MERCHANT_AUTH_REQUIRED);
+        }
+        List<Long> allowedCategoryIds = currentRels.stream()
+                .map(MerchantCategoryRelDO::getCategoryId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        if (!allowedCategoryIds.containsAll(categoryIds)) {
+            throw exception(MERCHANT_SERVICE_CATEGORY_NOT_EXISTS);
+        }
+        for (MerchantCategoryRelDO rel : currentRels) {
+            merchantCategoryRelMapper.updateById(MerchantCategoryRelDO.builder()
+                    .id(rel.getId())
+                    .status(categoryIds.contains(rel.getCategoryId()) ? "ENABLE" : "DISABLE")
                     .build());
         }
     }

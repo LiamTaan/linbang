@@ -32,6 +32,10 @@ export function resolveAddressLocation(data) {
   return post('/member/address/resolve-location', data)
 }
 
+export function getNearbyAddressPois(params) {
+  return get('/member/address/nearby-pois', params)
+}
+
 export function createAddress(data) {
   return post('/member/address/create', data)
 }

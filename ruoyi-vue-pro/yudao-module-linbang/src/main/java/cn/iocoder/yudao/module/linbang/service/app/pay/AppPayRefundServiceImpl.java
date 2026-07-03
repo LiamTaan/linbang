@@ -63,6 +63,7 @@ import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_UNI
 public class AppPayRefundServiceImpl implements AppPayRefundService {
 
     private static final String MERCHANT_REFUND_PREFIX = "LBR";
+    private static final String AUTO_FLOW_REFUND_PREFIX = "LBAF";
 
     @Resource
     private MemberUserService memberUserService;
@@ -168,7 +169,7 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
         if (order == null) {
             throw exception(ORDER_INFO_NOT_EXISTS);
         }
-        OrderUnitDO unit = validateRefundUnit(bizRef.unitId, order.getId());
+        OrderUnitDO unit = bizRef.unitId != null ? getRefundUnit(bizRef.unitId, order.getId()) : null;
         PayRefundRespDTO payRefund = payRefundApi.getRefund(notifyReqDTO.getPayRefundId());
         if (payRefund == null
                 || !Objects.equals(payRefund.getMerchantRefundId(), notifyReqDTO.getMerchantRefundId())
@@ -296,16 +297,35 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
 
     private RefundBizRef parseRefundBizRef(String merchantRefundId) {
         String[] segments = merchantRefundId.split("-");
-        if (segments.length < 4 || !Objects.equals(segments[0], MERCHANT_REFUND_PREFIX)) {
+        if (segments.length < 4) {
             throw exception(ORDER_REFUND_NOTIFY_INVALID);
         }
         try {
-            Long orderId = Long.valueOf(segments[1]);
-            Long unitId = Long.valueOf(segments[2]);
-            return new RefundBizRef(orderId, Objects.equals(unitId, 0L) ? null : unitId);
+            if (Objects.equals(segments[0], MERCHANT_REFUND_PREFIX)) {
+                Long orderId = Long.valueOf(segments[1]);
+                Long unitId = Long.valueOf(segments[2]);
+                return new RefundBizRef(orderId, Objects.equals(unitId, 0L) ? null : unitId);
+            }
+            if (Objects.equals(segments[0], AUTO_FLOW_REFUND_PREFIX)) {
+                Long orderId = Long.valueOf(segments[1]);
+                Long unitId = Long.valueOf(segments[2]);
+                return new RefundBizRef(orderId, unitId);
+            }
+            throw exception(ORDER_REFUND_NOTIFY_INVALID);
         } catch (NumberFormatException ex) {
             throw exception(ORDER_REFUND_NOTIFY_INVALID);
         }
+    }
+
+    private OrderUnitDO getRefundUnit(Long unitId, Long orderId) {
+        if (unitId == null) {
+            return null;
+        }
+        OrderUnitDO unit = orderUnitMapper.selectById(unitId);
+        if (unit == null || !Objects.equals(unit.getOrderId(), orderId)) {
+            throw exception(ORDER_UNIT_NOT_EXISTS);
+        }
+        return unit;
     }
 
     private void saveRefundTraceFlow(MemberUserDO loginUser, OrderInfoDO order, OrderUnitDO unit,

@@ -56,12 +56,7 @@
                 </view>
 
                 <view class="anonymous-card">
-                    <view class="checkbox-wrap" @click="toggleAnonymous">
-                        <view class="checkbox" :class="{ checked: isAnonymous }">
-                            <text v-if="isAnonymous" class="check-icon">✓</text>
-                        </view>
-                        <text class="checkbox-text">匿名评价（仅前端展示偏好，本轮不单独传后端）</text>
-                    </view>
+                    <text class="anonymous-tip">匿名评价功能暂未接入，当前提交后服务商仍可查看该评价内容。</text>
                 </view>
 
                 <view class="submit-btn" @click="handleSubmit">
@@ -86,7 +81,6 @@ export default {
             selectedUnitId: null,
             currentRating: 5,
             comment: '',
-            isAnonymous: true,
             selectedTags: ['准时上门', '技术专业'],
             serviceTags: ['准时上门', '技术专业', '态度友好', '价格合理', '干净整洁'],
             starIcon: '/static/img/evaluation_service/star@3x.png',
@@ -146,9 +140,6 @@ export default {
             } else {
                 this.selectedTags.push(tagName)
             }
-        },
-        toggleAnonymous() {
-            this.isAnonymous = !this.isAnonymous
         },
         async handleSubmit() {
             if (this.submitting) {

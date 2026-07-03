@@ -5,7 +5,10 @@
                 <text class="iconfont icon-youjiantou back-icon"></text>
             </view>
             <text class="title">地址管理</text>
-            <view class="placeholder"></view>
+            <view v-if="selectMode" class="confirm-btn" @click="confirmSelection">
+                <text class="confirm-text">确定</text>
+            </view>
+            <view v-else class="placeholder"></view>
         </view>
 
         <scroll-view class="content-scroll" scroll-y>
@@ -14,7 +17,8 @@
                     v-for="item in addressList"
                     :key="item.id"
                     class="address-card"
-                    :class="{ 'default-card': item.isDefault }">
+                    :class="{ 'default-card': item.isDefault, 'selected-card': selectedAddressId === item.id }"
+                    @click="handleSelectCard(item)">
                     <view class="card-top">
                         <view class="card-user">
                             <text class="name">{{ item.receiverName || '未命名联系人' }}</text>
@@ -95,6 +99,7 @@
 import {
     createAddress,
     deleteAddress,
+    getAddress,
     getAreaTree,
     getAddressPage,
     updateAddress
@@ -123,8 +128,14 @@ export default {
             form: createEmptyForm(),
             areaTree: [],
             areaColumns: [[], [], []],
-            areaIndexes: [0, 0, 0]
+            areaIndexes: [0, 0, 0],
+            selectMode: false,
+            selectedAddressId: null,
+            emittedSelection: false
         }
+    },
+    onLoad(query) {
+        this.selectMode = `${(query && query.selectMode) || ''}` === '1'
     },
     onShow() {
         this.loadAddresses()
@@ -146,8 +157,50 @@ export default {
                     pageSize: 50
                 })
                 this.addressList = (page.list || []).map((item) => this.normalizeAddressItem(item))
+                if (this.selectMode) {
+                    const selected = this.addressList.find((item) => item.id === this.selectedAddressId)
+                    if (!selected) {
+                        const fallback = this.addressList.find((item) => item.isDefault) || this.addressList[0]
+                        this.selectedAddressId = fallback ? fallback.id : null
+                    }
+                }
             } catch (error) {
             }
+        },
+        handleSelectCard(item) {
+            if (!this.selectMode || !item) {
+                return
+            }
+            this.selectedAddressId = item.id
+        },
+        async confirmSelection() {
+            if (!this.selectMode) {
+                return
+            }
+            const selected = this.addressList.find((item) => item.id === this.selectedAddressId)
+            let address = selected
+            if (!address) {
+                uni.showToast({
+                    title: '请先选择地址',
+                    icon: 'none'
+                })
+                return
+            }
+            try {
+                if (address.id) {
+                    const detail = await getAddress(address.id)
+                    if (detail) {
+                        address = this.normalizeAddressItem(detail)
+                    }
+                }
+            } catch (error) {
+            }
+            const eventChannel = this.getOpenerEventChannel && this.getOpenerEventChannel()
+            if (eventChannel) {
+                eventChannel.emit('picked', address)
+            }
+            this.emittedSelection = true
+            this.$navigateBack()
         },
         async handleAddAddress() {
             if (!this.canCreateAddress) {
@@ -409,6 +462,12 @@ export default {
             return `${value.slice(0, 3)}****${value.slice(7)}`
         },
         goBack() {
+            if (this.selectMode && !this.emittedSelection) {
+                const eventChannel = this.getOpenerEventChannel && this.getOpenerEventChannel()
+                if (eventChannel) {
+                    eventChannel.emit('cancel')
+                }
+            }
             this.$navigateBack()
         }
     }
@@ -432,10 +491,22 @@ export default {
             width: 60rpx;
         }
 
+        .confirm-btn {
+            min-width: 88rpx;
+            display: flex;
+            justify-content: flex-end;
+        }
+
         .back-icon {
             font-size: 40rpx;
             color: #222;
             transform: rotate(180deg);
+        }
+
+        .confirm-text {
+            font-size: 28rpx;
+            color: #4a90f0;
+            font-weight: 600;
         }
 
         .title {
@@ -475,6 +546,11 @@ export default {
             border-color: #5d97ff;
             background: #dbe9ff;
             box-shadow: 0 8rpx 24rpx rgba(74, 144, 240, 0.08);
+        }
+
+        &.selected-card {
+            border-color: #fa9d3b;
+            box-shadow: 0 10rpx 26rpx rgba(250, 157, 59, 0.14);
         }
     }
 

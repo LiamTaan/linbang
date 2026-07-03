@@ -13,8 +13,9 @@
         <view class="map-area">
             <!-- #ifdef H5 -->
             <view id="home-amap" class="amap-container"></view>
-            <view v-if="mapStatusText" class="map-status">
-                <text class="map-status-text">{{ mapStatusText }}</text>
+            <view class="map-center-pin">
+                <view class="map-center-pin-head"></view>
+                <view class="map-center-pin-tail"></view>
             </view>
             <!-- #endif -->
             <!-- #ifndef H5 -->
@@ -127,7 +128,7 @@
 
                     <view class="safety-tip" @click="handleAgreement">
                         <text class="safety-tip-label">交易保障</text>
-                        <text class="safety-tip-text">{{ guaranteeConfig.projectEscrowAgreementTitle || '工程托管协议' }}</text>
+                        <text class="safety-tip-text">{{ currentAgreementTitle }}</text>
                         <text class="safety-tip-arrow">></text>
                     </view>
 
@@ -154,9 +155,7 @@
                             <text v-if="form.agreementConfirmed" class="check-icon">✓</text>
                         </view>
                         <text class="agreement-text">我已阅读并同意</text>
-                        <text class="agreement-link" @click.stop="handleAgreement">
-                            《{{ guaranteeConfig.projectEscrowAgreementTitle || '工程托管协议' }}》
-                        </text>
+                        <text class="agreement-link" @click.stop="handleAgreement">《{{ currentAgreementTitle }}》</text>
                     </view>
 
                     <view class="extra-fields">
@@ -164,8 +163,40 @@
                             <view class="form-item small">
                                 <input class="input-box" type="number" placeholder="服务人数" v-model="form.workerCount" />
                             </view>
-                            <view class="form-item small grow">
-                                <input class="input-box" placeholder="价格明细名称（选填）" v-model="form.priceItemName" />
+                            <view class="price-total-box grow">
+                                <text class="price-total-label">{{ hasCustomPriceItems ? '明细合计' : '预算金额' }}</text>
+                                <text class="price-total-value">¥{{ hasCustomPriceItems ? priceItemsTotalText : (form.budgetAmount || '0.00') }}</text>
+                            </view>
+                        </view>
+                        <view class="price-detail-card">
+                            <view class="price-detail-header">
+                                <text class="price-detail-title">价格明细</text>
+                                <text class="price-detail-summary">{{ hasCustomPriceItems ? '合计 ¥' + priceItemsTotalText : '不填则按预算金额提交' }}</text>
+                            </view>
+                            <view v-if="!form.priceItems.length" class="price-detail-empty">
+                                <text class="price-detail-empty-text">可按人工费、材料费、附加费拆分录入，方便预览和后续详情展示</text>
+                            </view>
+                            <view v-for="(item, index) in form.priceItems" :key="`price-item-${index}`" class="price-item-row">
+                                <view class="price-item-top">
+                                    <view class="price-type-picker" @click="handleSelectPriceItemType(index)">
+                                        <text class="price-type-text">{{ getPriceItemTypeLabel(item.itemType) }}</text>
+                                        <text class="price-type-arrow">▼</text>
+                                    </view>
+                                    <view class="price-item-remove" @click="removePriceItem(index)">
+                                        <text class="price-item-remove-text">删除</text>
+                                    </view>
+                                </view>
+                                <view class="form-row">
+                                    <view class="form-item grow">
+                                        <input class="input-box" placeholder="明细名称，如人工费、瓷砖材料" v-model="item.itemName" @input="handlePriceItemsChange" />
+                                    </view>
+                                    <view class="form-item small">
+                                        <input class="input-box" type="digit" placeholder="金额" v-model="item.itemAmount" @input="handlePriceItemsChange" />
+                                    </view>
+                                </view>
+                            </view>
+                            <view class="price-item-add" @click="addPriceItem">
+                                <text class="price-item-add-text">+ 新增价格明细</text>
                             </view>
                         </view>
                     </view>
@@ -190,7 +221,7 @@
 
 <script>
 import tabBar from '@/components/tabBar/tabBar.vue'
-import { getAddressPage, getRoleContext, resolveAddressLocation, switchRole } from '@/api/member'
+import { getAddressPage, getNearbyAddressPois, getRoleContext, resolveAddressLocation, switchRole } from '@/api/member'
 import { uploadAppFile } from '@/api/infra'
 import { getServiceCategoryList } from '@/api/merchant'
 import { createOrder, getGuaranteeConfig, previewOrder } from '@/api/order'
@@ -202,6 +233,7 @@ import {
     buildAddressText,
     extractUploadedFile,
     getPricingModeLabel,
+    PRICE_ITEM_TYPE_OPTIONS,
     PRICING_MODE_OPTIONS
 } from '@/utils/linbang'
 
@@ -224,6 +256,14 @@ function findCategoryById(list, id) {
 const DEFAULT_MAP_CENTER = {
     longitude: 113.94352,
     latitude: 22.540503
+}
+
+function createEmptyPriceItem() {
+    return {
+        itemType: 'CUSTOM',
+        itemName: '',
+        itemAmount: ''
+    }
 }
 
 export default {
@@ -256,6 +296,8 @@ export default {
             amapMarker: null,
             amapLoadingPromise: null,
             mapInitialized: false,
+            mapResolveTimer: null,
+            resolvingMapAddress: false,
             selectedLevel1Id: null,
             selectedLevel2Id: null,
             selectedLevel3Id: null,
@@ -277,7 +319,7 @@ export default {
                 needInvoice: false,
                 needSplit: false,
                 agreementConfirmed: true,
-                priceItemName: ''
+                priceItems: []
             }
         }
     },
@@ -303,6 +345,27 @@ export default {
         currentCategoryName() {
             return this.currentCategory ? this.currentCategory.categoryName : '--'
         },
+        hasCustomPriceItems() {
+            return this.normalizedPriceItems.length > 0
+        },
+        normalizedPriceItems() {
+            return (this.form.priceItems || [])
+                .map((item) => ({
+                    itemType: item && item.itemType ? item.itemType : 'CUSTOM',
+                    itemName: `${(item && item.itemName) || ''}`.trim(),
+                    itemAmount: `${(item && item.itemAmount) || ''}`.trim()
+                }))
+                .filter((item) => item.itemName || item.itemAmount)
+        },
+        priceItemsTotal() {
+            return this.normalizedPriceItems.reduce((sum, item) => {
+                const amount = Number(item.itemAmount)
+                return sum + (Number.isNaN(amount) ? 0 : amount)
+            }, 0)
+        },
+        priceItemsTotalText() {
+            return this.$fmt.formatMoney(this.priceItemsTotal || 0)
+        },
         showInvoiceOption() {
             if (typeof this.previewResult.invoiceSupported === 'boolean') {
                 return this.previewResult.invoiceSupported
@@ -322,6 +385,24 @@ export default {
                 return this.previewResult.agreementRequired
             }
             return true
+        },
+        currentAgreementTitle() {
+            if (this.previewResult.agreementTitle) {
+                return this.previewResult.agreementTitle
+            }
+            if (this.previewResult.agreementType === 'TRADE_GUARANTEE') {
+                return this.guaranteeConfig.agreementTitle || '交易保障协议'
+            }
+            return this.guaranteeConfig.projectEscrowAgreementTitle || '工程托管协议'
+        },
+        currentAgreementContent() {
+            if (this.previewResult.agreementContent) {
+                return this.previewResult.agreementContent
+            }
+            if (this.previewResult.agreementType === 'TRADE_GUARANTEE') {
+                return this.guaranteeConfig.serviceAgreement || '请在发布前确认交易保障协议内容。'
+            }
+            return this.guaranteeConfig.projectEscrowAgreement || this.guaranteeConfig.serviceAgreement || '请在发布前确认交易保障协议内容。'
         },
         pricingOptions() {
             const current = this.currentCategory || {}
@@ -436,6 +517,14 @@ export default {
         this.loadPageData()
     },
     beforeUnmount() {
+        if (this.mapResolveTimer) {
+            clearTimeout(this.mapResolveTimer)
+            this.mapResolveTimer = null
+        }
+        if (this.amap && this.amap.off) {
+            this.amap.off('moveend', this.handleH5MapMoveEnd)
+            this.amap.off('click', this.handleH5MapClick)
+        }
         if (this.amap && this.amap.destroy) {
             this.amap.destroy()
         }
@@ -473,15 +562,88 @@ export default {
                         features: ['bg', 'road', 'point'],
                         mapStyle: 'amap://styles/normal'
                     })
-                    this.amapMarker = new AMap.Marker({
-                        position: [this.mapCenter.longitude, this.mapCenter.latitude],
-                        anchor: 'bottom-center'
-                    })
-                    this.amap.add(this.amapMarker)
+                    this.amap.on('moveend', this.handleH5MapMoveEnd)
+                    this.amap.on('click', this.handleH5MapClick)
+                    this.mapStatusText = '拖动地图可直接选择服务地址'
                 })
                 .catch((error) => {
                     this.mapStatusText = (error && error.message) || '地图加载失败'
                 })
+        },
+        handleH5MapClick(event) {
+            const lnglat = event && event.lnglat
+            const longitude = lnglat && typeof lnglat.getLng === 'function' ? lnglat.getLng() : lnglat && lnglat.lng
+            const latitude = lnglat && typeof lnglat.getLat === 'function' ? lnglat.getLat() : lnglat && lnglat.lat
+            if (!longitude || !latitude) {
+                return
+            }
+            if (this.amap && this.amap.setCenter) {
+                this.amap.setCenter([longitude, latitude])
+            }
+            this.updateMapCenter(longitude, latitude)
+            this.scheduleResolveMapCenter('正在更新服务地址')
+        },
+        handleH5MapMoveEnd() {
+            if (!this.amap || !this.amap.getCenter) {
+                return
+            }
+            const center = this.amap.getCenter()
+            const longitude = center && typeof center.getLng === 'function' ? center.getLng() : center && center.lng
+            const latitude = center && typeof center.getLat === 'function' ? center.getLat() : center && center.lat
+            this.updateMapCenter(longitude, latitude)
+            this.scheduleResolveMapCenter('正在解析地图中心地址')
+        },
+        scheduleResolveMapCenter(statusText = '正在解析地图中心地址') {
+            if (this.mapResolveTimer) {
+                clearTimeout(this.mapResolveTimer)
+            }
+            this.mapStatusText = statusText
+            this.mapResolveTimer = setTimeout(() => {
+                this.mapResolveTimer = null
+                this.resolveMapCenterAddress()
+            }, 350)
+        },
+        async resolveMapCenterAddress() {
+            if (this.resolvingMapAddress) {
+                return
+            }
+            const longitude = this.normalizeCoordinate(this.mapCenter.longitude)
+            const latitude = this.normalizeCoordinate(this.mapCenter.latitude)
+            if (!longitude || !latitude) {
+                return
+            }
+            this.resolvingMapAddress = true
+            try {
+                const [resolved, nearbyPois] = await Promise.all([
+                    resolveAddressLocation({
+                        longitude,
+                        latitude,
+                        detailAddress: ''
+                    }),
+                    getNearbyAddressPois({
+                        longitude,
+                        latitude,
+                        radiusMeters: 200
+                    }).catch(() => [])
+                ])
+                const nearestPoi = Array.isArray(nearbyPois)
+                    ? nearbyPois.find((item) => item && item.name && (!item.distanceMeters || item.distanceMeters <= 120))
+                    : null
+                const detailAddress = nearestPoi && nearestPoi.name
+                    ? nearestPoi.name
+                    : (resolved.detailAddress || '')
+                this.applyAddress({
+                    ...resolved,
+                    longitude,
+                    latitude,
+                    detailAddress
+                })
+                this.mapStatusText = '拖动地图可直接选择服务地址'
+            } catch (error) {
+                this.mapStatusText = '地址解析失败，请继续拖动地图重试'
+            } finally {
+                this.resolvingMapAddress = false
+            }
         },
         async loadAmapScript() {
             if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -548,13 +710,7 @@ export default {
             }]
             // #ifdef H5
             if (this.amap && !centerUnchanged) {
-                const position = [lng, lat]
-                this.amap.setCenter(position)
-                if (this.amapMarker) {
-                    this.amapMarker.setPosition(position)
-                }
-            } else if (this.amapMarker && !centerUnchanged) {
-                this.amapMarker.setPosition([lng, lat])
+                this.amap.setCenter([lng, lat])
             }
             // #endif
         },
@@ -652,6 +808,34 @@ export default {
             this.form.pricingMode = value
             this.previewResult = {}
         },
+        getPriceItemTypeLabel(value) {
+            const matched = PRICE_ITEM_TYPE_OPTIONS.find((item) => item.value === value)
+            return matched ? matched.label : '其他'
+        },
+        addPriceItem() {
+            this.form.priceItems.push(createEmptyPriceItem())
+            this.previewResult = {}
+        },
+        removePriceItem(index) {
+            this.form.priceItems.splice(index, 1)
+            this.previewResult = {}
+        },
+        handleSelectPriceItemType(index) {
+            uni.showActionSheet({
+                itemList: PRICE_ITEM_TYPE_OPTIONS.map((item) => item.label),
+                success: ({ tapIndex }) => {
+                    const target = PRICE_ITEM_TYPE_OPTIONS[tapIndex]
+                    if (!target || !this.form.priceItems[index]) {
+                        return
+                    }
+                    this.form.priceItems[index].itemType = target.value
+                    this.previewResult = {}
+                }
+            })
+        },
+        handlePriceItemsChange() {
+            this.previewResult = {}
+        },
         handleSearch() {
             this.loadPageData(this.searchText.trim())
         },
@@ -670,19 +854,11 @@ export default {
         handleSelectAddress() {
             const itemList = []
             const actions = []
-            if (this.addressList.length) {
-                itemList.push('从地址簿选择')
-                actions.push(() => this.handleSelectSavedAddress())
-            }
             itemList.push('使用当前位置')
             actions.push(() => this.handleUseCurrentLocation())
-            itemList.push('地图选点')
-            actions.push(() => this.handleChooseMapLocation())
-            itemList.push('前往地址管理')
+            itemList.push('地址管理')
             actions.push(() => {
-                uni.navigateTo({
-                    url: '/pages/address_management/address_management'
-                })
+                this.openAddressManagement()
             })
             uni.showActionSheet({
                 itemList,
@@ -694,37 +870,22 @@ export default {
                 }
             })
         },
-        handleSelectSavedAddress() {
-            if (!this.addressList.length) {
-                uni.showModal({
-                    title: '暂无地址',
-                    content: '还没有可用地址，是否前往地址管理新增？',
-                    success: ({ confirm }) => {
-                        if (confirm) {
-                            uni.navigateTo({
-                                url: '/pages/address_management/address_management'
-                            })
-                        }
-                    }
-                })
-                return
-            }
-            const addressItems = this.addressList.map((item) => buildAddressText(item) || item.contactName || '未命名地址')
-            addressItems.push('前往地址管理')
-            uni.showActionSheet({
-                itemList: addressItems,
-                success: ({ tapIndex }) => {
-                    if (tapIndex === addressItems.length - 1) {
-                        uni.navigateTo({
-                            url: '/pages/address_management/address_management'
+        openAddressManagement() {
+            return new Promise((resolve, reject) => {
+                uni.navigateTo({
+                    url: '/pages/address_management/address_management?selectMode=1',
+                    success: (res) => {
+                        const eventChannel = res.eventChannel
+                        eventChannel.on('picked', (address) => {
+                            if (address) {
+                                this.applyAddress(address)
+                            }
+                            resolve(address)
                         })
-                        return
-                    }
-                    const address = this.addressList[tapIndex]
-                    if (address) {
-                        this.applyAddress(address)
-                    }
-                }
+                        eventChannel.on('cancel', () => reject(new Error('cancel')))
+                    },
+                    fail: reject
+                })
             })
         },
         async handleUseCurrentLocation() {
@@ -741,25 +902,6 @@ export default {
                 await this.resolvePickedLocation(location)
             } catch (error) {
                 this.handleLocationError(error, '定位失败，请确认定位权限已开启')
-            } finally {
-                uni.hideLoading()
-                this.locating = false
-            }
-        },
-        async handleChooseMapLocation() {
-            if (this.locating) {
-                return
-            }
-            try {
-                this.locating = true
-                const location = await this.requestMapLocation()
-                uni.showLoading({
-                    title: '解析地址',
-                    mask: true
-                })
-                await this.resolvePickedLocation(location)
-            } catch (error) {
-                this.handleLocationError(error, '地图选点失败，请稍后重试')
             } finally {
                 uni.hideLoading()
                 this.locating = false
@@ -847,14 +989,6 @@ export default {
                 longitude: lng + dLng,
                 latitude: lat + dLat
             }
-        },
-        requestMapLocation() {
-            return new Promise((resolve, reject) => {
-                uni.chooseLocation({
-                    success: resolve,
-                    fail: reject
-                })
-            })
         },
         async resolvePickedLocation(location) {
             const payload = {
@@ -1001,10 +1135,19 @@ export default {
         },
         handleAgreement() {
             uni.showModal({
-                title: this.guaranteeConfig.projectEscrowAgreementTitle || '工程托管协议',
-                content: this.guaranteeConfig.projectEscrowAgreement || this.guaranteeConfig.serviceAgreement || '请在发布前确认交易保障协议内容。',
+                title: this.currentAgreementTitle,
+                content: this.currentAgreementContent,
                 showCancel: false
             })
+        },
+        resolveAgreementVersion() {
+            const baseVersion = this.guaranteeConfig.agreementVersion || 'v2026.06'
+            const requiresProjectAgreement = this.previewResult.agreementType === 'PROJECT_ESCROW'
+                || !!(this.currentCategory && this.currentCategory.laborCategoryFlag)
+            if (!requiresProjectAgreement) {
+                return baseVersion
+            }
+            return /project/i.test(baseVersion) ? baseVersion : `${baseVersion}-project`
         },
         validateForm() {
             const category = this.currentCategory
@@ -1036,12 +1179,31 @@ export default {
                 })
                 return null
             }
-            const budgetAmount = Number(this.form.budgetAmount)
+            const customPriceItems = this.normalizedPriceItems
+            for (let i = 0; i < customPriceItems.length; i++) {
+                const item = customPriceItems[i]
+                const itemAmount = Number(item.itemAmount)
+                if (!item.itemName) {
+                    uni.showToast({
+                        title: `请填写第${i + 1}条价格明细名称`,
+                        icon: 'none'
+                    })
+                    return null
+                }
+                if (Number.isNaN(itemAmount) || itemAmount <= 0) {
+                    uni.showToast({
+                        title: `请填写第${i + 1}条价格明细金额`,
+                        icon: 'none'
+                    })
+                    return null
+                }
+            }
+            const budgetAmount = customPriceItems.length ? this.priceItemsTotal : Number(this.form.budgetAmount)
             const quantity = Number(this.form.quantity)
             const workerCount = Number(this.form.workerCount || 1)
             if (Number.isNaN(budgetAmount) || budgetAmount <= 0) {
                 uni.showToast({
-                    title: '请输入正确的预算金额',
+                    title: customPriceItems.length ? '请填写正确的价格明细金额' : '请输入正确的预算金额',
                     icon: 'none'
                 })
                 return null
@@ -1080,13 +1242,13 @@ export default {
                 needSplit: !!this.form.needSplit,
                 attachmentFileIds: this.uploadedFiles.map((item) => item.fileId).filter(Boolean)
             }
-            if (this.form.priceItemName.trim()) {
-                payload.priceItems = [{
-                    itemType: 'CUSTOM',
-                    itemName: this.form.priceItemName.trim(),
-                    itemAmount: budgetAmount,
-                    sortNo: 1
-                }]
+            if (customPriceItems.length) {
+                payload.priceItems = customPriceItems.map((item, index) => ({
+                    itemType: item.itemType || 'CUSTOM',
+                    itemName: item.itemName,
+                    itemAmount: Number(item.itemAmount),
+                    sortNo: index + 1
+                }))
             }
             return payload
         },
@@ -1124,7 +1286,7 @@ export default {
                     uploadedFiles: this.uploadedFiles
                 })
                 uni.navigateTo({
-                    url: '/pages/split_order_details/split_order_details?preview=1'
+                    url: '/pages/order_preview/order_preview'
                 })
             } catch (error) {
             }
@@ -1148,8 +1310,8 @@ export default {
                 }
                 const orderId = await createOrder({
                     ...payload,
-                    agreementConfirmed: true,
-                    agreementVersion: this.guaranteeConfig.agreementVersion || 'v2026.06',
+                    agreementConfirmed: this.showAgreementOption ? !!this.form.agreementConfirmed : true,
+                    agreementVersion: this.resolveAgreementVersion(),
                     previewToken: this.previewResult.previewToken,
                     antiEscapeConfirmed: true
                 })
@@ -1301,6 +1463,36 @@ export default {
             bottom: 112rpx !important;
         }
 
+        .map-center-pin {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            z-index: 2;
+            transform: translate(-50%, -78%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .map-center-pin-head {
+            width: 30rpx;
+            height: 30rpx;
+            border: 10rpx solid #4a90f0;
+            border-radius: 50% 50% 50% 0;
+            background: #4a90f0;
+            transform: rotate(-45deg);
+            box-shadow: 0 10rpx 22rpx rgba(74, 144, 240, 0.22);
+        }
+
+        .map-center-pin-tail {
+            width: 6rpx;
+            height: 38rpx;
+            margin-top: -4rpx;
+            border-radius: 999rpx;
+            background: #4a90f0;
+        }
+
         &::after {
             content: '';
             position: absolute;
@@ -1311,26 +1503,6 @@ export default {
             background: linear-gradient(180deg, rgba(231, 244, 255, 0) 0%, #f7f8fb 100%);
         }
 
-        .map-status {
-            position: absolute;
-            left: 50%;
-            top: 188rpx;
-            z-index: 2;
-            min-width: 300rpx;
-            max-width: 560rpx;
-            transform: translateX(-50%);
-            padding: 18rpx 24rpx;
-            border-radius: 18rpx;
-            background: rgba(255, 255, 255, 0.92);
-            box-shadow: 0 14rpx 30rpx rgba(33, 72, 108, 0.12);
-            text-align: center;
-
-            .map-status-text {
-                font-size: 24rpx;
-                color: #40546d;
-                line-height: 32rpx;
-            }
-        }
     }
 
     .main-content {
@@ -1794,6 +1966,113 @@ export default {
 
             .extra-fields {
                 margin-top: -4rpx;
+            }
+
+            .price-total-box {
+                flex: 1;
+                min-height: 74rpx;
+                padding: 0 22rpx;
+                border: 2rpx solid #e9edf3;
+                border-radius: 16rpx;
+                background: #f8fbff;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12rpx;
+
+                .price-total-label {
+                    font-size: 24rpx;
+                    color: #7d8da3;
+                }
+
+                .price-total-value {
+                    font-size: 26rpx;
+                    font-weight: 600;
+                    color: #2f3b4f;
+                }
+            }
+
+            .price-detail-card {
+                margin-top: 10rpx;
+                padding: 20rpx;
+                border: 2rpx solid #edf2f8;
+                border-radius: 18rpx;
+                background: #fbfcfe;
+
+                .price-detail-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 16rpx;
+                    margin-bottom: 16rpx;
+                }
+
+                .price-detail-title {
+                    font-size: 28rpx;
+                    font-weight: 600;
+                    color: #2e3e55;
+                }
+
+                .price-detail-summary,
+                .price-detail-empty-text,
+                .price-item-remove-text,
+                .price-item-add-text,
+                .price-type-text,
+                .price-type-arrow {
+                    font-size: 24rpx;
+                    color: #7d8da3;
+                }
+
+                .price-detail-empty {
+                    padding: 10rpx 0 18rpx;
+                }
+
+                .price-item-row {
+                    padding: 18rpx;
+                    margin-bottom: 14rpx;
+                    border-radius: 16rpx;
+                    background: #fff;
+                    border: 2rpx solid #edf2f8;
+                }
+
+                .price-item-top {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 16rpx;
+                    margin-bottom: 14rpx;
+                }
+
+                .price-type-picker {
+                    min-width: 170rpx;
+                    height: 58rpx;
+                    padding: 0 18rpx;
+                    border-radius: 14rpx;
+                    background: #f3f7fd;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 12rpx;
+                }
+
+                .price-item-remove {
+                    padding: 10rpx 0 10rpx 20rpx;
+                }
+
+                .price-item-add {
+                    height: 66rpx;
+                    border: 2rpx dashed #d7e1ef;
+                    border-radius: 16rpx;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: rgba(255, 255, 255, 0.8);
+                }
+
+                .price-item-add-text {
+                    color: #4f7ee8;
+                    font-weight: 600;
+                }
             }
 
             .bottom-btns {

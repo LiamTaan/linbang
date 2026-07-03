@@ -607,8 +607,7 @@ VALUES
 INSERT INTO `lb_order_split_rule`
 (`id`, `rule_name`, `rule_code`, `match_mode`, `category_id`, `applicable_pricing_modes`, `min_order_amount`, `min_quantity`, `min_worker_count`, `split_mode`, `default_unit_count`, `unit_amount_limit`, `unit_template`, `sort_no`, `status`, `remark`, `tenant_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
 VALUES
-(350001, '用工安装类多人拆单', 'LABOR_INSTALL_BY_PERSON', 'ANY', 340005, '["CONTRACT","BY_UNIT"]', NULL, NULL, 2, 'BY_PERSON', 2, 500.00, '{"titlePrefix":"安装单元","contentTemplate":"安装服务单元 {seq}","lockReasonTemplate":"待前序安装单元完成"}', 10, 'ENABLE', '用工安装类按人数自动拆分', 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(350002, '保洁深度服务金额拆单', 'CLEANING_AMOUNT_SPLIT', 'ANY', 340001, '["FIXED_PRICE","BY_UNIT"]', 300.00, NULL, NULL, 'BY_CONTENT', 2, 200.00, '{"titlePrefix":"保洁单元","contentTemplate":"保洁内容单元 {seq}","lockReasonTemplate":"待前序保洁单元完成"}', 20, 'ENABLE', '金额超过 300 的深度保洁订单自动拆分', 1, 'admin', NOW(), 'admin', NOW(), b'0');
+(350001, '用工安装类多人拆单', 'LABOR_INSTALL_BY_PERSON', 'ANY', 340005, '["CONTRACT","BY_UNIT"]', NULL, NULL, 2, 'BY_PERSON', 2, 500.00, '{"titlePrefix":"安装单元","contentTemplate":"安装服务单元 {seq}","lockReasonTemplate":"待前序安装单元完成"}', 10, 'ENABLE', '用工安装类按人数自动拆分', 1, 'admin', NOW(), 'admin', NOW(), b'0');
 
 INSERT INTO `lb_sensitive_word`
 (`id`, `word`, `word_type`, `match_type`, `block_level`, `status`, `tenant_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)

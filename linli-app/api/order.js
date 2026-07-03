@@ -20,12 +20,16 @@ export function getAcceptOrderPage(params, options = {}) {
   return get('/order/accept/page', params, options)
 }
 
+export function getAcceptOrderDetail(orderId, unitId, options = {}) {
+  return get('/order/accept/detail', { orderId, unitId }, options)
+}
+
 export function getOrderPage(params, options = {}) {
   return get('/order/info/page', params, options)
 }
 
-export function getOrderDetail(id) {
-  return get('/order/info/get', { id })
+export function getOrderDetail(id, options = {}) {
+  return get('/order/info/get', { id }, options)
 }
 
 export function updateOrder(data) {
@@ -70,6 +74,10 @@ export function acceptOrder(data) {
 
 export function uploadDeliveryProof(data) {
   return post('/order/unit/upload-delivery-proof', data)
+}
+
+export function deleteDeliveryProof(data) {
+  return post('/order/unit/delete-delivery-proof', data)
 }
 
 export function getAppealProgress(id) {

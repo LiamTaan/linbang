@@ -81,7 +81,7 @@ public class AppOrderDetailRespVO {
     @Schema(description = "是否需要发票。当前仅作为订单标记字段")
     private Boolean needInvoice;
 
-    @Schema(description = "是否允许系统应用拆单规则。false 时即使命中规则也仅提示，不会自动拆出多个单元")
+    @Schema(description = "是否允许系统应用可选拆单规则。平台金额满 200 元时会按硬性规则自动拆单，不受该字段影响")
     private Boolean needSplit;
 
     @Schema(description = "命中拆单规则 ID")
@@ -96,7 +96,7 @@ public class AppOrderDetailRespVO {
     @Schema(description = "本次拆单触发来源摘要，例如 金额达到阈值、工程类默认拆分、人数达到阈值")
     private List<String> splitTriggerReasons;
 
-    @Schema(description = "拆单规则摘要，说明命中原因、最终单元数、是否因未勾选拆单而仅提示")
+    @Schema(description = "拆单规则摘要，说明命中原因、最终单元数，以及是否触发了平台金额满 200 元硬性拆单规则")
     private String splitRuleSummary;
 
     @Schema(description = "是否已确认服务协议")
@@ -149,6 +149,9 @@ public class AppOrderDetailRespVO {
 
     @Schema(description = "交付凭证")
     private List<OrderUnitProofRespVO> proofs;
+
+    @Schema(description = "评价记录")
+    private List<OrderReviewRespVO> reviews;
 
     @Schema(description = "退款记录")
     private List<OrderRefundRespVO> refunds;
@@ -266,6 +269,9 @@ public class AppOrderDetailRespVO {
         @Schema(description = "派单状态")
         private String dispatchStatus;
 
+        @Schema(description = "当前轮派单截止时间")
+        private LocalDateTime acceptDeadlineTime;
+
         @Schema(description = "当前批次号")
         private Integer currentBatchNo;
 
@@ -274,6 +280,12 @@ public class AppOrderDetailRespVO {
 
         @Schema(description = "流单原因")
         private String flowReason;
+
+        @Schema(description = "单元完成时间")
+        private LocalDateTime finishTime;
+
+        @Schema(description = "单元创建时间")
+        private LocalDateTime createTime;
 
         @Schema(description = "自动退款状态")
         private String autoRefundStatus;
@@ -449,6 +461,46 @@ public class AppOrderDetailRespVO {
 
         @Schema(description = "退款成功时间")
         private LocalDateTime successTime;
+
+        @Schema(description = "创建时间")
+        private LocalDateTime createTime;
+    }
+
+    @Schema(description = "用户 App - 订单评价记录 Response VO")
+    @Data
+    public static class OrderReviewRespVO {
+        @Schema(description = "评价 ID")
+        private Long id;
+
+        @Schema(description = "关联单元 ID")
+        private Long unitId;
+
+        @Schema(description = "评价发起人用户 ID")
+        private Long fromUserId;
+
+        @Schema(description = "评价目标用户 ID")
+        private Long toUserId;
+
+        @Schema(description = "评价发起方角色：USER 下单用户、MERCHANT 服务商")
+        private String fromRole;
+
+        @Schema(description = "评价目标方角色：USER 下单用户、MERCHANT 服务商")
+        private String toRole;
+
+        @Schema(description = "评价展示标题，例如 用户评价、服务商评价")
+        private String displayTitle;
+
+        @Schema(description = "星级")
+        private Integer starLevel;
+
+        @Schema(description = "评价内容")
+        private String content;
+
+        @Schema(description = "是否自动评价")
+        private Boolean isAutoReview;
+
+        @Schema(description = "评价状态")
+        private String status;
 
         @Schema(description = "创建时间")
         private LocalDateTime createTime;

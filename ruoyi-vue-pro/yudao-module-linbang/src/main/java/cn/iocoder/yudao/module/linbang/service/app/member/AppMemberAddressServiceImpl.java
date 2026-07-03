@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressCreateReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressNearbyPoiRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressResolveLocationReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressResolveLocationRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.address.vo.AppMemberAddressRespVO;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -94,6 +96,13 @@ public class AppMemberAddressServiceImpl implements AppMemberAddressService {
         respVO.setAdcode(resolvedAddress.getAdcode());
         respVO.setDisplayAddress(buildDisplayAddress(respVO));
         return respVO;
+    }
+
+    @Override
+    public List<AppMemberAddressNearbyPoiRespVO> searchNearbyPois(BigDecimal longitude, BigDecimal latitude, String keywords, Integer radiusMeters) {
+        return amapLocationService.searchNearby(longitude, latitude, keywords, radiusMeters).stream()
+                .map(this::convertNearbyPoi)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -175,6 +184,20 @@ public class AppMemberAddressServiceImpl implements AppMemberAddressService {
         respVO.setAdcode(address.getAdcode());
         respVO.setIsDefault(address.getIsDefault());
         respVO.setCreateTime(address.getCreateTime());
+        return respVO;
+    }
+
+    private AppMemberAddressNearbyPoiRespVO convertNearbyPoi(AmapLocationService.NearbyPlace nearbyPlace) {
+        if (nearbyPlace == null) {
+            return null;
+        }
+        AppMemberAddressNearbyPoiRespVO respVO = new AppMemberAddressNearbyPoiRespVO();
+        respVO.setId(nearbyPlace.getId());
+        respVO.setName(nearbyPlace.getName());
+        respVO.setAddress(nearbyPlace.getAddress());
+        respVO.setDistanceMeters(nearbyPlace.getDistanceMeters());
+        respVO.setLongitude(nearbyPlace.getLongitude());
+        respVO.setLatitude(nearbyPlace.getLatitude());
         return respVO;
     }
 

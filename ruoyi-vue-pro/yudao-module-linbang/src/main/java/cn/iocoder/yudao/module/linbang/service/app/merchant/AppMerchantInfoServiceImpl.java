@@ -150,6 +150,7 @@ public class AppMerchantInfoServiceImpl implements AppMerchantInfoService {
                 item.setSupportSplit(category.getSupportSplit());
                 item.setSupportInvoice(category.getSupportInvoice());
             }
+            item.setDispatchSelected(Objects.equals(rel.getStatus(), "ENABLE"));
             return item;
         }).collect(Collectors.toList()));
         respVO.setServiceAreas(servicePoints.stream().map(point -> {

@@ -357,9 +357,10 @@ export default {
     padding-bottom: 120rpx;
     display: flex;
     flex-direction: column;
+    background: linear-gradient(180deg, #eef6ff 0%, #f7fbff 180rpx, #f2f7fd 100%);
 
     .header {
-        background: #fff;
+        background: rgba(255, 255, 255, 0.94);
         padding: 30rpx;
         display: flex;
         justify-content: space-between;
@@ -381,7 +382,7 @@ export default {
 
     .tab-scroll {
         white-space: nowrap;
-        background: #EDF5FF;
+        background: transparent;
 
         .tab-list {
             display: inline-flex;
@@ -418,16 +419,20 @@ export default {
 
     .news-list {
         flex: 1;
-        background-color: #fff;
+        background: transparent;
         box-sizing: border-box;
+        padding: 18rpx 20rpx 0;
 
         .news-card {
             display: flex;
             align-items: center;
-            background: #fff;
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 24rpx;
             padding: 24rpx;
             position: relative;
-            border-bottom: 1rpx solid #EDF5FF;
+            border: 1rpx solid #e6f0fb;
+            box-shadow: 0 10rpx 26rpx rgba(74, 144, 240, 0.06);
+            margin-bottom: 18rpx;
 
             .news-left {
                 margin-right: 20rpx;

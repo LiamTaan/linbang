@@ -19,3 +19,6 @@ ruoyi-vue-pro/**/target/
 
 .env.local
 .env.*.local
+
+outputs/
+upload-files/

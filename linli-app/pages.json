@@ -210,9 +210,37 @@
 			}
 		},
 		{
+			"path": "pages/order_preview/order_preview",
+			"style": {
+				"navigationBarTitleText": "订单预览",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/order_detail/order_detail",
+			"style": {
+				"navigationBarTitleText": "订单详情",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/accept_order_detail/accept_order_detail",
+			"style": {
+				"navigationBarTitleText": "抢单详情",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/split_order_details/split_order_details",
 			"style": {
-				"navigationBarTitleText": "拆分订单详情",
+				"navigationBarTitleText": "订单详情",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/merchant_business/merchant_business",
+			"style": {
+				"navigationBarTitleText": "服务经营资料",
 				"navigationStyle": "custom"
 			}
 		}
@@ -221,7 +249,7 @@
 		"navigationBarTextStyle": "black",
 		"navigationBarTitleText": "邻里互助",
 		"navigationBarBackgroundColor": "#FFFFFF",
-		"backgroundColor": "#F5F5F5"
+		"backgroundColor": "#EEF6FF"
 	},
 	"tabBar": {
 		"custom": true,

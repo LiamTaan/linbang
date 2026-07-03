@@ -4,6 +4,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.iocoder.yudao.framework.security.config.SecurityProperties;
 import cn.iocoder.yudao.module.pay.controller.admin.order.vo.PayOrderRespVO;
 import cn.iocoder.yudao.module.pay.controller.admin.order.vo.PayOrderSubmitRespVO;
 import cn.iocoder.yudao.module.pay.controller.app.order.vo.AppPayOrderSubmitReqVO;
@@ -35,6 +36,8 @@ public class AppPayOrderController {
 
     @Resource
     private PayOrderService payOrderService;
+    @Resource
+    private SecurityProperties securityProperties;
 
     @GetMapping("/get")
     @Operation(summary = "获得支付订单")
@@ -74,7 +77,9 @@ public class AppPayOrderController {
     @PostMapping("/submit")
     @Operation(summary = "提交支付订单", description = "邻里互助统一使用第三方聚合支付通道；请求中的微信、支付宝、钱包等展示选择不会改变底层支付渠道")
     public CommonResult<AppPayOrderSubmitRespVO> submitPayOrder(@RequestBody AppPayOrderSubmitReqVO reqVO) {
-        reqVO.setChannelCode(PayChannelEnum.AGGREGATE.getCode());
+        reqVO.setChannelCode(Boolean.TRUE.equals(securityProperties.getMockEnable())
+                ? PayChannelEnum.MOCK.getCode()
+                : PayChannelEnum.AGGREGATE.getCode());
         PayOrderSubmitRespVO respVO = payOrderService.submitOrder(reqVO, getClientIP());
         return success(BeanUtils.toBean(respVO, AppPayOrderSubmitRespVO.class));
     }

@@ -106,11 +106,13 @@ export default {
     left: 0;
     right: 0;
     // height: 100rpx;
-    background: #fff;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(18rpx);
     display: flex;
     align-items: center;
     justify-content: space-around;
-    box-shadow: 0rpx -2rpx 10rpx rgba(0, 0, 0, 0.05);
+    box-shadow: 0rpx -8rpx 24rpx rgba(74, 144, 240, 0.08);
+    border-top: 1rpx solid rgba(205, 225, 247, 0.9);
     // padding-bottom: env(safe-area-inset-bottom);
     padding: 20rpx 0;
     z-index: 999;

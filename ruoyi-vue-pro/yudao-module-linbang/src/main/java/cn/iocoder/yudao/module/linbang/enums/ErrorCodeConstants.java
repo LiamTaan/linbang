@@ -48,6 +48,8 @@ public interface ErrorCodeConstants {
     ErrorCode MERCHANT_SUB_ACCOUNT_DISABLED = new ErrorCode(1_099_002_010, "当前子账号已被禁用");
     ErrorCode MERCHANT_SUB_ACCOUNT_PERMISSION_DENIED = new ErrorCode(1_099_002_011, "当前子账号无权执行该操作");
     ErrorCode MERCHANT_ENTRY_ALREADY_EXISTS = new ErrorCode(1_099_002_012, "当前服务商入驻已提交或已开通，请勿重复申请");
+    ErrorCode MERCHANT_REFERENCE_PRICE_NOT_EXISTS = new ErrorCode(1_099_002_013, "服务商参考价格不存在");
+    ErrorCode MERCHANT_REFERENCE_PRICE_RANGE_INVALID = new ErrorCode(1_099_002_014, "参考价格区间不合法");
 
     // ========== RISK 模块 1-099-003-000 ==========
     ErrorCode RISK_RULE_NOT_EXISTS = new ErrorCode(1_099_003_000, "风控规则不存在");

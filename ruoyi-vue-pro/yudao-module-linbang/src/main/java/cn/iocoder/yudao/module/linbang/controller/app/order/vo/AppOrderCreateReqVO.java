@@ -75,7 +75,7 @@ public class AppOrderCreateReqVO {
     @NotNull(message = "是否需要发票不能为空")
     private Boolean needInvoice;
 
-    @Schema(description = "是否允许系统应用拆单规则。false 时即使命中规则也仅提示，不自动拆出多个单元；true 时才会按规则真正生成多个单元", requiredMode = Schema.RequiredMode.REQUIRED, example = "false")
+    @Schema(description = "是否允许系统应用可选拆单规则。平台金额满 200 元时会按硬性规则自动拆单，不受该字段影响；true 时其余命中规则也会真正生成多个单元", requiredMode = Schema.RequiredMode.REQUIRED, example = "false")
     @NotNull(message = "是否需要拆单不能为空")
     private Boolean needSplit;
 

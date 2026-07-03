@@ -137,6 +137,9 @@ public class AppMerchantProfileRespVO {
 
         @Schema(description = "是否支持发票")
         private Boolean supportInvoice;
+
+        @Schema(description = "当前是否已加入接单品类", example = "true")
+        private Boolean dispatchSelected;
     }
 
     @Schema(description = "服务区域项")

@@ -58,6 +58,24 @@ export default {
 <style>
 @import './static/iconfont/iconfont.css';
 /*每个页面公共css */
+:root {
+	--app-bg-top: #eef6ff;
+	--app-bg-mid: #f7fbff;
+	--app-bg-bottom: #f2f7fd;
+	--app-surface: rgba(255, 255, 255, 0.96);
+	--app-surface-soft: #edf5ff;
+	--app-primary: #4a90f0;
+}
+
+page {
+	background: linear-gradient(180deg, var(--app-bg-top) 0%, var(--app-bg-mid) 180rpx, var(--app-bg-bottom) 100%);
+}
+
+html,
+body {
+	background: linear-gradient(180deg, var(--app-bg-top) 0%, var(--app-bg-mid) 180rpx, var(--app-bg-bottom) 100%);
+}
+
 view {
 	box-sizing: border-box;
 }

@@ -133,6 +133,14 @@ public interface PayOrderService {
     void updatePayOrderPrice(Long id, Integer payPrice);
 
     /**
+     * 刷新支付订单为可重新支付
+     *
+     * @param id 支付单编号
+     * @param expireTime 新的过期时间
+     */
+    void refreshOrderForSubmit(Long id, LocalDateTime expireTime);
+
+    /**
      * 获得支付订单
      *
      * @param id 编号

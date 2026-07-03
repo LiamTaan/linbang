@@ -36,7 +36,8 @@ public class AppOrderController {
             summary = "创建订单",
             description = "首页发布需求接口。无需传 title、无需传 addressId，直接传省/市/区/街道/详细地址。"
                     + "requireDesc 即需求描述，也是订单标题来源。serviceDurationDesc 仅作为服务时长/工期展示文案保存。"
-                    + "后端会按已启用的拆单规则自动判断是否拆单并生成订单单元，needSplit 仅作为兼容字段保留。"
+                    + "后端会按已启用的拆单规则自动判断是否拆单并生成订单单元；其中订单金额满 200 元属于平台硬性自动拆单规则，"
+                    + "不受 needSplit 开关影响，needSplit 仅作为兼容字段保留。"
                     + "attachmentFileIds 需先通过 /app-api/infra/file/presigned-url 获取直传地址，上传成功后再调用 "
                     + "/app-api/infra/file/create 换取 fileId。")
     public CommonResult<Long> createOrder(@Valid @RequestBody AppOrderCreateReqVO reqVO) {
@@ -59,6 +60,14 @@ public class AppOrderController {
     @Operation(summary = "分页查询待接单需求", description = "服务商抢单大厅列表。支持顶部关键字搜索、类目筛选、距离排序、价格排序、发布时间排序。")
     public CommonResult<PageResult<AppOrderAcceptPageItemRespVO>> getAcceptOrderPage(@Valid AppOrderAcceptPageReqVO reqVO) {
         return success(appOrderService.getAcceptOrderPage(getLoginUserId(), reqVO));
+    }
+
+    @GetMapping("/accept/detail")
+    @Operation(summary = "获取抢单详情")
+    public CommonResult<AppOrderAcceptDetailRespVO> getAcceptOrderDetail(
+            @RequestParam("orderId") Long orderId,
+            @RequestParam(value = "unitId", required = false) Long unitId) {
+        return success(appOrderService.getAcceptOrderDetail(getLoginUserId(), orderId, unitId));
     }
 
     @GetMapping("/info/page")
@@ -141,6 +150,12 @@ public class AppOrderController {
     @Operation(summary = "上传交付凭证")
     public CommonResult<Boolean> uploadDeliveryProof(@Valid @RequestBody AppDeliveryProofUploadReqVO reqVO) {
         return success(appOrderService.uploadDeliveryProof(getLoginUserId(), reqVO));
+    }
+
+    @PostMapping("/unit/delete-delivery-proof")
+    @Operation(summary = "删除交付凭证")
+    public CommonResult<Boolean> deleteDeliveryProof(@Valid @RequestBody AppDeliveryProofDeleteReqVO reqVO) {
+        return success(appOrderService.deleteDeliveryProof(getLoginUserId(), reqVO));
     }
 
     @GetMapping("/appeal/progress")
