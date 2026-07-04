@@ -186,6 +186,12 @@
       </el-descriptions-item>
       <el-descriptions-item label="下单用户">{{ formatDetailUserDisplay() }}</el-descriptions-item>
       <el-descriptions-item label="服务商">{{ formatMerchantDisplay() }}</el-descriptions-item>
+      <el-descriptions-item label="派单轮次">{{ detailData?.dispatchStageNo ?? '-' }}</el-descriptions-item>
+      <el-descriptions-item label="派单截止">{{ formatDate(detailData?.dispatchDeadlineTime) }}</el-descriptions-item>
+      <el-descriptions-item label="流单时间">{{ formatDate(detailData?.flowTime) }}</el-descriptions-item>
+      <el-descriptions-item label="自动退款">
+        {{ [detailData?.autoRefundStatus, detailData?.autoRefundId].filter(Boolean).join(' / ') || '-' }}
+      </el-descriptions-item>
       <el-descriptions-item label="类目">
         {{ detailData?.categoryName || (detailData?.categoryId ? '类目信息缺失' : '-') }}
       </el-descriptions-item>
@@ -209,6 +215,7 @@
       <el-descriptions-item label="协议确认">{{ detailData?.agreementConfirmed ? '已确认' : '未确认' }}</el-descriptions-item>
       <el-descriptions-item label="创建时间">{{ formatDate(detailData?.createTime) }}</el-descriptions-item>
       <el-descriptions-item label="需求描述" :span="2">{{ detailData?.requireDesc || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="流单原因" :span="2">{{ detailData?.flowReason || '-' }}</el-descriptions-item>
       <el-descriptions-item label="服务地址" :span="2">
         {{ [detailData?.province, detailData?.city, detailData?.district, detailData?.street, detailData?.detailAddress].filter(Boolean).join(' / ') || '-' }}
       </el-descriptions-item>
@@ -305,6 +312,16 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
+      <el-table-column label="派单状态" prop="dispatchStatus" width="120">
+        <template #default="{ row }">
+          <span>{{ row.dispatchStatus || '-' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="退款状态" prop="autoRefundStatus" width="120">
+        <template #default="{ row }">
+          <span>{{ row.autoRefundStatus || '-' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="核销状态" prop="verifyStatus" width="120">
         <template #default="{ row }">
           <span>{{ row.verifyStatus || '-' }}</span>
@@ -317,6 +334,10 @@
       <el-table-column label="截止时间" prop="acceptDeadlineTime" width="180">
         <template #default="{ row }">{{ formatDate(row.acceptDeadlineTime) }}</template>
       </el-table-column>
+      <el-table-column label="流单时间" prop="flowTime" width="180">
+        <template #default="{ row }">{{ formatDate(row.flowTime) }}</template>
+      </el-table-column>
+      <el-table-column label="流单原因" prop="flowReason" min-width="180" />
     </el-table>
     <el-empty v-else description="暂无拆分单元" :image-size="80" />
 

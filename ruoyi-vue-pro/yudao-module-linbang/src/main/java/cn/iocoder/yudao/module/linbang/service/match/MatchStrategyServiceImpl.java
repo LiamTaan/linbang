@@ -17,6 +17,8 @@ import java.util.stream.Collectors;
 @Validated
 public class MatchStrategyServiceImpl implements MatchStrategyService {
 
+    private static final int MIN_STAGE_DURATION_SECONDS = 300;
+
     @Resource
     private MatchStrategyMapper matchStrategyMapper;
 
@@ -33,6 +35,7 @@ public class MatchStrategyServiceImpl implements MatchStrategyService {
         }
         List<StageRule> rules = JsonUtils.parseArray(strategy.getStageConfigJson(), StageRule.class);
         return rules.stream()
+                .peek(this::normalizeStageRule)
                 .sorted(Comparator.comparing(StageRule::getStageNo))
                 .collect(Collectors.toList());
     }
@@ -73,5 +76,14 @@ public class MatchStrategyServiceImpl implements MatchStrategyService {
         strategy.setId(current.getId());
         strategy.setStatus("ENABLE");
         matchStrategyMapper.updateById(strategy);
+    }
+
+    private void normalizeStageRule(StageRule rule) {
+        if (rule == null) {
+            return;
+        }
+        if (rule.getDurationSeconds() == null || rule.getDurationSeconds() < MIN_STAGE_DURATION_SECONDS) {
+            rule.setDurationSeconds(MIN_STAGE_DURATION_SECONDS);
+        }
     }
 }

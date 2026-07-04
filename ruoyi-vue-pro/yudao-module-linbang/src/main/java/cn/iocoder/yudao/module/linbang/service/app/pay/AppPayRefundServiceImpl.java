@@ -23,6 +23,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.walletaccount.WalletAccountMapp
 import cn.iocoder.yudao.module.linbang.dal.mysql.walletflow.WalletFlowMapper;
 import cn.iocoder.yudao.module.linbang.service.finance.LinbangFinanceService;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
+import cn.iocoder.yudao.module.linbang.service.orderflow.OrderFlowOrchestratorService;
 import cn.iocoder.yudao.module.pay.api.notify.dto.PayRefundNotifyReqDTO;
 import cn.iocoder.yudao.module.pay.api.refund.PayRefundApi;
 import cn.iocoder.yudao.module.pay.api.refund.dto.PayRefundCreateReqDTO;
@@ -47,6 +48,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_ACCESS_DENIED;
@@ -90,6 +92,8 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
     private AutoFlowRefundService autoFlowRefundService;
     @Resource
     private LinbangFinanceService linbangFinanceService;
+    @Resource
+    private OrderFlowOrchestratorService orderFlowOrchestratorService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -192,6 +196,7 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
 
     private void handleRefundSuccess(OrderInfoDO order, OrderUnitDO unit, PayRefundRespDTO payRefund) {
         if (existsRefundFlow(payRefund.getId(), "REFUND_SUCCESS")) {
+            orderFlowOrchestratorService.onRefundSuccess(order.getId());
             return;
         }
         BigDecimal refundAmount = MoneyUtils.fenToYuan(payRefund.getRefundPrice());
@@ -202,13 +207,15 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
         }
 
         BigDecimal newOrderAmount = nonNegative(order.getOrderAmount().subtract(refundAmount));
-        String nextOrderStatus = resolveOrderStatus(order.getId(), newOrderAmount);
         orderInfoMapper.updateById(OrderInfoDO.builder()
                 .id(order.getId())
                 .orderAmount(newOrderAmount)
-                .status(nextOrderStatus)
                 .build());
-        linbangFinanceService.handleRefundSuccess(order, unit, refundAmount);
+        linbangFinanceService.handleRefundSuccess(order, unit, refundAmount, payRefund.getId());
+        orderFlowOrchestratorService.onRefundSuccess(order.getId());
+        String nextOrderStatus = Optional.ofNullable(orderInfoMapper.selectById(order.getId()))
+                .map(OrderInfoDO::getStatus)
+                .orElse(order.getStatus());
         saveOperateLog(order.getId(), unit != null ? unit.getId() : null, "REFUND_SUCCESS", "SYSTEM", 0L,
                 order.getStatus(), nextOrderStatus, "退款成功，订单金额重算");
         saveRefundTraceFlow(resolveRefundUser(order), order, unit, payRefund.getId(), "REFUND_SUCCESS", "IN",
@@ -217,8 +224,10 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
 
     private void handleRefundFailure(OrderInfoDO order, OrderUnitDO unit, PayRefundRespDTO payRefund) {
         if (existsRefundFlow(payRefund.getId(), "REFUND_FAILED")) {
+            orderFlowOrchestratorService.onRefundFailed(order.getId());
             return;
         }
+        orderFlowOrchestratorService.onRefundFailed(order.getId());
         saveOperateLog(order.getId(), unit != null ? unit.getId() : null, "REFUND_FAILED", "SYSTEM", 0L,
                 order.getStatus(), order.getStatus(), "退款失败：" + payRefund.getChannelErrorMsg());
         saveRefundTraceFlow(resolveRefundUser(order), order, unit, payRefund.getId(), "REFUND_FAILED", "OUT",

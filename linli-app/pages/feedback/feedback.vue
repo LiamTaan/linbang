@@ -91,7 +91,7 @@
             </view>
 
             <view class="hotline-section">
-                <text class="hotline-text">客服热线：{{ appSettings.serviceHotline || '400-888-8888' }}</text>
+                <text class="hotline-text">客服热线：{{ appSettings.serviceHotline || '暂未配置' }}</text>
             </view>
             <view class="bottom-space"></view>
         </view>
@@ -100,8 +100,9 @@
 
 <script>
 import { createHelpFeedback, getHelpFaqList, getHelpFeedbackPage } from '@/api/help'
-import { getAppSettings } from '@/api/platform'
-import { getPlatformSettings, setPlatformSettings } from '@/utils/auth'
+import { loadPlatformSettings } from '@/services/app-bootstrap'
+import { callServiceHotline, copyServiceWechat } from '@/services/platform-contact'
+import { getPlatformSettings } from '@/utils/auth'
 import { getProfile } from '@/api/member'
 
 const DEFAULT_FAQS = [
@@ -175,9 +176,8 @@ export default {
         },
         async loadSettings() {
             try {
-                const settings = await getAppSettings()
+                const settings = await loadPlatformSettings(true)
                 this.appSettings = settings || this.appSettings
-                setPlatformSettings(this.appSettings)
                 this.types = this.appSettings.feedbackTypes && this.appSettings.feedbackTypes.length
                     ? this.appSettings.feedbackTypes
                     : this.types
@@ -269,22 +269,10 @@ export default {
             }
         },
         openOnlineService() {
-            const serviceWechat = this.appSettings.serviceWechat
-            uni.showToast({
-                title: serviceWechat ? `客服微信：${serviceWechat}` : '在线客服暂未配置',
-                icon: 'none'
-            })
+            copyServiceWechat(this.appSettings, '在线客服暂未配置，可先提交反馈')
         },
         callService() {
-            const phone = this.appSettings.serviceHotline
-            if (!phone) {
-                uni.showToast({
-                    title: '客服电话暂未配置',
-                    icon: 'none'
-                })
-                return
-            }
-            uni.makePhoneCall({ phoneNumber: phone })
+            callServiceHotline(this.appSettings, '客服电话暂未配置，可先提交反馈')
         },
         goBack() {
             this.$navigateBack()
@@ -635,4 +623,3 @@ export default {
     height: 42rpx;
 }
 </style>
-

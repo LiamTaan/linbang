@@ -9,7 +9,7 @@ export function getPayOrder(params, options = {}) {
 }
 
 export function submitPayOrder(data) {
-  return post('/pay/order/submit', data)
+  return post('/linbang/pay/order/h5/submit', data)
 }
 
 export function createRefund(data) {

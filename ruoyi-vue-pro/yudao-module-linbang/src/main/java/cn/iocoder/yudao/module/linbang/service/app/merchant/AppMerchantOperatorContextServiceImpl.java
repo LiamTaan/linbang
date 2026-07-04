@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MERCHANT_AUTH_REQUIRED;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MERCHANT_ROLE_REQUIRED;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MERCHANT_SUB_ACCOUNT_DISABLED;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MERCHANT_SUB_ACCOUNT_PERMISSION_DENIED;
 
@@ -47,6 +48,7 @@ public class AppMerchantOperatorContextServiceImpl implements AppMerchantOperato
                 .eq(MerchantInfoDO::getUserId, loginUser.getId())
                 .last("LIMIT 1"));
         if (merchant != null) {
+            validateCurrentRole(loginUser);
             return AppMerchantOperatorContext.builder()
                     .authUserId(authUserId)
                     .loginUser(loginUser)
@@ -67,6 +69,7 @@ public class AppMerchantOperatorContextServiceImpl implements AppMerchantOperato
         if (merchant == null) {
             throw exception(MERCHANT_AUTH_REQUIRED);
         }
+        validateCurrentRole(loginUser);
         Set<String> permissions = new LinkedHashSet<>(JsonUtils.parseArray(subAccount.getPermissionCodesJson(), String.class));
         List<Long> visibleServicePointIds = merchantSubAccountServicePointRelMapper.selectListBySubAccountId(subAccount.getId()).stream()
                 .map(MerchantSubAccountServicePointRelDO::getServicePointId)
@@ -83,6 +86,12 @@ public class AppMerchantOperatorContextServiceImpl implements AppMerchantOperato
                 .permissionCodes(permissions)
                 .visibleServicePointIds(visibleServicePointIds)
                 .build();
+    }
+
+    private void validateCurrentRole(MemberUserDO loginUser) {
+        if (loginUser == null || !"MERCHANT".equalsIgnoreCase(loginUser.getCurrentRoleCode())) {
+            throw exception(MERCHANT_ROLE_REQUIRED);
+        }
     }
 
     @Override

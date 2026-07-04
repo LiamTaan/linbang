@@ -88,7 +88,7 @@
 </template>
 
 <script>
-import { getProfile, getQualificationSummary, getRealNameProgress } from '@/api/member'
+import { getProfile, getQualificationPage, getQualificationSummary, getRealNameProgress } from '@/api/member'
 
 export default {
     data() {
@@ -96,7 +96,8 @@ export default {
             summary: {},
             progress: {},
             profile: {},
-            realNameDetail: {}
+            realNameDetail: {},
+            qualificationList: []
         }
     },
     computed: {
@@ -154,6 +155,8 @@ export default {
             return `${mobile.slice(0, 3)}****${mobile.slice(-4)}`
         },
         qualificationItems() {
+            const industryQualifications = this.qualificationList.filter((item) => this.isIndustryQualification(item.qualificationType))
+            const latestIndustry = industryQualifications[0] || null
             return [
                 {
                     key: 'business',
@@ -162,12 +165,13 @@ export default {
                 },
                 {
                     key: 'industry',
-                    title: '行业资质（电工证等）',
-                    status: this.summary.industryQualificationAuditStatus
+                    title: '行业资质',
+                    status: latestIndustry ? latestIndustry.auditStatus : this.summary.industryQualificationAuditStatus,
+                    statusText: industryQualifications.length ? `已维护 ${industryQualifications.length} 项` : '未上传'
                 }
             ].map((item) => ({
                 ...item,
-                statusText: this.mapQualificationStatus(item.status)
+                statusText: item.statusText || this.mapQualificationStatus(item.status)
             }))
         }
     },
@@ -183,10 +187,12 @@ export default {
                     getProfile({ silent: true }).catch(() => ({})),
                     this.fetchRealNameDetail()
                 ])
+                const qualificationPage = await getQualificationPage({}, { silent: true }).catch(() => ({ list: [] }))
                 this.summary = summary || {}
                 this.progress = progress || {}
                 this.profile = profile || {}
                 this.realNameDetail = realName || {}
+                this.qualificationList = (qualificationPage && qualificationPage.list) || []
             } catch (error) {
             }
         },
@@ -219,9 +225,18 @@ export default {
         },
         handleQualificationAction(item) {
             if (!item) return
+            if (item.key === 'industry') {
+                uni.navigateTo({
+                    url: '/pages/certificate/qualification_list'
+                })
+                return
+            }
             uni.navigateTo({
                 url: `/pages/certificate/qualification_edit?type=${item.key}`
             })
+        },
+        isIndustryQualification(type) {
+            return !!type && type !== 'BUSINESS_LICENSE' && type !== 'INSURANCE_POLICY'
         },
         handleFaceVerifyAction() {
             if (this.progress.auditStatus === 'APPROVED') {
@@ -464,4 +479,3 @@ export default {
     color: #333333;
 }
 </style>
-

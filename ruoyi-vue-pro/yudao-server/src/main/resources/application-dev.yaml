@@ -217,6 +217,6 @@ justauth:
     timeout: 24h # 超时时长，目前只对 Redis 缓存生效，默认 3 分钟
 
 linbang:
-  public-base-url: http://192.168.1.13:48080
+  public-base-url: ${LINBANG_PUBLIC_BASE_URL:}
   message:
     public-base-url: ${linbang.public-base-url}

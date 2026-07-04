@@ -77,6 +77,13 @@
 			}
 		},
 		{
+			"path": "pages/certificate/qualification_list",
+			"style": {
+				"navigationBarTitleText": "行业资质",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/set/set",
 			"style": {
 				"navigationBarTitleText": "系统设置",
@@ -94,6 +101,76 @@
 			"path": "pages/regional_partner/regional_partner",
 			"style": {
 				"navigationBarTitleText": "区域合作商工作台",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/regional_partner/region_detail",
+			"style": {
+				"navigationBarTitleText": "辖区查看",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/regional_partner/entry_audit_list",
+			"style": {
+				"navigationBarTitleText": "入驻初审",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/regional_partner/entry_audit_detail",
+			"style": {
+				"navigationBarTitleText": "初审详情",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/regional_partner/dispute_list",
+			"style": {
+				"navigationBarTitleText": "纠纷协调",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/regional_partner/dispute_detail",
+			"style": {
+				"navigationBarTitleText": "纠纷详情",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/regional_partner/price_report_list",
+			"style": {
+				"navigationBarTitleText": "价格建议",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/regional_partner/price_report_create",
+			"style": {
+				"navigationBarTitleText": "新建价格建议",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/regional_partner/price_report_detail",
+			"style": {
+				"navigationBarTitleText": "价格建议详情",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/regional_partner/instruction_list",
+			"style": {
+				"navigationBarTitleText": "会议通知",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/regional_partner/instruction_detail",
+			"style": {
+				"navigationBarTitleText": "通知详情",
 				"navigationStyle": "custom"
 			}
 		},

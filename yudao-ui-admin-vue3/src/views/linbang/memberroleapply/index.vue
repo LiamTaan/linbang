@@ -84,18 +84,19 @@
       <el-table-column label="驳回原因" align="center" prop="rejectReason" min-width="160" />
       <el-table-column label="审核时间" align="center" prop="auditTime" :formatter="dateFormatter" width="180" />
       <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="操作" align="center" fixed="right" width="120">
+      <el-table-column label="操作" align="center" fixed="right" :show-overflow-tooltip="false" min-width="160">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
-          <el-button
-            v-if="row.auditStatus === 'PENDING'"
-            link
-            type="primary"
-            v-hasPermi="['linbang:member:role-apply:audit']"
-            @click="openAuditDialog(row)"
-          >
-            审核
-          </el-button>
+          <div class="flex flex-wrap items-center justify-center gap-x-8px gap-y-4px whitespace-normal">
+            <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
+            <el-button
+              link
+              type="primary"
+              v-hasPermi="['linbang:member:role-apply:audit']"
+              @click="openAuditDialog(row)"
+            >
+              {{ getAuditActionLabel(row) }}
+            </el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -315,6 +316,16 @@ const formatUserDisplay = (
 
 const formatRoleDisplay = (value?: string) => getDictLabel(DICT_TYPE.LB_ROLE_CODE, value) || '-'
 
+const getAuditActionLabel = (row: MemberRoleApply) => {
+  if (row.auditStatus === 'APPROVED') {
+    return '驳回纠偏'
+  }
+  if (row.auditStatus === 'REJECTED') {
+    return '重新审核'
+  }
+  return '审核'
+}
+
 const formatRoleApplyFocus = (detail?: MemberRoleApplyDetail) => {
   if (!detail?.applyRoleCode) {
     return '-'
@@ -362,9 +373,9 @@ const auditFormRules = reactive<FormRules>({
 const openAuditDialog = (row: MemberRoleApply) => {
   currentRow.value = row
   auditFormData.id = row.id
-  auditFormData.auditStatus = 'APPROVED'
+  auditFormData.auditStatus = row.auditStatus === 'APPROVED' ? 'REJECTED' : 'APPROVED'
   auditFormData.auditRemark = row.auditRemark || ''
-  auditFormData.rejectReason = ''
+  auditFormData.rejectReason = row.rejectReason || ''
   auditDialogVisible.value = true
 }
 

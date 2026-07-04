@@ -5,11 +5,10 @@ import cn.iocoder.yudao.module.infra.dal.dataobject.config.ConfigDO;
 import cn.iocoder.yudao.module.infra.service.config.ConfigService;
 import cn.iocoder.yudao.module.linbang.constants.PlatformConfigKeyConstants;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberqualification.MemberUserQualificationDO;
-import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.messagerecord.MessageRecordDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberqualification.MemberUserQualificationMapper;
-import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.messagerecord.MessageRecordMapper;
+import cn.iocoder.yudao.module.linbang.service.merchantinfo.MerchantAccessStateService;
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchTarget;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -22,7 +21,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -34,13 +32,13 @@ public class MemberQualificationExpiryService {
     @Resource
     private MemberUserQualificationMapper memberUserQualificationMapper;
     @Resource
-    private MerchantInfoMapper merchantInfoMapper;
-    @Resource
     private MessageRecordMapper messageRecordMapper;
     @Resource
     private MessagePushDispatchService messagePushDispatchService;
     @Resource
     private ConfigService configService;
+    @Resource
+    private MerchantAccessStateService merchantAccessStateService;
 
     @Scheduled(cron = "0 0 2 * * ?")
     public void scanAndHandleExpiry() {
@@ -57,14 +55,18 @@ public class MemberQualificationExpiryService {
     }
 
     public boolean canMerchantAccept(Long userId) {
-        MemberUserQualificationDO latestApproved = memberUserQualificationMapper.selectOne(
-                new LambdaQueryWrapperX<MemberUserQualificationDO>()
-                        .eq(MemberUserQualificationDO::getUserId, userId)
-                        .eq(MemberUserQualificationDO::getAuditStatus, "APPROVED")
-                        .isNotNull(MemberUserQualificationDO::getValidEndDate)
-                        .orderByDesc(MemberUserQualificationDO::getValidEndDate, MemberUserQualificationDO::getId)
-                        .last("LIMIT 1"));
-        return latestApproved == null || !latestApproved.getValidEndDate().isBefore(LocalDate.now());
+        long totalCount = memberUserQualificationMapper.selectCount(new LambdaQueryWrapperX<MemberUserQualificationDO>()
+                .eq(MemberUserQualificationDO::getUserId, userId));
+        if (totalCount == 0) {
+            return true;
+        }
+        long validApprovedCount = memberUserQualificationMapper.selectCount(new LambdaQueryWrapperX<MemberUserQualificationDO>()
+                .eq(MemberUserQualificationDO::getUserId, userId)
+                .eq(MemberUserQualificationDO::getAuditStatus, "APPROVED")
+                .and(wrapper -> wrapper.isNull(MemberUserQualificationDO::getValidEndDate)
+                        .or()
+                        .ge(MemberUserQualificationDO::getValidEndDate, LocalDate.now())));
+        return validApprovedCount > 0;
     }
 
     private void handleReminder(int daysBefore) {
@@ -101,16 +103,17 @@ public class MemberQualificationExpiryService {
             return;
         }
         List<MessagePushDispatchTarget> targets = new ArrayList<>();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
         for (MemberUserQualificationDO qualification : qualifications) {
-            MerchantInfoDO merchant = merchantInfoMapper.selectOne(new LambdaQueryWrapperX<MerchantInfoDO>()
-                    .eq(MerchantInfoDO::getUserId, qualification.getUserId())
-                    .last("LIMIT 1"));
-            if (merchant != null && !Objects.equals(merchant.getAcceptStatus(), "DISABLE")) {
-                merchantInfoMapper.updateById(MerchantInfoDO.builder()
-                        .id(merchant.getId())
-                        .acceptStatus("DISABLE")
-                        .build());
-            }
+            memberUserQualificationMapper.updateById(MemberUserQualificationDO.builder()
+                    .id(qualification.getId())
+                    .auditStatus("REJECTED")
+                    .auditRemark("系统自动驳回：资质已过期")
+                    .rejectReason("资质已过期，请更新资料后重新提交审核")
+                    .auditTime(now)
+                    .priorityEnabled(Boolean.FALSE)
+                    .build());
+            merchantAccessStateService.refreshMerchantAcceptStatus(qualification.getUserId());
             if (!existsMessage(qualification.getUserId(), "QUALIFICATION_EXPIRE_DISABLE", qualification.getId())) {
                 targets.add(new MessagePushDispatchTarget(qualification.getUserId(), qualification.getId()));
             }

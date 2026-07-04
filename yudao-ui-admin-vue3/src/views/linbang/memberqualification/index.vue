@@ -132,18 +132,19 @@
       <el-table-column label="审核人" align="center" prop="auditBy" width="100" />
       <el-table-column label="审核时间" align="center" prop="auditTime" :formatter="dateFormatter" width="180" />
       <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="操作" align="center" fixed="right" width="170">
+      <el-table-column label="操作" align="center" fixed="right" :show-overflow-tooltip="false" min-width="180">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
-          <el-button
-            v-if="row.auditStatus !== 'APPROVED'"
-            link
-            type="primary"
-            v-hasPermi="['linbang:member:qualification:audit']"
-            @click="openAuditDialog(row)"
-          >
-            审核
-          </el-button>
+          <div class="flex flex-wrap items-center justify-center gap-x-8px gap-y-4px whitespace-normal">
+            <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
+            <el-button
+              link
+              type="primary"
+              v-hasPermi="['linbang:member:qualification:audit']"
+              @click="openAuditDialog(row)"
+            >
+              {{ getAuditActionLabel(row) }}
+            </el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -522,6 +523,16 @@ const formatQualificationFile = (fileId?: number) => {
     return '-'
   }
   return formatFileBrief(fileMap[fileId], '附件信息缺失')
+}
+
+const getAuditActionLabel = (row: MemberQualification) => {
+  if (row.auditStatus === 'APPROVED') {
+    return '纠偏'
+  }
+  if (row.auditStatus === 'REJECTED') {
+    return '重审'
+  }
+  return '审核'
 }
 
 const openAuditDialog = (row: MemberQualification) => {

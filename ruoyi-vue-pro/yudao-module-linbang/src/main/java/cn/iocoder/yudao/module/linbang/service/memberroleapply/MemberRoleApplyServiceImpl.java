@@ -14,11 +14,13 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.memberqualification.Member
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberrealname.MemberUserRealNameDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberroleapply.MemberRoleApplyDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.partnerinfo.PartnerInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.promoter.PromoterDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberqualification.MemberUserQualificationMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberrealname.MemberUserRealNameMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberroleapply.MemberRoleApplyMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.partnerinfo.PartnerInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.promoter.PromoterMapper;
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
 import cn.iocoder.yudao.module.linbang.service.partnerinfo.PartnerInfoService;
@@ -54,6 +56,8 @@ public class MemberRoleApplyServiceImpl implements MemberRoleApplyService {
     private MemberUserQualificationMapper memberUserQualificationMapper;
     @Resource
     private PromoterMapper promoterMapper;
+    @Resource
+    private PartnerInfoMapper partnerInfoMapper;
     @Resource
     private PromoterService promoterService;
     @Resource
@@ -128,20 +132,20 @@ public class MemberRoleApplyServiceImpl implements MemberRoleApplyService {
     @Transactional(rollbackFor = Exception.class)
     public void auditRoleApply(MemberRoleApplyAuditReqVO reqVO) {
         MemberRoleApplyDO apply = getRequiredApply(reqVO.getId());
-        if (!"PENDING".equals(apply.getAuditStatus())) {
-            throw exception(MEMBER_ROLE_APPLY_AUDIT_STATUS_INVALID);
-        }
+        String beforeStatus = apply.getAuditStatus();
+        boolean approving = "APPROVED".equals(reqVO.getAuditStatus());
         memberRoleApplyMapper.updateById(MemberRoleApplyDO.builder()
                 .id(reqVO.getId())
                 .auditStatus(reqVO.getAuditStatus())
                 .auditRemark(reqVO.getAuditRemark())
-                .rejectReason(reqVO.getRejectReason())
+                .rejectReason(approving ? null : reqVO.getRejectReason())
                 .auditBy(SecurityFrameworkUtils.getLoginUserId())
                 .auditTime(LocalDateTime.now())
                 .build());
         messagePushDispatchService.dispatchSingle("lb_role_apply_audited", "身份申请审核结果通知", "ROLE_APPLY",
                 apply.getId(), apply.getUserId(), "管理员审核身份申请后自动通知申请人");
-        if (!"APPROVED".equals(reqVO.getAuditStatus())) {
+        if (!approving) {
+            revokeRoleAbility(apply);
             return;
         }
         memberUserMapper.updateById(MemberUserDO.builder()
@@ -154,6 +158,40 @@ public class MemberRoleApplyServiceImpl implements MemberRoleApplyService {
             partnerInfoService.getOrCreatePartner(apply.getUserId());
         } else if ("PLATFORM_OPERATOR".equals(apply.getApplyRoleCode())) {
             // 当前轮次平台管理员身份仅切换角色并保留审核材料，不额外生成独立档案。
+        }
+        if (!"APPROVED".equals(beforeStatus)) {
+            messagePushDispatchService.dispatchSingle("", "身份申请已通过，角色已开通", "ROLE_APPLY",
+                    apply.getId(), apply.getUserId(), "身份申请审核通过后自动开通角色");
+        }
+    }
+
+    private void revokeRoleAbility(MemberRoleApplyDO apply) {
+        MemberUserDO user = apply.getUserId() == null ? null : memberUserMapper.selectById(apply.getUserId());
+        if (user != null && apply.getApplyRoleCode() != null
+                && apply.getApplyRoleCode().equalsIgnoreCase(user.getCurrentRoleCode())) {
+            memberUserMapper.updateById(MemberUserDO.builder()
+                    .id(user.getId())
+                    .currentRoleCode("USER")
+                    .build());
+        }
+        if ("PROMOTER".equals(apply.getApplyRoleCode())) {
+            PromoterDO promoter = promoterMapper.selectByUserId(apply.getUserId());
+            if (promoter != null && !"DISABLE".equalsIgnoreCase(promoter.getStatus())) {
+                promoterMapper.updateById(PromoterDO.builder()
+                        .id(promoter.getId())
+                        .status("DISABLE")
+                        .build());
+            }
+            return;
+        }
+        if ("PARTNER".equals(apply.getApplyRoleCode())) {
+            PartnerInfoDO partnerInfo = partnerInfoMapper.selectOne(PartnerInfoDO::getUserId, apply.getUserId());
+            if (partnerInfo != null && !"DISABLE".equalsIgnoreCase(partnerInfo.getStatus())) {
+                partnerInfoMapper.updateById(PartnerInfoDO.builder()
+                        .id(partnerInfo.getId())
+                        .status("DISABLE")
+                        .build());
+            }
         }
     }
 

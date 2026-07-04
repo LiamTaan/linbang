@@ -114,6 +114,27 @@ public class AppOrderDetailRespVO {
     @Schema(description = OpenApiSchemaConstants.ORDER_STATUS, example = "PENDING_ACCEPT")
     private String status;
 
+    @Schema(description = "当前派单轮次号；仅派单中或刚流单时有值")
+    private Integer dispatchStageNo;
+
+    @Schema(description = "当前派单截止时间")
+    private LocalDateTime dispatchDeadlineTime;
+
+    @Schema(description = "当前派单倒计时秒数")
+    private Integer dispatchCountdownSeconds;
+
+    @Schema(description = "最近流单时间")
+    private LocalDateTime flowTime;
+
+    @Schema(description = "最近流单原因")
+    private String flowReason;
+
+    @Schema(description = "自动退款状态：NONE 无、PROCESSING 处理中、SUCCESS 已退款、FAILED 失败")
+    private String autoRefundStatus;
+
+    @Schema(description = "当前订单是否允许调整需求后重新发布")
+    private Boolean republishAllowed;
+
     @Schema(description = "关联支付订单 ID")
     private Long payOrderId;
 

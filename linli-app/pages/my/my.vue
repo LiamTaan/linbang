@@ -85,7 +85,7 @@ import { getPromoteCenter, getTeamStats } from '@/api/promote'
 import { getPartnerWorkbench } from '@/api/partner'
 import { getPendingReviewUnits } from '@/api/review'
 import { syncMessageUnreadCount } from '@/services/message-unread'
-import { loadPlatformSettings } from '@/services/app-bootstrap'
+import { openPlatformContact } from '@/services/platform-contact'
 import { getWalletAccount } from '@/api/wallet'
 import { hasLogin } from '@/utils/auth'
 import { getCreditLevelLabel } from '@/utils/linbang'
@@ -177,12 +177,12 @@ export default {
                     {
                         label: '待初审入驻',
                         value: `${summary.pendingEntryAuditCount || this.partnerWorkbench.pendingEntryAuditCount || 0} 单`,
-                        action: () => this.navigateTo('/pages/regional_partner/regional_partner')
+                        action: () => this.navigateTo('/pages/regional_partner/entry_audit_list')
                     },
                     {
                         label: '待处理纠纷',
                         value: `${summary.pendingComplaintCount || this.partnerWorkbench.pendingComplaintCount || 0} 单`,
-                        action: () => this.navigateTo('/pages/regional_partner/regional_partner')
+                        action: () => this.navigateTo('/pages/regional_partner/dispute_list')
                     },
                     {
                         label: '辖区成交额',
@@ -443,9 +443,9 @@ export default {
                 wallet: () => this.goToWallet(),
                 reward: () => this.navigateTo('/pages/my_reward/my_reward'),
                 partner_workbench: () => this.navigateTo('/pages/regional_partner/regional_partner'),
-                partner_entry_audit: () => this.navigateTo('/pages/regional_partner/regional_partner'),
-                partner_dispute: () => this.navigateTo('/pages/regional_partner/regional_partner'),
-                partner_price_report: () => this.navigateTo('/pages/regional_partner/regional_partner')
+                partner_entry_audit: () => this.navigateTo('/pages/regional_partner/entry_audit_list'),
+                partner_dispute: () => this.navigateTo('/pages/regional_partner/dispute_list'),
+                partner_price_report: () => this.navigateTo('/pages/regional_partner/price_report_list')
             }
             const action = actionMap[item.key]
             if (action) {
@@ -533,53 +533,7 @@ export default {
             })
         },
         async openCustomerService() {
-            const settings = await loadPlatformSettings(true).catch(() => ({}))
-            const serviceWechat = String((settings && settings.serviceWechat) || '').trim()
-            const serviceHotline = String((settings && settings.serviceHotline) || '').trim()
-            const itemList = []
-            const actions = []
-            if (serviceWechat) {
-                itemList.push('在线客服')
-                actions.push(() => {
-                    uni.setClipboardData({
-                        data: serviceWechat,
-                        success: () => {
-                            uni.showToast({
-                                title: '客服微信已复制',
-                                icon: 'success'
-                            })
-                        }
-                    })
-                })
-            }
-            if (serviceHotline) {
-                itemList.push('电话客服')
-                actions.push(() => {
-                    uni.makePhoneCall({
-                        phoneNumber: serviceHotline
-                    })
-                })
-            }
-            if (!itemList.length) {
-                uni.showToast({
-                    title: '客服暂未配置',
-                    icon: 'none'
-                })
-                return
-            }
-            if (itemList.length === 1) {
-                actions[0]()
-                return
-            }
-            uni.showActionSheet({
-                itemList,
-                success: ({ tapIndex }) => {
-                    const action = actions[tapIndex]
-                    if (action) {
-                        action()
-                    }
-                }
-            })
+            await openPlatformContact()
         },
         async handleRoleSwitch() {
             if (!this.switchableRoles.length) {

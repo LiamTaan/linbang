@@ -15,4 +15,9 @@ public interface PartnerRegionRelMapper extends BaseMapperX<PartnerRegionRelDO> 
                 .eq(PartnerRegionRelDO::getPartnerId, partnerId)
                 .orderByAsc(PartnerRegionRelDO::getId));
     }
+
+    default void deleteByPartnerId(Long partnerId) {
+        delete(new LambdaQueryWrapperX<PartnerRegionRelDO>()
+                .eq(PartnerRegionRelDO::getPartnerId, partnerId));
+    }
 }

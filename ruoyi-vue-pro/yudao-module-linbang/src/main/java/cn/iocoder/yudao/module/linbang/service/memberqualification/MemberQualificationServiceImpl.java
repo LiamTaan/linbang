@@ -24,6 +24,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.memberrealname.MemberUserRealNa
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantentry.MerchantEntryMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper;
+import cn.iocoder.yudao.module.linbang.service.merchantinfo.MerchantAccessStateService;
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,6 +64,8 @@ public class MemberQualificationServiceImpl implements MemberQualificationServic
     private CertExemptionApplyMapper certExemptionApplyMapper;
     @Resource
     private MessagePushDispatchService messagePushDispatchService;
+    @Resource
+    private MerchantAccessStateService merchantAccessStateService;
 
     @Override
     public PageResult<MemberQualificationRespVO> getQualificationPage(MemberQualificationPageReqVO pageReqVO) {
@@ -114,6 +117,7 @@ public class MemberQualificationServiceImpl implements MemberQualificationServic
         if (qualification == null) {
             throw exception(MEMBER_USER_QUALIFICATION_NOT_EXISTS);
         }
+        boolean approved = Objects.equals(reqVO.getAuditStatus(), "APPROVED");
         MemberUserQualificationDO updateObj = new MemberUserQualificationDO();
         updateObj.setId(reqVO.getId());
         updateObj.setAuditStatus(reqVO.getAuditStatus());
@@ -121,9 +125,10 @@ public class MemberQualificationServiceImpl implements MemberQualificationServic
         updateObj.setRejectReason(reqVO.getRejectReason());
         updateObj.setAuditBy(SecurityFrameworkUtils.getLoginUserId());
         updateObj.setAuditTime(LocalDateTime.now());
-        updateObj.setPriorityEnabled(Objects.equals(reqVO.getAuditStatus(), "APPROVED")
+        updateObj.setPriorityEnabled(approved
                 && Arrays.asList("PLATFORM_CLOTHING", "TOOLBOX").contains(qualification.getQualificationType()));
         memberUserQualificationMapper.updateById(updateObj);
+        merchantAccessStateService.refreshMerchantAcceptStatus(qualification.getUserId());
         messagePushDispatchService.dispatchSingleIdempotent("lb_special_cert_audited", "专项资质审核结果通知",
                 "MEMBER_QUALIFICATION", qualification.getId(), qualification.getUserId(), "专项资质审核通知",
                 "lb_special_cert_audited:" + qualification.getId() + ":" + reqVO.getAuditStatus());

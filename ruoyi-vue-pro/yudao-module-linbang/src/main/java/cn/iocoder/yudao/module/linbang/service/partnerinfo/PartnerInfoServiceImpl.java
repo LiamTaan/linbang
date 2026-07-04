@@ -8,6 +8,7 @@ import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.linbang.controller.admin.partnerinfo.vo.PartnerInfoDetailRespVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.partnerinfo.vo.PartnerInfoPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.partnerinfo.vo.PartnerInfoRespVO;
+import cn.iocoder.yudao.module.linbang.controller.admin.partnerinfo.vo.PartnerInfoUpdateRegionsReqVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.complaint.ComplaintDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantentry.MerchantEntryDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategory.MerchantServiceCategoryDO;
@@ -29,11 +30,13 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.orderinfo.OrderInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.partnerinfo.PartnerInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.partnerregionrel.PartnerRegionRelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -169,6 +172,26 @@ public class PartnerInfoServiceImpl implements PartnerInfoService {
         return partnerRegionRelMapper.selectListByPartnerId(partnerId).stream()
                 .map(item -> item.getAdcode() == null ? "" : item.getAdcode())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updatePartnerRegions(PartnerInfoUpdateRegionsReqVO reqVO) {
+        PartnerInfoDO partnerInfo = partnerInfoMapper.selectById(reqVO.getId());
+        if (partnerInfo == null) {
+            throw exception(PARTNER_INFO_NOT_EXISTS);
+        }
+        Map<String, PartnerInfoUpdateRegionsReqVO.RegionItem> regionMap = new LinkedHashMap<>();
+        reqVO.getRegions().forEach(item -> regionMap.putIfAbsent(item.getAdcode(), item));
+        partnerRegionRelMapper.deleteByPartnerId(reqVO.getId());
+        regionMap.values().forEach(item -> partnerRegionRelMapper.insert(PartnerRegionRelDO.builder()
+                .partnerId(reqVO.getId())
+                .province(item.getProvince())
+                .city(item.getCity())
+                .district(item.getDistrict())
+                .adcode(item.getAdcode())
+                .status("ENABLE")
+                .build()));
     }
 
     private Long countPendingEntries(List<String> regionAdcodes) {

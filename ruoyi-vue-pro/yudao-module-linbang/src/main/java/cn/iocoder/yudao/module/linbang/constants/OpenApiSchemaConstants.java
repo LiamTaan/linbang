@@ -93,6 +93,12 @@ public interface OpenApiSchemaConstants {
     String ROLE_APPLY_ROLE_CODE =
             "身份申请角色：PROMOTER 推广员、PARTNER 区域合作商、PLATFORM_OPERATOR 平台管理员（管理端角色）；服务商 MERCHANT 通过服务商入驻单独开通，不走身份申请。";
 
+    String CURRENT_ROLE_CODE =
+            "当前生效角色编码；App 端所有角色专属动作均以 currentRoleCode 作为唯一生效口径，必须先切换到对应角色后再执行对应业务。";
+
+    String ENABLED_ROLE_CODES =
+            "已开通角色编码列表；仅表示当前账号已开通并可切换，不代表当前页面可直接执行该角色动作。";
+
     String MERCHANT_ENTRY_AUDIT_STATUS =
             "入驻审核动作：FIRST_APPROVED 初审通过、APPROVED 终审通过、REJECTED 驳回。";
 
@@ -110,6 +116,12 @@ public interface OpenApiSchemaConstants {
 
     String MATCH_RECORD_STATUS =
             "匹配记录状态：PUSHED 已推送、ACCEPTED 已接单；其他状态按抢单链路扩展，例如 EXPIRED 已过期。";
+
+    String MATCH_PUSH_BATCH_STATUS =
+            "推送批次状态：PUSHING 推送中、EXPIRED 已过期；后续如有手工终止、作废等状态按派单链路扩展。";
+
+    String MATCH_PUSH_BATCH_TRIGGER_TYPE =
+            "推送触发类型：ORDER_PAID 订单支付后首次触发、SCHEDULE 上一阶段过期后按策略续推。";
 
     String RISK_RULE_VALUE_TYPE =
             "风控规则值类型：INTEGER 整数、DECIMAL 小数、FEN 金额分。";

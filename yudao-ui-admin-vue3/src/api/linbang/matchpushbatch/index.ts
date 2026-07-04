@@ -4,7 +4,17 @@ import type { Dayjs } from 'dayjs'
 export interface MatchPushBatch {
   id: number
   orderId?: number
+  orderNo?: string
+  orderStatus?: string
+  userId?: number
+  userNo?: string
+  userNickname?: string
+  userMobile?: string
   unitId?: number
+  unitNo?: string
+  unitSeq?: number
+  unitTitle?: string
+  unitStatus?: string
   stageNo?: number
   pushBatchNo?: number
   radiusStartKm?: number
@@ -13,6 +23,13 @@ export interface MatchPushBatch {
   expiredAt?: string | Dayjs
   status?: string
   triggerType?: string
+  acceptedMerchantId?: number
+  acceptedMerchantName?: string
+  acceptedMerchantContactName?: string
+  acceptedMerchantContactMobile?: string
+  pushedMerchantCount?: number
+  acceptedMatchCount?: number
+  pushedMerchantNames?: string
 }
 
 export const MatchPushBatchApi = {

@@ -3,10 +3,12 @@ package cn.iocoder.yudao.module.linbang.dal.mysql.matchpushbatch;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.iocoder.yudao.module.linbang.controller.admin.match.vo.MatchPushBatchPageReqVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.matchpushbatch.MatchPushBatchDO;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 @Mapper
@@ -32,11 +34,13 @@ public interface MatchPushBatchMapper extends BaseMapperX<MatchPushBatchDO> {
                 .orderByAsc(MatchPushBatchDO::getStageNo, MatchPushBatchDO::getId));
     }
 
-    default PageResult<MatchPushBatchDO> selectPage(cn.iocoder.yudao.framework.common.pojo.PageParam pageParam,
-                                                    Long unitId, String status) {
-        return selectPage(pageParam, new LambdaQueryWrapperX<MatchPushBatchDO>()
-                .eqIfPresent(MatchPushBatchDO::getUnitId, unitId)
-                .eqIfPresent(MatchPushBatchDO::getStatus, status)
+    default PageResult<MatchPushBatchDO> selectPage(MatchPushBatchPageReqVO reqVO,
+                                                    Collection<Long> orderIds,
+                                                    Collection<Long> unitIds) {
+        return selectPage(reqVO, new LambdaQueryWrapperX<MatchPushBatchDO>()
+                .inIfPresent(MatchPushBatchDO::getOrderId, orderIds)
+                .inIfPresent(MatchPushBatchDO::getUnitId, unitIds)
+                .eqIfPresent(MatchPushBatchDO::getStatus, reqVO.getStatus())
                 .orderByDesc(MatchPushBatchDO::getId));
     }
 }

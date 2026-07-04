@@ -23,6 +23,7 @@ import cn.iocoder.yudao.module.linbang.service.finance.LinbangFinanceService;
 import cn.iocoder.yudao.module.linbang.service.match.MatchDispatchService;
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
+import cn.iocoder.yudao.module.linbang.service.orderflow.OrderFlowOrchestratorService;
 import cn.iocoder.yudao.module.linbang.service.risk.LinbangRiskFacade;
 import cn.iocoder.yudao.module.pay.api.notify.dto.PayOrderNotifyReqDTO;
 import cn.iocoder.yudao.module.pay.api.order.PayOrderApi;
@@ -90,6 +91,8 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
     private MessagePushDispatchService messagePushDispatchService;
     @Resource
     private LinbangRiskFacade linbangRiskFacade;
+    @Resource
+    private OrderFlowOrchestratorService orderFlowOrchestratorService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -361,6 +364,7 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
         notifyPaymentSuccess(order);
         notifyOrderStatusChanged(order, "PENDING_ACCEPT", "支付成功，订单已进入待接单");
         matchDispatchService.startInitialDispatch(order.getId());
+        orderFlowOrchestratorService.onOrderPaid(order.getId());
     }
 
     private OrderInfoDO validateAccessibleOrder(Long lbUserId, Long orderId) {

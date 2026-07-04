@@ -44,7 +44,8 @@ public class MemberUserAddressServiceImpl implements MemberUserAddressService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createMemberUserAddress(MemberUserAddressSaveReqVO createReqVO) {
-        if (Boolean.TRUE.equals(createReqVO.getIsDefault())) {
+        boolean useAsDefault = shouldUseAsDefault(createReqVO.getUserId(), createReqVO.getIsDefault(), null);
+        if (useAsDefault) {
             clearDefaultAddress(createReqVO.getUserId(), null);
         }
         AmapLocationService.ResolvedAddress resolvedAddress = resolveAddress(createReqVO);
@@ -56,7 +57,8 @@ public class MemberUserAddressServiceImpl implements MemberUserAddressService {
                 .setDetailAddress(resolvedAddress.getDetailAddress())
                 .setLongitude(resolvedAddress.getLongitude())
                 .setLatitude(resolvedAddress.getLatitude())
-                .setAdcode(resolvedAddress.getAdcode());
+                .setAdcode(resolvedAddress.getAdcode())
+                .setIsDefault(useAsDefault);
         memberUserAddressMapper.insert(memberUserAddress);
         return memberUserAddress.getId();
     }
@@ -66,7 +68,8 @@ public class MemberUserAddressServiceImpl implements MemberUserAddressService {
     public void updateMemberUserAddress(MemberUserAddressSaveReqVO updateReqVO) {
         MemberUserAddressDO existed = validateMemberUserAddressExists(updateReqVO.getId());
         AmapLocationService.ResolvedAddress resolvedAddress = resolveAddress(updateReqVO);
-        if (Boolean.TRUE.equals(updateReqVO.getIsDefault())) {
+        boolean useAsDefault = shouldUseAsDefault(existed.getUserId(), updateReqVO.getIsDefault(), existed.getId());
+        if (useAsDefault) {
             clearDefaultAddress(existed.getUserId(), existed.getId());
         }
         MemberUserAddressDO updateObj = BeanUtils.toBean(updateReqVO, MemberUserAddressDO.class)
@@ -77,16 +80,17 @@ public class MemberUserAddressServiceImpl implements MemberUserAddressService {
                 .setDetailAddress(resolvedAddress.getDetailAddress())
                 .setLongitude(resolvedAddress.getLongitude())
                 .setLatitude(resolvedAddress.getLatitude())
-                .setAdcode(resolvedAddress.getAdcode());
+                .setAdcode(resolvedAddress.getAdcode())
+                .setIsDefault(useAsDefault);
         memberUserAddressMapper.updateById(updateObj);
+        ensureDefaultAddress(existed.getUserId(), existed.getId());
     }
 
     @Override
     public void deleteMemberUserAddress(Long id) {
-        // 校验存在
-        validateMemberUserAddressExists(id);
-        // 删除
+        MemberUserAddressDO existed = validateMemberUserAddressExists(id);
         memberUserAddressMapper.deleteById(id);
+        ensureDefaultAddress(existed.getUserId(), null);
     }
 
     @Override
@@ -112,6 +116,37 @@ public class MemberUserAddressServiceImpl implements MemberUserAddressService {
             updateWrapper.ne(MemberUserAddressDO::getId, excludeId);
         }
         memberUserAddressMapper.update(null, updateWrapper);
+    }
+
+    private boolean shouldUseAsDefault(Long userId, Boolean requestedDefault, Long excludeId) {
+        if (Boolean.TRUE.equals(requestedDefault)) {
+            return true;
+        }
+        return !hasOtherDefaultAddress(userId, excludeId);
+    }
+
+    private boolean hasOtherDefaultAddress(Long userId, Long excludeId) {
+        return memberUserAddressMapper.selectListByUserId(userId).stream()
+                .filter(item -> excludeId == null || !item.getId().equals(excludeId))
+                .anyMatch(item -> Boolean.TRUE.equals(item.getIsDefault()));
+    }
+
+    private void ensureDefaultAddress(Long userId, Long preferredId) {
+        if (hasOtherDefaultAddress(userId, null)) {
+            return;
+        }
+        List<MemberUserAddressDO> addresses = memberUserAddressMapper.selectListByUserId(userId);
+        if (addresses.isEmpty()) {
+            return;
+        }
+        MemberUserAddressDO target = addresses.stream()
+                .filter(item -> preferredId != null && preferredId.equals(item.getId()))
+                .findFirst()
+                .orElse(addresses.get(addresses.size() - 1));
+        memberUserAddressMapper.updateById(MemberUserAddressDO.builder()
+                .id(target.getId())
+                .isDefault(Boolean.TRUE)
+                .build());
     }
 
     @Override

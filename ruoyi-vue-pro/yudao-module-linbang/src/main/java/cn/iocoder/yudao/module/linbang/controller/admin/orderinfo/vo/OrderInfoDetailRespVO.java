@@ -18,6 +18,12 @@ public class OrderInfoDetailRespVO {
     private String orderNo;
     @Schema(description = "下单用户 ID", example = "1001")
     private Long userId;
+    @Schema(description = "下单用户编号")
+    private String userNo;
+    @Schema(description = "下单用户昵称")
+    private String userNickname;
+    @Schema(description = "下单用户手机号")
+    private String userMobile;
     @Schema(description = "当前服务商 ID", example = "2001")
     private Long merchantId;
     @Schema(description = "服务商摘要")
@@ -74,6 +80,18 @@ public class OrderInfoDetailRespVO {
     private Boolean antiEscapeConfirmed;
     @Schema(description = OpenApiSchemaConstants.ORDER_STATUS, example = "PENDING_PAY")
     private String status;
+    @Schema(description = "当前派单轮次号")
+    private Integer dispatchStageNo;
+    @Schema(description = "当前派单截止时间")
+    private LocalDateTime dispatchDeadlineTime;
+    @Schema(description = "最近流单时间")
+    private LocalDateTime flowTime;
+    @Schema(description = "最近流单原因")
+    private String flowReason;
+    @Schema(description = "自动退款状态")
+    private String autoRefundStatus;
+    @Schema(description = "自动退款单 ID")
+    private Long autoRefundId;
     @Schema(description = "支付订单 ID", example = "5001")
     private Long payOrderId;
     @Schema(description = "支付记录摘要")
@@ -191,8 +209,20 @@ public class OrderInfoDetailRespVO {
         private Long merchantId;
         @Schema(description = OpenApiSchemaConstants.ORDER_UNIT_STATUS, example = "PENDING_ACCEPT")
         private String status;
+        @Schema(description = "派单状态")
+        private String dispatchStatus;
+        @Schema(description = "当前派单轮次号")
+        private Integer currentBatchNo;
         @Schema(description = "接单截止时间")
         private LocalDateTime acceptDeadlineTime;
+        @Schema(description = "流单时间")
+        private LocalDateTime flowTime;
+        @Schema(description = "流单原因")
+        private String flowReason;
+        @Schema(description = "自动退款状态")
+        private String autoRefundStatus;
+        @Schema(description = "自动退款单 ID")
+        private Long autoRefundId;
         @Schema(description = "完成时间")
         private LocalDateTime finishTime;
         @Schema(description = "申诉截止时间")

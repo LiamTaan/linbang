@@ -10,9 +10,17 @@
 
         <scroll-view class="content-scroll" scroll-y>
             <view class="form-card">
+                <view v-if="showQualificationTypePicker" class="field-item">
+                    <text class="field-label">资质类型</text>
+                    <picker :range="industryTypeOptions" range-key="label" :value="industryTypeIndex" @change="handleQualificationTypeChange">
+                        <view class="field-input picker-input" :class="{ 'is-placeholder': !currentTypeLabel }">
+                            {{ currentTypeLabel || '请选择真实资质类型' }}
+                        </view>
+                    </picker>
+                </view>
                 <view class="field-item">
                     <text class="field-label">资质名称</text>
-                    <input class="field-input" v-model="form.qualificationName" placeholder="请输入资质名称" />
+                    <input class="field-input" v-model="form.qualificationName" :placeholder="qualificationNamePlaceholder" />
                 </view>
                 <view class="field-item">
                     <text class="field-label">资质编号</text>
@@ -73,8 +81,8 @@ const TYPE_MAP = {
     },
     industry: {
         title: '行业资质',
-        qualificationType: 'ELECTRICIAN',
-        defaultName: '行业资质'
+        qualificationType: '',
+        defaultName: ''
     },
     insurance: {
         title: '保险保单',
@@ -82,6 +90,18 @@ const TYPE_MAP = {
         defaultName: '保险保单'
     }
 }
+
+const INDUSTRY_TYPE_OPTIONS = [
+    { value: 'ELECTRICIAN', label: '电工证' },
+    { value: 'WELDER', label: '焊工证' },
+    { value: 'HVAC_TECHNICIAN', label: '空调制冷证' },
+    { value: 'PLUMBING_TECHNICIAN', label: '管道作业证' },
+    { value: 'CLEANING_SERVICE', label: '保洁服务资质' },
+    { value: 'INSTALLATION_SERVICE', label: '安装服务资质' },
+    { value: 'SAFETY_CERTIFICATE', label: '安全生产证' },
+    { value: 'SPECIAL_OPERATION', label: '特种作业操作证' },
+    { value: 'HEALTH_CERTIFICATE', label: '健康证' }
+]
 
 export default {
     data() {
@@ -101,7 +121,8 @@ export default {
                 priorityEnabled: false
             },
             evidenceFileIds: [],
-            submitting: false
+            submitting: false,
+            forceCreateMode: false
         }
     },
     computed: {
@@ -116,29 +137,50 @@ export default {
         },
         evidenceCountText() {
             return this.evidenceFileIds.length ? `已上传 ${this.evidenceFileIds.length} 张` : '可选上传'
+        },
+        showQualificationTypePicker() {
+            return this.typeKey === 'industry'
+        },
+        industryTypeOptions() {
+            return INDUSTRY_TYPE_OPTIONS
+        },
+        industryTypeIndex() {
+            const index = this.industryTypeOptions.findIndex((item) => item.value === this.form.qualificationType)
+            return index < 0 ? 0 : index
+        },
+        currentTypeLabel() {
+            const matched = this.industryTypeOptions.find((item) => item.value === this.form.qualificationType)
+            return matched ? matched.label : ''
+        },
+        qualificationNamePlaceholder() {
+            return this.typeKey === 'industry' ? '请输入真实证件名称，例如 低压电工证' : '请输入资质名称'
         }
     },
     onLoad(options) {
         if (options && options.type && TYPE_MAP[options.type]) {
             this.typeKey = options.type
         }
+        this.forceCreateMode = !!(options && options.mode === 'create')
         this.form.qualificationType = this.currentMeta.qualificationType
         this.form.qualificationName = this.currentMeta.defaultName
         if (options && options.bizId) {
             this.loadById(Number(options.bizId))
             return
         }
+        if (this.forceCreateMode) {
+            return
+        }
         this.loadLatestByType()
     },
     methods: {
         async loadLatestByType() {
+            if (this.typeKey === 'industry') {
+                return
+            }
             try {
                 const page = await getQualificationPage({}, { silent: true })
                 const list = (page && page.list) || []
                 const matched = list.find((item) => item.qualificationType === this.currentMeta.qualificationType)
-                    || list.find((item) => this.typeKey === 'industry'
-                        && item.qualificationType !== 'BUSINESS_LICENSE'
-                        && item.qualificationType !== 'INSURANCE_POLICY')
                 if (matched && matched.id) {
                     await this.loadById(matched.id)
                 }
@@ -153,7 +195,7 @@ export default {
                 this.form = {
                     id: detail.id || null,
                     qualificationType: detail.qualificationType || this.currentMeta.qualificationType,
-                    qualificationName: detail.qualificationName || this.currentMeta.defaultName,
+                    qualificationName: detail.qualificationName || this.currentMeta.defaultName || '',
                     qualificationNo: detail.qualificationNo || '',
                     fileId: detail.fileId || null,
                     evidenceFileIdsJson: detail.evidenceFileIdsJson || '[]',
@@ -237,8 +279,25 @@ export default {
             const value = event && event.detail ? event.detail.value : ''
             this.form[field] = value
         },
+        handleQualificationTypeChange(event) {
+            const index = Number(event && event.detail ? event.detail.value : 0) || 0
+            const selected = this.industryTypeOptions[index]
+            if (!selected) return
+            const currentLabel = this.currentTypeLabel
+            this.form.qualificationType = selected.value
+            if (!this.form.qualificationName || this.form.qualificationName === currentLabel) {
+                this.form.qualificationName = selected.label
+            }
+        },
         async handleSubmit() {
             if (this.submitting) return
+            if (this.showQualificationTypePicker && !this.form.qualificationType) {
+                uni.showToast({
+                    title: '请选择资质类型',
+                    icon: 'none'
+                })
+                return
+            }
             if (!this.form.qualificationName || !this.form.fileId) {
                 uni.showToast({
                     title: '请至少填写名称并上传主附件',
@@ -372,4 +431,3 @@ export default {
     height: 60rpx;
 }
 </style>
-

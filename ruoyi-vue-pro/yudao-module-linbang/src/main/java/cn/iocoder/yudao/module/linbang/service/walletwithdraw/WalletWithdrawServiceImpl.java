@@ -42,8 +42,10 @@ import cn.iocoder.yudao.module.pay.dal.dataobject.app.PayAppDO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.channel.PayChannelDO;
 import cn.iocoder.yudao.module.pay.enums.PayChannelEnum;
 import cn.iocoder.yudao.module.pay.enums.transfer.PayTransferStatusEnum;
+import cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate.AggregatePayClientConfig;
 import cn.iocoder.yudao.module.pay.service.app.PayAppService;
 import cn.iocoder.yudao.module.pay.service.channel.PayChannelService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
@@ -59,6 +61,7 @@ import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.*;
  */
 @Service
 @Validated
+@Slf4j
 public class WalletWithdrawServiceImpl implements WalletWithdrawService {
 
     private static final String[] PREFERRED_TRANSFER_CHANNELS = {
@@ -183,7 +186,12 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
         }
         walletWithdrawMapper.updateById(updateObj);
         if (AUDIT_STATUS_APPROVED.equals(reqVO.getAuditStatus())) {
-            createTransfer(walletWithdraw);
+            try {
+                createTransfer(walletWithdraw);
+            } catch (Exception ex) {
+                log.error("[auditWalletWithdraw][withdraw({}) 发起打款失败]", walletWithdraw.getId(), ex);
+                handleTransferCreateFailure(walletWithdraw, ex);
+            }
         } else if (AUDIT_STATUS_REJECTED.equals(reqVO.getAuditStatus())) {
             rollbackRejectedWithdraw(walletWithdraw);
         }
@@ -208,7 +216,13 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
                 .status(WITHDRAW_STATUS_PROCESSING)
                 .transferErrorMsg(null)
                 .build());
-        return createTransfer(withdraw);
+        try {
+            return createTransfer(withdraw);
+        } catch (Exception ex) {
+            log.error("[retryWalletWithdrawTransfer][withdraw({}) 重新发起打款失败]", withdraw.getId(), ex);
+            handleTransferCreateFailure(withdraw, ex);
+            return null;
+        }
     }
 
     @Override
@@ -375,7 +389,38 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
     }
 
     private void assertTransferChannelSupported(PayChannelDO channel) {
-        // 聚合支付已支持通过银盛商户付款接口执行提现打款。
+        if (!Objects.equals(channel.getCode(), PayChannelEnum.AGGREGATE.getCode())) {
+            return;
+        }
+        if (!(channel.getConfig() instanceof AggregatePayClientConfig)) {
+            throw exception(WALLET_WITHDRAW_TRANSFER_UNSUPPORTED);
+        }
+        AggregatePayClientConfig config = (AggregatePayClientConfig) channel.getConfig();
+        if (StrUtil.hasBlank(config.getPrivateKeyFilePath(), config.getPrivateKeyPassword(),
+                config.getYsepayPublicKeyFilePath())) {
+            throw new IllegalStateException(
+                    "聚合支付银盛证书配置未补齐，请配置 privateKeyFilePath/privateKeyPassword/ysepayPublicKeyFilePath");
+        }
+    }
+
+    private void handleTransferCreateFailure(WalletWithdrawDO withdraw, Exception ex) {
+        WalletAccountDO walletAccount = withdraw.getWalletAccountId() == null ? null
+                : walletAccountMapper.selectById(withdraw.getWalletAccountId());
+        if (walletAccount == null) {
+            throw exception(WALLET_ACCOUNT_NOT_EXISTS);
+        }
+        PayTransferRespDTO transfer = new PayTransferRespDTO();
+        transfer.setId(withdraw.getPayTransferId());
+        transfer.setNo(withdraw.getPayTransferNo());
+        transfer.setChannelErrorMsg(resolveTransferCreateErrorMsg(ex));
+        linbangFinanceService.handleWithdrawTransferFailed(walletAccount, withdraw.getId(), transfer);
+    }
+
+    private String resolveTransferCreateErrorMsg(Exception ex) {
+        if (StrUtil.isNotBlank(ex.getMessage())) {
+            return ex.getMessage();
+        }
+        return "提现打款发起失败";
     }
 
     private Map<String, String> buildTransferExtras(WalletBankCardDO bankCard) {

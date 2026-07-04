@@ -51,7 +51,7 @@ public class AppMemberAddressController {
     }
 
     @PostMapping("/resolve-location")
-    @Operation(summary = "根据坐标解析标准化地址")
+    @Operation(summary = "根据坐标解析标准化地址", description = "用于首页自动定位或地图拖拽后的业务地址草稿生成；解析结果不能直接视为已确认的默认地址。")
     public CommonResult<AppMemberAddressResolveLocationRespVO> resolveLocation(@Valid @RequestBody AppMemberAddressResolveLocationReqVO reqVO) {
         return success(appMemberAddressService.resolveLocation(reqVO));
     }

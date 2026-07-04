@@ -17,7 +17,10 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -26,12 +29,13 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
 import javax.annotation.security.PermitAll;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
-import static cn.iocoder.yudao.module.infra.framework.file.core.utils.FileTypeUtils.writeAttachment;
+import static cn.iocoder.yudao.module.infra.framework.file.core.utils.FileTypeUtils.getMineType;
+import static cn.iocoder.yudao.module.infra.framework.file.core.utils.FileTypeUtils.isImage;
 
 @Tag(name = "管理后台 - 文件存储")
 @RestController
@@ -103,9 +107,8 @@ public class FileController {
     @TenantIgnore
     @Operation(summary = "下载文件")
     @Parameter(name = "configId", description = "配置编号", required = true)
-    public void getFileContent(HttpServletRequest request,
-                               HttpServletResponse response,
-                               @PathVariable("configId") Long configId) throws Exception {
+    public ResponseEntity<byte[]> getFileContent(HttpServletRequest request,
+                                                 @PathVariable("configId") Long configId) throws Exception {
         // 获取请求的路径
         String path = StrUtil.subAfter(request.getRequestURI(), "/get/", false);
         if (StrUtil.isEmpty(path)) {
@@ -120,12 +123,65 @@ public class FileController {
         byte[] content = fileService.getFileContent(configId, path);
         if (content == null) {
             log.warn("[getFileContent][configId({}) path({}) 文件不存在]", configId, path);
-            response.setStatus(HttpStatus.NOT_FOUND.value());
-            return;
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
         FileDO file = fileService.getFileByConfigIdAndPath(configId, path);
         String filename = file != null && StrUtil.isNotEmpty(file.getName()) ? file.getName() : FileUtil.getName(path);
-        writeAttachment(response, filename, content);
+        String mineType = file != null && StrUtil.isNotBlank(file.getType()) ? file.getType() : getMineType(content, filename);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(parseMediaType(mineType));
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, buildContentDisposition(isImage(mineType) ? "inline" : "attachment", filename));
+        if (StrUtil.containsIgnoreCase(mineType, "video")) {
+            headers.set("Accept-Ranges", "bytes");
+            headers.setContentLength(content.length);
+        }
+        return new ResponseEntity<>(content, headers, HttpStatus.OK);
+    }
+
+    @GetMapping("/{configId}/preview/**")
+    @PermitAll
+    @TenantIgnore
+    @Operation(summary = "预览文件")
+    @Parameter(name = "configId", description = "配置编号", required = true)
+    public ResponseEntity<byte[]> previewFileContent(HttpServletRequest request,
+                                                     @PathVariable("configId") Long configId) throws Exception {
+        String path = StrUtil.subAfter(request.getRequestURI(), "/preview/", false);
+        if (StrUtil.isEmpty(path)) {
+            throw new IllegalArgumentException("结尾的 path 路径必须传递");
+        }
+        path = HttpUtils.decodeUrlPath(path);
+        byte[] content = fileService.getFileContent(configId, path);
+        if (content == null) {
+            log.warn("[previewFileContent][configId({}) path({}) 文件不存在]", configId, path);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        FileDO file = fileService.getFileByConfigIdAndPath(configId, path);
+        String filename = file != null && StrUtil.isNotEmpty(file.getName()) ? file.getName() : FileUtil.getName(path);
+        String mineType = file != null && StrUtil.isNotBlank(file.getType()) ? file.getType() : getMineType(content, filename);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(parseMediaType(mineType));
+        return new ResponseEntity<>(content, headers, HttpStatus.OK);
+    }
+
+    private static MediaType parseMediaType(String mineType) {
+        if (StrUtil.isBlank(mineType)) {
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
+        try {
+            return MediaType.parseMediaType(mineType);
+        } catch (Exception ex) {
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
+    }
+
+    private static String buildContentDisposition(String dispositionType, String filename) {
+        String safeFilename = StrUtil.blankToDefault(filename, "download");
+        try {
+            return StrUtil.format("{}; filename*=UTF-8''{}",
+                    dispositionType, java.net.URLEncoder.encode(safeFilename, "UTF-8").replace("+", "%20"));
+        } catch (UnsupportedEncodingException ex) {
+            return StrUtil.format("{}; filename=\"{}\"", dispositionType, safeFilename);
+        }
     }
 
     @GetMapping("/page")

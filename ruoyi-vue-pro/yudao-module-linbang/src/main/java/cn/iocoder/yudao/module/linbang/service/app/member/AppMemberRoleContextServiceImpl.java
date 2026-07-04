@@ -70,6 +70,9 @@ public class AppMemberRoleContextServiceImpl implements AppMemberRoleContextServ
             item.setSwitchable(enabledRoleCodes.contains(roleCode));
             item.setRoleStatus(resolveRoleStatus(roleCode, enabledRoleCodes, applies, merchantEntry));
             item.setPermissionDesc(resolveRolePermissionDesc(roleCode));
+            item.setEntryModeDesc(resolveRoleEntryModeDesc(roleCode));
+            item.setMainPermissions(resolveRoleMainPermissions(roleCode));
+            item.setSwitchRequiredForActions(!"USER".equals(roleCode));
             roleSummaries.add(item);
         }
 
@@ -143,7 +146,7 @@ public class AppMemberRoleContextServiceImpl implements AppMemberRoleContextServ
 
     private String resolveRolePermissionDesc(String roleCode) {
         if ("MERCHANT".equals(roleCode)) {
-            return "可入驻服务、接单履约、管理服务点与报价。";
+            return "可抢单接单、履约服务、管理服务点与经营报价。";
         }
         if ("PROMOTER".equals(roleCode)) {
             return "可查看推广模板、邀请码、团队转化与佣金结算。";
@@ -155,5 +158,31 @@ public class AppMemberRoleContextServiceImpl implements AppMemberRoleContextServ
             return "可在管理端执行全局数据查看、权限配置、规则调整、终审、账号管理、动态密钥验证、操作日志和数据导入导出。";
         }
         return "可下单、查看订单、管理个人资料与钱包。";
+    }
+
+    private String resolveRoleEntryModeDesc(String roleCode) {
+        if ("MERCHANT".equals(roleCode)) {
+            return "切换后进入服务商视角，可使用抢单大厅、履约与经营管理能力。";
+        }
+        if ("PROMOTER".equals(roleCode)) {
+            return "切换后进入推广员视角，可查看推广、团队和佣金数据。";
+        }
+        if ("PARTNER".equals(roleCode)) {
+            return "切换后进入区域合作商视角，可处理辖区协同事务。";
+        }
+        return "默认进入普通用户视角，可发单、支付和查看自己的订单。";
+    }
+
+    private List<String> resolveRoleMainPermissions(String roleCode) {
+        if ("MERCHANT".equals(roleCode)) {
+            return Arrays.asList("抢单/接单", "履约服务", "服务点管理", "经营报价");
+        }
+        if ("PROMOTER".equals(roleCode)) {
+            return Arrays.asList("推广内容", "团队数据", "佣金结算", "悬赏参与");
+        }
+        if ("PARTNER".equals(roleCode)) {
+            return Arrays.asList("辖区查看", "入驻初审", "纠纷协调", "价格建议", "辖区推广数据", "会议通知");
+        }
+        return Arrays.asList("发单", "支付", "退款", "评价", "投诉/申诉", "查看我的订单");
     }
 }

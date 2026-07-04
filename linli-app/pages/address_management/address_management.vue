@@ -105,6 +105,8 @@ import {
     updateAddress
 } from '@/api/member'
 
+const HOME_LOCATION_DRAFT_STORAGE_KEY = 'linbang_home_location_address_draft'
+
 function createEmptyForm() {
     return {
         receiverName: '',
@@ -130,16 +132,19 @@ export default {
             areaColumns: [[], [], []],
             areaIndexes: [0, 0, 0],
             selectMode: false,
+            createFromDraft: false,
             selectedAddressId: null,
             emittedSelection: false
         }
     },
     onLoad(query) {
         this.selectMode = `${(query && query.selectMode) || ''}` === '1'
+        this.createFromDraft = `${(query && query.createFromDraft) || ''}` === '1'
     },
     onShow() {
         this.loadAddresses()
         this.ensureAreaTree()
+        this.maybeOpenDraftAddress()
     },
     computed: {
         canCreateAddress() {
@@ -215,6 +220,38 @@ export default {
             await this.ensureAreaTree()
             this.resetAreaPicker()
             this.formVisible = true
+        },
+        async maybeOpenDraftAddress() {
+            if (!this.createFromDraft || this.formVisible || this.editingId) {
+                return
+            }
+            const draft = uni.getStorageSync(HOME_LOCATION_DRAFT_STORAGE_KEY)
+            if (!draft) {
+                this.createFromDraft = false
+                return
+            }
+            uni.removeStorageSync(HOME_LOCATION_DRAFT_STORAGE_KEY)
+            await this.ensureAreaTree()
+            this.editingId = null
+            this.form = {
+                ...createEmptyForm(),
+                receiverName: draft.receiverName || '',
+                receiverMobile: draft.receiverMobile || '',
+                province: draft.province || '',
+                city: draft.city || '',
+                district: draft.district || '',
+                street: draft.street || '',
+                detailAddress: draft.detailAddress || '',
+                adcode: draft.adcode || '',
+                isDefault: typeof draft.isDefault === 'boolean' ? draft.isDefault : !this.addressList.length
+            }
+            this.syncAreaPickerFromForm()
+            this.formVisible = true
+            this.createFromDraft = false
+            uni.showToast({
+                title: '请完善后保存默认地址',
+                icon: 'none'
+            })
         },
         async handleEdit(item) {
             await this.ensureAreaTree()
@@ -828,4 +865,3 @@ export default {
     }
 }
 </style>
-

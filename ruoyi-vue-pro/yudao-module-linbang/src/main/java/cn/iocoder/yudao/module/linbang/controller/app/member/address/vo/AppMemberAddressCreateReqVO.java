@@ -31,7 +31,7 @@ public class AppMemberAddressCreateReqVO {
     @Schema(description = "街道", example = "Lujiazui Street")
     private String street;
 
-    @Schema(description = "详细地址", requiredMode = Schema.RequiredMode.REQUIRED, example = "No.1 Lane 2")
+    @Schema(description = "详细地址。定位得到的位置只能作为草稿，保存前必须由用户补全为可履约的有效地址", requiredMode = Schema.RequiredMode.REQUIRED, example = "No.1 Lane 2")
     @NotBlank(message = "详细地址不能为空")
     private String detailAddress;
 
@@ -44,7 +44,7 @@ public class AppMemberAddressCreateReqVO {
     @Schema(description = "区域编码", example = "310115")
     private String adcode;
 
-    @Schema(description = "是否默认地址", requiredMode = Schema.RequiredMode.REQUIRED, example = "true")
+    @Schema(description = "是否默认地址。若用户尚无有效地址，首条有效地址即使未主动勾选也会自动成为默认地址", requiredMode = Schema.RequiredMode.REQUIRED, example = "true")
     @NotNull(message = "是否默认不能为空")
     private Boolean isDefault;
 }

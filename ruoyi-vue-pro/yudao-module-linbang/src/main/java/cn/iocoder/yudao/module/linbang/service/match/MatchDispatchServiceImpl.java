@@ -25,6 +25,7 @@ import cn.iocoder.yudao.module.linbang.service.app.pay.AutoFlowRefundService;
 import cn.iocoder.yudao.module.linbang.service.map.AmapLocationService;
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchTarget;
+import cn.iocoder.yudao.module.linbang.service.orderflow.OrderFlowOrchestratorService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -74,6 +76,8 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
     private MessagePushDispatchService messagePushDispatchService;
     @Resource
     private AutoFlowRefundService autoFlowRefundService;
+    @Resource
+    private OrderFlowOrchestratorService orderFlowOrchestratorService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -144,6 +148,10 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
                 .id(unitId)
                 .dispatchStatus("ACCEPTED")
                 .build());
+        OrderUnitDO unit = orderUnitMapper.selectById(unitId);
+        if (unit != null) {
+            orderFlowOrchestratorService.onOrderAccepted(unit.getOrderId());
+        }
     }
 
     private void createStageBatch(OrderInfoDO order, OrderUnitDO unit, int stageNo, String triggerType) {
@@ -247,11 +255,17 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
         if (!Boolean.TRUE.equals(setting.getDispatchEnabled())) {
             return null;
         }
-        BigDecimal distanceKm = calculateDistance(order, merchant.getId());
+        List<MerchantServicePointDO> points = getEnabledServicePoints(merchant.getId());
+        if (CollUtil.isEmpty(points)) {
+            return null;
+        }
+        BigDecimal distanceKm = calculateDistance(order, points);
         if (distanceKm == null) {
             return null;
         }
-        if (distanceKm.compareTo(stageRule.getRadiusStartKm()) < 0 || distanceKm.compareTo(stageRule.getRadiusEndKm()) > 0) {
+        boolean sameDistrict = isSameDistrictCoverage(order, points);
+        if (!sameDistrict && (distanceKm.compareTo(stageRule.getRadiusStartKm()) < 0
+                || distanceKm.compareTo(stageRule.getRadiusEndKm()) > 0)) {
             return null;
         }
         if (setting.getMaxAcceptRadiusKm() != null && distanceKm.compareTo(setting.getMaxAcceptRadiusKm()) > 0) {
@@ -302,17 +316,16 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
     }
 
     private BigDecimal calculateDistance(OrderInfoDO order, Long merchantId) {
-        if (order == null || merchantId == null || order.getLongitude() == null || order.getLatitude() == null) {
-            return null;
-        }
-        List<MerchantServicePointDO> points = merchantServicePointMapper.selectListByMerchantId(merchantId);
-        if (CollUtil.isEmpty(points)) {
+        return calculateDistance(order, getEnabledServicePoints(merchantId));
+    }
+
+    private BigDecimal calculateDistance(OrderInfoDO order, List<MerchantServicePointDO> points) {
+        if (order == null || order.getLongitude() == null || order.getLatitude() == null || CollUtil.isEmpty(points)) {
             return null;
         }
         BigDecimal minDistance = null;
         for (MerchantServicePointDO point : points) {
-            if (!Objects.equals(point.getStatus(), "ENABLE")
-                    || point.getLongitude() == null || point.getLatitude() == null) {
+            if (point.getLongitude() == null || point.getLatitude() == null) {
                 continue;
             }
             BigDecimal distance = amapLocationService.calculateDistanceKm(
@@ -325,6 +338,37 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
             }
         }
         return minDistance;
+    }
+
+    private List<MerchantServicePointDO> getEnabledServicePoints(Long merchantId) {
+        if (merchantId == null) {
+            return Collections.emptyList();
+        }
+        return merchantServicePointMapper.selectListByMerchantId(merchantId).stream()
+                .filter(point -> Objects.equals(point.getStatus(), "ENABLE"))
+                .collect(Collectors.toList());
+    }
+
+    private boolean isSameDistrictCoverage(OrderInfoDO order, List<MerchantServicePointDO> points) {
+        if (order == null || CollUtil.isEmpty(points)) {
+            return false;
+        }
+        String orderDistrict = normalizeRegionText(order.getDistrict());
+        if (orderDistrict == null) {
+            return false;
+        }
+        return points.stream()
+                .map(MerchantServicePointDO::getDistrict)
+                .map(this::normalizeRegionText)
+                .anyMatch(orderDistrict::equals);
+    }
+
+    private String normalizeRegionText(String text) {
+        String normalized = org.apache.commons.lang3.StringUtils.trimToNull(text);
+        if (normalized == null) {
+            return null;
+        }
+        return normalized.replace(" ", "");
     }
 
     private void markBatchStatus(Long batchId, String status) {
@@ -367,6 +411,7 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
                 "ORDER_FLOW", unit.getId(), order != null ? order.getUserId() : null,
                 "流单后建议通知", "lb_order_flow_advice:" + unit.getId() + ":" + now.toLocalDate());
         autoFlowRefundService.createAutoRefund(unit.getOrderId(), unit.getId(), now);
+        orderFlowOrchestratorService.onOrderFlowed(unit.getOrderId());
     }
 
     private static class MerchantCandidate {

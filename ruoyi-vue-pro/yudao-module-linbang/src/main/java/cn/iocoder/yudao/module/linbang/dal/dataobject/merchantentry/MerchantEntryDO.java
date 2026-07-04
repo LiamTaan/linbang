@@ -42,6 +42,34 @@ public class MerchantEntryDO extends BaseDO {
      */
     private String regionCode;
     /**
+     * 提交时服务商名称快照
+     */
+    private String merchantNameSnapshot;
+    /**
+     * 提交时联系人快照
+     */
+    private String contactNameSnapshot;
+    /**
+     * 提交时联系电话快照
+     */
+    private String contactMobileSnapshot;
+    /**
+     * 提交时服务范围说明快照
+     */
+    private String serviceScopeDescSnapshot;
+    /**
+     * 提交时申请人实名快照
+     */
+    private String applicantRealNameSnapshot;
+    /**
+     * 提交时服务类目快照 JSON
+     */
+    private String categorySnapshotJson;
+    /**
+     * 提交时资质快照 JSON
+     */
+    private String qualificationSnapshotJson;
+    /**
      * 初审状态
      */
     private String firstAuditStatus;

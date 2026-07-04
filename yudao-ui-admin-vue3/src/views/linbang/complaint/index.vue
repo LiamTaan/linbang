@@ -94,18 +94,20 @@
       <el-table-column label="处理人" align="center" prop="handleBy" width="100" />
       <el-table-column label="处理时间" align="center" prop="handleTime" :formatter="dateFormatter" width="180" />
       <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="操作" align="center" fixed="right" width="170">
+      <el-table-column label="操作" align="center" fixed="right" :show-overflow-tooltip="false" min-width="160">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
-          <el-button
-            v-if="row.status !== 'FINISHED' && row.status !== 'REJECTED'"
-            link
-            type="primary"
-            v-hasPermi="['linbang:review:complaint:process']"
-            @click="openProcessDialog(row)"
-          >
-            处理
-          </el-button>
+          <div class="flex flex-wrap items-center justify-center gap-x-8px gap-y-4px whitespace-normal">
+            <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
+            <el-button
+              v-if="row.status !== 'FINISHED' && row.status !== 'REJECTED'"
+              link
+              type="primary"
+              v-hasPermi="['linbang:review:complaint:process']"
+              @click="openProcessDialog(row)"
+            >
+              处理
+            </el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>

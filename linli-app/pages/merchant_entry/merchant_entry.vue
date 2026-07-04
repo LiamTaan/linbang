@@ -28,6 +28,28 @@
             </view>
 
             <view class="form-card">
+                <view class="section-row">
+                    <text class="section-title">证件状态</text>
+                    <text class="manage-link" @click="goCertificatePage">去完善</text>
+                </view>
+                <view class="summary-grid">
+                    <view class="summary-item">
+                        <text class="summary-label">实名认证</text>
+                        <text class="summary-value">{{ realNameStatusLabel }}</text>
+                    </view>
+                    <view class="summary-item">
+                        <text class="summary-label">营业执照</text>
+                        <text class="summary-value">{{ businessLicenseStatusLabel }}</text>
+                    </view>
+                    <view class="summary-item">
+                        <text class="summary-label">行业资质</text>
+                        <text class="summary-value">{{ industryQualificationStatusLabel }}</text>
+                    </view>
+                </view>
+                <text v-for="tip in entryValidationTips" :key="tip" class="summary-line danger">· {{ tip }}</text>
+            </view>
+
+            <view class="form-card">
                 <text class="section-title">基础信息</text>
                 <view class="field-item">
                     <text class="field-label">服务商名称</text>
@@ -99,8 +121,8 @@
                         :class="{ active: isQualificationSelected(item.id), disabled: !canEditForm }"
                         @click="toggleQualification(item.id)">
                         <view class="qualification-main">
-                            <text class="qualification-name">{{ item.qualificationName || item.qualificationType }}</text>
-                            <text class="qualification-desc">{{ item.qualificationType }}</text>
+                            <text class="qualification-name">{{ item.qualificationName || getQualificationTypeLabel(item.qualificationType) }}</text>
+                            <text class="qualification-desc">{{ getQualificationTypeLabel(item.qualificationType) }}</text>
                         </view>
                         <view class="check-box">
                             <text v-if="isQualificationSelected(item.id)" class="check-icon">✓</text>
@@ -141,7 +163,7 @@
 </template>
 
 <script>
-import { getAreaTree, getProfile, getQualificationPage } from '@/api/member'
+import { getAreaTree, getProfile, getQualificationPage, getQualificationSummary } from '@/api/member'
 import { createMerchantEntry, getMerchantEntry, getMerchantOnboardingProgress, getServiceCategoryList } from '@/api/merchant'
 
 function flattenCategories(list, depth = 0, target = []) {
@@ -166,10 +188,25 @@ const STATUS_LABELS = {
     PENDING: '待处理'
 }
 
+const QUALIFICATION_TYPE_LABELS = {
+    BUSINESS_LICENSE: '营业执照',
+    ELECTRICIAN: '电工证',
+    WELDER: '焊工证',
+    HVAC_TECHNICIAN: '空调制冷证',
+    PLUMBING_TECHNICIAN: '管道作业证',
+    CLEANING_SERVICE: '保洁服务资质',
+    INSTALLATION_SERVICE: '安装服务资质',
+    SAFETY_CERTIFICATE: '安全生产证',
+    SPECIAL_OPERATION: '特种作业操作证',
+    HEALTH_CERTIFICATE: '健康证',
+    INSURANCE_POLICY: '保险保单'
+}
+
 export default {
     data() {
         return {
             profile: {},
+            qualificationSummary: {},
             currentEntry: null,
             onboardingProgress: null,
             serviceCategories: [],
@@ -244,8 +281,27 @@ export default {
         selectedQualificationText() {
             const names = this.qualificationOptions
                 .filter((item) => this.form.qualificationIds.includes(item.id))
-                .map((item) => item.qualificationName || item.qualificationType)
+                .map((item) => item.qualificationName || this.getQualificationTypeLabel(item.qualificationType))
             return names.length ? names.join('、') : '未选择'
+        },
+        realNameStatusLabel() {
+            return this.getAuditStatusLabel(this.qualificationSummary.realNameAuditStatus, '未认证')
+        },
+        businessLicenseStatusLabel() {
+            return this.getAuditStatusLabel(this.qualificationSummary.businessLicenseAuditStatus, '未上传')
+        },
+        industryQualificationStatusLabel() {
+            return this.getAuditStatusLabel(this.qualificationSummary.industryQualificationAuditStatus, '未上传')
+        },
+        entryValidationTips() {
+            const tips = []
+            if (this.qualificationSummary.realNameAuditStatus !== 'APPROVED') {
+                tips.push('需先完成实名认证')
+            }
+            if (!this.hasIndustryQualificationSelected()) {
+                tips.push('请至少勾选一个行业资质')
+            }
+            return tips
         },
         submitButtonText() {
             if (!this.canEditForm) {
@@ -290,7 +346,9 @@ export default {
                     getServiceCategoryList({ silent: true }).catch(() => []),
                     getQualificationPage({ pageNo: 1, pageSize: 100 }, { silent: true }).catch(() => ({ list: [] }))
                 ])
+                const qualificationSummary = await getQualificationSummary({ silent: true }).catch(() => ({}))
                 this.profile = profile || {}
+                this.qualificationSummary = qualificationSummary || {}
                 this.currentEntry = currentEntry || null
                 this.onboardingProgress = onboardingProgress || null
                 this.serviceCategories = flattenCategories(categories || [])
@@ -463,6 +521,22 @@ export default {
                 this.form.qualificationIds = this.form.qualificationIds.concat(id)
             }
         },
+        hasIndustryQualificationSelected() {
+            return this.qualificationOptions
+                .filter((item) => this.form.qualificationIds.includes(item.id))
+                .some((item) => item.qualificationType && item.qualificationType !== 'BUSINESS_LICENSE' && item.qualificationType !== 'INSURANCE_POLICY')
+        },
+        getQualificationTypeLabel(type) {
+            return QUALIFICATION_TYPE_LABELS[type] || type || '--'
+        },
+        getAuditStatusLabel(status, fallback = '--') {
+            const map = {
+                APPROVED: '已通过',
+                PENDING: '审核中',
+                REJECTED: '已驳回'
+            }
+            return map[status] || fallback
+        },
         validateForm() {
             if (!this.form.merchantName) {
                 return '请填写服务商名称'
@@ -481,6 +555,12 @@ export default {
             }
             if (!this.form.qualificationIds.length) {
                 return '请选择至少一个资质'
+            }
+            if (this.qualificationSummary.realNameAuditStatus !== 'APPROVED') {
+                return '请先完成实名认证'
+            }
+            if (!this.hasIndustryQualificationSelected()) {
+                return '请至少勾选一个行业资质'
             }
             return ''
         },
@@ -536,6 +616,11 @@ export default {
         goBusinessProfile() {
             uni.navigateTo({
                 url: '/pages/merchant_business/merchant_business'
+            })
+        },
+        goCertificatePage() {
+            uni.navigateTo({
+                url: '/pages/certificate/certificate'
             })
         }
     }
@@ -638,6 +723,33 @@ export default {
     padding: 24rpx;
     margin-bottom: 20rpx;
     box-shadow: 0 10rpx 24rpx rgba(21, 84, 166, 0.06);
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16rpx;
+    margin-bottom: 16rpx;
+}
+
+.summary-item {
+    background: #f7f9fc;
+    border-radius: 16rpx;
+    padding: 18rpx 16rpx;
+}
+
+.summary-label {
+    display: block;
+    font-size: 22rpx;
+    color: #6c7b90;
+    margin-bottom: 8rpx;
+}
+
+.summary-value {
+    display: block;
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #183153;
 }
 
 .section-row {
@@ -900,4 +1012,3 @@ export default {
     height: 80rpx;
 }
 </style>
-

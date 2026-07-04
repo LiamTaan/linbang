@@ -228,6 +228,7 @@ import { createOrder, getGuaranteeConfig, previewOrder } from '@/api/order'
 import { getAppSettings } from '@/api/platform'
 import { getPlatformSettings, hasLogin, setPlatformSettings } from '@/utils/auth'
 import { getAmapJsKey, getAmapSecurityJsCode } from '@/config/app'
+import { ensureRoleAccess } from '@/services/role-guard'
 import { syncMessageUnreadCount } from '@/services/message-unread'
 import {
     buildAddressText,
@@ -238,6 +239,8 @@ import {
 } from '@/utils/linbang'
 
 const ORDER_PREVIEW_STORAGE_KEY = 'linbang_order_preview_snapshot'
+const ORDER_REPUBLISH_STORAGE_KEY = 'linbang_order_republish_draft'
+const HOME_LOCATION_DRAFT_STORAGE_KEY = 'linbang_home_location_address_draft'
 
 function findCategoryById(list, id) {
     for (let i = 0; i < (list || []).length; i++) {
@@ -246,6 +249,21 @@ function findCategoryById(list, id) {
             return item
         }
         const child = findCategoryById(item.children || [], id)
+        if (child) {
+            return child
+        }
+    }
+    return null
+}
+
+function findCategoryPath(list, id, path = []) {
+    for (let i = 0; i < (list || []).length; i++) {
+        const item = list[i]
+        const nextPath = path.concat(item)
+        if (`${item.id}` === `${id}`) {
+            return nextPath
+        }
+        const child = findCategoryPath(item.children || [], id, nextPath)
         if (child) {
             return child
         }
@@ -298,6 +316,7 @@ export default {
             mapInitialized: false,
             mapResolveTimer: null,
             resolvingMapAddress: false,
+            autoLocationTried: false,
             selectedLevel1Id: null,
             selectedLevel2Id: null,
             selectedLevel3Id: null,
@@ -511,10 +530,11 @@ export default {
             return ((this.roleContext && this.roleContext.roleSummaries) || []).filter((item) => item.switchable)
         }
     },
-    onShow() {
+    async onShow() {
         uni.hideTabBar()
         syncMessageUnreadCount({ silent: true })
-        this.loadPageData()
+        await this.loadPageData()
+        this.consumeRepublishDraft()
     },
     beforeUnmount() {
         if (this.mapResolveTimer) {
@@ -736,6 +756,7 @@ export default {
                 this.roleContext = roleContext || {}
                 this.ensureCategorySelection()
                 this.ensureAddressSelection()
+                await this.tryInitializeCurrentBusinessAddress()
             } catch (error) {
             } finally {
                 this.initHomeMap()
@@ -788,6 +809,78 @@ export default {
             if (defaultAddress) {
                 this.applyAddress(defaultAddress)
             }
+        },
+        async tryInitializeCurrentBusinessAddress() {
+            if (this.form.detailAddress || this.autoLocationTried) {
+                return
+            }
+            this.autoLocationTried = true
+            await this.tryAutoLocateForBusinessAddress()
+        },
+        async tryAutoLocateForBusinessAddress() {
+            try {
+                const location = await this.requestCurrentLocation()
+                const resolved = await this.resolvePickedLocation(location)
+                if (resolved) {
+                    this.promptSaveLocationDraft(resolved)
+                }
+            } catch (error) {
+                this.mapStatusText = '暂未获取当前位置，请手动选择服务地址'
+            }
+        },
+        consumeRepublishDraft() {
+            const draft = uni.getStorageSync(ORDER_REPUBLISH_STORAGE_KEY)
+            if (!draft) {
+                return
+            }
+            uni.removeStorageSync(ORDER_REPUBLISH_STORAGE_KEY)
+            const categoryPath = findCategoryPath(this.categories, draft.categoryId) || []
+            if (categoryPath[0]) {
+                this.selectedLevel1Id = categoryPath[0].id
+            }
+            if (categoryPath[1]) {
+                this.selectedLevel2Id = categoryPath[1].id
+            }
+            if (categoryPath[2]) {
+                this.selectedLevel3Id = categoryPath[2].id
+            }
+            this.form = {
+                ...this.form,
+                pricingMode: draft.pricingMode || this.form.pricingMode,
+                budgetAmount: draft.budgetAmount ? `${draft.budgetAmount}` : '',
+                quantity: draft.quantity ? `${draft.quantity}` : this.form.quantity,
+                workerCount: draft.workerCount ? `${draft.workerCount}` : this.form.workerCount,
+                serviceDurationDesc: draft.serviceDurationDesc || '',
+                requireDesc: draft.requireDesc || '',
+                province: draft.province || '',
+                city: draft.city || '',
+                district: draft.district || '',
+                street: draft.street || '',
+                detailAddress: draft.detailAddress || '',
+                longitude: draft.longitude || '',
+                latitude: draft.latitude || '',
+                needInvoice: !!draft.needInvoice,
+                needSplit: !!draft.needSplit,
+                priceItems: Array.isArray(draft.priceItems)
+                    ? draft.priceItems.map((item) => ({
+                        itemType: item.itemType || 'CUSTOM',
+                        itemName: item.itemName || '',
+                        itemAmount: item.itemAmount !== undefined && item.itemAmount !== null ? `${item.itemAmount}` : ''
+                    }))
+                    : []
+            }
+            this.uploadedFiles = Array.isArray(draft.attachments)
+                ? draft.attachments.map((item) => ({
+                    fileId: item.fileId,
+                    url: item.fileUrl
+                })).filter((item) => item.fileId || item.url)
+                : []
+            this.previewResult = {}
+            this.updateMapCenter(draft.longitude, draft.latitude)
+            uni.showToast({
+                title: '已带入原需求，请调整后重新发布',
+                icon: 'none'
+            })
         },
         selectCategory(level, item) {
             if (level === 'level1') {
@@ -851,6 +944,38 @@ export default {
             this.updateMapCenter(address.longitude, address.latitude)
             this.previewResult = {}
         },
+        promptSaveLocationDraft(address) {
+            if (!address || !buildAddressText(address)) {
+                return
+            }
+            uni.setStorageSync(HOME_LOCATION_DRAFT_STORAGE_KEY, {
+                receiverName: '',
+                receiverMobile: '',
+                province: address.province || '',
+                city: address.city || '',
+                district: address.district || '',
+                street: address.street || '',
+                detailAddress: address.detailAddress || '',
+                longitude: address.longitude || '',
+                latitude: address.latitude || '',
+                adcode: address.adcode || '',
+                isDefault: !this.addressList.length
+            })
+            uni.showModal({
+                title: '当前位置已更新',
+                content: '当前定位已作为本次业务地址草稿使用。如需保存为默认地址，请先完善联系人、电话和详细门牌。',
+                confirmText: '去完善保存',
+                cancelText: '稍后再说',
+                success: (res) => {
+                    if (!res.confirm) {
+                        return
+                    }
+                    this.openAddressManagement({
+                        createFromDraft: 1
+                    }).catch(() => {})
+                }
+            })
+        },
         handleSelectAddress() {
             const itemList = []
             const actions = []
@@ -870,10 +995,13 @@ export default {
                 }
             })
         },
-        openAddressManagement() {
+        openAddressManagement(query = {}) {
+            const queryString = Object.keys(query || {}).length
+                ? `?${Object.keys(query).map((key) => `${key}=${encodeURIComponent(query[key])}`).join('&')}`
+                : ''
             return new Promise((resolve, reject) => {
                 uni.navigateTo({
-                    url: '/pages/address_management/address_management?selectMode=1',
+                    url: `/pages/address_management/address_management?selectMode=1${queryString ? `&${queryString.slice(1)}` : ''}`,
                     success: (res) => {
                         const eventChannel = res.eventChannel
                         eventChannel.on('picked', (address) => {
@@ -899,7 +1027,8 @@ export default {
                     mask: true
                 })
                 const location = await this.requestCurrentLocation()
-                await this.resolvePickedLocation(location)
+                const resolved = await this.resolvePickedLocation(location)
+                this.promptSaveLocationDraft(resolved)
             } catch (error) {
                 this.handleLocationError(error, '定位失败，请确认定位权限已开启')
             } finally {
@@ -1000,10 +1129,12 @@ export default {
                 throw new Error('未获取到有效坐标')
             }
             const resolved = await resolveAddressLocation(payload)
-            this.applyAddress({
+            const address = {
                 ...resolved,
                 detailAddress: resolved.detailAddress || payload.detailAddress
-            })
+            }
+            this.applyAddress(address)
+            return address
         },
         extractLocationDetail(location) {
             if (!location) {
@@ -1271,6 +1402,17 @@ export default {
         },
         async handlePreview() {
             try {
+                const allowed = await ensureRoleAccess({
+                    roleContext: this.roleContext,
+                    requiredRoleCode: 'USER',
+                    actionLabel: '发单预览',
+                    refreshContext: async () => {
+                        await this.loadPageData(this.searchText)
+                    }
+                })
+                if (!allowed) {
+                    return
+                }
                 const payload = await this.ensurePreviewPayload()
                 if (!payload || !this.previewResult.previewToken) {
                     return
@@ -1303,6 +1445,17 @@ export default {
                 return
             }
             try {
+                const allowed = await ensureRoleAccess({
+                    roleContext: this.roleContext,
+                    requiredRoleCode: 'USER',
+                    actionLabel: '发布需求',
+                    refreshContext: async () => {
+                        await this.loadPageData(this.searchText)
+                    }
+                })
+                if (!allowed) {
+                    return
+                }
                 this.submitting = true
                 const payload = await this.ensurePreviewPayload()
                 if (!payload || !this.previewResult.previewToken) {

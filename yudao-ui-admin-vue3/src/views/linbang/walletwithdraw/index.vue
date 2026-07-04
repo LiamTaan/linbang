@@ -322,7 +322,7 @@ const openAuditDialog = (row: WalletWithdraw) => {
 }
 
 const canRetryTransfer = (row: WalletWithdraw) => {
-  return row.auditStatus === 'APPROVED' && (row.status === 'FAILED' || row.status === 'APPROVED')
+  return row.auditStatus === 'APPROVED' && (row.status === 'FAILED' || row.status === 'PROCESSING')
 }
 
 const submitAudit = async () => {

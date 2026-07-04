@@ -13,7 +13,7 @@ public interface LinbangFinanceService {
 
     void handleUnitFinished(OrderInfoDO order, OrderUnitDO unit);
 
-    void handleRefundSuccess(OrderInfoDO order, OrderUnitDO unit, BigDecimal refundAmount);
+    void handleRefundSuccess(OrderInfoDO order, OrderUnitDO unit, BigDecimal refundAmount, Long payRefundId);
 
     void handleWithdrawTransferSuccess(WalletAccountDO walletAccount, Long withdrawId, PayTransferRespDTO transfer);
 

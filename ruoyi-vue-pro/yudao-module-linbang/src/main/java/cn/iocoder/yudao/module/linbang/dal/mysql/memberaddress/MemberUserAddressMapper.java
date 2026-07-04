@@ -24,6 +24,17 @@ public interface MemberUserAddressMapper extends BaseMapperX<MemberUserAddressDO
                 .orderByDesc(MemberUserAddressDO::getId));
     }
 
+    default List<MemberUserAddressDO> selectListByUserIds(Collection<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return selectList(new LambdaQueryWrapperX<MemberUserAddressDO>()
+                .in(MemberUserAddressDO::getUserId, userIds)
+                .orderByAsc(MemberUserAddressDO::getUserId)
+                .orderByDesc(MemberUserAddressDO::getIsDefault)
+                .orderByAsc(MemberUserAddressDO::getId));
+    }
+
     default PageResult<MemberUserAddressDO> selectPage(MemberUserAddressPageReqVO reqVO, Collection<Long> userIds) {
         return selectPage(reqVO, new LambdaQueryWrapperX<MemberUserAddressDO>()
                 .inIfPresent(MemberUserAddressDO::getUserId, userIds)

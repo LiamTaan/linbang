@@ -71,13 +71,34 @@ public class AppOrderPageItemRespVO {
     @Schema(description = "当前阶段号", example = "1")
     private Integer stageNo;
 
+    @Schema(description = "当前派单轮次号，等同于当前展示轮次", example = "1")
+    private Integer dispatchStageNo;
+
     @Schema(description = "当前推送批次号", example = "1")
     private Integer pushBatchNo;
 
     @Schema(description = "接单剩余倒计时秒数；仅待接单阶段有值", example = "52")
     private Integer countdownSeconds;
 
+    @Schema(description = "当前派单倒计时秒数；用于用户侧展示抢单剩余时间", example = "52")
+    private Integer dispatchCountdownSeconds;
+
     @Schema(description = "当前轮派单截止时间")
     private LocalDateTime acceptDeadlineTime;
+
+    @Schema(description = "当前派单截止时间")
+    private LocalDateTime dispatchDeadlineTime;
+
+    @Schema(description = "最近流单时间")
+    private LocalDateTime flowTime;
+
+    @Schema(description = "最近流单原因")
+    private String flowReason;
+
+    @Schema(description = "自动退款状态：NONE 无、PROCESSING 处理中、SUCCESS 已退款、FAILED 失败")
+    private String autoRefundStatus;
+
+    @Schema(description = "当前订单是否允许调整需求后重新发布")
+    private Boolean republishAllowed;
 
 }

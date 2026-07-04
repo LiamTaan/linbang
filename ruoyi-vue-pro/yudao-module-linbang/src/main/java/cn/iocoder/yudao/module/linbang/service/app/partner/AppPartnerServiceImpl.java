@@ -25,8 +25,12 @@ import cn.iocoder.yudao.module.linbang.controller.app.partner.vo.AppPartnerWorkb
 import cn.iocoder.yudao.module.linbang.dal.dataobject.appeal.AppealDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.commissionorder.CommissionOrderDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.complaint.ComplaintDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.memberaddress.MemberUserAddressDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.memberqualification.MemberUserQualificationDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.memberrealname.MemberUserRealNameDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategory.MerchantServiceCategoryDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategoryrel.MerchantCategoryRelDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantentry.MerchantEntryDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantpricereport.MerchantPriceReportDO;
@@ -36,11 +40,16 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.orderunit.OrderUnitDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.partnercoordination.PartnerCoordinationDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.partnerinfo.PartnerInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.partnerregionrel.PartnerRegionRelDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.promoterrelation.PromoterRelationDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.appeal.AppealMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.commissionorder.CommissionOrderMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.complaint.ComplaintMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.memberaddress.MemberUserAddressMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.memberqualification.MemberUserQualificationMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.memberrealname.MemberUserRealNameMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantcategory.MerchantServiceCategoryMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.merchantcategoryrel.MerchantCategoryRelMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantentry.MerchantEntryMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantpricereport.MerchantPriceReportMapper;
@@ -49,15 +58,21 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.orderoperatelog.OrderOperateLog
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderunit.OrderUnitMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.partnercoordination.PartnerCoordinationMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.partnerregionrel.PartnerRegionRelMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.promoterrelation.PromoterRelationMapper;
 import cn.iocoder.yudao.module.linbang.service.app.message.AppMessageService;
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
+import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
+import cn.iocoder.yudao.module.linbang.service.merchantentry.MerchantEntrySnapshotUtils;
 import cn.iocoder.yudao.module.linbang.service.partnerinfo.PartnerInfoService;
+import cn.iocoder.yudao.module.infra.dal.dataobject.file.FileDO;
+import cn.iocoder.yudao.module.infra.service.file.FileService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -73,11 +88,12 @@ import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionU
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertMap;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertSet;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.CURRENT_ROLE_NOT_ALLOWED;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MERCHANT_ENTRY_NOT_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MERCHANT_PRICE_REPORT_NOT_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.PARTNER_ENTRY_AUDIT_STATUS_INVALID;
-import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.PARTNER_INFO_NOT_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.PARTNER_PRICE_REPORT_STATUS_INVALID;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.PARTNER_ROLE_REQUIRED;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.PARTNER_REGION_ACCESS_DENIED;
 
 @Service
@@ -93,7 +109,15 @@ public class AppPartnerServiceImpl implements AppPartnerService {
     @Resource
     private MerchantServiceCategoryMapper merchantServiceCategoryMapper;
     @Resource
+    private MerchantCategoryRelMapper merchantCategoryRelMapper;
+    @Resource
     private MemberUserMapper memberUserMapper;
+    @Resource
+    private MemberUserAddressMapper memberUserAddressMapper;
+    @Resource
+    private MemberUserQualificationMapper memberUserQualificationMapper;
+    @Resource
+    private MemberUserRealNameMapper memberUserRealNameMapper;
     @Resource
     private ComplaintMapper complaintMapper;
     @Resource
@@ -109,6 +133,8 @@ public class AppPartnerServiceImpl implements AppPartnerService {
     @Resource
     private PartnerRegionRelMapper partnerRegionRelMapper;
     @Resource
+    private PromoterRelationMapper promoterRelationMapper;
+    @Resource
     private PartnerCoordinationMapper partnerCoordinationMapper;
     @Resource
     private CommissionOrderMapper commissionOrderMapper;
@@ -116,6 +142,10 @@ public class AppPartnerServiceImpl implements AppPartnerService {
     private AppMessageService appMessageService;
     @Resource
     private MessagePushDispatchService messagePushDispatchService;
+    @Resource
+    private MemberUserService memberUserService;
+    @Resource
+    private FileService fileService;
 
     @Override
     public AppPartnerWorkbenchRespVO getWorkbench(Long userId) {
@@ -208,9 +238,17 @@ public class AppPartnerServiceImpl implements AppPartnerService {
         if ("APPROVED".equalsIgnoreCase(reqVO.getAuditStatus())) {
             updateObj.setFirstAuditStatus("APPROVED");
             updateObj.setStatus("FIRST_APPROVED");
+            updateObj.setProgressStatus("PENDING_FINAL_AUDIT");
+            updateObj.setCurrentStageName("待平台终审");
+            updateObj.setCurrentStageTime(now);
+            updateObj.setOnboardingBlockedReason(null);
         } else if ("REJECTED".equalsIgnoreCase(reqVO.getAuditStatus())) {
             updateObj.setFirstAuditStatus("REJECTED");
             updateObj.setStatus("REJECTED");
+            updateObj.setProgressStatus("REJECTED");
+            updateObj.setCurrentStageName("入驻初审已驳回");
+            updateObj.setCurrentStageTime(now);
+            updateObj.setOnboardingBlockedReason(reqVO.getRejectReason());
         } else {
             throw exception(PARTNER_ENTRY_AUDIT_STATUS_INVALID);
         }
@@ -243,9 +281,16 @@ public class AppPartnerServiceImpl implements AppPartnerService {
                             .orderByDesc(AppealDO::getId))
                     .forEach(item -> list.add(buildAppealDisputeResp(item)));
         }
-        list.sort(Comparator.comparing(AppPartnerDisputeRespVO::getCreateTime,
+        List<AppPartnerDisputeRespVO> filteredList = list.stream()
+                .filter(item -> StrUtil.isBlank(reqVO.getKeyword())
+                        || StrUtil.containsIgnoreCase(StrUtil.blankToDefault(item.getOrderNo(), ""), reqVO.getKeyword())
+                        || StrUtil.containsIgnoreCase(StrUtil.blankToDefault(item.getDisputeNo(), ""), reqVO.getKeyword()))
+                .filter(item -> StrUtil.isBlank(reqVO.getRegionCode())
+                        || Objects.equals(reqVO.getRegionCode(), item.getRegionCode()))
+                .collect(Collectors.toList());
+        filteredList.sort(Comparator.comparing(AppPartnerDisputeRespVO::getCreateTime,
                 Comparator.nullsLast(Comparator.reverseOrder())));
-        return buildManualPage(list, reqVO.getPageNo(), reqVO.getPageSize());
+        return buildManualPage(filteredList, reqVO.getPageNo(), reqVO.getPageSize());
     }
 
     @Override
@@ -365,21 +410,33 @@ public class AppPartnerServiceImpl implements AppPartnerService {
     @Override
     public AppPartnerPromoteStatRespVO getPromoteStat(Long userId) {
         PartnerInfoDO partnerInfo = getRequiredPartner(userId);
-        List<Long> orderIds = resolvePartnerOrderIds(partnerInfo);
-        List<OrderInfoDO> orders = orderIds.isEmpty() ? Collections.emptyList() : orderInfoMapper.selectBatchIds(orderIds);
-        Set<Long> orderUserIds = convertSet(orders, OrderInfoDO::getUserId, Objects::nonNull);
-        List<CommissionOrderDO> commissionOrders = orderIds.isEmpty() ? Collections.emptyList()
+        List<String> regionCodes = getPartnerRegionCodes(partnerInfo);
+        List<Long> scopedUserIds = resolveScopedUserIdsByRegions(regionCodes);
+        List<MemberUserDO> scopedUsers = scopedUserIds.isEmpty() ? Collections.emptyList()
+                : memberUserMapper.selectBatchIds(scopedUserIds);
+        LocalDate today = LocalDate.now();
+        List<PromoterRelationDO> promoterRelations = scopedUserIds.isEmpty() ? Collections.emptyList()
+                : promoterRelationMapper.selectList(new LambdaQueryWrapperX<PromoterRelationDO>()
+                .in(PromoterRelationDO::getUserId, scopedUserIds)
+                .orderByDesc(PromoterRelationDO::getId));
+        Set<Long> promoterIds = convertSet(promoterRelations, PromoterRelationDO::getPromoterId, Objects::nonNull);
+        List<CommissionOrderDO> commissionOrders = scopedUserIds.isEmpty() ? Collections.emptyList()
                 : commissionOrderMapper.selectList(new LambdaQueryWrapperX<CommissionOrderDO>()
-                .in(CommissionOrderDO::getSourceOrderId, orderIds));
-        Set<Long> promoterIds = convertSet(commissionOrders, CommissionOrderDO::getPromoterId, Objects::nonNull);
+                .in(CommissionOrderDO::getUserId, scopedUserIds)
+                .inIfPresent(CommissionOrderDO::getPromoterId, new ArrayList<>(promoterIds))
+                .orderByDesc(CommissionOrderDO::getId));
         Set<Long> convertedOrderIds = convertSet(commissionOrders, CommissionOrderDO::getSourceOrderId, Objects::nonNull);
+        List<OrderInfoDO> convertedOrders = convertedOrderIds.isEmpty() ? Collections.emptyList()
+                : orderInfoMapper.selectBatchIds(convertedOrderIds);
         AppPartnerPromoteStatRespVO respVO = new AppPartnerPromoteStatRespVO();
         respVO.setPartnerId(partnerInfo.getId());
-        respVO.setNewUserCount(orderUserIds.size());
+        respVO.setTodayNewUserCount((int) scopedUsers.stream()
+                .filter(item -> item.getCreateTime() != null && Objects.equals(item.getCreateTime().toLocalDate(), today))
+                .count());
+        respVO.setNewUserCount(scopedUsers.size());
         respVO.setBoundPromoterCount(promoterIds.size());
         respVO.setConvertOrderCount(convertedOrderIds.size());
-        respVO.setTradeAmount(orders.stream()
-                .filter(item -> convertedOrderIds.contains(item.getId()))
+        respVO.setTradeAmount(convertedOrders.stream()
                 .map(OrderInfoDO::getOrderAmount)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
@@ -410,9 +467,13 @@ public class AppPartnerServiceImpl implements AppPartnerService {
     }
 
     private PartnerInfoDO getRequiredPartner(Long userId) {
+        MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(userId);
         PartnerInfoDO partnerInfo = partnerInfoService.getPartnerInfoByUserId(userId);
         if (partnerInfo == null) {
-            throw exception(PARTNER_INFO_NOT_EXISTS);
+            throw exception(PARTNER_ROLE_REQUIRED);
+        }
+        if (!"PARTNER".equalsIgnoreCase(loginUser.getCurrentRoleCode())) {
+            throw exception(CURRENT_ROLE_NOT_ALLOWED, "区域合作商");
         }
         return partnerInfo;
     }
@@ -506,9 +567,13 @@ public class AppPartnerServiceImpl implements AppPartnerService {
         if (orderIds == null || orderIds.isEmpty()) {
             return 0L;
         }
-        return complaintMapper.selectCount(new LambdaQueryWrapperX<ComplaintDO>()
+        long complaintCount = complaintMapper.selectCount(new LambdaQueryWrapperX<ComplaintDO>()
                 .in(ComplaintDO::getOrderId, orderIds)
                 .in(ComplaintDO::getStatus, "PENDING", "PROCESSING"));
+        long appealCount = appealMapper.selectCount(new LambdaQueryWrapperX<AppealDO>()
+                .in(AppealDO::getOrderId, orderIds)
+                .in(AppealDO::getStatus, "PENDING", "PROCESSING"));
+        return complaintCount + appealCount;
     }
 
     private Long countPendingPriceReports(List<String> regionAdcodes) {
@@ -567,6 +632,26 @@ public class AppPartnerServiceImpl implements AppPartnerService {
         return convertList(memberUserMapper.selectListByKeyword(keyword), MemberUserDO::getId);
     }
 
+    private List<Long> resolveScopedUserIdsByRegions(List<String> regionCodes) {
+        if (CollUtil.isEmpty(regionCodes)) {
+            return Collections.emptyList();
+        }
+        List<MemberUserAddressDO> candidateAddresses = memberUserAddressMapper.selectList(new LambdaQueryWrapperX<MemberUserAddressDO>()
+                .in(MemberUserAddressDO::getAdcode, regionCodes));
+        Set<Long> candidateUserIds = convertSet(candidateAddresses, MemberUserAddressDO::getUserId, Objects::nonNull);
+        if (candidateUserIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return memberUserAddressMapper.selectListByUserIds(candidateUserIds).stream()
+                .collect(Collectors.toMap(MemberUserAddressDO::getUserId, item -> item, (left, right) -> left,
+                        java.util.LinkedHashMap::new))
+                .values()
+                .stream()
+                .filter(item -> regionCodes.contains(item.getAdcode()))
+                .map(MemberUserAddressDO::getUserId)
+                .collect(Collectors.toList());
+    }
+
     private List<AppPartnerEntryAuditRespVO> buildEntryAuditRespList(List<MerchantEntryDO> entries) {
         Map<Long, MemberUserDO> userMap = buildMemberUserMap(convertList(entries, MerchantEntryDO::getUserId));
         Map<Long, MerchantInfoDO> merchantMap = buildMerchantInfoMap(convertList(entries, MerchantEntryDO::getMerchantId));
@@ -576,6 +661,7 @@ public class AppPartnerServiceImpl implements AppPartnerService {
     private AppPartnerEntryAuditRespVO buildEntryAuditResp(MerchantEntryDO entry, Map<Long, MemberUserDO> userMap,
                                                            Map<Long, MerchantInfoDO> merchantMap) {
         AppPartnerEntryAuditRespVO respVO = BeanUtils.toBean(entry, AppPartnerEntryAuditRespVO.class);
+        MerchantEntrySnapshotUtils.MerchantEntrySnapshot snapshot = MerchantEntrySnapshotUtils.parseSnapshot(entry);
         MemberUserDO user = userMap.get(entry.getUserId());
         if (user != null) {
             respVO.setUserNo(user.getUserNo());
@@ -583,10 +669,117 @@ public class AppPartnerServiceImpl implements AppPartnerService {
             respVO.setUserMobile(user.getMobile());
         }
         MerchantInfoDO merchant = merchantMap.get(entry.getMerchantId());
-        if (merchant != null) {
+        if (snapshot != null) {
+            respVO.setMerchantName(snapshot.getMerchantName());
+            respVO.setMerchantContactName(snapshot.getContactName());
+            respVO.setMerchantContactMobile(snapshot.getContactMobile());
+            respVO.setServiceScopeDesc(snapshot.getServiceScopeDesc());
+            respVO.setApplicantRealName(snapshot.getApplicantRealName());
+            respVO.setCategories(buildEntryCategoriesFromSnapshot(snapshot.getCategories()));
+            respVO.setQualifications(buildEntryQualificationsFromSnapshot(snapshot.getQualifications()));
+        } else if (merchant != null) {
             respVO.setMerchantName(merchant.getMerchantName());
+            respVO.setMerchantContactName(merchant.getContactName());
+            respVO.setMerchantContactMobile(merchant.getContactMobile());
+            respVO.setServiceScopeDesc(merchant.getServiceScopeDesc());
+            MemberUserRealNameDO realName = entry.getUserId() == null ? null : memberUserRealNameMapper.selectByUserId(entry.getUserId());
+            if (realName != null) {
+                respVO.setApplicantRealName(realName.getRealName());
+                respVO.setApplicantRealNameAuditStatus(realName.getAuditStatus());
+            }
+            List<MerchantCategoryRelDO> categoryRels = entry.getMerchantId() == null
+                    ? Collections.emptyList()
+                    : merchantCategoryRelMapper.selectListByMerchantId(entry.getMerchantId());
+            respVO.setCategories(buildEntryCategories(categoryRels));
+            List<MemberUserQualificationDO> qualifications = entry.getUserId() == null
+                    ? Collections.emptyList()
+                    : memberUserQualificationMapper.selectListByUserId(entry.getUserId());
+            respVO.setQualifications(buildEntryQualifications(qualifications));
         }
+        if (respVO.getApplicantRealNameAuditStatus() == null) {
+            MemberUserRealNameDO realName = entry.getUserId() == null ? null : memberUserRealNameMapper.selectByUserId(entry.getUserId());
+            if (realName != null) {
+                respVO.setApplicantRealNameAuditStatus(realName.getAuditStatus());
+                if (StrUtil.isBlank(respVO.getApplicantRealName())) {
+                    respVO.setApplicantRealName(realName.getRealName());
+                }
+            }
+        }
+        respVO.setRejectReason(entry.getRejectReason());
         return respVO;
+    }
+
+    private List<AppPartnerEntryAuditRespVO.CategoryItem> buildEntryCategories(List<MerchantCategoryRelDO> categoryRels) {
+        if (CollUtil.isEmpty(categoryRels)) {
+            return Collections.emptyList();
+        }
+        Map<Long, MerchantServiceCategoryDO> categoryMap = buildCategoryMap(convertList(categoryRels, MerchantCategoryRelDO::getCategoryId));
+        return categoryRels.stream().map(rel -> {
+            AppPartnerEntryAuditRespVO.CategoryItem item = new AppPartnerEntryAuditRespVO.CategoryItem();
+            item.setCategoryId(rel.getCategoryId());
+            MerchantServiceCategoryDO category = categoryMap.get(rel.getCategoryId());
+            item.setCategoryName(category == null ? null : category.getCategoryName());
+            return item;
+        }).collect(Collectors.toList());
+    }
+
+    private List<AppPartnerEntryAuditRespVO.CategoryItem> buildEntryCategoriesFromSnapshot(List<MerchantEntrySnapshotUtils.CategorySnapshot> categories) {
+        if (CollUtil.isEmpty(categories)) {
+            return Collections.emptyList();
+        }
+        return categories.stream().map(category -> {
+            AppPartnerEntryAuditRespVO.CategoryItem item = new AppPartnerEntryAuditRespVO.CategoryItem();
+            item.setCategoryId(category.getCategoryId());
+            item.setCategoryName(category.getCategoryName());
+            return item;
+        }).collect(Collectors.toList());
+    }
+
+    private List<AppPartnerEntryAuditRespVO.QualificationItem> buildEntryQualifications(List<MemberUserQualificationDO> qualifications) {
+        if (CollUtil.isEmpty(qualifications)) {
+            return Collections.emptyList();
+        }
+        return qualifications.stream().map(qualification -> {
+            AppPartnerEntryAuditRespVO.QualificationItem item = new AppPartnerEntryAuditRespVO.QualificationItem();
+            item.setId(qualification.getId());
+            item.setQualificationType(qualification.getQualificationType());
+            item.setQualificationName(qualification.getQualificationName());
+            item.setQualificationNo(qualification.getQualificationNo());
+            item.setFileId(qualification.getFileId());
+            item.setFileUrl(resolveFileUrl(qualification.getFileId()));
+            item.setAuditStatus(qualification.getAuditStatus());
+            item.setValidEndDate(qualification.getValidEndDate());
+            return item;
+        }).collect(Collectors.toList());
+    }
+
+    private List<AppPartnerEntryAuditRespVO.QualificationItem> buildEntryQualificationsFromSnapshot(List<MerchantEntrySnapshotUtils.QualificationSnapshot> qualifications) {
+        if (CollUtil.isEmpty(qualifications)) {
+            return Collections.emptyList();
+        }
+        return qualifications.stream().map(qualification -> {
+            AppPartnerEntryAuditRespVO.QualificationItem item = new AppPartnerEntryAuditRespVO.QualificationItem();
+            item.setId(qualification.getId());
+            item.setQualificationType(qualification.getQualificationType());
+            item.setQualificationName(qualification.getQualificationName());
+            item.setQualificationNo(qualification.getQualificationNo());
+            item.setFileId(qualification.getFileId());
+            item.setFileUrl(resolveFileUrl(qualification.getFileId()));
+            item.setAuditStatus(qualification.getAuditStatus());
+            item.setValidEndDate(qualification.getValidEndDate());
+            return item;
+        }).collect(Collectors.toList());
+    }
+
+    private String resolveFileUrl(Long fileId) {
+        if (fileId == null) {
+            return null;
+        }
+        FileDO file = fileService.getFile(fileId);
+        if (file == null || StrUtil.isBlank(file.getUrl())) {
+            return null;
+        }
+        return file.getUrl().replace("/get/", "/preview/");
     }
 
     private Map<Long, MemberUserDO> buildMemberUserMap(List<Long> userIds) {
@@ -649,11 +842,23 @@ public class AppPartnerServiceImpl implements AppPartnerService {
         OrderInfoDO order = orderId == null ? null : orderInfoMapper.selectById(orderId);
         if (order != null) {
             respVO.setOrderNo(order.getOrderNo());
+            respVO.setRegionCode(resolveMerchantRegionCode(order.getMerchantId()));
         }
         OrderUnitDO unit = unitId == null ? null : orderUnitMapper.selectById(unitId);
         if (unit != null) {
             respVO.setUnitNo(unit.getUnitNo());
         }
+    }
+
+    private String resolveMerchantRegionCode(Long merchantId) {
+        if (merchantId == null) {
+            return null;
+        }
+        List<MerchantEntryDO> entries = merchantEntryMapper.selectList(new LambdaQueryWrapperX<MerchantEntryDO>()
+                .eq(MerchantEntryDO::getMerchantId, merchantId)
+                .eq(MerchantEntryDO::getStatus, "APPROVED")
+                .orderByDesc(MerchantEntryDO::getId));
+        return entries.isEmpty() ? null : entries.get(0).getRegionCode();
     }
 
     private List<AppPartnerDisputeRespVO.CoordinationItem> buildCoordinationRecords(String disputeType, Long disputeId) {

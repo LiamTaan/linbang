@@ -14,6 +14,13 @@ export interface PartnerInfo {
   regionAdcodes?: string[]
 }
 
+export interface PartnerRegionUpdateItem {
+  province: string
+  city: string
+  district: string
+  adcode: string
+}
+
 export interface PartnerInfoDetail extends PartnerInfo {
   updateTime?: string
   regions?: PartnerRegion[]
@@ -65,5 +72,8 @@ export const PartnerInfoApi = {
   },
   getPartnerInfo: async (id: number) => {
     return await request.get<PartnerInfoDetail>({ url: `/partner/info/get?id=${id}` })
+  },
+  updatePartnerRegions: async (data: { id: number; regions: PartnerRegionUpdateItem[] }) => {
+    return await request.post({ url: '/partner/info/update-regions', data })
   }
 }

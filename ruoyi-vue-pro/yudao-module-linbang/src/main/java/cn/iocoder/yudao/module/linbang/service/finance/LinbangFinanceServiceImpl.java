@@ -141,7 +141,7 @@ public class LinbangFinanceServiceImpl implements LinbangFinanceService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void handleRefundSuccess(OrderInfoDO order, OrderUnitDO unit, BigDecimal refundAmount) {
+    public void handleRefundSuccess(OrderInfoDO order, OrderUnitDO unit, BigDecimal refundAmount, Long payRefundId) {
         if (order == null) {
             return;
         }
@@ -164,6 +164,7 @@ public class LinbangFinanceServiceImpl implements LinbangFinanceService {
                 .afterAmount(nonNegative(beforeEscrow.subtract(realRefundAmount)))
                 .relatedOrderId(order.getId())
                 .relatedUnitId(unit != null ? unit.getId() : null)
+                .relatedRefundId(payRefundId)
                 .remark("退款成功，冲减托管金额")
                 .createTime(LocalDateTime.now())
                 .build());

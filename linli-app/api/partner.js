@@ -40,8 +40,16 @@ export function getPartnerInstructionPage(params) {
   return get('/partner/instruction/page', params)
 }
 
+export function getPartnerInstruction(id) {
+  return get('/partner/instruction/get', { id })
+}
+
 export function getPartnerPriceReportPage(params) {
   return get('/partner/price-report/page', params)
+}
+
+export function getPartnerPriceReport(id) {
+  return get('/partner/price-report/get', { id })
 }
 
 export function createPartnerPriceReport(data) {
@@ -49,5 +57,5 @@ export function createPartnerPriceReport(data) {
 }
 
 export function withdrawPartnerPriceReport(id) {
-  return put('/partner/price-report/withdraw', { id })
+  return put('/partner/price-report/withdraw', null, { params: { id } })
 }

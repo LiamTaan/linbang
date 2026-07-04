@@ -26,7 +26,7 @@ public class AppOrderController {
     private AppOrderService appOrderService;
 
     @PostMapping("/info/preview")
-    @Operation(summary = "发单预览", description = "提交前校验类目、计价方式、开票、协议、拆单与内容安全规则，并返回预览快照令牌。")
+    @Operation(summary = "发单预览", description = "普通用户侧发单预览接口。提交前校验类目、计价方式、开票、协议、拆单与内容安全规则，并返回预览快照令牌；必须当前角色为 USER。")
     public CommonResult<AppOrderPreviewRespVO> previewOrder(@Valid @RequestBody AppOrderPreviewReqVO reqVO) {
         return success(appOrderService.previewOrder(getLoginUserId(), reqVO));
     }
@@ -34,10 +34,11 @@ public class AppOrderController {
     @PostMapping("/info/create")
     @Operation(
             summary = "创建订单",
-            description = "首页发布需求接口。无需传 title、无需传 addressId，直接传省/市/区/街道/详细地址。"
+            description = "普通用户侧首页发布需求接口。无需传 title、无需传 addressId，直接传省/市/区/街道/详细地址。"
                     + "requireDesc 即需求描述，也是订单标题来源。serviceDurationDesc 仅作为服务时长/工期展示文案保存。"
                     + "后端会按已启用的拆单规则自动判断是否拆单并生成订单单元；其中订单金额满 200 元属于平台硬性自动拆单规则，"
                     + "不受 needSplit 开关影响，needSplit 仅作为兼容字段保留。"
+                    + "当前角色必须为 USER，若账号已开通服务商、推广员或区域合作商身份，也必须先切换回普通用户视角。"
                     + "attachmentFileIds 需先通过 /app-api/infra/file/presigned-url 获取直传地址，上传成功后再调用 "
                     + "/app-api/infra/file/create 换取 fileId。")
     public CommonResult<Long> createOrder(@Valid @RequestBody AppOrderCreateReqVO reqVO) {
@@ -57,13 +58,13 @@ public class AppOrderController {
     }
 
     @GetMapping("/accept/page")
-    @Operation(summary = "分页查询待接单需求", description = "服务商抢单大厅列表。支持顶部关键字搜索、类目筛选、距离排序、价格排序、发布时间排序。")
+    @Operation(summary = "分页查询待接单需求", description = "服务商抢单大厅列表。支持顶部关键字搜索、类目筛选、距离排序、价格排序、发布时间排序；必须当前角色为 MERCHANT。")
     public CommonResult<PageResult<AppOrderAcceptPageItemRespVO>> getAcceptOrderPage(@Valid AppOrderAcceptPageReqVO reqVO) {
         return success(appOrderService.getAcceptOrderPage(getLoginUserId(), reqVO));
     }
 
     @GetMapping("/accept/detail")
-    @Operation(summary = "获取抢单详情")
+    @Operation(summary = "获取抢单详情", description = "服务商侧抢单详情接口，必须当前角色为 MERCHANT。")
     public CommonResult<AppOrderAcceptDetailRespVO> getAcceptOrderDetail(
             @RequestParam("orderId") Long orderId,
             @RequestParam(value = "unitId", required = false) Long unitId) {
@@ -141,7 +142,7 @@ public class AppOrderController {
     }
 
     @PostMapping("/accept/create")
-    @Operation(summary = "接单/抢单")
+    @Operation(summary = "接单/抢单", description = "服务商侧接单/抢单接口，必须当前角色为 MERCHANT 且具备真实接单资格。")
     public CommonResult<AppOrderAcceptRespVO> acceptOrder(@Valid @RequestBody AppOrderAcceptCreateReqVO reqVO) {
         return success(appOrderService.acceptOrder(getLoginUserId(), reqVO));
     }

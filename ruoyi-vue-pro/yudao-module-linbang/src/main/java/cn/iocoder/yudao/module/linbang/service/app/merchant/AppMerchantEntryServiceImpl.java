@@ -6,6 +6,7 @@ import cn.iocoder.yudao.module.linbang.controller.app.merchant.entry.vo.AppMerch
 import cn.iocoder.yudao.module.linbang.controller.app.merchant.entry.vo.AppMerchantEntryRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.merchant.entry.vo.AppMerchantOnboardingProgressRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberqualification.MemberUserQualificationDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.memberrealname.MemberUserRealNameDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategory.MerchantServiceCategoryDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategoryrel.MerchantCategoryRelDO;
@@ -14,6 +15,7 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoD
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantservicepoint.MerchantServicePointDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.walletbankcard.WalletBankCardDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberqualification.MemberUserQualificationMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.memberrealname.MemberUserRealNameMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantcategory.MerchantServiceCategoryMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantcategoryrel.MerchantCategoryRelMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantentry.MerchantEntryMapper;
@@ -22,6 +24,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.merchantservicepoint.MerchantSe
 import cn.iocoder.yudao.module.linbang.dal.mysql.walletbankcard.WalletBankCardMapper;
 import cn.iocoder.yudao.module.linbang.service.map.AmapLocationService;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
+import cn.iocoder.yudao.module.linbang.service.merchantentry.MerchantEntrySnapshotUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -50,6 +53,8 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
     @Resource
     private MemberUserQualificationMapper memberUserQualificationMapper;
     @Resource
+    private MemberUserRealNameMapper memberUserRealNameMapper;
+    @Resource
     private MerchantServiceCategoryMapper merchantServiceCategoryMapper;
     @Resource
     private MerchantCategoryRelMapper merchantCategoryRelMapper;
@@ -75,11 +80,15 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
         if (latestEntry != null && !"REJECTED".equalsIgnoreCase(latestEntry.getStatus())) {
             throw exception(MERCHANT_ENTRY_ALREADY_EXISTS);
         }
-        validateCategories(reqVO.getServiceCategoryIds());
-        validateQualifications(loginUser.getId(), reqVO.getQualificationIds());
+        List<MerchantServiceCategoryDO> categories = validateCategories(reqVO.getServiceCategoryIds());
+        List<MemberUserQualificationDO> qualifications = validateQualifications(loginUser.getId(), reqVO.getQualificationIds());
         if (reqVO.getBankCardId() != null) {
             validateBankCard(loginUser.getId(), reqVO.getBankCardId());
         }
+        MemberUserRealNameDO realName = memberUserRealNameMapper.selectByUserId(loginUser.getId());
+        MerchantEntrySnapshotUtils.MerchantEntrySnapshot snapshot = MerchantEntrySnapshotUtils.buildSnapshot(
+                reqVO.getMerchantName(), reqVO.getContactName(), reqVO.getContactMobile(), reqVO.getServiceScopeDesc(),
+                realName, categories, qualifications);
 
         MerchantInfoDO merchantInfo = merchantInfoMapper.selectOne(new LambdaQueryWrapperX<MerchantInfoDO>()
                 .eq(MerchantInfoDO::getUserId, loginUser.getId()));
@@ -107,8 +116,7 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
             merchantInfo = merchantInfoMapper.selectById(merchantInfo.getId());
         }
 
-        merchantCategoryRelMapper.delete(new LambdaQueryWrapperX<MerchantCategoryRelDO>()
-                .eq(MerchantCategoryRelDO::getMerchantId, merchantInfo.getId()));
+        merchantCategoryRelMapper.deleteByMerchantIdForce(merchantInfo.getId());
         for (Long categoryId : reqVO.getServiceCategoryIds()) {
             merchantCategoryRelMapper.insert(MerchantCategoryRelDO.builder()
                     .merchantId(merchantInfo.getId())
@@ -123,11 +131,18 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
                 .userId(loginUser.getId())
                 .entryNo("LBE" + IdUtil.getSnowflakeNextIdStr())
                 .regionCode(reqVO.getRegionCode())
+                .merchantNameSnapshot(snapshot.getMerchantName())
+                .contactNameSnapshot(snapshot.getContactName())
+                .contactMobileSnapshot(snapshot.getContactMobile())
+                .serviceScopeDescSnapshot(snapshot.getServiceScopeDesc())
+                .applicantRealNameSnapshot(snapshot.getApplicantRealName())
+                .categorySnapshotJson(MerchantEntrySnapshotUtils.toCategorySnapshotJson(snapshot))
+                .qualificationSnapshotJson(MerchantEntrySnapshotUtils.toQualificationSnapshotJson(snapshot))
                 .firstAuditStatus("PENDING")
                 .finalAuditStatus("PENDING")
                 .status("PENDING")
                 .progressStatus("PENDING_FIRST_AUDIT")
-                .currentStageName("待平台初审")
+                .currentStageName("待合作商初审")
                 .currentStageTime(LocalDateTime.now())
                 .acceptEnabled(Boolean.FALSE)
                 .bankCardRequired(Boolean.TRUE)
@@ -148,9 +163,12 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
             return null;
         }
         MerchantInfoDO merchantInfo = entry.getMerchantId() != null ? merchantInfoMapper.selectById(entry.getMerchantId()) : null;
+        MerchantEntrySnapshotUtils.MerchantEntrySnapshot snapshot = MerchantEntrySnapshotUtils.parseSnapshot(entry);
         Long bankCardId = resolveDefaultBankCardId(loginUser.getId());
-        List<Long> categoryIds = resolveCategoryIds(entry.getMerchantId());
-        List<Long> qualificationIds = memberUserQualificationMapper.selectListByUserId(loginUser.getId()).stream()
+        List<Long> categoryIds = snapshot != null ? MerchantEntrySnapshotUtils.extractCategoryIds(snapshot)
+                : resolveCategoryIds(entry.getMerchantId());
+        List<Long> qualificationIds = snapshot != null ? MerchantEntrySnapshotUtils.extractQualificationIds(snapshot)
+                : memberUserQualificationMapper.selectListByUserId(loginUser.getId()).stream()
                 .map(MemberUserQualificationDO::getId)
                 .collect(Collectors.toList());
         AppMerchantEntryRespVO respVO = new AppMerchantEntryRespVO();
@@ -158,10 +176,10 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
         respVO.setMerchantId(entry.getMerchantId());
         respVO.setEntryNo(entry.getEntryNo());
         respVO.setRegionCode(entry.getRegionCode());
-        respVO.setMerchantName(merchantInfo != null ? merchantInfo.getMerchantName() : null);
-        respVO.setContactName(merchantInfo != null ? merchantInfo.getContactName() : null);
-        respVO.setContactMobile(merchantInfo != null ? merchantInfo.getContactMobile() : null);
-        respVO.setServiceScopeDesc(merchantInfo != null ? merchantInfo.getServiceScopeDesc() : null);
+        respVO.setMerchantName(snapshot != null ? snapshot.getMerchantName() : merchantInfo != null ? merchantInfo.getMerchantName() : null);
+        respVO.setContactName(snapshot != null ? snapshot.getContactName() : merchantInfo != null ? merchantInfo.getContactName() : null);
+        respVO.setContactMobile(snapshot != null ? snapshot.getContactMobile() : merchantInfo != null ? merchantInfo.getContactMobile() : null);
+        respVO.setServiceScopeDesc(snapshot != null ? snapshot.getServiceScopeDesc() : merchantInfo != null ? merchantInfo.getServiceScopeDesc() : null);
         respVO.setBankCardId(bankCardId);
         respVO.setServiceCategoryIds(categoryIds);
         respVO.setQualificationIds(qualificationIds);
@@ -211,13 +229,14 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
         return respVO;
     }
 
-    private void validateCategories(List<Long> categoryIds) {
+    private List<MerchantServiceCategoryDO> validateCategories(List<Long> categoryIds) {
         List<MerchantServiceCategoryDO> categories = merchantServiceCategoryMapper.selectList(new LambdaQueryWrapperX<MerchantServiceCategoryDO>()
                 .in(MerchantServiceCategoryDO::getId, categoryIds)
                 .eq(MerchantServiceCategoryDO::getStatus, "ENABLE"));
         if (categories.size() != categoryIds.size()) {
             throw exception(MERCHANT_SERVICE_CATEGORY_NOT_EXISTS);
         }
+        return categories;
     }
 
     private void validateBankCard(Long userId, Long bankCardId) {
@@ -230,11 +249,12 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
         }
     }
 
-    private void validateQualifications(Long userId, List<Long> qualificationIds) {
+    private List<MemberUserQualificationDO> validateQualifications(Long userId, List<Long> qualificationIds) {
         List<MemberUserQualificationDO> qualifications = memberUserQualificationMapper.selectListByUserIdAndIds(userId, qualificationIds);
         if (qualifications.size() != qualificationIds.size()) {
             throw exception(MEMBER_USER_QUALIFICATION_NOT_EXISTS);
         }
+        return qualifications;
     }
 
     private Long resolveDefaultBankCardId(Long userId) {

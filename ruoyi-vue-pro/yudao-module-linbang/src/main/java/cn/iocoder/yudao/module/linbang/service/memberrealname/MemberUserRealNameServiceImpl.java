@@ -29,6 +29,9 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantentry.MerchantEntryMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper;
 import cn.iocoder.yudao.module.linbang.service.creditrecord.CreditRecordService;
+import cn.iocoder.yudao.module.linbang.service.merchantinfo.MerchantAccessStateService;
+import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
+import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
@@ -60,6 +63,12 @@ public class MemberUserRealNameServiceImpl implements MemberUserRealNameService 
     private CreditRecordMapper creditRecordMapper;
     @Resource
     private CreditRecordService creditRecordService;
+    @Resource
+    private MemberUserService memberUserService;
+    @Resource
+    private MessagePushDispatchService messagePushDispatchService;
+    @Resource
+    private MerchantAccessStateService merchantAccessStateService;
 
     @Override
     public Long createMemberUserRealName(MemberUserRealNameSaveReqVO createReqVO) {
@@ -137,18 +146,24 @@ public class MemberUserRealNameServiceImpl implements MemberUserRealNameService 
         if (record == null) {
             throw exception(MEMBER_USER_REAL_NAME_NOT_EXISTS);
         }
+        LocalDateTime now = LocalDateTime.now();
         MemberUserRealNameDO updateObj = new MemberUserRealNameDO();
         updateObj.setId(reqVO.getId());
         updateObj.setAuditStatus(reqVO.getAuditStatus());
         updateObj.setAuditRemark(reqVO.getAuditRemark());
         updateObj.setRejectReason(reqVO.getRejectReason());
         updateObj.setAuditBy(SecurityFrameworkUtils.getLoginUserId());
-        updateObj.setAuditTime(LocalDateTime.now());
+        updateObj.setAuditTime(now);
         memberUserRealNameMapper.updateById(updateObj);
         if ("APPROVED".equals(reqVO.getAuditStatus())) {
+            memberUserService.updateMemberUserNickname(record.getUserId(), record.getRealName());
             creditRecordService.applyCreditRule(record.getUserId(), null, "REAL_NAME_APPROVED",
                     "REAL_NAME", record.getId(), "实名认证审核通过");
         }
+        merchantAccessStateService.refreshMerchantAcceptStatus(record.getUserId());
+        messagePushDispatchService.dispatchSingle("",
+                "APPROVED".equals(reqVO.getAuditStatus()) ? "实名认证审核已通过" : "实名认证审核已驳回",
+                "REAL_NAME", record.getId(), record.getUserId(), "实名认证审核结果已更新");
     }
 
     @Override

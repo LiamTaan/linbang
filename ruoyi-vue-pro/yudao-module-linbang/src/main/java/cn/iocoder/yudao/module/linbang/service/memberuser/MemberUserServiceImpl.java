@@ -294,6 +294,15 @@ public class MemberUserServiceImpl implements MemberUserService {
     }
 
     @Override
+    public void updateMemberUserNickname(Long userId, String nickname) {
+        validateMemberUserExists(userId);
+        memberUserMapper.updateById(MemberUserDO.builder()
+                .id(userId)
+                .nickname(nickname)
+                .build());
+    }
+
+    @Override
     public void updateMemberUserPassword(Long userId, String password, String code) {
         MemberUserDO user = validateMemberUserExists(userId);
         smsCodeApi.useSmsCode(new SmsCodeUseReqDTO().setMobile(user.getMobile()).setCode(code)

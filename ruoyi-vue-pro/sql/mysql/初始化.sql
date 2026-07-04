@@ -710,7 +710,7 @@ INSERT INTO `lb_match_strategy`
  `auto_dispatch_enabled`, `auto_refund_enabled`, `auto_refund_retry_times`, `status`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
 VALUES
 (1, 'DEFAULT', '默认分钟级匹配策略',
- '[{\"stageNo\":1,\"radiusStartKm\":0.00,\"radiusEndKm\":0.50,\"durationSeconds\":60},{\"stageNo\":2,\"radiusStartKm\":0.50,\"radiusEndKm\":1.00,\"durationSeconds\":60},{\"stageNo\":3,\"radiusStartKm\":1.00,\"radiusEndKm\":2.00,\"durationSeconds\":60},{\"stageNo\":4,\"radiusStartKm\":2.00,\"radiusEndKm\":5.00,\"durationSeconds\":60},{\"stageNo\":5,\"radiusStartKm\":5.00,\"radiusEndKm\":999.00,\"durationSeconds\":60}]',
+ '[{\"stageNo\":1,\"radiusStartKm\":0.00,\"radiusEndKm\":0.50,\"durationSeconds\":300},{\"stageNo\":2,\"radiusStartKm\":0.50,\"radiusEndKm\":1.00,\"durationSeconds\":300},{\"stageNo\":3,\"radiusStartKm\":1.00,\"radiusEndKm\":2.00,\"durationSeconds\":300},{\"stageNo\":4,\"radiusStartKm\":2.00,\"radiusEndKm\":5.00,\"durationSeconds\":300},{\"stageNo\":5,\"radiusStartKm\":5.00,\"radiusEndKm\":999.00,\"durationSeconds\":300}]',
  5, 999.00, '当前附近服务商暂未接单，建议适当降低条件或增加预算，我们将继续为您匹配。',
  b'1', b'1', 3, 'ENABLE', 'admin', NOW(), 'admin', NOW(), b'0', 0);
 
@@ -911,6 +911,8 @@ VALUES
 (110684, '佣金记录', 'linbang:promote:commission:query', 2, 20, 110680, 'commission-order', 'ep:wallet-filled', 'linbang/commissionorder/index', 'LinbangCommissionOrder', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110685, '佣金记录详情', 'linbang:promote:commission:get', 3, 1, 110684, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110700, '合作商中心', '', 1, 80, 0, '/linbang-partner', 'ep:office-building', NULL, NULL, 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110710, '区域合作商列表', 'linbang:partner:info:query', 2, 1, 110700, 'partner-info', 'ep:user-filled', 'linbang/partnerinfo/index', 'LinbangPartnerInfo', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110711, '合作商辖区配置', 'linbang:partner:info:update', 3, 1, 110710, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110720, '价格申报审核', 'linbang:partner:price-report:query', 2, 10, 110700, 'merchant-price-report', 'ep:money', 'linbang/merchantpricereport/index', 'LinbangMerchantPriceReport', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110721, '价格申报审核动作', 'linbang:partner:price-report:audit', 3, 1, 110720, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110760, '平台运营', 'linbang:help:feedback:query', 2, 90, 0, '/linbang-platform', 'ep:service', 'linbang/platform/index', 'LinbangPlatform', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
@@ -1038,6 +1040,8 @@ INSERT INTO `infra_config`
 (`id`, `category`, `type`, `name`, `config_key`, `value`, `visible`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
 VALUES
 (620101, 'linbang_platform', 2, 'App 税务提醒文案', 'linbang.app.tax-reminder', '建议尽快办理个体执照；若未办理，平台将按规则代扣 20% 个税。', b'1', '资金域 P0 默认配置', 'admin', NOW(), 'admin', NOW(), b'0'),
+(620107, 'linbang_platform', 2, 'App 客服电话', 'linbang.app.service-hotline', '', b'1', '联系平台入口使用；上线前需配置真实客服电话', 'admin', NOW(), 'admin', NOW(), b'0'),
+(620108, 'linbang_platform', 2, 'App 客服微信', 'linbang.app.service-wechat', '', b'1', '联系平台入口使用；上线前需配置真实客服微信', 'admin', NOW(), 'admin', NOW(), b'0'),
 (620102, 'linbang_platform', 2, 'App 个体执照代办入口地址', 'linbang.app.license-agent-entry-url', 'https://example.com/license-agent', b'1', '资金域 P0 默认配置', 'admin', NOW(), 'admin', NOW(), b'0'),
 (620103, 'linbang_platform', 2, 'App 个体执照代办入口标题', 'linbang.app.license-agent-entry-title', '个体执照代办', b'1', '资金域 P0 默认配置', 'admin', NOW(), 'admin', NOW(), b'0'),
 (620104, 'linbang_platform', 2, 'App 提现说明', 'linbang.app.withdraw-notice', '提现申请审核通过后预计 T+1 到账，实际到账时间以银行处理为准。', b'1', '资金域 P0 默认配置', 'admin', NOW(), 'admin', NOW(), b'0'),

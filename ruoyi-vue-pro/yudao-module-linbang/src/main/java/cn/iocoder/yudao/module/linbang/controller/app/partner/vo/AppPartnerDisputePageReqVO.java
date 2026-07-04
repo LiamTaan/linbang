@@ -13,6 +13,12 @@ public class AppPartnerDisputePageReqVO extends PageParam {
     @Schema(description = "纠纷类型：COMPLAINT 投诉、APPEAL 申诉", example = "COMPLAINT")
     private String disputeType;
 
+    @Schema(description = "订单号/纠纷单号关键词", example = "LB202606280001")
+    private String keyword;
+
+    @Schema(description = "辖区编码", example = "440305")
+    private String regionCode;
+
     @Schema(description = "纠纷状态", example = "PENDING")
     private String status;
 }

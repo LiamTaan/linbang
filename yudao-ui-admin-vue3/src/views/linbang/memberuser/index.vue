@@ -153,33 +153,35 @@
       <el-table-column label="最后登录IP" align="center" prop="lastLoginIp" width="140" />
       <el-table-column label="备注" align="center" prop="remark" min-width="180" />
       <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="操作" align="center" fixed="right" width="190">
+      <el-table-column label="操作" align="center" fixed="right" :show-overflow-tooltip="false" min-width="220">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
-          <el-button
-            link
-            type="warning"
-            v-hasPermi="['linbang:member-user:restrict']"
-            @click="openRestrictDialog(row)"
-          >
-            限制
-          </el-button>
-          <el-button
-            link
-            type="primary"
-            v-hasPermi="['linbang:member-user:update']"
-            @click="openForm('update', row.id)"
-          >
-            编辑
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            v-hasPermi="['linbang:member-user:delete']"
-            @click="handleDelete(row.id)"
-          >
-            删除
-          </el-button>
+          <div class="flex flex-wrap items-center justify-center gap-x-8px gap-y-4px whitespace-normal">
+            <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
+            <el-button
+              link
+              type="warning"
+              v-hasPermi="['linbang:member-user:restrict']"
+              @click="openRestrictDialog(row)"
+            >
+              限制
+            </el-button>
+            <el-button
+              link
+              type="primary"
+              v-hasPermi="['linbang:member-user:update']"
+              @click="openForm('update', row.id)"
+            >
+              编辑
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              v-hasPermi="['linbang:member-user:delete']"
+              @click="handleDelete(row.id)"
+            >
+              删除
+            </el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>

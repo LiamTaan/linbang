@@ -29,7 +29,8 @@ public class SecurityConfiguration {
                 // Druid 监控
                 registry.requestMatchers("/druid/**").permitAll();
                 // 文件读取
-                registry.requestMatchers(buildAdminApi("/infra/file/*/get/**")).permitAll();
+                registry.requestMatchers(buildAdminApi("/infra/file/*/get/**")).permitAll()
+                        .requestMatchers(buildAdminApi("/infra/file/*/preview/**")).permitAll();
             }
 
         };

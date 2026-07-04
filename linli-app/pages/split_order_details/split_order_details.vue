@@ -137,13 +137,17 @@ import { uploadAppFile } from '@/api/infra'
 import { getProfile } from '@/api/member'
 import { getMerchantProfile } from '@/api/merchant'
 import {
+  getPayOrder,
+  submitPayOrder,
+} from '@/api/pay'
+import {
   confirmOrderUnit,
   deleteDeliveryProof,
   getOrderDetail,
   startOrderUnitService,
   uploadDeliveryProof
 } from '@/api/order'
-import { loadPlatformSettings } from '@/services/app-bootstrap'
+import { openPlatformContact } from '@/services/platform-contact'
 import {
   buildAddressText,
   extractUploadedFile,
@@ -152,6 +156,8 @@ import {
   getOrderStatusLabel,
   getOrderUnitStatusLabel
 } from '@/utils/linbang'
+
+const ORDER_REPUBLISH_STORAGE_KEY = 'linbang_order_republish_draft'
 
 export default {
   data() {
@@ -172,6 +178,9 @@ export default {
     isAssignedMerchantViewer() {
       return !!(this.currentMerchantId && this.orderDetail.merchantId
         && `${this.currentMerchantId}` === `${this.orderDetail.merchantId}`)
+    },
+    isPendingPayOrder() {
+      return this.orderDetail.status === 'PENDING_PAY'
     },
     displayUnits() {
       const units = Array.isArray(this.orderDetail.units) ? this.orderDetail.units.slice() : []
@@ -205,25 +214,25 @@ export default {
       return list.sort((a, b) => new Date(b.createTime || 0).getTime() - new Date(a.createTime || 0).getTime())[0]
     },
     isFullyFlowedOrder() {
-      const units = this.displayUnits
-      if (!units.length) {
-        return false
-      }
-      const hasFlowedUnit = units.some((item) => item && ['FLOWED', 'EXPIRED'].includes(item.dispatchStatus))
-      const hasActiveFulfillmentUnit = units.some((item) => item && ['ACCEPTED', 'SERVING', 'PENDING_CONFIRM', 'FINISHED'].includes(item.status))
-      return hasFlowedUnit && !hasActiveFulfillmentUnit
+      return this.orderDetail.status === 'AFTER_SALE' && !this.isRefundedOrder
+    },
+    isRefundProcessingOrder() {
+      return this.orderDetail.status === 'AFTER_SALE' && this.orderDetail.autoRefundStatus === 'PROCESSING'
+    },
+    isRefundedOrder() {
+      return this.orderDetail.status === 'REFUNDED' || this.orderDetail.autoRefundStatus === 'SUCCESS'
     },
     effectiveOrderStatusText() {
-      if (!this.isFullyFlowedOrder) {
-        return getOrderStatusLabel(this.orderDetail.status)
+      if (this.isRefundedOrder) {
+        return '已退款'
       }
-      if (this.latestRefundRecord && this.latestRefundRecord.statusName) {
-        return this.latestRefundRecord.statusName
+      if (this.isRefundProcessingOrder) {
+        return '退款处理中'
       }
-      if (this.latestRefundRecord) {
-        return '退款中'
+      if (this.isFullyFlowedOrder) {
+        return '流单中'
       }
-      return '已过期'
+      return getOrderStatusLabel(this.orderDetail.status)
     },
     orderStatusText() {
       return this.effectiveOrderStatusText
@@ -260,13 +269,26 @@ export default {
           onClick: this.openPlatformService
         }
       ]
-      if (this.isPublisherViewer && this.isFullyFlowedOrder) {
-        if (this.hasRefundRecord) {
+      if (this.isPublisherViewer && this.isPendingPayOrder) {
+        actions.push({
+          key: 'pay',
+          label: '立即支付',
+          variant: 'primary',
+          onClick: this.handlePayOrder
+        })
+      } else if (this.isPublisherViewer && this.isFullyFlowedOrder) {
+        actions.push({
+          key: 'refund',
+          label: this.hasRefundRecord ? '查看退款' : '查看退款进度',
+          variant: 'secondary',
+          onClick: this.openRefund
+        })
+        if (this.orderDetail.republishAllowed) {
           actions.push({
-            key: 'refund',
-            label: '查看退款',
-            variant: 'secondary',
-            onClick: this.openRefund
+            key: 'republish',
+            label: '调整需求重新发布',
+            variant: 'primary',
+            onClick: this.handleRepublish
           })
         }
       } else if (this.isPublisherViewer && ['PENDING_ACCEPT', 'ACCEPTED'].includes(this.orderDetail.status)) {
@@ -310,6 +332,9 @@ export default {
         this.orderDetail = detail || {}
         this.currentUserId = (profile && profile.id) || null
         this.currentMerchantId = (merchantProfile && merchantProfile.merchantId) || null
+        if (this.orderDetail.status === 'PENDING_PAY') {
+          await this.loadPayStatus(true)
+        }
         this.errorText = ''
       } catch (error) {
         this.errorText = (error && error.message) || '当前订单已无法访问'
@@ -334,7 +359,7 @@ export default {
         return 'card-default'
       }
       if (this.isFullyFlowedOrder) {
-        return ['FLOWED', 'EXPIRED'].includes(unit.dispatchStatus) ? 'card-flowed' : 'card-muted'
+        return ['FLOWED', 'EXPIRED'].includes(unit.dispatchStatus) || unit.flowTime ? 'card-flowed' : 'card-muted'
       }
       if (unit.status === 'FINISHED') {
         return 'card-finished'
@@ -348,9 +373,21 @@ export default {
       if (!unit) {
         return '--'
       }
+      if (this.isPendingPayOrder) {
+        if (unit.isLocked || unit.status === 'PENDING_CREATE') {
+          return '待支付完成后生成并解锁'
+        }
+        return '待支付完成后派单'
+      }
       if (this.isFullyFlowedOrder) {
-        if (['FLOWED', 'EXPIRED'].includes(unit.dispatchStatus)) {
-          return this.hasRefundRecord ? '整单已流单，系统正在按整单退款' : '整单已流单，当前单元派单已过期'
+        if (['FLOWED', 'EXPIRED'].includes(unit.dispatchStatus) || unit.flowTime) {
+          if (this.isRefundedOrder) {
+            return '该单元已流单并完成退款'
+          }
+          if (this.isRefundProcessingOrder) {
+            return '该单元已流单，系统正在自动退款'
+          }
+          return '该单元已流单，等待退款处理'
         }
         if (unit.status === 'PENDING_CREATE' || unit.isLocked) {
           return '整单已流单，后续单元不再继续派单'
@@ -368,6 +405,12 @@ export default {
     buildUnitTimeText(unit) {
       if (!unit) {
         return '--'
+      }
+      if (this.isPendingPayOrder) {
+        const expireTime = this.orderDetail.payRecord && this.orderDetail.payRecord.expireTime
+        if (expireTime) {
+          return `支付截止：${this.$fmt.formatDateTime(expireTime)}`
+        }
       }
       if (this.isFullyFlowedOrder && unit.flowTime) {
         return `流单时间：${this.$fmt.formatDateTime(unit.flowTime)}`
@@ -387,9 +430,20 @@ export default {
       if (!unit) {
         return ''
       }
+      if (this.isPendingPayOrder) {
+        return unit.isLocked || unit.status === 'PENDING_CREATE'
+          ? '订单支付成功后，系统会按拆单顺序自动解锁后续单元'
+          : '当前订单待支付，支付成功后系统才会开始派单'
+      }
       if (this.isFullyFlowedOrder) {
-        if (['FLOWED', 'EXPIRED'].includes(unit.dispatchStatus)) {
-          return unit.flowReason || this.orderDetail.flowAdvice || '当前订单无人接单，系统已按整单发起退款'
+        if (['FLOWED', 'EXPIRED'].includes(unit.dispatchStatus) || unit.flowTime) {
+          if (this.isRefundedOrder) {
+            return '当前订单已流单并完成自动退款'
+          }
+          if (this.isRefundProcessingOrder) {
+            return unit.flowReason || this.orderDetail.flowReason || '当前订单无人接单，系统正在自动退款'
+          }
+          return unit.flowReason || this.orderDetail.flowReason || this.orderDetail.flowAdvice || '当前订单无人接单，已进入流单处理'
         }
         if (unit.status === 'PENDING_CREATE' || unit.isLocked) {
           return '前置单元已流单，后续单元自动终止'
@@ -460,6 +514,9 @@ export default {
     },
     buildPublisherUnitActions(unit) {
       const actions = []
+      if (this.isPendingPayOrder) {
+        return actions
+      }
       const hasProof = this.getUnitProofs(unit).length > 0
       if (hasProof) {
         actions.push(this.createAction('view-proof', '查看凭证', 'secondary', () => this.previewFirstProof(unit)))
@@ -571,11 +628,14 @@ export default {
       if (!unit) {
         return '--'
       }
+      if (this.isPendingPayOrder) {
+        return '待支付'
+      }
       if (unit.verifyStatus === 'VERIFIED') {
         return '已验收'
       }
       if (this.isFullyFlowedOrder) {
-        return '不适用'
+        return this.isRefundedOrder ? '已退款' : '退款处理中'
       }
       if (unit.status === 'PENDING_CONFIRM') {
         return '待用户验收'
@@ -595,9 +655,18 @@ export default {
       if (!unit) {
         return '--'
       }
+      if (this.isPendingPayOrder) {
+        if (unit.isLocked || unit.status === 'PENDING_CREATE') {
+          return '待生成'
+        }
+        return '待支付'
+      }
       if (this.isFullyFlowedOrder) {
-        if (['FLOWED', 'EXPIRED'].includes(unit.dispatchStatus)) {
-          return '已过期'
+        if (this.isRefundedOrder) {
+          return '已退款'
+        }
+        if (['FLOWED', 'EXPIRED'].includes(unit.dispatchStatus) || unit.flowTime) {
+          return '流单中'
         }
         if (unit.status === 'PENDING_CREATE' || unit.isLocked) {
           return '未执行'
@@ -614,6 +683,100 @@ export default {
       uni.navigateTo({
         url: `/pages/complaint/complaint?orderId=${this.orderId}`
       })
+    },
+    handleRepublish() {
+      const payload = {
+        categoryId: this.orderDetail.categoryId,
+        pricingMode: this.orderDetail.pricingMode,
+        budgetAmount: this.orderDetail.budgetAmount || this.orderDetail.orderAmount,
+        quantity: this.orderDetail.quantity,
+        workerCount: this.orderDetail.workerCount,
+        serviceDurationDesc: this.orderDetail.serviceDurationDesc,
+        requireDesc: this.orderDetail.requireDesc,
+        province: this.orderDetail.province,
+        city: this.orderDetail.city,
+        district: this.orderDetail.district,
+        street: this.orderDetail.street,
+        detailAddress: this.orderDetail.detailAddress,
+        longitude: this.orderDetail.longitude,
+        latitude: this.orderDetail.latitude,
+        needInvoice: !!this.orderDetail.needInvoice,
+        needSplit: !!this.orderDetail.needSplit,
+        priceItems: Array.isArray(this.orderDetail.priceItems) ? this.orderDetail.priceItems : [],
+        attachments: Array.isArray(this.orderDetail.attachments) ? this.orderDetail.attachments : []
+      }
+      uni.setStorageSync(ORDER_REPUBLISH_STORAGE_KEY, payload)
+      uni.switchTab({
+        url: '/pages/index/index'
+      })
+    },
+    async handlePayOrder() {
+      if (!this.orderId || !this.isPublisherViewer || !this.isPendingPayOrder) {
+        return
+      }
+      const itemList = ['微信支付', '支付宝支付', '银行卡/云闪付']
+      const payWays = ['WECHAT_H5', 'ALIPAY_H5', 'UNIONPAY_WAP']
+      uni.showActionSheet({
+        itemList,
+        success: async ({ tapIndex }) => {
+          const payWay = payWays[tapIndex]
+          if (!payWay) {
+            return
+          }
+          try {
+            const returnUrl = typeof window !== 'undefined' && window.location
+              ? window.location.href
+              : undefined
+            const resp = await submitPayOrder({
+              orderId: this.orderId,
+              payWay,
+              returnUrl
+            })
+            const payUrl = resp && resp.displayContent
+            if (!payUrl) {
+              throw new Error('未获取到支付链接')
+            }
+            if (resp.displayMode === 'mock' || payUrl === 'MOCK_SUCCESS') {
+              uni.showToast({ title: '模拟支付已提交', icon: 'success' })
+              this.loadPayStatus(true)
+              return
+            }
+            this.openExternalUrl(payUrl)
+          } catch (error) {
+          }
+        }
+      })
+    },
+    openExternalUrl(url) {
+      if (!url) {
+        return
+      }
+      // #ifdef APP-PLUS
+      plus.runtime.openURL(url)
+      // #endif
+      // #ifndef APP-PLUS
+      window.location.href = url
+      // #endif
+    },
+    async loadPayStatus(sync = false) {
+      if (!this.orderId) {
+        return null
+      }
+      const payOrder = await getPayOrder({
+        orderId: this.orderId,
+        sync
+      }, { silent: true }).catch(() => null)
+      if (payOrder) {
+        this.orderDetail = {
+          ...this.orderDetail,
+          payOrderId: payOrder.id || this.orderDetail.payOrderId,
+          payRecord: {
+            ...(this.orderDetail.payRecord || {}),
+            ...payOrder
+          }
+        }
+      }
+      return payOrder
     },
     canDeleteProof(unit, proof) {
       if (!this.isAssignedMerchantViewer || !unit || !proof) {
@@ -641,50 +804,7 @@ export default {
       })
     },
     async openPlatformService() {
-      const settings = await loadPlatformSettings(true).catch(() => ({}))
-      const serviceWechat = String((settings && settings.serviceWechat) || '').trim()
-      const serviceHotline = String((settings && settings.serviceHotline) || '').trim()
-      const itemList = []
-      const actions = []
-      if (serviceWechat) {
-        itemList.push('在线客服')
-        actions.push(() => {
-          uni.setClipboardData({
-            data: serviceWechat,
-            success: () => {
-              uni.showToast({ title: '客服微信已复制', icon: 'success' })
-            }
-          })
-        })
-      }
-      if (serviceHotline) {
-        itemList.push('电话客服')
-        actions.push(() => {
-          uni.makePhoneCall({
-            phoneNumber: serviceHotline
-          })
-        })
-      }
-      if (!itemList.length) {
-        uni.showToast({
-          title: '客服暂未配置',
-          icon: 'none'
-        })
-        return
-      }
-      if (itemList.length === 1) {
-        actions[0]()
-        return
-      }
-      uni.showActionSheet({
-        itemList,
-        success: ({ tapIndex }) => {
-          const action = actions[tapIndex]
-          if (action) {
-            action()
-          }
-        }
-      })
+      await openPlatformContact()
     },
   }
 }

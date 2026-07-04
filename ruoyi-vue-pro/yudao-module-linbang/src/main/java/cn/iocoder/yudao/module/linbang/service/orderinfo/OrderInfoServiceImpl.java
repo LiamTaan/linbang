@@ -12,6 +12,7 @@ import cn.iocoder.yudao.module.linbang.controller.admin.orderinfo.vo.OrderInfoDe
 import cn.iocoder.yudao.module.linbang.controller.admin.orderinfo.vo.OrderInfoRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.appeal.AppealDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.complaint.ComplaintDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.matchpushbatch.MatchPushBatchDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategory.MerchantServiceCategoryDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoDO;
@@ -152,7 +153,7 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         if (order == null) {
             throw exception(ORDER_INFO_NOT_EXISTS);
         }
-        OrderDetailAggregateService.OrderDetailAggregate aggregate = orderDetailAggregateService.aggregate(order, false);
+        OrderDetailAggregateService.OrderDetailAggregate aggregate = orderDetailAggregateService.aggregate(order, true);
         MerchantServiceCategoryDO category = aggregate.getCategory();
         MerchantInfoDO merchant = aggregate.getMerchant();
         List<OrderPriceItemDO> priceItems = aggregate.getPriceItems();
@@ -165,14 +166,25 @@ public class OrderInfoServiceImpl implements OrderInfoService {
         PayOrderDO payOrder = aggregate.getPayOrder();
         List<PayRefundDO> refunds = aggregate.getRefunds();
         List<OrderOperateLogDO> operateLogs = aggregate.getOperateLogs();
+        List<MatchPushBatchDO> matchBatches = aggregate.getMatchBatches();
         Map<Long, FileDO> fileMap = aggregate.getFileMap();
         Map<Long, MerchantInfoDO> acceptRecordMerchantMap = aggregate.getAcceptRecordMerchantMap();
 
         OrderInfoDetailRespVO respVO = BeanUtils.toBean(order, OrderInfoDetailRespVO.class);
+        fillDetailUserDisplayInfo(respVO);
         respVO.setCategoryName(category != null ? category.getCategoryName() : null);
         if (merchant != null) {
             respVO.setMerchant(BeanUtils.toBean(merchant, OrderInfoDetailRespVO.MerchantRespVO.class));
         }
+        OrderUnitDO displayUnit = resolveDisplayUnit(units);
+        MatchPushBatchDO displayBatch = resolveDisplayBatch(displayUnit, matchBatches);
+        respVO.setDispatchStageNo(displayBatch != null ? displayBatch.getStageNo()
+                : (displayUnit != null ? displayUnit.getCurrentBatchNo() : null));
+        respVO.setDispatchDeadlineTime(displayUnit != null ? displayUnit.getAcceptDeadlineTime() : null);
+        respVO.setFlowTime(displayUnit != null ? displayUnit.getFlowTime() : null);
+        respVO.setFlowReason(displayUnit != null ? displayUnit.getFlowReason() : null);
+        respVO.setAutoRefundStatus(displayUnit != null ? displayUnit.getAutoRefundStatus() : null);
+        respVO.setAutoRefundId(displayUnit != null ? displayUnit.getAutoRefundId() : null);
         if (payOrder != null) {
             OrderInfoDetailRespVO.OrderPayRecordRespVO payRecordResp = new OrderInfoDetailRespVO.OrderPayRecordRespVO();
             payRecordResp.setId(payOrder.getId());
@@ -226,7 +238,13 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             unitResp.setLockReason(unit.getLockReason());
             unitResp.setMerchantId(unit.getMerchantId());
             unitResp.setStatus(unit.getStatus());
+            unitResp.setDispatchStatus(unit.getDispatchStatus());
+            unitResp.setCurrentBatchNo(unit.getCurrentBatchNo());
             unitResp.setAcceptDeadlineTime(unit.getAcceptDeadlineTime());
+            unitResp.setFlowTime(unit.getFlowTime());
+            unitResp.setFlowReason(unit.getFlowReason());
+            unitResp.setAutoRefundStatus(unit.getAutoRefundStatus());
+            unitResp.setAutoRefundId(unit.getAutoRefundId());
             unitResp.setFinishTime(unit.getFinishTime());
             unitResp.setAppealExpireTime(unit.getAppealExpireTime());
             unitResp.setVerifyStatus(unit.getVerifyStatus());
@@ -412,6 +430,40 @@ public class OrderInfoServiceImpl implements OrderInfoService {
                 item.setCategoryName(category.getCategoryName());
             }
         });
+    }
+
+    private void fillDetailUserDisplayInfo(OrderInfoDetailRespVO respVO) {
+        if (respVO == null || respVO.getUserId() == null) {
+            return;
+        }
+        MemberUserDO user = memberUserMapper.selectById(respVO.getUserId());
+        if (user == null) {
+            return;
+        }
+        respVO.setUserNo(user.getUserNo());
+        respVO.setUserNickname(user.getNickname());
+        respVO.setUserMobile(user.getMobile());
+    }
+
+    private OrderUnitDO resolveDisplayUnit(List<OrderUnitDO> units) {
+        if (CollUtil.isEmpty(units)) {
+            return null;
+        }
+        return units.stream()
+                .filter(unit -> unit.getFlowTime() != null || unit.getAcceptDeadlineTime() != null
+                        || StrUtil.isNotBlank(unit.getDispatchStatus()))
+                .findFirst()
+                .orElse(units.get(0));
+    }
+
+    private MatchPushBatchDO resolveDisplayBatch(OrderUnitDO displayUnit, List<MatchPushBatchDO> matchBatches) {
+        if (displayUnit == null || CollUtil.isEmpty(matchBatches)) {
+            return null;
+        }
+        return matchBatches.stream()
+                .filter(batch -> Objects.equals(batch.getUnitId(), displayUnit.getId()))
+                .reduce((first, second) -> second)
+                .orElse(null);
     }
 
     private List<OrderInfoDetailRespVO.OrderTimelineRespVO> buildTimeline(OrderInfoDO order,

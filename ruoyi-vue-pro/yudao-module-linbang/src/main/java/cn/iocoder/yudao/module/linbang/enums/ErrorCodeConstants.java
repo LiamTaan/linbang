@@ -33,6 +33,7 @@ public interface ErrorCodeConstants {
     ErrorCode MEMBER_USER_ACCOUNT_TYPE_INVALID = new ErrorCode(1_099_001_020, "当前账户类型不受支持");
     ErrorCode MEMBER_USER_BUSINESS_LICENSE_REQUIRED = new ErrorCode(1_099_001_021, "企业注册必须上传营业执照");
     ErrorCode MEMBER_ROLE_SWITCH_NOT_ALLOWED = new ErrorCode(1_099_001_022, "当前角色尚未开通或不允许切换");
+    ErrorCode CURRENT_ROLE_NOT_ALLOWED = new ErrorCode(1_099_001_023, "请先切换到{}角色后再继续当前操作");
 
     // ========== MERCHANT 模块 1-099-002-000 ==========
     ErrorCode MERCHANT_SERVICE_CATEGORY_NOT_EXISTS = new ErrorCode(1_099_002_000, "服务类目不存在");
@@ -50,6 +51,7 @@ public interface ErrorCodeConstants {
     ErrorCode MERCHANT_ENTRY_ALREADY_EXISTS = new ErrorCode(1_099_002_012, "当前服务商入驻已提交或已开通，请勿重复申请");
     ErrorCode MERCHANT_REFERENCE_PRICE_NOT_EXISTS = new ErrorCode(1_099_002_013, "服务商参考价格不存在");
     ErrorCode MERCHANT_REFERENCE_PRICE_RANGE_INVALID = new ErrorCode(1_099_002_014, "参考价格区间不合法");
+    ErrorCode MERCHANT_ROLE_REQUIRED = new ErrorCode(1_099_002_015, "请先切换到服务商角色后再继续当前操作");
 
     // ========== RISK 模块 1-099-003-000 ==========
     ErrorCode RISK_RULE_NOT_EXISTS = new ErrorCode(1_099_003_000, "风控规则不存在");

@@ -87,7 +87,7 @@ spring:
     host: 127.0.0.1 # 地址
     port: 6379 # 端口
     database: 2 # 数据库索引
-#    password: TanLiMing123! # 密码，建议生产环境开启
+    password: TanLiMing123! # 密码，建议生产环境开启
 
 --- #################### 定时任务相关配置 ####################
 
@@ -297,6 +297,6 @@ justauth:
     timeout: 24h # 超时时长，目前只对 Redis 缓存生效，默认 3 分钟
 
 linbang:
-  public-base-url: http://192.168.1.13:48080
+  public-base-url: ${LINBANG_PUBLIC_BASE_URL:}
   message:
     public-base-url: ${linbang.public-base-url}

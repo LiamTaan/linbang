@@ -43,7 +43,7 @@ public class AppOrderCreateReqVO {
     @NotBlank(message = "具体需求描述不能为空")
     private String requireDesc;
 
-    @Schema(description = "省", requiredMode = Schema.RequiredMode.REQUIRED, example = "广东省")
+    @Schema(description = "省。普通用户无固定归属区域，本次发单按当前业务地址或用户手动填写的跨区地址生效", requiredMode = Schema.RequiredMode.REQUIRED, example = "广东省")
     @NotBlank(message = "省不能为空")
     private String province;
 
@@ -58,7 +58,7 @@ public class AppOrderCreateReqVO {
     @Schema(description = "街道", example = "粤海街道")
     private String street;
 
-    @Schema(description = "详细地址", requiredMode = Schema.RequiredMode.REQUIRED, example = "科技园南区 XX 大厦 1201")
+    @Schema(description = "详细地址。订单所属区域以本次创建时确认的服务地址为准，不以账号默认地址永久绑定", requiredMode = Schema.RequiredMode.REQUIRED, example = "科技园南区 XX 大厦 1201")
     @NotBlank(message = "详细地址不能为空")
     private String detailAddress;
 

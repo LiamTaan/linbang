@@ -206,7 +206,13 @@ export default {
             return '系统会按当前半径和派单设置推送订单'
         },
         flatCategoryOptions() {
+            const allowedIds = new Set(
+                ((this.merchantProfile.categories || [])
+                    .map((item) => item.categoryId))
+                    .filter((item) => item !== undefined && item !== null)
+            )
             return flattenCategories(this.categoryTree || [])
+                .filter((item) => allowedIds.has(item.id))
         },
         statusActionTarget() {
             const actionText = `${this.acceptStatus.nextAction || ''} ${this.acceptStatus.blockedReason || ''}`
@@ -257,10 +263,12 @@ export default {
                 }
                 this.categoryTree = categoryTree || []
                 this.merchantProfile = merchantProfile || {}
+                const validCategoryIds = new Set(this.flatCategoryOptions.map((item) => item.id))
                 this.selectedCategoryIds = ((merchantProfile && merchantProfile.categories) || [])
                     .filter((item) => item.dispatchSelected)
                     .map((item) => item.categoryId)
                     .filter((item) => item !== undefined && item !== null)
+                    .filter((item) => validCategoryIds.has(item))
             } catch (error) {
             } finally {
                 this.refreshing = false
@@ -358,10 +366,12 @@ export default {
                 return
             }
             this.categoryPanelVisible = false
+            const validCategoryIds = new Set(this.flatCategoryOptions.map((item) => item.id))
             this.selectedCategoryIds = ((this.merchantProfile.categories || [])
                 .filter((item) => item.dispatchSelected)
                 .map((item) => item.categoryId))
                 .filter((item) => item !== undefined && item !== null)
+                .filter((item) => validCategoryIds.has(item))
         },
         toggleCategory(id) {
             if (this.categorySaving) {
@@ -826,4 +836,3 @@ export default {
     }
 }
 </style>
-

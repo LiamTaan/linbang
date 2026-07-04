@@ -4,6 +4,7 @@ import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.linbang.controller.admin.partnerinfo.vo.PartnerInfoDetailRespVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.partnerinfo.vo.PartnerInfoPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.partnerinfo.vo.PartnerInfoRespVO;
+import cn.iocoder.yudao.module.linbang.controller.admin.partnerinfo.vo.PartnerInfoUpdateRegionsReqVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.partnerinfo.PartnerInfoDO;
 
 import java.util.List;
@@ -21,4 +22,6 @@ public interface PartnerInfoService {
     PartnerInfoDO getOrCreatePartner(Long userId);
 
     List<String> getPartnerRegionAdcodes(Long partnerId);
+
+    void updatePartnerRegions(PartnerInfoUpdateRegionsReqVO reqVO);
 }

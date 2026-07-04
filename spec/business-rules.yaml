@@ -5,6 +5,11 @@ version: 2026-06-28
 rules:
   user_center:
     order_management:
+      address_context_rule:
+        user_scope: "普通用户不设固定归属区域。首页登录后默认自动定位，定位结果仅作为当前业务地址草稿和附近内容范围来源。"
+        current_business_address: "普通用户浏览、预览订单、创建订单、推荐附近服务等范围判断，统一按当前选中的业务地址生效，而不是按账号固定归属地生效。"
+        cross_region_publish: "普通用户允许跨区域发布需求；订单所属区域以本次发布时填写并确认的服务地址为准。"
+        location_and_default_address: "定位结果不得直接硬保存为默认地址。用户保存默认地址前，必须先补全或确认联系人、联系电话、详细门牌等信息；首条有效地址自动成为默认地址。"
       business_categories:
         WAIT_ACCEPT: "待接；主订单状态 PENDING_ACCEPT"
         IN_SERVICE: "服务中；主订单状态 ACCEPTED、SERVING、PENDING_CONFIRM"
@@ -66,6 +71,62 @@ rules:
         - PARTICIPATION_RECORD
       audit_rule: "悬赏申请提交后进入 PENDING，后台审核通过后开启有限期优先展示资格"
     role_apply:
+      role_context_rule:
+        current_role_scope: "App 内所有角色专属动作均以 currentRoleCode 作为唯一生效口径；enabledRoleCodes 仅表示已开通和可切换角色池，不直接放行业务动作。"
+        page_types:
+          - "角色专属页：必须切换到对应角色后才能进入和执行操作。"
+          - "通用页：可以复用页面壳，但页面内核心动作仍按当前角色判定，不得仅凭已开通角色直接放行。"
+      role_boundaries:
+        USER:
+          - "发单"
+          - "支付"
+          - "取消订单"
+          - "退款申请"
+          - "评价"
+          - "投诉/申诉"
+          - "查看自己的订单"
+        MERCHANT:
+          - "抢单/接单"
+          - "履约服务"
+          - "上传交付凭证"
+          - "服务点管理"
+          - "经营信息与参考价格管理"
+        PROMOTER:
+          - "推广内容与邀请码"
+          - "团队数据"
+          - "佣金与悬赏相关能力"
+        PARTNER:
+          - "辖区查看"
+          - "辖区入驻初审"
+          - "辖区纠纷协调"
+          - "辖区价格建议"
+          - "辖区推广数据"
+          - "会议通知与上级指令"
+      partner_scope_rule:
+        workspace_scope: "区域合作商仅影响合作商工作台及其辖区派生列表、详情、审核、协调、价格建议和通知阅读。"
+        jurisdiction_rule:
+          user_scope: "普通用户辖区归属以用户默认地址的 adcode 为准；用户必须维护一个默认地址，如未主动指定，则新增的第一个有效地址自动成为默认地址；合作商仅可查看和处理该有效默认地址归属到自己辖区内的用户派生业务。"
+          merchant_scope: "服务商辖区归属以入驻申请/通过后的 regionCode 为准；合作商仅可处理自己辖区内的服务商入驻、纠纷、价格建议。"
+          promoter_scope: "合作商辖区推广数据以辖区内用户与推广关系、佣金单等真实推广业务对象为准，不允许通过订单列表反推口径。"
+        isolation_rule:
+          - "不得改写普通用户订单模型。"
+          - "不得改写服务商抢单/接单模型。"
+          - "不得给区域合作商追加发单、抢单或履约主体能力。"
+          - "不得越权查看或管理非本辖区用户、服务商、推广员派生数据。"
+      order_role_rule:
+        publish_role: "发单属于普通用户能力。订单归属登录用户，但业务语义固定为用户侧发单，不因当前角色为推广员、服务商或区域合作商而改变。"
+        accept_role: "抢单/接单属于服务商能力，必须当前角色为 MERCHANT 且具备真实接单资格。"
+        partner_order_scope: "区域合作商仅可查看辖区订单统计、辖区纠纷与辖区协同结果，不进入服务商接单链路。"
+        browse_scope_rule:
+          user_browse_scope: "普通用户可浏览需求和服务信息，但范围按当前业务地址所在区域生效，不按用户固定归属区域生效，也不开放无限制查看全部。"
+          merchant_browse_scope: "服务商浏览需求大厅按自己的服务区域和接单资格过滤。"
+          partner_browse_scope: "区域合作商不进入用户/服务商共用需求大厅，合作商查看辖区协同工作台和辖区派生业务页。"
+      partner_metric_rule:
+        today_new_user_count: "今日新增用户数 = 有效默认地址 adcode 归属到当前合作商辖区、且用户 createTime 为今日的真实注册用户数；其中有效默认地址优先取用户显式默认地址，没有显式默认时取首个有效地址；禁止使用订单用户去重反推。"
+        pending_entry_audit_count: "待审核入驻数 = 当前合作商辖区内服务商入驻申请状态为 PENDING 的记录数。"
+        partner_dispute_rule: "辖区纠纷 = 当前合作商辖区内服务商关联订单产生的投诉与申诉；合作商只可提交协调意见或升级平台终审，不做终审裁决。"
+        price_suggestion_rule: "价格建议是合作商针对自己辖区与具体服务类目提交的建议价格单，具有创建、查看、撤回、平台审核结果回显等完整状态。"
+        promote_stat_rule: "辖区推广数据 = 当前合作商辖区内用户与推广员之间形成的真实推广关系、转化状态、推广佣金单和推广成交额统计；不得仅按辖区订单或佣金金额进行倒推拼装。"
       role_codes:
         - PROMOTER
         - PARTNER
@@ -187,6 +248,8 @@ rules:
       unlicensed: "按 taxWithholdRate 代扣"
   app_config:
     required_keys:
+      - linbang.app.service-hotline
+      - linbang.app.service-wechat
       - linbang.app.tax-reminder
       - linbang.app.license-agent-entry-url
       - linbang.app.license-agent-entry-title

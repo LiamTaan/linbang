@@ -40,7 +40,16 @@ export interface OrderInfo {
 }
 
 export interface OrderInfoDetail extends OrderInfo {
+  userNo?: string
+  userNickname?: string
+  userMobile?: string
   updateTime?: string | Dayjs
+  dispatchStageNo?: number
+  dispatchDeadlineTime?: string | Dayjs
+  flowTime?: string | Dayjs
+  flowReason?: string
+  autoRefundStatus?: string
+  autoRefundId?: number
   priceDetailEnabled?: boolean
   merchant?: {
     id?: number
@@ -107,7 +116,13 @@ export interface OrderInfoDetail extends OrderInfo {
     lockReason?: string
     merchantId?: number
     status?: string
+    dispatchStatus?: string
+    currentBatchNo?: number
     acceptDeadlineTime?: string | Dayjs
+    flowTime?: string | Dayjs
+    flowReason?: string
+    autoRefundStatus?: string
+    autoRefundId?: number
     finishTime?: string | Dayjs
     appealExpireTime?: string | Dayjs
     verifyStatus?: string

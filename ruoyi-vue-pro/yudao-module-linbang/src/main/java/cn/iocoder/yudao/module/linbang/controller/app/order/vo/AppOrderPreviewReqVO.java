@@ -42,7 +42,7 @@ public class AppOrderPreviewReqVO {
     @NotBlank(message = "需求描述不能为空")
     private String requireDesc;
 
-    @Schema(description = "省", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "省。普通用户预览发单时按当前业务地址或手动填写的跨区地址生效", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "省不能为空")
     private String province;
 
@@ -57,7 +57,7 @@ public class AppOrderPreviewReqVO {
     @Schema(description = "街道")
     private String street;
 
-    @Schema(description = "详细地址", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "详细地址。预览与下单均以本次确认的服务地址为范围基准", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "详细地址不能为空")
     private String detailAddress;
 

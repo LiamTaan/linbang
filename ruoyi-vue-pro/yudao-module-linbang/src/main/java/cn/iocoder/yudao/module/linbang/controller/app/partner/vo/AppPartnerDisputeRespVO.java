@@ -32,6 +32,9 @@ public class AppPartnerDisputeRespVO {
     @Schema(description = "单元号", example = "UNIT202606280001")
     private String unitNo;
 
+    @Schema(description = "辖区编码", example = "440305")
+    private String regionCode;
+
     @Schema(description = "纠纷状态", example = "PENDING")
     private String status;
 

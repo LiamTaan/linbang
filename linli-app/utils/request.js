@@ -9,6 +9,7 @@ import {
 import { navigateToLogin } from '@/utils/navigation'
 
 let refreshPromise = null
+const MEMBER_SESSION_INVALID_CODES = new Set([1099001000, 1099001003])
 
 function buildQueryString(params) {
   const query = []
@@ -96,6 +97,10 @@ function handleUnauthorized() {
   navigateToLogin()
 }
 
+function isMemberSessionInvalid(code, auth) {
+  return auth && MEMBER_SESSION_INVALID_CODES.has(Number(code))
+}
+
 export function request(options) {
   const {
     url,
@@ -145,6 +150,11 @@ export function request(options) {
           }
           handleUnauthorized()
           reject(new Error(result.msg || '登录已过期'))
+          return
+        }
+        if (isMemberSessionInvalid(result.code, auth)) {
+          handleUnauthorized()
+          reject(new Error(result.msg || '登录已失效'))
           return
         }
         if (!silent) {
@@ -248,6 +258,11 @@ export function uploadFile(filePath, options = {}) {
           }
           handleUnauthorized()
           reject(new Error(result.msg || '登录已过期'))
+          return
+        }
+        if (isMemberSessionInvalid(result.code, auth)) {
+          handleUnauthorized()
+          reject(new Error(result.msg || '登录已失效'))
           return
         }
         if (!silent) {

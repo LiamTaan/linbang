@@ -57,7 +57,8 @@ public class AppMemberAddressServiceImpl implements AppMemberAddressService {
     public Long createAddress(Long authUserId, AppMemberAddressCreateReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
         AmapLocationService.ResolvedAddress resolvedAddress = resolveAddress(reqVO);
-        if (Boolean.TRUE.equals(reqVO.getIsDefault())) {
+        boolean useAsDefault = shouldUseAsDefault(loginUser.getId(), reqVO.getIsDefault(), null);
+        if (useAsDefault) {
             clearDefaultAddress(loginUser.getId());
         }
         MemberUserAddressDO address = MemberUserAddressDO.builder()
@@ -72,7 +73,7 @@ public class AppMemberAddressServiceImpl implements AppMemberAddressService {
                 .longitude(resolvedAddress.getLongitude())
                 .latitude(resolvedAddress.getLatitude())
                 .adcode(resolvedAddress.getAdcode())
-                .isDefault(reqVO.getIsDefault())
+                .isDefault(useAsDefault)
                 .build();
         memberUserAddressMapper.insert(address);
         return address.getId();
@@ -110,7 +111,8 @@ public class AppMemberAddressServiceImpl implements AppMemberAddressService {
     public void updateAddress(Long authUserId, AppMemberAddressUpdateReqVO reqVO) {
         MemberUserAddressDO existed = getOwnedAddress(authUserId, reqVO.getId());
         AmapLocationService.ResolvedAddress resolvedAddress = resolveAddress(reqVO);
-        if (Boolean.TRUE.equals(reqVO.getIsDefault())) {
+        boolean useAsDefault = shouldUseAsDefault(existed.getUserId(), reqVO.getIsDefault(), existed.getId());
+        if (useAsDefault) {
             clearDefaultAddress(existed.getUserId());
         }
         memberUserAddressMapper.updateById(MemberUserAddressDO.builder()
@@ -125,14 +127,16 @@ public class AppMemberAddressServiceImpl implements AppMemberAddressService {
                 .longitude(resolvedAddress.getLongitude())
                 .latitude(resolvedAddress.getLatitude())
                 .adcode(resolvedAddress.getAdcode())
-                .isDefault(reqVO.getIsDefault())
+                .isDefault(useAsDefault)
                 .build());
+        ensureDefaultAddress(existed.getUserId(), existed.getId());
     }
 
     @Override
     public void deleteAddress(Long authUserId, Long id) {
         MemberUserAddressDO existed = getOwnedAddress(authUserId, id);
         memberUserAddressMapper.deleteById(existed.getId());
+        ensureDefaultAddress(existed.getUserId(), null);
     }
 
     private MemberUserAddressDO getOwnedAddress(Long authUserId, Long id) {
@@ -150,6 +154,37 @@ public class AppMemberAddressServiceImpl implements AppMemberAddressService {
         memberUserAddressMapper.update(null, new LambdaUpdateWrapper<MemberUserAddressDO>()
                 .eq(MemberUserAddressDO::getUserId, userId)
                 .set(MemberUserAddressDO::getIsDefault, Boolean.FALSE));
+    }
+
+    private boolean shouldUseAsDefault(Long userId, Boolean requestedDefault, Long excludeId) {
+        if (Boolean.TRUE.equals(requestedDefault)) {
+            return true;
+        }
+        return !hasOtherDefaultAddress(userId, excludeId);
+    }
+
+    private boolean hasOtherDefaultAddress(Long userId, Long excludeId) {
+        return memberUserAddressMapper.selectListByUserId(userId).stream()
+                .filter(item -> excludeId == null || !item.getId().equals(excludeId))
+                .anyMatch(item -> Boolean.TRUE.equals(item.getIsDefault()));
+    }
+
+    private void ensureDefaultAddress(Long userId, Long preferredId) {
+        if (hasOtherDefaultAddress(userId, null)) {
+            return;
+        }
+        List<MemberUserAddressDO> addresses = memberUserAddressMapper.selectListByUserId(userId);
+        if (addresses.isEmpty()) {
+            return;
+        }
+        MemberUserAddressDO target = addresses.stream()
+                .filter(item -> preferredId != null && preferredId.equals(item.getId()))
+                .findFirst()
+                .orElse(addresses.get(addresses.size() - 1));
+        memberUserAddressMapper.updateById(MemberUserAddressDO.builder()
+                .id(target.getId())
+                .isDefault(Boolean.TRUE)
+                .build());
     }
 
     private AmapLocationService.ResolvedAddress resolveAddress(AppMemberAddressCreateReqVO reqVO) {

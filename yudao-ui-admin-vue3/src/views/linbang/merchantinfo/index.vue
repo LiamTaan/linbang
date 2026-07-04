@@ -161,25 +161,27 @@
         </template>
       </el-table-column>
       <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="操作" align="center" fixed="right" width="190">
+      <el-table-column label="操作" align="center" fixed="right" :show-overflow-tooltip="false" min-width="200">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
-          <el-button
-            link
-            type="primary"
-            v-hasPermi="['linbang:merchant-info:update']"
-            @click="openForm('update', row.id)"
-          >
-            编辑
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            v-hasPermi="['linbang:merchant-info:delete']"
-            @click="handleDelete(row.id)"
-          >
-            删除
-          </el-button>
+          <div class="flex flex-wrap items-center justify-center gap-x-8px gap-y-4px whitespace-normal">
+            <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
+            <el-button
+              link
+              type="primary"
+              v-hasPermi="['linbang:merchant-info:update']"
+              @click="openForm('update', row.id)"
+            >
+              编辑
+            </el-button>
+            <el-button
+              link
+              type="danger"
+              v-hasPermi="['linbang:merchant-info:delete']"
+              @click="handleDelete(row.id)"
+            >
+              删除
+            </el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>

@@ -91,10 +91,7 @@
                 </view>
 
                 <view class="order-meta" v-if="mode === 'accept' || shouldShowPublisherDispatch(order)">
-                    <text class="meta-text">{{ getDispatchStatusLabel(order.dispatchStatus) }}</text>
-                    <text class="meta-text" v-if="hasCountdown(order)">剩余 {{ formatCountdown(order.countdownSeconds) }}</text>
-                    <text class="meta-text" v-if="mode !== 'accept' && order.acceptDeadlineTime">截止 {{ $fmt.formatShortDateTime(order.acceptDeadlineTime) }}</text>
-                    <text class="meta-text" v-if="mode !== 'accept' && getDispatchStageText(order)">{{ getDispatchStageText(order) }}</text>
+                    <text class="meta-text">{{ getOrderProcessText(order) }}</text>
                     <text class="meta-text" v-if="order.priorityLayer">{{ order.priorityLayer }}</text>
                 </view>
             </view>
@@ -113,9 +110,10 @@
 
 <script>
 import tabBar from '@/components/tabBar/tabBar.vue'
-import { acceptOrder, getAcceptOrderPage, getGuaranteeConfig, getOrderPage } from '@/api/order'
+import { getAcceptOrderPage, getOrderPage } from '@/api/order'
 import { getServiceCategoryList } from '@/api/merchant'
 import { getRoleContext } from '@/api/member'
+import { ensureRoleAccess } from '@/services/role-guard'
 import { syncMessageUnreadCount } from '@/services/message-unread'
 import { hasLogin } from '@/utils/auth'
 import {
@@ -158,6 +156,7 @@ export default {
             finished: false,
             isLoggedIn: false,
             canAcceptOrders: false,
+            roleContext: {},
             currentRoleCode: 'USER',
             pageNo: 1,
             pageSize: 10,
@@ -166,7 +165,6 @@ export default {
             acceptTabs: [{ label: '全部', value: '' }],
             currentCategoryId: '',
             currentBusinessCategory: '',
-            guaranteeConfig: {},
             filterState: {
                 distanceSort: 'NEAREST',
                 priceSort: '',
@@ -203,7 +201,7 @@ export default {
         const mode = options && options.mode ? options.mode : 'accept'
         this.applyEntryMode(mode)
     },
-    onShow() {
+    async onShow() {
         uni.hideTabBar()
         syncMessageUnreadCount({ silent: true })
         const pendingMode = uni.getStorageSync('linbang_order_tab_mode')
@@ -211,7 +209,8 @@ export default {
             uni.removeStorageSync('linbang_order_tab_mode')
             this.applyEntryMode(pendingMode)
         }
-        this.loadMeta()
+        await this.loadMeta()
+        this.reconcileModeWithRole()
         this.reload()
     },
     methods: {
@@ -230,19 +229,24 @@ export default {
         async loadMeta() {
             try {
                 this.isLoggedIn = hasLogin()
-                const [categories, guaranteeConfig, roleContext] = await Promise.all([
+                const [categories, roleContext] = await Promise.all([
                     getServiceCategoryList({ silent: true }).catch(() => []),
-                    this.isLoggedIn ? getGuaranteeConfig({ silent: true }).catch(() => ({})) : Promise.resolve({}),
                     this.isLoggedIn ? getRoleContext({ silent: true }).catch(() => ({})) : Promise.resolve({})
                 ])
                 this.acceptTabs = [{ label: '全部', value: '' }].concat((categories || []).map((item) => ({
                     label: item.categoryName,
                     value: item.id
                 })))
-                this.guaranteeConfig = guaranteeConfig || {}
+                this.roleContext = roleContext || {}
                 this.currentRoleCode = (roleContext && roleContext.currentRoleCode) || 'USER'
-                this.canAcceptOrders = ((roleContext && roleContext.enabledRoleCodes) || []).includes('MERCHANT')
+                this.canAcceptOrders = this.currentRoleCode === 'MERCHANT'
             } catch (error) {
+            }
+        },
+        reconcileModeWithRole() {
+            if (this.mode === 'accept' && this.currentRoleCode !== 'MERCHANT') {
+                this.mode = 'my'
+                this.currentBusinessCategory = ''
             }
         },
         reload() {
@@ -373,22 +377,34 @@ export default {
             return `${this.resolveStatusText(order)} · ${dateText}`
         },
         resolveStatusText(order) {
+            if (!order) {
+                return '--'
+            }
+            if (order.status === 'REFUNDED' || order.autoRefundStatus === 'SUCCESS') {
+                return '已退款'
+            }
+            if (order.status === 'AFTER_SALE' && order.autoRefundStatus === 'PROCESSING') {
+                return '退款处理中'
+            }
+            if (order.status === 'AFTER_SALE' && (order.flowTime || order.flowReason || order.autoRefundStatus)) {
+                return '流单中'
+            }
             if (this.mode !== 'accept' && order && order.businessCategory) {
                 return getBusinessCategoryLabel(order.businessCategory)
             }
-            if (order && order.status === 'PENDING_ACCEPT' && order.dispatchStatus) {
-                return getDispatchStatusLabel(order.dispatchStatus)
+            if (order.status === 'PENDING_ACCEPT') {
+                return '待接单'
             }
             return getOrderStatusLabel(order.status)
         },
         shouldShowPublisherDispatch(order) {
-            return this.mode !== 'accept'
-                && order
-                && order.status === 'PENDING_ACCEPT'
-                && !!(order.dispatchStatus || order.acceptDeadlineTime || order.stageNo || order.pushBatchNo)
+            return this.mode !== 'accept' && !!this.getOrderProcessText(order)
         },
         hasCountdown(order) {
-            return order && order.countdownSeconds !== null && order.countdownSeconds !== undefined
+            const seconds = order && (order.dispatchCountdownSeconds !== undefined && order.dispatchCountdownSeconds !== null
+                ? order.dispatchCountdownSeconds
+                : order.countdownSeconds)
+            return seconds !== null && seconds !== undefined
         },
         formatCountdown(totalSeconds) {
             if (totalSeconds === null || totalSeconds === undefined || totalSeconds <= 0) {
@@ -409,11 +425,42 @@ export default {
             if (!order) {
                 return ''
             }
-            if (order.stageNo && order.pushBatchNo) {
-                return `第 ${order.stageNo} 阶段 / 第 ${order.pushBatchNo} 批`
+            const stageNo = order.dispatchStageNo || order.stageNo
+            if (stageNo && order.pushBatchNo) {
+                return `第 ${stageNo} 轮派单`
             }
-            if (order.pushBatchNo) {
-                return `当前第 ${order.pushBatchNo} 批`
+            if (stageNo) {
+                return `第 ${stageNo} 轮派单`
+            }
+            return ''
+        },
+        getOrderProcessText(order) {
+            if (!order) {
+                return ''
+            }
+            const countdown = order.dispatchCountdownSeconds !== undefined && order.dispatchCountdownSeconds !== null
+                ? order.dispatchCountdownSeconds
+                : order.countdownSeconds
+            const deadlineTime = order.dispatchDeadlineTime || order.acceptDeadlineTime
+            if (order.status === 'REFUNDED' || order.autoRefundStatus === 'SUCCESS') {
+                return '流单退款完成'
+            }
+            if (order.status === 'AFTER_SALE' && order.autoRefundStatus === 'PROCESSING') {
+                return '已流单，退款处理中'
+            }
+            if (order.status === 'AFTER_SALE' && (order.flowTime || order.flowReason || order.autoRefundStatus)) {
+                return order.flowReason || '已流单，等待退款结果'
+            }
+            if (order.status === 'PENDING_ACCEPT') {
+                const stageText = this.getDispatchStageText(order)
+                const countdownText = this.hasCountdown(order) ? `，剩余 ${this.formatCountdown(countdown)}` : ''
+                if (stageText) {
+                    return `${stageText}派单中${countdownText}`
+                }
+                if (deadlineTime) {
+                    return `待接单，截止 ${this.$fmt.formatShortDateTime(deadlineTime)}`
+                }
+                return '待接单'
             }
             return ''
         },
@@ -458,42 +505,23 @@ export default {
                 return
             }
             if (!this.canAcceptOrders) {
-                uni.showModal({
-                    title: '暂不可抢单',
-                    content: '当前账号还未开通服务商身份，是否前往服务商入驻？',
-                    success: ({ confirm }) => {
-                        if (confirm) {
-                            uni.navigateTo({
-                                url: '/pages/merchant_entry/merchant_entry'
-                            })
-                        }
+                const allowed = await ensureRoleAccess({
+                    roleContext: this.roleContext,
+                    requiredRoleCode: 'MERCHANT',
+                    actionLabel: '抢单',
+                    refreshContext: async () => {
+                        await this.loadMeta()
+                        this.mode = 'accept'
+                        this.currentBusinessCategory = ''
+                        this.currentCategoryId = ''
                     }
                 })
+                if (allowed) {
+                    this.reload()
+                }
                 return
             }
-            const notice = this.guaranteeConfig.antiEscapeNotice || '确认接单后，请按约提供服务。'
-            uni.showModal({
-                title: '确认抢单',
-                content: notice,
-                success: async ({ confirm }) => {
-                    if (!confirm) {
-                        return
-                    }
-                    try {
-                        await acceptOrder({
-                            orderId: order.orderId,
-                            unitId: order.unitId,
-                            antiEscapeConfirmed: true
-                        })
-                        uni.showToast({
-                            title: '抢单成功',
-                            icon: 'success'
-                        })
-                        this.reload()
-                    } catch (error) {
-                    }
-                }
-            })
+            this.openDetail(order)
         }
     }
 }

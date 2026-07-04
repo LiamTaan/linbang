@@ -87,7 +87,7 @@
         </template>
       </el-table-column>
       <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="操作" align="center" fixed="right" width="100">
+      <el-table-column label="操作" align="center" fixed="right" width="160">
         <template #default="{ row }">
           <el-button
             link
@@ -96,6 +96,14 @@
             @click="openDetail(row.id)"
           >
             详情
+          </el-button>
+          <el-button
+            link
+            type="primary"
+            v-hasPermi="['linbang:partner:info:update']"
+            @click="openRegionConfig(row)"
+          >
+            配辖区
           </el-button>
         </template>
       </el-table-column>
@@ -109,6 +117,7 @@
   </ContentWrap>
 
   <PartnerInfoDetailDialog ref="detailDialogRef" />
+  <PartnerRegionConfigDialog ref="regionConfigDialogRef" @success="getList" />
 </template>
 
 <script setup lang="ts">
@@ -118,6 +127,7 @@ import { dateFormatter } from '@/utils/formatTime'
 import { PartnerInfoApi, type PartnerInfo } from '@/api/linbang/partnerinfo'
 import { ENABLE_STATUS_OPTIONS, formatEnableStatus } from '../utils/display'
 import PartnerInfoDetailDialog from './PartnerInfoDetailDialog.vue'
+import PartnerRegionConfigDialog from './PartnerRegionConfigDialog.vue'
 
 defineOptions({ name: 'PartnerInfo' })
 
@@ -170,6 +180,11 @@ const resetQuery = () => {
 const detailDialogRef = ref()
 const openDetail = (id: number) => {
   detailDialogRef.value.open(id)
+}
+
+const regionConfigDialogRef = ref()
+const openRegionConfig = (row: PartnerInfo) => {
+  regionConfigDialogRef.value.open(row)
 }
 
 onMounted(() => {

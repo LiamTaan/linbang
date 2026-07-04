@@ -114,6 +114,14 @@ public interface MemberUserService {
     void updateMemberUserProfile(Long userId, String nickname, String avatar, Integer gender, LocalDate birthday);
 
     /**
+     * 更新用户昵称。
+     *
+     * @param userId 用户编号
+     * @param nickname 昵称
+     */
+    void updateMemberUserNickname(Long userId, String nickname);
+
+    /**
      * 使用短信验证码更新登录密码。
      *
      * @param userId 用户编号

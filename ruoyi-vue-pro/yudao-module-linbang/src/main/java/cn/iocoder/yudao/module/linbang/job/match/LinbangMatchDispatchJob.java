@@ -3,6 +3,7 @@ package cn.iocoder.yudao.module.linbang.job.match;
 import cn.iocoder.yudao.module.linbang.service.match.MatchDispatchService;
 import cn.iocoder.yudao.module.linbang.service.match.PriorityPoolService;
 import cn.iocoder.yudao.module.linbang.service.match.ShowcaseRewardService;
+import cn.iocoder.yudao.module.linbang.service.orderflow.OrderFlowOrchestratorService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +18,8 @@ public class LinbangMatchDispatchJob {
     private PriorityPoolService priorityPoolService;
     @Resource
     private ShowcaseRewardService showcaseRewardService;
+    @Resource
+    private OrderFlowOrchestratorService orderFlowOrchestratorService;
 
     @Scheduled(cron = "0 * * * * ?")
     public void processDispatchTick() {
@@ -31,5 +34,10 @@ public class LinbangMatchDispatchJob {
     @Scheduled(cron = "0 10 2 * * ?")
     public void recomputePriorityPool() {
         priorityPoolService.recomputeAllPriorityPool();
+    }
+
+    @Scheduled(cron = "30 */5 * * * ?")
+    public void repairOrderFlowConsistency() {
+        orderFlowOrchestratorService.repairAbnormalOrders();
     }
 }
