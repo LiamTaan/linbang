@@ -201,7 +201,7 @@ export default {
             // background: #FFFFFF;
             // box-shadow: 0rpx 1rpx 7rpx 0rpx #E7E7E7;
 			display: flex;
-			align-items: center;
+			align-items: center; 
             border-radius: 30rpx;
             padding: 44rpx 36rpx 52rpx;
             min-height: 520rpx;
