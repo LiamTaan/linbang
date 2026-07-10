@@ -153,8 +153,8 @@ wx:
       key-prefix: wx
       http-client-type: HttpClient
   miniapp:
-    appid: ${WX_MINIAPP_APPID}
-    secret: ${WX_MINIAPP_SECRET}
+    appid: wxb78b0f73190d11e0
+    secret: ac0de4cfb6effbc8279da4242db6851f
     config-storage:
       type: RedisTemplate
       key-prefix: wa

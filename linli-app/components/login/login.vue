@@ -1,5 +1,24 @@
 <template>
     <view class="login-container">
+        <!-- #ifdef MP-WEIXIN -->
+        <view class="mini-program-login">
+            <view class="mini-program-login-header">
+                <view class="mini-program-avatar">
+                    <image class="mini-program-avatar-img" src="/static/img/login/anonymity.png" mode="aspectFill" />
+                </view>
+                <text class="mini-program-title">欢迎回来</text>
+                <text class="mini-program-subtitle">登录后即可享受便民服务</text>
+            </view>
+            <view class="mini-program-login-actions">
+                <button class="wechat-phone-login-btn" open-type="getPhoneNumber"
+                    :disabled="wechatPhoneLoading" @getphonenumber="loginByWechatMiniProgramPhone">
+                    <text class="btn-text">{{ wechatPhoneLoading ? '登录中...' : '微信手机号授权登录' }}</text>
+                </button>
+            </view>
+        </view>
+        <!-- #endif -->
+
+        <!-- #ifndef MP-WEIXIN -->
         <view class="header">
             <view class="avatar">
                 <image class="avatar-img" src="/static/img/login/anonymity.png" />
@@ -12,13 +31,6 @@
 
         <view class="form-card">
             <view class="form-card-item">
-                <!-- #ifdef MP-WEIXIN -->
-                <button class="wechat-phone-login-btn" open-type="getPhoneNumber" :loading="wechatPhoneLoading"
-                    @getphonenumber="loginByWechatMiniProgramPhone">
-                    <text class="btn-text">微信手机号授权登录</text>
-                </button>
-                <!-- #endif -->
-                <!-- #ifndef MP-WEIXIN -->
                 <view class="form-item phone-item">
                     <view class="phone-input-wrap">
                         <view class="phone-region">
@@ -39,16 +51,14 @@
                 <view class="login-btn" @click="login">
                     <text class="btn-text">登录</text>
                 </view>
-                <!-- #endif -->
             </view>
 
-            <!-- #ifndef MP-WEIXIN -->
             <view class="register-link" @click="switchToRegister">
                 <text class="link-text">还没有账号？</text>
                 <text class="register-text">立即注册</text>
             </view>
-            <!-- #endif -->
         </view>
+        <!-- #endif -->
     </view>
 </template>
 
@@ -152,6 +162,90 @@ export default {
     display: flex;
     flex-direction: column;
 
+    .mini-program-login {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        background: linear-gradient(180deg, #2E83F0 0%, #78B1F8 46%, #FFFFFF 100%);
+    }
+
+    .mini-program-login-header {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(env(safe-area-inset-top) + 150rpx);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .mini-program-avatar {
+        width: 160rpx;
+        height: 160rpx;
+        margin-bottom: 30rpx;
+        overflow: hidden;
+        border: 6rpx solid rgba(255, 255, 255, 0.5);
+        border-radius: 30rpx;
+    }
+
+    .mini-program-avatar-img {
+        width: 100%;
+        height: 100%;
+    }
+
+    .mini-program-title {
+        font-size: 36rpx;
+        font-weight: 700;
+        line-height: 1.4;
+        color: #FFFFFF;
+        text-shadow: 0 5rpx 7rpx #2B74D6;
+    }
+
+    .mini-program-subtitle {
+        margin-top: 8rpx;
+        font-size: 25rpx;
+        line-height: 1.5;
+        color: #FFFFFF;
+    }
+
+    .mini-program-login-actions {
+        position: absolute;
+        left: 64rpx;
+        right: 64rpx;
+        top: 58%;
+        transform: translateY(-50%);
+    }
+
+    .mini-program-login-actions .wechat-phone-login-btn {
+        width: 100%;
+        height: 96rpx;
+        margin: 0;
+        border: 0;
+        border-radius: 14rpx;
+        background: #07C160;
+        color: #FFFFFF;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 12rpx 28rpx rgba(17, 92, 68, 0.22);
+
+        &::after {
+            border: 0;
+        }
+
+        &[disabled] {
+            background: #07C160;
+            color: #FFFFFF;
+            opacity: 0.72;
+        }
+
+        .btn-text {
+            font-size: 30rpx;
+            font-weight: 500;
+        }
+    }
+
     .header {
         padding: 180rpx 60rpx 80rpx;
         display: flex;
@@ -206,35 +300,6 @@ export default {
             padding: 44rpx 36rpx 52rpx;
             min-height: 520rpx;
             box-sizing: border-box;
-        }
-
-        .wechat-phone-login-btn {
-            width: 100%;
-            height: 96rpx;
-            margin: 0 0 28rpx;
-            border: 0;
-            border-radius: 14rpx;
-            background: #07C160;
-            color: #FFFFFF;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            &::after {
-                border: 0;
-            }
-
-            .btn-text {
-                font-size: 30rpx;
-                font-weight: 500;
-            }
-        }
-
-        .wechat-phone-login-divider {
-            margin: 4rpx 0 28rpx;
-            color: #8A95A5;
-            font-size: 24rpx;
-            text-align: center;
         }
 
         .form-item {

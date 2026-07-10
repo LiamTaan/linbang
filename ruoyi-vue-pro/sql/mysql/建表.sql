@@ -390,6 +390,27 @@ CREATE TABLE `system_oauth2_client`  (
   INDEX `idx_client_id`(`client_id` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 43 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'OAuth2 客户端表';
 
+DROP TABLE IF EXISTS `system_social_client`;
+CREATE TABLE `system_social_client` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT 'Primary key',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Application name',
+  `social_type` int NOT NULL COMMENT 'Social platform type',
+  `user_type` int NOT NULL COMMENT 'User type',
+  `status` tinyint NOT NULL COMMENT 'Status: 0 enabled, 1 disabled',
+  `client_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Client AppID',
+  `client_secret` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Client secret',
+  `agent_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'Agent ID',
+  `public_key` varchar(2048) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'Public key',
+  `creator` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT 'Creator',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Created time',
+  `updater` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT 'Updater',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Updated time',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT 'Logical deleted flag',
+  `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT 'Tenant ID',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_tenant_social_user_type` (`tenant_id`, `social_type`, `user_type`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'Social client configuration';
+
 DROP TABLE IF EXISTS `system_social_user`;
 CREATE TABLE `system_social_user`  (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '自增主键',

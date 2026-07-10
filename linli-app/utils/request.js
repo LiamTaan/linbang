@@ -10,6 +10,7 @@ import { navigateToLogin } from '@/utils/navigation'
 
 let refreshPromise = null
 const MEMBER_SESSION_INVALID_CODES = new Set([1099001000, 1099001003])
+const DEFAULT_REQUEST_TIMEOUT = 15000
 
 function buildQueryString(params) {
   const query = []
@@ -69,6 +70,7 @@ async function refreshAccessToken() {
       uni.request({
         url: normalizeUrl('/member/auth/refresh-token'),
         method: 'POST',
+        timeout: DEFAULT_REQUEST_TIMEOUT,
         data: {
           refreshToken: getRefreshToken()
         },
@@ -111,7 +113,8 @@ export function request(options) {
     auth = true,
     retry = true,
     silent = false,
-    raw = false
+    raw = false,
+    timeout = DEFAULT_REQUEST_TIMEOUT
   } = options
 
   return new Promise((resolve, reject) => {
@@ -120,6 +123,7 @@ export function request(options) {
     uni.request({
       url: `${normalizeUrl(url)}${buildQueryString(params)}`,
       method,
+      timeout,
       data: shouldSendBody ? (data || {}) : undefined,
       header: buildHeaders(headers, auth),
       success: async (response) => {

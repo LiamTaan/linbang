@@ -87,7 +87,7 @@ spring:
     host: 127.0.0.1 # 地址
     port: 6379 # 端口
     database: 2 # 数据库索引
-    password: TanLiMing123! # 密码，建议生产环境开启
+#    password: TanLiMing123! # 密码，建议生产环境开启
 
 --- #################### 定时任务相关配置 ####################
 
@@ -221,8 +221,8 @@ wx:
     #    secret: 333ae72f41552af1e998fe1f54e1584a
 #    appid: wx63c280fe3248a3e7 # wenhualian的接口测试号
 #    secret: 6f270509224a7ae1296bbf1c8cb97aed
-    appid: ${WX_MINIAPP_APPID}
-    secret: ${WX_MINIAPP_SECRET}
+    appid: wxb78b0f73190d11e0
+    secret: ac0de4cfb6effbc8279da4242db6851f
 #    appid: wx66186af0759f47c9 # 测试号（puhui 提供的）
 #    secret: 3218bcbd112cbc614c7264ceb20144ac
     config-storage:

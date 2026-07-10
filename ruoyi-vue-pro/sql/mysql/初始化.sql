@@ -12,6 +12,7 @@ DELETE FROM `system_post` WHERE `id` IN (1, 2, 3, 4, 5);
 DELETE FROM `system_dept` WHERE `id` IN (100, 101, 102, 103, 104, 105);
 DELETE FROM `system_role` WHERE `id` IN (1, 20001, 20002, 20003, 20004, 20005);
 DELETE FROM `system_oauth2_client` WHERE `id` = 1 OR `client_id` = 'default';
+DELETE FROM `system_social_client`;
 DELETE FROM `system_social_user_bind`;
 DELETE FROM `system_social_user`;
 DELETE FROM `infra_config` WHERE `config_key` IN (
