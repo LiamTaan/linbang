@@ -20,6 +20,7 @@ import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSc
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSceneTicketRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSocialBindMobileReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSocialLoginReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberWechatMiniProgramLoginReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.platformconfig.vo.AppAgreementRespVO;
 import cn.iocoder.yudao.module.linbang.service.app.auth.AppMemberAuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -121,6 +122,17 @@ public class AppMemberAuthController {
     @PermitAll
     public CommonResult<AppMemberLoginRespVO> socialBindMobile(@Valid @RequestBody AppMemberSocialBindMobileReqVO reqVO) {
         return success(appMemberAuthService.socialBindMobile(reqVO));
+    }
+
+    @PostMapping("/wechat-mini-program-login")
+    @Operation(summary = "微信小程序手机号授权登录",
+            description = "仅供微信小程序调用。前端仅提交微信 getPhoneNumber 返回的一次性 phoneCode，"
+                    + "服务端向微信核验手机号；同手机号已有账号直接登录，未注册则自动创建个人账号并登录。"
+                    + "不接收前端传入的手机号，也不需要短信验证码。")
+    @PermitAll
+    public CommonResult<AppMemberLoginRespVO> wechatMiniProgramLogin(
+            @Valid @RequestBody AppMemberWechatMiniProgramLoginReqVO reqVO) {
+        return success(appMemberAuthService.wechatMiniProgramLogin(reqVO));
     }
 
     @PostMapping("/logout")

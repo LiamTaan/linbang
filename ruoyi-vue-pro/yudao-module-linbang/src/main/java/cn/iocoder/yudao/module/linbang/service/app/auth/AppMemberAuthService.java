@@ -9,6 +9,7 @@ import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppRegister
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSendSmsCodeReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSocialBindMobileReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSocialLoginReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberWechatMiniProgramLoginReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.platformconfig.vo.AppAgreementRespVO;
 
 import javax.validation.Valid;
@@ -26,6 +27,8 @@ public interface AppMemberAuthService {
     AppMemberLoginRespVO socialLogin(@Valid AppMemberSocialLoginReqVO reqVO);
 
     AppMemberLoginRespVO socialBindMobile(@Valid AppMemberSocialBindMobileReqVO reqVO);
+
+    AppMemberLoginRespVO wechatMiniProgramLogin(@Valid AppMemberWechatMiniProgramLoginReqVO reqVO);
 
     void sendSmsCode(@Valid AppMemberSendSmsCodeReqVO reqVO);
 

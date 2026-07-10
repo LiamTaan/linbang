@@ -16,6 +16,7 @@ import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppRegister
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSendSmsCodeReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSocialBindMobileReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSocialLoginReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberWechatMiniProgramLoginReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.platformconfig.vo.AppAgreementRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberqualification.MemberUserQualificationDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
@@ -31,6 +32,7 @@ import cn.iocoder.yudao.module.system.api.sms.dto.code.SmsCodeSendReqDTO;
 import cn.iocoder.yudao.module.system.api.sms.dto.code.SmsCodeUseReqDTO;
 import cn.iocoder.yudao.module.system.api.social.SocialClientApi;
 import cn.iocoder.yudao.module.system.api.social.SocialUserApi;
+import cn.iocoder.yudao.module.system.api.social.dto.SocialWxPhoneNumberInfoRespDTO;
 import cn.iocoder.yudao.module.system.api.social.dto.SocialUserBindReqDTO;
 import cn.iocoder.yudao.module.system.api.social.dto.SocialUserRespDTO;
 import cn.iocoder.yudao.module.system.enums.logger.LoginLogTypeEnum;
@@ -54,6 +56,7 @@ import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_US
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_PASSWORD_INVALID;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_REGISTER_AGREEMENT_REQUIRED;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_USERNAME_DUPLICATED;
+import static cn.iocoder.yudao.module.system.enums.ErrorCodeConstants.SOCIAL_CLIENT_WEIXIN_MINI_APP_PHONE_CODE_ERROR;
 import static cn.iocoder.yudao.module.system.enums.logger.LoginLogTypeEnum.LOGIN_USERNAME;
 
 @Service
@@ -63,6 +66,7 @@ public class AppMemberAuthServiceImpl implements AppMemberAuthService {
     private static final String REGISTER_SOURCE_APP_SMS = "APP_SMS";
     private static final String REGISTER_SOURCE_APP_ACCOUNT = "APP_ACCOUNT";
     private static final String REGISTER_SOURCE_APP_SOCIAL = "APP_SOCIAL";
+    private static final String REGISTER_SOURCE_WECHAT_MINI_PROGRAM = "WECHAT_MINI_PROGRAM";
 
     @Resource
     private MemberUserService memberUserService;
@@ -222,6 +226,26 @@ public class AppMemberAuthServiceImpl implements AppMemberAuthService {
         createLoginLog(user.getId(), user.getMobile(), LoginResultEnum.SUCCESS, LoginLogTypeEnum.LOGIN_SOCIAL);
         memberUserService.updateMemberUserLogin(user.getId(), getClientIP());
         return buildLoginResp(user, reqVO.getType(), openid, null, null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AppMemberLoginRespVO wechatMiniProgramLogin(AppMemberWechatMiniProgramLoginReqVO reqVO) {
+        SocialWxPhoneNumberInfoRespDTO phoneInfo = socialClientApi.getWxMaPhoneNumberInfo(
+                UserTypeEnum.MEMBER.getValue(), reqVO.getPhoneCode());
+        String mobile = phoneInfo != null ? phoneInfo.getPurePhoneNumber() : null;
+        if (cn.hutool.core.util.StrUtil.isBlank(mobile)) {
+            throw exception(SOCIAL_CLIENT_WEIXIN_MINI_APP_PHONE_CODE_ERROR);
+        }
+
+        MemberUserDO user = memberUserService.createMemberUserIfAbsent(mobile, REGISTER_SOURCE_WECHAT_MINI_PROGRAM);
+        if ("DISABLE".equals(user.getStatus())) {
+            createLoginLog(user.getId(), user.getMobile(), LoginResultEnum.USER_DISABLED, LoginLogTypeEnum.LOGIN_MOBILE);
+            throw exception(MEMBER_USER_DISABLED);
+        }
+        createLoginLog(user.getId(), user.getMobile(), LoginResultEnum.SUCCESS, LoginLogTypeEnum.LOGIN_MOBILE);
+        memberUserService.updateMemberUserLogin(user.getId(), getClientIP());
+        return buildLoginResp(user, null, null, null, null);
     }
 
     @Override

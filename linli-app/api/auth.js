@@ -8,6 +8,10 @@ export function loginBySms(data) {
   return post('/member/auth/login', data, { auth: false })
 }
 
+export function loginByWechatMiniProgramPhone(data) {
+  return post('/member/auth/wechat-mini-program-login', data, { auth: false })
+}
+
 export function accountLogin(data) {
   return post('/member/auth/account-login', data, { auth: false })
 }

@@ -2,6 +2,22 @@ openapi: 3.0.1
 info:
   title: 邻里互助用户中心与资金域核心契约
   version: 2026-06-28
+paths:
+  /app-api/member/auth/wechat-mini-program-login:
+    post:
+      summary: 微信小程序手机号授权登录
+      description: 仅支持微信小程序。后端使用 phoneCode 获取微信已核验手机号；同手机号登录已有平台账号，不存在则自动创建个人账号。成功返回现有会员登录令牌响应。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WechatMiniProgramPhoneLoginRequest'
+      responses:
+        '200':
+          description: 登录成功，响应 data 使用 AppMemberLoginRespVO，包含 userId、accessToken、refreshToken、expiresTime。
+        '400':
+          description: phoneCode 为空，或微信授权码无效、过期、已使用。
 components:
   schemas:
     OrderBusinessCategory:
@@ -211,6 +227,15 @@ components:
         amount: { type: number, format: double, description: 分账金额，单位元 }
         rate: { type: number, format: double, description: 分账比例 }
         settleStatus: { type: string, description: PENDING/SETTLED/REFUNDED }
+    WechatMiniProgramPhoneLoginRequest:
+      type: object
+      required: [phoneCode]
+      description: 微信小程序手机号授权登录请求。手机号由后端通过微信服务端核验，客户端不得提交手机号或短信验证码。
+      properties:
+        phoneCode:
+          type: string
+          description: 微信小程序 getPhoneNumber 回调返回的一次性手机号授权码；已使用、过期或无效时登录失败。
+          example: 081abcDEFghijkLMNopqrsTUV
     EscrowProof:
       type: object
       properties:

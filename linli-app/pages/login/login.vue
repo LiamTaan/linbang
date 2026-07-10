@@ -33,6 +33,10 @@ export default {
   },
   onLoad(options) {
     this.redirect = options && options.redirect ? decodeURIComponent(options.redirect) : ''
+    // #ifdef MP-WEIXIN
+    this.mode = 'login'
+    return
+    // #endif
     if (options && options.mode) {
       this.mode = options.mode
       return

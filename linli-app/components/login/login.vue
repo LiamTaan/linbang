@@ -12,6 +12,13 @@
 
         <view class="form-card">
             <view class="form-card-item">
+                <!-- #ifdef MP-WEIXIN -->
+                <button class="wechat-phone-login-btn" open-type="getPhoneNumber" :loading="wechatPhoneLoading"
+                    @getphonenumber="loginByWechatMiniProgramPhone">
+                    <text class="btn-text">微信手机号授权登录</text>
+                </button>
+                <!-- #endif -->
+                <!-- #ifndef MP-WEIXIN -->
                 <view class="form-item phone-item">
                     <view class="phone-input-wrap">
                         <view class="phone-region">
@@ -32,19 +39,21 @@
                 <view class="login-btn" @click="login">
                     <text class="btn-text">登录</text>
                 </view>
+                <!-- #endif -->
             </view>
 
-
+            <!-- #ifndef MP-WEIXIN -->
             <view class="register-link" @click="switchToRegister">
                 <text class="link-text">还没有账号？</text>
                 <text class="register-text">立即注册</text>
             </view>
+            <!-- #endif -->
         </view>
     </view>
 </template>
 
 <script>
-import { loginBySms, sendSmsCode } from '@/api/auth'
+import { loginBySms, loginByWechatMiniProgramPhone, sendSmsCode } from '@/api/auth'
 import { applyLoginSession, redirectAfterLogin } from '@/services/session'
 
 export default {
@@ -58,10 +67,31 @@ export default {
         return {
             phone: '',
             code: '',
-            codeCountdown: 0
+            codeCountdown: 0,
+            wechatPhoneLoading: false
         }
     },
     methods: {
+        async loginByWechatMiniProgramPhone(event) {
+            const phoneCode = event && event.detail && event.detail.code
+            if (!phoneCode) {
+                uni.showToast({
+                    title: '未完成微信手机号授权',
+                    icon: 'none'
+                })
+                return
+            }
+            if (this.wechatPhoneLoading) return
+            this.wechatPhoneLoading = true
+            try {
+                const loginResp = await loginByWechatMiniProgramPhone({ phoneCode })
+                await applyLoginSession(loginResp)
+                redirectAfterLogin(this.redirect)
+            } catch (error) {
+            } finally {
+                this.wechatPhoneLoading = false
+            }
+        },
         async getCode() {
             if (!this.phone || this.phone.length !== 11) {
                 uni.showToast({
@@ -174,6 +204,35 @@ export default {
             padding: 44rpx 36rpx 52rpx;
             min-height: 520rpx;
             box-sizing: border-box;
+        }
+
+        .wechat-phone-login-btn {
+            width: 100%;
+            height: 96rpx;
+            margin: 0 0 28rpx;
+            border: 0;
+            border-radius: 14rpx;
+            background: #07C160;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            &::after {
+                border: 0;
+            }
+
+            .btn-text {
+                font-size: 30rpx;
+                font-weight: 500;
+            }
+        }
+
+        .wechat-phone-login-divider {
+            margin: 4rpx 0 28rpx;
+            color: #8A95A5;
+            font-size: 24rpx;
+            text-align: center;
         }
 
         .form-item {
