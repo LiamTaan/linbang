@@ -1,6 +1,6 @@
 project: 邻里互助
 module: 用户中心与资金域
-version: 2026-06-28
+version: 2026-07-20
 
 rules:
   user_center:
@@ -166,9 +166,23 @@ rules:
           - "数据上传、下载、筛选"
         entry_rule: "平台管理员仅在管理端开通，不作为用户 App 申请身份。"
   payment:
-    provider_rule: "微信、支付宝、H5、钱包展示入口等支付方式统一路由到第三方聚合支付通道；平台业务侧不按微信/支付宝分别配置商户号"
-    channel_code: "aggregate"
+    provider_rule: "首期移动端为微信小程序，正式订单支付统一使用平台自有微信支付商户号的微信小程序支付通道；第三方聚合支付能力保留但当前不启用，未来通过支付渠道配置直接接入，不改写订单主流程"
+    active_channel_code: "wx_lite"
+    active_channel_scope:
+      client: "微信小程序"
+      capabilities:
+        - CREATE_ORDER
+        - QUERY_ORDER
+        - PAY_SUCCESS_NOTIFY
+        - REFUND
+        - QUERY_REFUND
+      requirements:
+        - "微信支付商户号必须绑定当前小程序 AppID"
+        - "登录用户必须绑定当前小程序 openid"
+        - "小程序使用 wx.requestPayment/uni.requestPayment 调起支付"
     aggregate_provider:
+      enable_status: "RESERVED_DISABLED"
+      usage_rule: "保留 aggregate 支付客户端、管理端渠道配置、支付查询、退款、转账与通知处理能力；现阶段订单支付不得默认路由到该通道"
       merchant_no: "826584873720104"
       merchant_name: "深圳市旺佳盈科技有限公司"
       supported_capabilities:
@@ -213,7 +227,7 @@ rules:
       - FAILED
     rules:
       - "申请时从 availableAmount 冻结到 frozenAmount"
-      - "审核通过后必须创建真实转账单"
+      - "审核通过后必须创建真实转账单；当前第三方聚合转账通道未启用时不得宣称自动打款已完成"
       - "转账成功后扣减 frozenAmount"
       - "转账失败或审核驳回后退回 availableAmount"
   refund:

@@ -1,12 +1,12 @@
 openapi: 3.0.1
 info:
   title: 邻里互助用户中心与资金域核心契约
-  version: 2026-06-28
+  version: 2026-07-20
 paths:
   /app-api/member/auth/wechat-mini-program-login:
     post:
       summary: 微信小程序手机号授权登录
-      description: 仅支持微信小程序。后端使用 phoneCode 获取微信已核验手机号；同手机号登录已有平台账号，不存在则自动创建个人账号。成功返回现有会员登录令牌响应。
+      description: 仅支持微信小程序。后端使用 phoneCode 获取微信已核验手机号，并使用 loginCode 换取和绑定当前小程序 openid；同手机号登录已有平台账号，不存在则自动创建个人账号。openid 用于后续 wx_lite 微信小程序支付。
       requestBody:
         required: true
         content:
@@ -17,7 +17,24 @@ paths:
         '200':
           description: 登录成功，响应 data 使用 AppMemberLoginRespVO，包含 userId、accessToken、refreshToken、expiresTime。
         '400':
-          description: phoneCode 为空，或微信授权码无效、过期、已使用。
+          description: phoneCode/loginCode 为空，或任一微信授权码无效、过期、已使用。
+  /app-api/linbang/pay/order/wechat-mini-program/submit:
+    post:
+      summary: 提交订单微信小程序支付
+      description: 当前首期正式支付入口。创建或复用业务支付单，通过 wx_lite 渠道下单，并返回 uni.requestPayment 所需参数。aggregate 聚合支付通道保留但当前不默认使用。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinbangWechatMiniProgramPaySubmitRequest'
+      responses:
+        '200':
+          description: 返回支付订单、渠道、状态和微信小程序调起支付参数。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinbangWechatMiniProgramPaySubmitResponse'
 components:
   schemas:
     OrderBusinessCategory:
@@ -229,13 +246,42 @@ components:
         settleStatus: { type: string, description: PENDING/SETTLED/REFUNDED }
     WechatMiniProgramPhoneLoginRequest:
       type: object
-      required: [phoneCode]
-      description: 微信小程序手机号授权登录请求。手机号由后端通过微信服务端核验，客户端不得提交手机号或短信验证码。
+      required: [phoneCode, loginCode]
+      description: 微信小程序手机号授权登录请求。手机号与 openid 均由后端通过微信服务端核验，客户端不得提交手机号或伪造 openid。
       properties:
         phoneCode:
           type: string
           description: 微信小程序 getPhoneNumber 回调返回的一次性手机号授权码；已使用、过期或无效时登录失败。
           example: 081abcDEFghijkLMNopqrsTUV
+        loginCode:
+          type: string
+          description: 微信小程序 wx.login 返回的一次性登录凭证；后端使用该值换取并绑定当前小程序 openid，供 wx_lite 支付使用。
+          example: 0a3BcdEfGhIjKlMnOpQrStUvWxYz
+    LinbangWechatMiniProgramPaySubmitRequest:
+      type: object
+      required: [orderId]
+      properties:
+        orderId:
+          type: integer
+          format: int64
+          description: 邻里互助业务订单 ID；订单必须属于当前登录用户且处于 PENDING_PAY 待支付状态。
+          example: 1024
+    LinbangWechatMiniProgramPaySubmitResponse:
+      type: object
+      properties:
+        payOrderId: { type: integer, format: int64, description: 支付订单 ID，关联 pay_order.id }
+        channelCode: { type: string, description: 支付渠道编码；正式环境为 wx_lite，开发模拟支付时为 mock, example: wx_lite }
+        status: { type: integer, description: 支付状态：10 待支付、20 支付成功、30 已退款、40 已关闭, example: 10 }
+        displayMode: { type: string, description: 展示模式；微信小程序支付为 app，开发模拟支付为 mock, example: app }
+        paymentParams:
+          type: object
+          description: uni.requestPayment 调起参数；正式 wx_lite 支付时返回。
+          properties:
+            timeStamp: { type: string, description: 时间戳，单位秒 }
+            nonceStr: { type: string, description: 随机字符串 }
+            packageValue: { type: string, description: 预支付标识，格式通常为 prepay_id=xxx }
+            signType: { type: string, description: 签名类型，例如 RSA }
+            paySign: { type: string, description: 支付签名 }
     EscrowProof:
       type: object
       properties:

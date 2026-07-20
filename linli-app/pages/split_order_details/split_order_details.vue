@@ -138,7 +138,7 @@ import { getProfile } from '@/api/member'
 import { getMerchantProfile } from '@/api/merchant'
 import {
   getPayOrder,
-  submitPayOrder,
+  submitWechatMiniProgramPay
 } from '@/api/pay'
 import {
   confirmOrderUnit,
@@ -714,38 +714,36 @@ export default {
       if (!this.orderId || !this.isPublisherViewer || !this.isPendingPayOrder) {
         return
       }
-      const itemList = ['微信支付', '支付宝支付', '银行卡/云闪付']
-      const payWays = ['WECHAT_H5', 'ALIPAY_H5', 'UNIONPAY_WAP']
-      uni.showActionSheet({
-        itemList,
-        success: async ({ tapIndex }) => {
-          const payWay = payWays[tapIndex]
-          if (!payWay) {
-            return
-          }
-          try {
-            const returnUrl = typeof window !== 'undefined' && window.location
-              ? window.location.href
-              : undefined
-            const resp = await submitPayOrder({
-              orderId: this.orderId,
-              payWay,
-              returnUrl
-            })
-            const payUrl = resp && resp.displayContent
-            if (!payUrl) {
-              throw new Error('未获取到支付链接')
-            }
-            if (resp.displayMode === 'mock' || payUrl === 'MOCK_SUCCESS') {
-              uni.showToast({ title: '模拟支付已提交', icon: 'success' })
-              this.loadPayStatus(true)
-              return
-            }
-            this.openExternalUrl(payUrl)
-          } catch (error) {
-          }
+      try {
+        const resp = await submitWechatMiniProgramPay({ orderId: this.orderId })
+        if (resp && resp.displayMode === 'mock') {
+          uni.showToast({ title: '模拟支付已提交', icon: 'success' })
+          await this.loadPayStatus(true)
+          return
         }
-      })
+        const paymentParams = resp && resp.paymentParams
+        if (!paymentParams) {
+          throw new Error('未获取到微信支付参数')
+        }
+        await new Promise((resolve, reject) => {
+          uni.requestPayment({
+            timeStamp: paymentParams.timeStamp,
+            nonceStr: paymentParams.nonceStr,
+            package: paymentParams.packageValue,
+            signType: paymentParams.signType,
+            paySign: paymentParams.paySign,
+            success: resolve,
+            fail: reject
+          })
+        })
+        uni.showToast({ title: '支付成功', icon: 'success' })
+        await this.loadPayStatus(true)
+      } catch (error) {
+        const message = error && error.errMsg ? error.errMsg : ''
+        if (message.includes('cancel')) {
+          uni.showToast({ title: '已取消支付', icon: 'none' })
+        }
+      }
     },
     openExternalUrl(url) {
       if (!url) {

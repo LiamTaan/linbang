@@ -30,10 +30,10 @@ public class AppMemberLoginRespVO {
     @Schema(description = "是否必须先完成手机号绑定才能获得正式登录态。true 表示当前仅完成第三方授权，前端需继续调用绑定手机号接口。", example = "false")
     private Boolean bindRequired;
 
-    @Schema(description = "第三方平台类型，仅在第三方登录链路返回。32=微信开放平台授权，40=支付宝授权。", example = "32")
+    @Schema(description = "第三方平台类型，仅在第三方登录链路返回。32=微信开放平台授权，34=微信小程序，40=支付宝授权。", example = "34")
     private Integer socialType;
 
-    @Schema(description = "第三方用户 openid，仅在第三方登录链路返回。")
+    @Schema(description = "第三方用户 openid，仅在第三方登录链路返回；微信小程序登录返回值用于确认已完成 wx_lite 支付身份绑定。")
     private String socialOpenid;
 
     @Schema(description = "第三方用户昵称，仅在第三方登录链路返回。")

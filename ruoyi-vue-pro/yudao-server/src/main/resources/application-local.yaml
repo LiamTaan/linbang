@@ -209,8 +209,8 @@ wx:
 #    secret: 5abee519483bc9f8cb37ce280e814bd0
 #    app-id: wx5b23ba7a5589ecbb # 测试号（自己的）
 #    secret: 2a7b3b20c537e52e74afd395eb85f61f
-    app-id: ${LINBANG_WX_MP_APP_ID:wxf56b1542b9e85f8a} # 测试号（Kongdy 提供的）
-    secret: ${LINBANG_WX_MP_SECRET:496379dcef1ba869e9234de8d598cfd3}
+    appid: wxb78b0f73190d11e0
+    secret: ac0de4cfb6effbc8279da4242db6851f
     # 存储配置，解决 AccessToken 的跨节点的共享
     config-storage:
       type: RedisTemplate # 采用 RedisTemplate 操作 Redis，会自动从 Spring 中获取
@@ -239,16 +239,13 @@ yudao:
   sms:
     template-api-validate: false # 本地联调关闭短信平台模板校验，避免占位模板编号阻塞
   security:
-    mock-enable: true # true走模拟支付，false则关闭模拟支付；
+    mock-enable: false # 当前默认走微信小程序真实支付；需要本地模拟时再显式开启并启用 mock 渠道
   api-encrypt:
     enable: false
   pay:
-#    order-notify-url: ${LINBANG_PAY_ORDER_NOTIFY_URL:https://yutou.mynatapp.cc/admin-api/pay/notify/order} # 支付渠道的【支付】回调地址
-#    refund-notify-url: ${LINBANG_PAY_REFUND_NOTIFY_URL:https://yutou.mynatapp.cc/admin-api/pay/notify/refund} # 支付渠道的【退款】回调地址
-#    transfer-notify-url: ${LINBANG_PAY_TRANSFER_NOTIFY_URL:https://yutou.mynatapp.cc/admin-api/pay/notify/transfer} # 支付渠道的【转账】回调地址
-    order-notify-url: ${LINBANG_PAY_ORDER_NOTIFY_URL:http://127.0.0.1/admin-api/pay/notify/order} # 支付渠道的【支付】回调地址
-    refund-notify-url: ${LINBANG_PAY_REFUND_NOTIFY_URL:https://127.0.0.1/admin-api/pay/notify/refund} # 支付渠道的【退款】回调地址
-    transfer-notify-url: ${LINBANG_PAY_TRANSFER_NOTIFY_URL:https://127.0.0.1/admin-api/pay/notify/transfer} # 支付渠道的【转账】回调地址
+    order-notify-url: http://127.0.0.1:48080/admin-api/pay/notify/order # 支付渠道的【支付】回调地址
+    refund-notify-url: https://127.0.0.1:48080/admin-api/pay/notify/refund # 支付渠道的【退款】回调地址
+    transfer-notify-url: https://127.0.0.1:48080/admin-api/pay/notify/transfer # 支付渠道的【转账】回调地址
   access-log: # 访问日志的配置项
     enable: false
   demo: false # 关闭演示模式
@@ -265,7 +262,7 @@ yudao:
 
 justauth:
   enabled: true
-#  type:
+  type:
 #    DINGTALK: # 钉钉
 #      client-id: dingvrnreaje3yqvzhxg
 #      client-secret: i8E6iZyDvZj51JIb0tYsYfVQYOks9Cq1lgryEjFRqC79P3iJcrxEwT6Qk2QvLrLI
@@ -276,11 +273,11 @@ justauth:
 #      agent-id: 1000004
 #      ignore-check-redirect-uri: true
 #    # noinspection SpringBootApplicationYaml
-#    WECHAT_MINI_PROGRAM: # 微信小程序
-#      client-id: ${wx.miniapp.appid}
-#      client-secret: ${wx.miniapp.secret}
-#      ignore-check-redirect-uri: true
-#      ignore-check-state: true # 微信小程序，不会使用到 state，所以不进行校验
+    WECHAT_MINI_PROGRAM: # 微信小程序；登录时换取 openid，支付时作为 wx_lite 的 payer openid
+      client-id: ${wx.miniapp.appid}
+      client-secret: ${wx.miniapp.secret}
+      ignore-check-redirect-uri: true
+      ignore-check-state: true # 微信小程序，不会使用到 state，所以不进行校验
 #    WECHAT_MP: # 微信公众号
 #      client-id: ${wx.mp.app-id}
 #      client-secret: ${wx.mp.secret}
@@ -297,6 +294,6 @@ justauth:
     timeout: 24h # 超时时长，目前只对 Redis 缓存生效，默认 3 分钟
 
 linbang:
-  public-base-url: ${LINBANG_PUBLIC_BASE_URL:}
+  public-base-url: http://127.0.0.1:48080
   message:
     public-base-url: ${linbang.public-base-url}

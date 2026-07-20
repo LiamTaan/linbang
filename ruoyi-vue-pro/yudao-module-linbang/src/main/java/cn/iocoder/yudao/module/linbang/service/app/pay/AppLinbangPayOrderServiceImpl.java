@@ -3,6 +3,7 @@ package cn.iocoder.yudao.module.linbang.service.app.pay;
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
+import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
 import cn.iocoder.yudao.framework.common.util.servlet.ServletUtils;
 import cn.iocoder.yudao.framework.security.config.SecurityProperties;
 import cn.iocoder.yudao.module.linbang.constants.LinbangRiskConstants;
@@ -12,6 +13,7 @@ import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangH5PaySubm
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangH5PaySubmitRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderCreateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangWechatMiniProgramPaySubmitRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppOrderDepositInfoRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppOrderDepositStatusRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
@@ -32,12 +34,17 @@ import cn.iocoder.yudao.module.pay.api.order.dto.PayOrderRespDTO;
 import cn.iocoder.yudao.module.pay.controller.admin.order.vo.PayOrderSubmitRespVO;
 import cn.iocoder.yudao.module.pay.controller.admin.order.vo.PayOrderSubmitReqVO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.app.PayAppDO;
+import cn.iocoder.yudao.module.pay.dal.dataobject.channel.PayChannelDO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.order.PayOrderDO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.order.PayOrderExtensionDO;
 import cn.iocoder.yudao.module.pay.enums.PayChannelEnum;
 import cn.iocoder.yudao.module.pay.enums.order.PayOrderStatusEnum;
 import cn.iocoder.yudao.module.pay.service.app.PayAppService;
+import cn.iocoder.yudao.module.pay.service.channel.PayChannelService;
 import cn.iocoder.yudao.module.pay.service.order.PayOrderService;
+import cn.iocoder.yudao.module.system.api.social.SocialUserApi;
+import cn.iocoder.yudao.module.system.api.social.dto.SocialUserRespDTO;
+import cn.iocoder.yudao.module.system.enums.social.SocialTypeEnum;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -47,6 +54,7 @@ import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +69,9 @@ import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_PAY
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_PAY_ORDER_ALREADY_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_PAY_ORDER_NOT_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_PAY_STATUS_NOT_ALLOWED;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_WECHAT_MINI_PROGRAM_NOT_BOUND;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_WECHAT_PAY_APP_NOT_CONFIGURED;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_WECHAT_PAY_PARAMS_INVALID;
 
 @Service
 @Validated
@@ -77,6 +88,10 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
 
     @Resource
     private PayAppService payAppService;
+    @Resource
+    private PayChannelService payChannelService;
+    @Resource
+    private SocialUserApi socialUserApi;
     @Resource
     private PayOrderApi payOrderApi;
     @Resource
@@ -174,6 +189,15 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public AppLinbangWechatMiniProgramPaySubmitRespVO submitWechatMiniProgramPay(
+            Long authUserId, @Valid AppLinbangPayOrderCreateReqVO reqVO) {
+        MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
+        Long payOrderId = createPayOrder(authUserId, reqVO);
+        return submitWechatMiniProgramPayOrder(loginUser, payOrderId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public AppLinbangH5PaySubmitRespVO submitDepositH5Pay(Long authUserId, @Valid AppLinbangH5PaySubmitReqVO reqVO) {
         Long payOrderId = createDepositPayOrder(authUserId, reqVO.getOrderId());
 
@@ -198,6 +222,15 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
             respVO.setDisplayContent("MOCK_SUCCESS");
         }
         return respVO;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public AppLinbangWechatMiniProgramPaySubmitRespVO submitDepositWechatMiniProgramPay(
+            Long authUserId, @Valid AppLinbangPayOrderCreateReqVO reqVO) {
+        MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
+        Long payOrderId = createDepositPayOrder(authUserId, reqVO.getOrderId());
+        return submitWechatMiniProgramPayOrder(loginUser, payOrderId);
     }
 
     @Override
@@ -379,11 +412,60 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
     }
 
     private PayAppDO getEnabledPayApp() {
+        String requiredChannelCode = Boolean.TRUE.equals(securityProperties.getMockEnable())
+                ? PayChannelEnum.MOCK.getCode() : PayChannelEnum.WX_LITE.getCode();
         List<PayAppDO> payApps = payAppService.getAppList();
         return payApps.stream()
                 .filter(item -> Objects.equals(item.getStatus(), CommonStatusEnum.ENABLE.getStatus()))
+                .filter(item -> {
+                    PayChannelDO channel = payChannelService.getChannelByAppIdAndCode(
+                            item.getId(), requiredChannelCode);
+                    return channel != null
+                            && Objects.equals(channel.getStatus(), CommonStatusEnum.ENABLE.getStatus());
+                })
                 .findFirst()
-                .orElseThrow(() -> exception(ORDER_PAY_ORDER_NOT_EXISTS));
+                .orElseThrow(() -> exception(ORDER_WECHAT_PAY_APP_NOT_CONFIGURED));
+    }
+
+    private AppLinbangWechatMiniProgramPaySubmitRespVO submitWechatMiniProgramPayOrder(
+            MemberUserDO loginUser, Long payOrderId) {
+        String channelCode = Boolean.TRUE.equals(securityProperties.getMockEnable())
+                ? PayChannelEnum.MOCK.getCode() : PayChannelEnum.WX_LITE.getCode();
+        PayOrderSubmitReqVO submitReqVO = new PayOrderSubmitReqVO();
+        submitReqVO.setId(payOrderId);
+        submitReqVO.setChannelCode(channelCode);
+        if (PayChannelEnum.WX_LITE.getCode().equals(channelCode)) {
+            SocialUserRespDTO socialUser = socialUserApi.getSocialUserByUserId(
+                    UserTypeEnum.MEMBER.getValue(), loginUser.getId(),
+                    SocialTypeEnum.WECHAT_MINI_PROGRAM.getType());
+            if (socialUser == null || StrUtil.isBlank(socialUser.getOpenid())) {
+                throw exception(ORDER_WECHAT_MINI_PROGRAM_NOT_BOUND);
+            }
+            submitReqVO.setChannelExtras(Collections.singletonMap("openid", socialUser.getOpenid()));
+        }
+        PayOrderSubmitRespVO submitRespVO = payOrderService.submitOrder(submitReqVO, ServletUtils.getClientIP());
+
+        AppLinbangWechatMiniProgramPaySubmitRespVO respVO = new AppLinbangWechatMiniProgramPaySubmitRespVO();
+        respVO.setPayOrderId(payOrderId);
+        respVO.setChannelCode(channelCode);
+        respVO.setStatus(submitRespVO.getStatus());
+        respVO.setDisplayMode(submitRespVO.getDisplayMode());
+        if (PayChannelEnum.MOCK.getCode().equals(channelCode)) {
+            respVO.setDisplayMode("mock");
+            return respVO;
+        }
+        AppLinbangWechatMiniProgramPaySubmitRespVO.WechatPaymentParams paymentParams = JsonUtils.parseObject(
+                submitRespVO.getDisplayContent(),
+                AppLinbangWechatMiniProgramPaySubmitRespVO.WechatPaymentParams.class);
+        if (paymentParams == null || StrUtil.isBlank(paymentParams.getTimeStamp())
+                || StrUtil.isBlank(paymentParams.getNonceStr())
+                || StrUtil.isBlank(paymentParams.getPackageValue())
+                || StrUtil.isBlank(paymentParams.getSignType())
+                || StrUtil.isBlank(paymentParams.getPaySign())) {
+            throw exception(ORDER_WECHAT_PAY_PARAMS_INVALID);
+        }
+        respVO.setPaymentParams(paymentParams);
+        return respVO;
     }
 
     private String resolveSubmitChannelCode() {

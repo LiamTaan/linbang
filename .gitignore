@@ -22,3 +22,9 @@ ruoyi-vue-pro/**/target/
 
 outputs/
 upload-files/
+
+# WeChat Pay merchant certificates and private keys
+apiclient_key.pem
+apiclient_cert.pem
+apiclient_cert.p12
+*_cert.zip

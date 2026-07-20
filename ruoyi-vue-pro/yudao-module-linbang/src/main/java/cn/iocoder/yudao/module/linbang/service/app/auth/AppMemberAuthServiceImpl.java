@@ -39,6 +39,7 @@ import cn.iocoder.yudao.module.system.enums.logger.LoginLogTypeEnum;
 import cn.iocoder.yudao.module.system.enums.logger.LoginResultEnum;
 import cn.iocoder.yudao.module.system.enums.oauth2.OAuth2ClientConstants;
 import cn.iocoder.yudao.module.system.enums.sms.SmsSceneEnum;
+import cn.iocoder.yudao.module.system.enums.social.SocialTypeEnum;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
@@ -243,9 +244,12 @@ public class AppMemberAuthServiceImpl implements AppMemberAuthService {
             createLoginLog(user.getId(), user.getMobile(), LoginResultEnum.USER_DISABLED, LoginLogTypeEnum.LOGIN_MOBILE);
             throw exception(MEMBER_USER_DISABLED);
         }
+        String openid = socialUserApi.bindSocialUser(new SocialUserBindReqDTO(user.getId(),
+                UserTypeEnum.MEMBER.getValue(), SocialTypeEnum.WECHAT_MINI_PROGRAM.getType(),
+                reqVO.getLoginCode(), ""));
         createLoginLog(user.getId(), user.getMobile(), LoginResultEnum.SUCCESS, LoginLogTypeEnum.LOGIN_MOBILE);
         memberUserService.updateMemberUserLogin(user.getId(), getClientIP());
-        return buildLoginResp(user, null, null, null, null);
+        return buildLoginResp(user, SocialTypeEnum.WECHAT_MINI_PROGRAM.getType(), openid, null, null);
     }
 
     @Override

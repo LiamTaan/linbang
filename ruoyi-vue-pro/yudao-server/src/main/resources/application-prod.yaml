@@ -146,8 +146,8 @@ logging:
 
 wx:
   mp:
-    app-id: ${WX_MP_APP_ID:demo-wx-mp-app-id}
-    secret: ${WX_MP_SECRET:demo-wx-mp-secret}
+    appid: wxb78b0f73190d11e0
+    secret: ac0de4cfb6effbc8279da4242db6851f
     config-storage:
       type: RedisTemplate
       key-prefix: wx
@@ -176,9 +176,9 @@ yudao:
     enable: true
   demo: false
   pay:
-    order-notify-url: ${PUBLIC_BASE_URL:https://admin.example.com}/admin-api/pay/notify/order
-    refund-notify-url: ${PUBLIC_BASE_URL:https://admin.example.com}/admin-api/pay/notify/refund
-    transfer-notify-url: ${PUBLIC_BASE_URL:https://admin.example.com}/admin-api/pay/notify/transfer
+    order-notify-url: https://域名/admin-api/pay/notify/order
+    refund-notify-url: https://域名/admin-api/pay/notify/refund
+    transfer-notify-url: https://域名/admin-api/pay/notify/transfer
   map:
     amap:
       enabled: true
@@ -187,7 +187,7 @@ yudao:
 
 justauth:
   enabled: true
-#  type:
+  type:
 #    DINGTALK:
 #      client-id: ${JUSTAUTH_DINGTALK_CLIENT_ID:}
 #      client-secret: ${JUSTAUTH_DINGTALK_CLIENT_SECRET:}
@@ -197,11 +197,11 @@ justauth:
 #      client-secret: ${JUSTAUTH_WECHAT_ENTERPRISE_CLIENT_SECRET:}
 #      agent-id: ${JUSTAUTH_WECHAT_ENTERPRISE_AGENT_ID:}
 #      ignore-check-redirect-uri: true
-#    WECHAT_MINI_PROGRAM:
-#      client-id: ${wx.miniapp.appid}
-#      client-secret: ${wx.miniapp.secret}
-#      ignore-check-redirect-uri: true
-#      ignore-check-state: true
+    WECHAT_MINI_PROGRAM:
+      client-id: ${wx.miniapp.appid}
+      client-secret: ${wx.miniapp.secret}
+      ignore-check-redirect-uri: true
+      ignore-check-state: true
 #    WECHAT_MP:
 #      client-id: ${wx.mp.app-id}
 #      client-secret: ${wx.mp.secret}

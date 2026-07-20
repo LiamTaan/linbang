@@ -15,4 +15,10 @@ public class AppMemberWechatMiniProgramLoginReqVO {
     @NotEmpty(message = "微信手机号授权码不能为空")
     private String phoneCode;
 
+    @Schema(description = "微信小程序 wx.login 返回的一次性登录凭证。服务端使用该值换取并绑定当前用户 openid，"
+            + "供微信小程序支付使用；不可重复使用。",
+            requiredMode = Schema.RequiredMode.REQUIRED, example = "0a3BcdEfGhIjKlMnOpQrStUvWxYz")
+    @NotEmpty(message = "微信小程序登录凭证不能为空")
+    private String loginCode;
+
 }

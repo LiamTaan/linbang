@@ -172,9 +172,9 @@ wx: # 参见 https://github.com/Wechat-Group/WxJava/blob/develop/spring-boot-sta
 # 芋道配置项，设置当前项目所有自定义的配置
 yudao:
   pay:
-    order-notify-url: http://yunai.natapp1.cc/admin-api/pay/notify/order # 支付渠道的【支付】回调地址
-    refund-notify-url: http://yunai.natapp1.cc/admin-api/pay/notify/refund # 支付渠道的【退款】回调地址
-    transfer-notify-url: https://yunai.natapp1.cc/admin-api/pay/notify/transfer # 支付渠道的【转账】回调地址
+    order-notify-url: http://xxxx/admin-api/pay/notify/order # 支付渠道的【支付】回调地址
+    refund-notify-url: http://xxxx/admin-api/pay/notify/refund # 支付渠道的【退款】回调地址
+    transfer-notify-url: https://xxxx/admin-api/pay/notify/transfer # 支付渠道的【转账】回调地址
   demo: false # 开启演示模式
   map:
     amap:
@@ -217,6 +217,6 @@ justauth:
     timeout: 24h # 超时时长，目前只对 Redis 缓存生效，默认 3 分钟
 
 linbang:
-  public-base-url: ${LINBANG_PUBLIC_BASE_URL:}
+  public-base-url: http://yunai.natapp1.cc
   message:
     public-base-url: ${linbang.public-base-url}

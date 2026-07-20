@@ -4,6 +4,7 @@ import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderC
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangH5PaySubmitReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangH5PaySubmitRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangWechatMiniProgramPaySubmitRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppOrderDepositInfoRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppOrderDepositStatusRespVO;
 import cn.iocoder.yudao.module.pay.api.notify.dto.PayOrderNotifyReqDTO;
@@ -16,6 +17,9 @@ public interface AppLinbangPayOrderService {
 
     AppLinbangH5PaySubmitRespVO submitH5Pay(Long authUserId, @Valid AppLinbangH5PaySubmitReqVO reqVO);
 
+    AppLinbangWechatMiniProgramPaySubmitRespVO submitWechatMiniProgramPay(
+            Long authUserId, @Valid AppLinbangPayOrderCreateReqVO reqVO);
+
     Long simulatePaySuccess(Long authUserId, @Valid AppLinbangPayOrderCreateReqVO reqVO);
 
     AppLinbangPayOrderRespVO getPayOrder(Long authUserId, Long id, Long orderId, Boolean sync);
@@ -25,6 +29,9 @@ public interface AppLinbangPayOrderService {
     Long createDepositPayOrder(Long authUserId, Long orderId);
 
     AppLinbangH5PaySubmitRespVO submitDepositH5Pay(Long authUserId, @Valid AppLinbangH5PaySubmitReqVO reqVO);
+
+    AppLinbangWechatMiniProgramPaySubmitRespVO submitDepositWechatMiniProgramPay(
+            Long authUserId, @Valid AppLinbangPayOrderCreateReqVO reqVO);
 
     AppOrderDepositStatusRespVO getDepositStatus(Long authUserId, Long orderId, Boolean sync);
 

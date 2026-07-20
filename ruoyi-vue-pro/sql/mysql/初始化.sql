@@ -186,7 +186,7 @@ VALUES
 INSERT INTO `pay_app`
 (`id`, `app_key`, `name`, `status`, `remark`, `order_notify_url`, `refund_notify_url`, `transfer_notify_url`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
 VALUES
-(1, 'linbang-app', '邻里互助支付应用', 0, '统一接入第三方聚合支付，不按微信/支付宝拆分商户配置',
+(1, 'linbang-app', '邻里互助支付应用', 0, '首期使用微信小程序支付；聚合支付保留为未来扩展通道',
  'http://127.0.0.1:48080/app-api/linbang/pay/order/update-paid',
  'http://127.0.0.1:48080/app-api/pay/refund/update-refunded',
  'http://127.0.0.1:48080/admin-api/wallet/withdraw/update-transferred',
@@ -195,8 +195,8 @@ VALUES
 INSERT INTO `pay_channel`
 (`id`, `code`, `status`, `fee_rate`, `remark`, `app_id`, `config`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
 VALUES
-(1, 'aggregate', 0, 0, '邻里互助唯一聚合支付通道；微信、支付宝、银行卡/云闪付前端入口统一路由到该通道，退款与提现复用银盛官方网关', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate.AggregatePayClientConfig","baseUrl":"https://openapi.ysepay.com","merchantNo":"826584873720104","merchantName":"深圳市旺佳盈科技有限公司","partnerId":"826584873720104","wechatMerchantNo":"904252515","alipayMerchantNo":"208878041871068","openApiGatewayUrl":"https://openapi.ysepay.com/gateway.do","transferGatewayUrl":"https://df.ysepay.com/gateway.do","privateKeyFilePath":"","privateKeyPassword":"","ysepayPublicKeyFilePath":"","signType":"RSA","charset":"utf-8","version":"3.0"}', 'admin', NOW(), 'admin', NOW(), b'0', 1),
-(2, 'mock', 0, 0, '开发联调模拟支付通道，仅在本地 mock-enable 开启时用于跑通支付后派送流程', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.NonePayClientConfig"}', 'admin', NOW(), 'admin', NOW(), b'0', 1);
+(1, 'aggregate', 1, 0, '未来第三方聚合支付扩展通道；当前默认关闭，不参与订单支付路由', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate.AggregatePayClientConfig","baseUrl":"https://openapi.ysepay.com","merchantNo":"826584873720104","merchantName":"深圳市旺佳盈科技有限公司","partnerId":"826584873720104","wechatMerchantNo":"904252515","alipayMerchantNo":"208878041871068","openApiGatewayUrl":"https://openapi.ysepay.com/gateway.do","transferGatewayUrl":"https://df.ysepay.com/gateway.do","privateKeyFilePath":"","privateKeyPassword":"","ysepayPublicKeyFilePath":"","signType":"RSA","charset":"utf-8","version":"3.0"}', 'admin', NOW(), 'admin', NOW(), b'0', 1),
+(2, 'mock', 1, 0, '开发联调模拟支付通道；默认关闭，仅在明确开启本地 mock-enable 时手工启用', 1, '{"@class":"cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.NonePayClientConfig"}', 'admin', NOW(), 'admin', NOW(), b'0', 1);
 
 INSERT INTO `system_sms_channel`
 (`id`, `signature`, `code`, `status`, `remark`, `api_key`, `api_secret`, `callback_url`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
@@ -302,7 +302,7 @@ VALUES
 (810058, 3, '简化模式', 'implicit', 'system_oauth2_grant_type', 0, 'warning', '', '简化模式', 'admin', NOW(), 'admin', NOW(), b'0'),
 (810059, 4, '刷新模式', 'refresh_token', 'system_oauth2_grant_type', 0, 'info', '', '刷新模式', 'admin', NOW(), 'admin', NOW(), b'0'),
 (810060, 5, '客户端模式', 'client_credentials', 'system_oauth2_grant_type', 0, 'default', '', '客户端模式', 'admin', NOW(), 'admin', NOW(), b'0'),
-(810061, 0, '聚合支付', 'aggregate', 'pay_channel_code', 0, 'warning', '', '第三方聚合支付，邻里互助唯一支付通道', 'admin', NOW(), 'admin', NOW(), b'0'),
+(810061, 0, '聚合支付', 'aggregate', 'pay_channel_code', 0, 'warning', '', '未来第三方聚合支付扩展通道，当前默认关闭', 'admin', NOW(), 'admin', NOW(), b'0'),
 (810062, 1, '模拟支付', 'mock', 'pay_channel_code', 0, 'success', '', '开发联调模拟支付通道，仅本地 mock 模式可用', 'admin', NOW(), 'admin', NOW(), b'0'),
 (810074, 0, '等待通知', '0', 'pay_notify_status', 0, 'primary', '', '等待通知', 'admin', NOW(), 'admin', NOW(), b'0'),
 (810075, 10, '通知成功', '10', 'pay_notify_status', 0, 'success', '', '通知成功', 'admin', NOW(), 'admin', NOW(), b'0'),

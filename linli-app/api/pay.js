@@ -12,6 +12,10 @@ export function submitPayOrder(data) {
   return post('/linbang/pay/order/h5/submit', data)
 }
 
+export function submitWechatMiniProgramPay(data) {
+  return post('/linbang/pay/order/wechat-mini-program/submit', data)
+}
+
 export function createRefund(data) {
   return post('/pay/refund/create', data)
 }

@@ -112,6 +112,12 @@ public interface ErrorCodeConstants {
     ErrorCode ORDER_PROJECT_ESCROW_AGREEMENT_REQUIRED = new ErrorCode(1_099_004_042, "当前用工类需求必须勾选工程托管协议");
     ErrorCode ORDER_PREVIEW_TOKEN_INVALID = new ErrorCode(1_099_004_043, "当前预览快照已失效，请重新预览后提交");
     ErrorCode ORDER_SPLIT_NOT_SUPPORTED = new ErrorCode(1_099_004_044, "当前服务类目不支持拆分");
+    ErrorCode ORDER_WECHAT_MINI_PROGRAM_NOT_BOUND = new ErrorCode(1_099_004_045,
+            "当前账号未绑定微信小程序身份，请重新使用微信授权登录");
+    ErrorCode ORDER_WECHAT_PAY_PARAMS_INVALID = new ErrorCode(1_099_004_046,
+            "微信支付参数生成失败，请稍后重试");
+    ErrorCode ORDER_WECHAT_PAY_APP_NOT_CONFIGURED = new ErrorCode(1_099_004_047,
+            "未找到已启用微信小程序支付渠道的支付应用，请先在管理端完成配置");
 
     // ========== WALLET 模块 1-099-005-000 ==========
     ErrorCode WALLET_ACCOUNT_NOT_EXISTS = new ErrorCode(1_099_005_000, "钱包账户不存在");

@@ -126,9 +126,10 @@ public class AppMemberAuthController {
 
     @PostMapping("/wechat-mini-program-login")
     @Operation(summary = "微信小程序手机号授权登录",
-            description = "仅供微信小程序调用。前端仅提交微信 getPhoneNumber 返回的一次性 phoneCode，"
-                    + "服务端向微信核验手机号；同手机号已有账号直接登录，未注册则自动创建个人账号并登录。"
-                    + "不接收前端传入的手机号，也不需要短信验证码。")
+            description = "仅供微信小程序调用。前端提交 getPhoneNumber 返回的一次性 phoneCode，"
+                    + "以及 wx.login 返回的一次性 loginCode。服务端核验手机号，并换取、绑定当前小程序 openid，"
+                    + "供后续 wx_lite 支付使用；同手机号已有账号直接登录，未注册则自动创建个人账号并登录。"
+                    + "不接收前端传入的手机号或 openid，也不需要短信验证码。")
     @PermitAll
     public CommonResult<AppMemberLoginRespVO> wechatMiniProgramLogin(
             @Valid @RequestBody AppMemberWechatMiniProgramLoginReqVO reqVO) {

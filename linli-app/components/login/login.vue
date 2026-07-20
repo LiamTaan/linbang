@@ -94,7 +94,14 @@ export default {
             if (this.wechatPhoneLoading) return
             this.wechatPhoneLoading = true
             try {
-                const loginResp = await loginByWechatMiniProgramPhone({ phoneCode })
+                const loginCode = await new Promise((resolve, reject) => {
+                    uni.login({
+                        provider: 'weixin',
+                        success: ({ code }) => code ? resolve(code) : reject(new Error('未获取到微信登录凭证')),
+                        fail: reject
+                    })
+                })
+                const loginResp = await loginByWechatMiniProgramPhone({ phoneCode, loginCode })
                 await applyLoginSession(loginResp)
                 redirectAfterLogin(this.redirect)
             } catch (error) {

@@ -10,7 +10,10 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
 import cn.iocoder.yudao.module.system.api.logger.LoginLogApi;
 import cn.iocoder.yudao.module.system.api.social.SocialClientApi;
+import cn.iocoder.yudao.module.system.api.social.SocialUserApi;
 import cn.iocoder.yudao.module.system.api.social.dto.SocialWxPhoneNumberInfoRespDTO;
+import cn.iocoder.yudao.module.system.api.social.dto.SocialUserBindReqDTO;
+import cn.iocoder.yudao.module.system.enums.social.SocialTypeEnum;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -31,6 +34,8 @@ public class AppMemberAuthServiceImplTest extends BaseMockitoUnitTest {
     @Mock
     private SocialClientApi socialClientApi;
     @Mock
+    private SocialUserApi socialUserApi;
+    @Mock
     private MemberUserService memberUserService;
     @Mock
     private OAuth2TokenCommonApi oauth2TokenCommonApi;
@@ -41,6 +46,7 @@ public class AppMemberAuthServiceImplTest extends BaseMockitoUnitTest {
     public void testWechatMiniProgramLogin_success() {
         String mobile = "13800138000";
         String phoneCode = "wechat-phone-code";
+        String loginCode = "wechat-login-code";
         SocialWxPhoneNumberInfoRespDTO phoneInfo = new SocialWxPhoneNumberInfoRespDTO();
         phoneInfo.setPurePhoneNumber(mobile);
         MemberUserDO user = MemberUserDO.builder().id(1L).mobile(mobile).status("ENABLE").build();
@@ -52,14 +58,18 @@ public class AppMemberAuthServiceImplTest extends BaseMockitoUnitTest {
         when(socialClientApi.getWxMaPhoneNumberInfo(eq(1), eq(phoneCode))).thenReturn(phoneInfo);
         when(memberUserService.createMemberUserIfAbsent(eq(mobile), eq("WECHAT_MINI_PROGRAM"))).thenReturn(user);
         when(oauth2TokenCommonApi.createAccessToken(any())).thenReturn(token);
+        when(socialUserApi.bindSocialUser(any(SocialUserBindReqDTO.class))).thenReturn("openid-001");
 
         AppMemberWechatMiniProgramLoginReqVO reqVO = new AppMemberWechatMiniProgramLoginReqVO();
         reqVO.setPhoneCode(phoneCode);
+        reqVO.setLoginCode(loginCode);
         AppMemberLoginRespVO result = authService.wechatMiniProgramLogin(reqVO);
 
         assertEquals(user.getId(), result.getUserId());
         assertEquals(token.getAccessToken(), result.getAccessToken());
         assertEquals(token.getRefreshToken(), result.getRefreshToken());
+        assertEquals(SocialTypeEnum.WECHAT_MINI_PROGRAM.getType(), result.getSocialType());
+        assertEquals("openid-001", result.getSocialOpenid());
         verify(memberUserService).updateMemberUserLogin(eq(user.getId()), any());
     }
 
@@ -67,11 +77,13 @@ public class AppMemberAuthServiceImplTest extends BaseMockitoUnitTest {
     public void testWechatMiniProgramLogin_disabledUser() {
         String mobile = "13800138000";
         String phoneCode = "wechat-phone-code";
+        String loginCode = "wechat-login-code";
         SocialWxPhoneNumberInfoRespDTO phoneInfo = new SocialWxPhoneNumberInfoRespDTO();
         phoneInfo.setPurePhoneNumber(mobile);
         MemberUserDO user = MemberUserDO.builder().id(1L).mobile(mobile).status("DISABLE").build();
         AppMemberWechatMiniProgramLoginReqVO reqVO = new AppMemberWechatMiniProgramLoginReqVO();
         reqVO.setPhoneCode(phoneCode);
+        reqVO.setLoginCode(loginCode);
 
         when(socialClientApi.getWxMaPhoneNumberInfo(eq(1), eq(phoneCode))).thenReturn(phoneInfo);
         when(memberUserService.createMemberUserIfAbsent(eq(mobile), eq("WECHAT_MINI_PROGRAM"))).thenReturn(user);

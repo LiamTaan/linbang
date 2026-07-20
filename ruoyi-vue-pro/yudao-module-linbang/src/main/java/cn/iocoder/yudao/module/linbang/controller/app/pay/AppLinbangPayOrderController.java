@@ -5,6 +5,7 @@ import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangH5PaySubm
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangH5PaySubmitRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderCreateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderRespVO;
+import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangWechatMiniProgramPaySubmitRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppOrderDepositInfoRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppOrderDepositStatusRespVO;
 import cn.iocoder.yudao.module.linbang.service.app.pay.AppLinbangPayOrderService;
@@ -47,6 +48,15 @@ public class AppLinbangPayOrderController {
         return success(appLinbangPayOrderService.submitH5Pay(getLoginUserId(), reqVO));
     }
 
+    @PostMapping("/wechat-mini-program/submit")
+    @Operation(summary = "提交微信小程序支付",
+            description = "当前首期正式支付入口。后端使用已绑定到登录用户的微信小程序 openid，"
+                    + "通过 wx_lite 渠道创建 JSAPI 预支付单，返回 wx.requestPayment 所需参数。")
+    public CommonResult<AppLinbangWechatMiniProgramPaySubmitRespVO> submitWechatMiniProgramPay(
+            @Valid @RequestBody AppLinbangPayOrderCreateReqVO reqVO) {
+        return success(appLinbangPayOrderService.submitWechatMiniProgramPay(getLoginUserId(), reqVO));
+    }
+
     @PostMapping("/simulate-success")
     @Operation(summary = "模拟支付成功", description = "仅开发联调 mock 模式可用，用于跑通发单支付后派送流程。")
     public CommonResult<Long> simulatePaySuccess(@Valid @RequestBody AppLinbangPayOrderCreateReqVO reqVO) {
@@ -84,6 +94,14 @@ public class AppLinbangPayOrderController {
     @Operation(summary = "提交订单保证金聚合支付 H5 支付", description = "保证金支付与普通支付共用三种前端支付入口：WECHAT_H5、ALIPAY_H5、UNIONPAY_WAP；后端统一提交到 aggregate 聚合支付通道")
     public CommonResult<AppLinbangH5PaySubmitRespVO> submitDepositH5Pay(@Valid @RequestBody AppLinbangH5PaySubmitReqVO reqVO) {
         return success(appLinbangPayOrderService.submitDepositH5Pay(getLoginUserId(), reqVO));
+    }
+
+    @PostMapping("/deposit/wechat-mini-program/submit")
+    @Operation(summary = "提交订单保证金微信小程序支付",
+            description = "使用 wx_lite 渠道返回 wx.requestPayment 所需参数；保证金支付成功后按现有订单资金流程处理。")
+    public CommonResult<AppLinbangWechatMiniProgramPaySubmitRespVO> submitDepositWechatMiniProgramPay(
+            @Valid @RequestBody AppLinbangPayOrderCreateReqVO reqVO) {
+        return success(appLinbangPayOrderService.submitDepositWechatMiniProgramPay(getLoginUserId(), reqVO));
     }
 
     @GetMapping("/deposit/status")
