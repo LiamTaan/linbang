@@ -26,7 +26,7 @@ public class AppPromoteTeamStatsRespVO {
     @Schema(description = "二级转化人数", example = "8")
     private Integer secondLevelConvertCount;
 
-    @Schema(description = "二级累计收益", example = "16.50")
+    @Schema(description = "二级佣金金额；当前二级团队仅统计不结算，固定为 0", example = "0.00")
     private BigDecimal secondLevelCommissionAmount;
 
     @Schema(description = "最近转化记录")

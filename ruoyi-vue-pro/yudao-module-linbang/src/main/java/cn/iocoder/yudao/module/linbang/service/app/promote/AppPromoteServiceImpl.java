@@ -6,6 +6,7 @@ import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppCommissionPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppInviteCodeRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteInviteCodeBindReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromotePosterRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteCenterRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteTemplatePageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteTemplateRespVO;
@@ -16,13 +17,25 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.messagetemplate.MessageTem
 import cn.iocoder.yudao.module.linbang.dal.dataobject.promoter.PromoterDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.promoterrelation.PromoterRelationDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.messagetemplate.MessageTemplateMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.commissionorder.CommissionOrderMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.promoterrelation.PromoterRelationMapper;
 import cn.iocoder.yudao.module.linbang.service.commissionorder.CommissionOrderService;
 import cn.iocoder.yudao.module.linbang.service.promoter.PromoterService;
+import cn.iocoder.yudao.module.infra.service.file.FileService;
+import cn.iocoder.yudao.module.system.api.social.SocialClientApi;
+import cn.iocoder.yudao.module.system.api.social.dto.SocialWxQrcodeReqDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,27 +57,36 @@ public class AppPromoteServiceImpl implements AppPromoteService {
     private PromoterRelationMapper promoterRelationMapper;
     @Resource
     private MessageTemplateMapper messageTemplateMapper;
+    @Resource
+    private CommissionOrderMapper commissionOrderMapper;
+    @Resource
+    private SocialClientApi socialClientApi;
+    @Resource
+    private FileService fileService;
 
     @Override
     public AppPromoteCenterRespVO getPromoteCenter(Long userId) {
-        PromoterDO promoter = getRequiredPromoter(userId);
-        PageResult<CommissionOrderDO> recentPage = commissionOrderService.getAppCommissionOrderPage(promoter.getId(),
-                new AppCommissionPageReqVO());
-        List<CommissionOrderDO> commissionOrders = recentPage.getList();
+        PromoterDO promoter = promoterService.syncPromoterMetrics(getRequiredPromoter(userId).getId());
+        List<CommissionOrderDO> commissionOrders = commissionOrderMapper.selectList(
+                new LambdaQueryWrapperX<CommissionOrderDO>()
+                        .eq(CommissionOrderDO::getPromoterId, promoter.getId())
+                        .orderByDesc(CommissionOrderDO::getId));
         AppPromoteCenterRespVO respVO = BeanUtils.toBean(promoter, AppPromoteCenterRespVO.class);
         respVO.setPromoterId(promoter.getId());
         respVO.setLevelCode(resolvePromoterLevelCode(promoter));
         respVO.setLevelName(resolvePromoterLevelName(promoter));
         respVO.setUpgradeConditionDesc(resolveUpgradeConditionDesc(promoter));
         respVO.setNextLevelNeedMetric(resolveNextLevelNeedMetric(promoter));
+        respVO.setPendingConvertCount(Math.max(0,
+                defaultInt(promoter.getBindUserCount()) - defaultInt(promoter.getConvertCount())));
         respVO.setPendingCommissionCount(countByStatus(commissionOrders, "PENDING"));
         respVO.setSettledCommissionCount(countByStatus(commissionOrders, "SETTLED"));
-        respVO.setInvalidCommissionCount(countByStatus(commissionOrders, "INVALID"));
+        respVO.setInvalidCommissionCount(countByStatus(commissionOrders, "REFUNDED"));
         respVO.setPendingCommissionAmount(sumAmountByStatus(commissionOrders, "PENDING"));
         respVO.setSettledCommissionAmount(sumAmountByStatus(commissionOrders, "SETTLED"));
         respVO.setPendingSettleCommissionAmount(respVO.getPendingCommissionAmount());
         respVO.setInviteShortLink(promoter.getInviteUrl());
-        respVO.setInvitePosterUrl("/app/promote/poster?code=" + promoter.getInviteCode());
+        respVO.setInvitePosterUrl(null);
         respVO.setRecentCommissionOrders(commissionOrders.stream()
                 .limit(5)
                 .map(item -> BeanUtils.toBean(item, AppPromoteCenterRespVO.RecentCommissionRespVO.class))
@@ -82,12 +104,34 @@ public class AppPromoteServiceImpl implements AppPromoteService {
     public AppInviteCodeRespVO getInviteCode(Long userId) {
         PromoterDO promoter = getRequiredPromoter(userId);
         return new AppInviteCodeRespVO(promoter.getInviteCode(), promoter.getInviteUrl(),
-                promoter.getInviteUrl(), "/app/promote/poster?code=" + promoter.getInviteCode());
+                promoter.getInviteUrl(), null);
     }
 
     @Override
     public void bindInviteCode(Long userId, AppPromoteInviteCodeBindReqVO reqVO) {
         promoterService.bindInviteCode(userId, reqVO);
+    }
+
+    @Override
+    public AppPromotePosterRespVO generatePoster(Long userId) {
+        PromoterDO promoter = getRequiredPromoter(userId);
+        try {
+            SocialWxQrcodeReqDTO reqDTO = new SocialWxQrcodeReqDTO();
+            reqDTO.setScene("p=" + promoter.getInviteCode());
+            reqDTO.setPath("pages/index/index");
+            reqDTO.setWidth(430);
+            reqDTO.setCheckPath(Boolean.TRUE);
+            reqDTO.setHyaline(Boolean.FALSE);
+            byte[] qrcode = socialClientApi.getWxaQrcode(reqDTO);
+            String qrcodeUrl = fileService.createFile(qrcode, "promote-qrcode-" + promoter.getInviteCode() + ".png",
+                    "linbang/promote/qrcode", "image/png");
+            byte[] poster = buildPoster(qrcode, promoter.getInviteCode());
+            String posterUrl = fileService.createFile(poster, "promote-poster-" + promoter.getInviteCode() + ".png",
+                    "linbang/promote/poster", "image/png");
+            return new AppPromotePosterRespVO(qrcodeUrl, posterUrl);
+        } catch (Exception ex) {
+            throw exception(cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.PROMOTER_QRCODE_GENERATE_FAILED);
+        }
     }
 
     @Override
@@ -125,7 +169,8 @@ public class AppPromoteServiceImpl implements AppPromoteService {
         respVO.setSecondLevelConvertCount((int) secondLevelRelations.stream()
                 .filter(item -> "CONVERTED".equalsIgnoreCase(item.getConvertStatus()))
                 .count());
-        respVO.setSecondLevelCommissionAmount(sumCommissionAmount(firstLevelPromoterIds));
+        // 二级团队仅做统计展示，不参与当前推广员的佣金结算。
+        respVO.setSecondLevelCommissionAmount(BigDecimal.ZERO);
 
         List<AppPromoteTeamStatsRespVO.RecentConvertRespVO> recentConverts = new ArrayList<>();
         firstLevelRelations.stream().limit(5).forEach(item -> recentConverts.add(convertRecent(item, "FIRST")));
@@ -232,6 +277,41 @@ public class AppPromoteServiceImpl implements AppPromoteService {
         respVO.setStatus(template.getStatus());
         respVO.setUpdateTime(template.getUpdateTime());
         return respVO;
+    }
+
+    private byte[] buildPoster(byte[] qrcodeBytes, String inviteCode) throws Exception {
+        BufferedImage qrcode = ImageIO.read(new ByteArrayInputStream(qrcodeBytes));
+        if (qrcode == null) {
+            throw new IllegalArgumentException("invalid qrcode image");
+        }
+        BufferedImage poster = new BufferedImage(750, 1000, BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics = poster.createGraphics();
+        try {
+            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            graphics.setColor(new Color(240, 247, 255));
+            graphics.fillRect(0, 0, poster.getWidth(), poster.getHeight());
+            graphics.setColor(new Color(46, 131, 240));
+            graphics.fillRect(0, 0, poster.getWidth(), 210);
+            graphics.setColor(Color.WHITE);
+            graphics.setFont(new Font("SansSerif", Font.BOLD, 48));
+            graphics.drawString("邻里互助", 270, 90);
+            graphics.setFont(new Font("SansSerif", Font.PLAIN, 30));
+            graphics.drawString("扫码进入小程序，发现身边互助服务", 130, 155);
+            graphics.setColor(Color.WHITE);
+            graphics.fillRoundRect(110, 260, 530, 590, 24, 24);
+            graphics.drawImage(qrcode, 185, 315, 380, 380, null);
+            graphics.setColor(new Color(32, 46, 64));
+            graphics.setFont(new Font("SansSerif", Font.BOLD, 32));
+            graphics.drawString("邀请码：" + inviteCode, 245, 760);
+            graphics.setColor(new Color(100, 116, 139));
+            graphics.setFont(new Font("SansSerif", Font.PLAIN, 24));
+            graphics.drawString("首次登录后将自动锁定邀请关系", 195, 810);
+        } finally {
+            graphics.dispose();
+        }
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ImageIO.write(poster, "png", output);
+        return output.toByteArray();
     }
 
     private String resolvePromoterLevelCode(PromoterDO promoter) {

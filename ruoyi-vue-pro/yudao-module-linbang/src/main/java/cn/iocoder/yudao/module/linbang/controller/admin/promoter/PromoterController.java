@@ -5,6 +5,7 @@ import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.linbang.controller.admin.promoter.vo.PromoterDetailRespVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.promoter.vo.PromoterPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.promoter.vo.PromoterRespVO;
+import cn.iocoder.yudao.module.linbang.controller.admin.promoter.vo.PromoterStatusUpdateReqVO;
 import cn.iocoder.yudao.module.linbang.service.promoter.PromoterService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
@@ -43,5 +46,13 @@ public class PromoterController {
     @PreAuthorize("@ss.hasPermission('linbang:promote:user:query')")
     public CommonResult<PromoterDetailRespVO> getPromoter(@RequestParam("id") Long id) {
         return success(promoterService.getPromoterDetail(id));
+    }
+
+    @PutMapping("/update-status")
+    @Operation(summary = "启用或停用推广员", description = "停用后邀请码不可继续绑定，已有推广归属保留")
+    @PreAuthorize("@ss.hasPermission('linbang:promote:user:update')")
+    public CommonResult<Boolean> updatePromoterStatus(@Valid @RequestBody PromoterStatusUpdateReqVO reqVO) {
+        promoterService.updatePromoterStatus(reqVO);
+        return success(Boolean.TRUE);
     }
 }

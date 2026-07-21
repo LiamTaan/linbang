@@ -9,8 +9,8 @@
         </view>
         <view class="background"></view>
 
-        <scroll-view class="content-scroll" scroll-y refresher-enabled :refresher-triggered="refreshing"
-            @refresherrefresh="handleRefresh">
+        <scroll-view class="content-scroll" scroll-y :refresher-enabled="contentScrollTop <= 0"
+            :refresher-triggered="refreshing" @scroll="handleContentScroll" @refresherrefresh="handleRefresh">
             <view class="status-card">
                 <view class="status-header">
                     <view class="status-left">
@@ -55,7 +55,7 @@
                     <text class="card-title">进行中的订单</text>
                     <view class="view-all" @click="handleViewAll">
                         <text class="view-all-text">查看全部</text>
-                        <text class="view-all-arrow">></text>
+                        <text class="iconfont icon-youjiantou view-all-arrow"></text>
                     </view>
                 </view>
 
@@ -82,7 +82,7 @@
                         </view>
                         <view class="setting-right">
                             <text class="setting-value">{{ dispatchRadiusText }}</text>
-                            <text class="setting-arrow">></text>
+                            <text class="iconfont icon-youjiantou setting-arrow"></text>
                         </view>
                     </view>
 
@@ -93,7 +93,7 @@
                         </view>
                         <view class="setting-right">
                             <text class="setting-value">{{ categorySummary }}</text>
-                            <text class="setting-arrow">></text>
+                            <text class="iconfont icon-youjiantou setting-arrow"></text>
                         </view>
                     </view>
 
@@ -104,7 +104,7 @@
                         </view>
                         <view class="setting-right">
                             <text class="setting-value">{{ dispatchSetting.voiceRemindEnabled ? '开启' : '关闭' }}</text>
-                            <text class="setting-arrow">></text>
+                            <text class="iconfont icon-youjiantou setting-arrow"></text>
                         </view>
                     </view>
                 </view>
@@ -166,6 +166,7 @@ export default {
     data() {
         return {
             refreshing: false,
+            contentScrollTop: 0,
             acceptStatus: {},
             dispatchSetting: {},
             activeOrders: [],
@@ -236,6 +237,10 @@ export default {
         handleRefresh() {
             this.refreshing = true
             this.loadPageData()
+        },
+        handleContentScroll(event) {
+            const scrollTop = Number(event && event.detail && event.detail.scrollTop)
+            this.contentScrollTop = Number.isNaN(scrollTop) ? 0 : scrollTop
         },
         async loadPageData() {
             try {
@@ -413,10 +418,15 @@ export default {
 
 <style lang="scss" scoped>
 .page-container {
+    height: 100vh;
     min-height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     background: #F5F5F5;
 
     .header {
+        flex-shrink: 0;
         background: #4A90F0;
         padding: 60rpx 30rpx 30rpx;
         display: flex;
@@ -449,6 +459,7 @@ export default {
     }
 
     .background {
+        flex-shrink: 0;
         background: #4A90F0;
         border-radius: 0 0 30rpx 30rpx;
         width: 100%;
@@ -459,6 +470,8 @@ export default {
 
     .content-scroll {
         flex: 1;
+        height: 0;
+        min-height: 0;
         padding: 20rpx;
         margin-top: -70rpx;
         box-sizing: border-box;

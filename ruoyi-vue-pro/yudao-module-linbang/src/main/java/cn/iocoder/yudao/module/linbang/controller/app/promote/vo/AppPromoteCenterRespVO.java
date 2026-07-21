@@ -44,6 +44,9 @@ public class AppPromoteCenterRespVO {
     @Schema(description = "转化用户数", example = "5")
     private Integer convertCount;
 
+    @Schema(description = "待转化人数，等于直推绑定人数减已转化人数", example = "7")
+    private Integer pendingConvertCount;
+
     @Schema(description = "累计佣金", example = "88.80")
     private BigDecimal totalCommissionAmount;
 
@@ -98,7 +101,7 @@ public class AppPromoteCenterRespVO {
         @Schema(description = "佣金金额", example = "8.80")
         private BigDecimal commissionAmount;
 
-        @Schema(description = "佣金单状态：PENDING 待结算、SETTLED 已结算、INVALID 已失效", example = "PENDING")
+        @Schema(description = "佣金单状态：PENDING 待结算、SETTLED 已结算、REFUNDED 已退款冲正", example = "PENDING")
         private String status;
 
         @Schema(description = "结算时间")

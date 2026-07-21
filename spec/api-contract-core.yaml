@@ -244,6 +244,26 @@ components:
         amount: { type: number, format: double, description: 分账金额，单位元 }
         rate: { type: number, format: double, description: 分账比例 }
         settleStatus: { type: string, description: PENDING/SETTLED/REFUNDED }
+    PromoterCenter:
+      type: object
+      description: 推广员中心真实运营摘要；等级只按一级直推绑定人数计算
+      properties:
+        promoterId: { type: integer, format: int64, description: 推广员 ID }
+        levelCode: { type: string, description: 推广等级 L1 初级、L2 中级、L3 高级 }
+        inviteCode: { type: string, description: 推广员唯一邀请码 }
+        inviteUrl: { type: string, description: 微信小程序分享页面路径，携带 inviteCode }
+        bindUserCount: { type: integer, description: 一级直推成功绑定人数 }
+        convertCount: { type: integer, description: 一级直推中完成首笔有效交易的人数 }
+        pendingConvertCount: { type: integer, description: 待转化人数，等于 bindUserCount 减 convertCount }
+        totalCommissionAmount: { type: number, format: double, description: 有效推广佣金累计金额，单位元 }
+        availableCommissionAmount: { type: number, format: double, description: 已结算且可提现推广佣金，单位元 }
+    PromoterInviteBind:
+      type: object
+      required: [inviteCode]
+      properties:
+        inviteCode: { type: string, description: 待绑定的推广员邀请码；首次成功绑定后永久不可更换 }
+        sourceChannel: { type: string, description: SHARE_CARD 微信好友、TIMELINE 朋友圈、QRCODE 小程序码、MANUAL 手工填写 }
+        sourcePage: { type: string, description: 捕获邀请码的微信小程序页面路径 }
     WechatMiniProgramPhoneLoginRequest:
       type: object
       required: [phoneCode, loginCode]

@@ -48,7 +48,8 @@
             </view>
         </view>
 
-        <scroll-view class="order-list" scroll-y refresher-enabled :refresher-triggered="refreshing"
+        <scroll-view class="order-list" scroll-y :refresher-enabled="contentScrollTop <= 0"
+            :refresher-triggered="refreshing" @scroll="handleContentScroll"
             @refresherrefresh="handleRefresh" @scrolltolower="loadMore" lower-threshold="80">
             <view v-if="!displayList.length && !loading" class="empty-state">
                 <text class="empty-title">暂无数据</text>
@@ -152,6 +153,7 @@ export default {
             mode: 'accept',
             searchText: '',
             refreshing: false,
+            contentScrollTop: 0,
             loading: false,
             finished: false,
             isLoggedIn: false,
@@ -202,7 +204,6 @@ export default {
         this.applyEntryMode(mode)
     },
     async onShow() {
-        uni.hideTabBar()
         syncMessageUnreadCount({ silent: true })
         const pendingMode = uni.getStorageSync('linbang_order_tab_mode')
         if (pendingMode) {
@@ -258,6 +259,10 @@ export default {
         handleRefresh() {
             this.refreshing = true
             this.reload()
+        },
+        handleContentScroll(event) {
+            const scrollTop = Number(event && event.detail && event.detail.scrollTop)
+            this.contentScrollTop = Number.isNaN(scrollTop) ? 0 : scrollTop
         },
         async loadOrders() {
             if (this.loading || this.finished) {
@@ -529,7 +534,10 @@ export default {
 
 <style lang="scss" scoped>
 .page-container {
+    height: 100vh;
     min-height: 100vh;
+    overflow: hidden;
+    box-sizing: border-box;
     background: linear-gradient(180deg, #f2f7ff 0%, #ffffff 120rpx, #f5f7fb 100%);
     padding-bottom: 120rpx;
     display: flex;
@@ -670,6 +678,8 @@ export default {
 
     .order-list {
         flex: 1;
+        height: 0;
+        min-height: 0;
         padding: 18rpx 24rpx 24rpx;
         box-sizing: border-box;
 

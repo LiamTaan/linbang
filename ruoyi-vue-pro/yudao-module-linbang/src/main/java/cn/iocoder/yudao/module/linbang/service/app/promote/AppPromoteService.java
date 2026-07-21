@@ -5,6 +5,7 @@ import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppCommissionPa
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppInviteCodeRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteCenterRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteInviteCodeBindReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromotePosterRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteTemplatePageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteTemplateRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteTeamStatsRespVO;
@@ -19,6 +20,8 @@ public interface AppPromoteService {
     AppInviteCodeRespVO getInviteCode(Long userId);
 
     void bindInviteCode(Long userId, AppPromoteInviteCodeBindReqVO reqVO);
+
+    AppPromotePosterRespVO generatePoster(Long userId);
 
     AppPromoteTeamStatsRespVO getTeamStats(Long userId);
 

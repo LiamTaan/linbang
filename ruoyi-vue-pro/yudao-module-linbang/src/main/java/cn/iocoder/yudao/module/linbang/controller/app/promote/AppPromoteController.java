@@ -7,6 +7,7 @@ import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppCommissionPa
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppCommissionPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppInviteCodeRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteInviteCodeBindReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromotePosterRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteCenterRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteTemplatePageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteTemplateRespVO;
@@ -79,5 +80,11 @@ public class AppPromoteController {
     public CommonResult<Boolean> bindInviteCode(@Valid @RequestBody AppPromoteInviteCodeBindReqVO reqVO) {
         appPromoteService.bindInviteCode(getLoginUserId(), reqVO);
         return success(Boolean.TRUE);
+    }
+
+    @PostMapping("/poster/generate")
+    @Operation(summary = "生成推广小程序码与海报", description = "生成携带当前推广员邀请码的小程序码，并保存为可访问的文件")
+    public CommonResult<AppPromotePosterRespVO> generatePoster() {
+        return success(appPromoteService.generatePoster(getLoginUserId()));
     }
 }

@@ -1,6 +1,6 @@
-const DEFAULT_API_HOST = 'http://127.0.0.1:48080'
+const DEFAULT_API_HOST = 'https://linlihuzhu.jiusuanhuitong.site'
 const API_PREFIX = '/app-api'
-const DEFAULT_AMAP_JS_KEY = '6fce091b3bc68b52bc2c8a5050d32f2e'
+const DEFAULT_AMAP_JS_KEY = '8339941bfd632eac92ca1de6ef8de10b'
 
 const STORAGE_KEYS = {
   apiHost: 'linbang_api_host',
@@ -10,7 +10,8 @@ const STORAGE_KEYS = {
   profile: 'linbang_profile',
   roleContext: 'linbang_role_context',
   settings: 'linbang_platform_settings',
-  pendingSocialAuth: 'linbang_pending_social_auth'
+  pendingSocialAuth: 'linbang_pending_social_auth',
+  pendingInvite: 'linbang_pending_invite'
 }
 
 const PUBLIC_PAGES = ['pages/splash/splash', 'pages/login/login', 'pages/login/social_callback']
@@ -55,7 +56,7 @@ export function getAmapSecurityJsCode(settings = {}) {
     || settings.amapSecurityCode
     || uni.getStorageSync(STORAGE_KEYS.amapSecurityJsCode)
     || getRuntimeConfigValue('__LINBANG_AMAP_SECURITY_JS_CODE__')
-    || ''
+    || '17fbedba495ba11a985b182162a5d83b'
 }
 
 export function setApiHost(host) {

@@ -2,6 +2,7 @@
 import { APP_CONFIG } from '@/config/app'
 import { bootstrapSession, loadPlatformSettings } from '@/services/app-bootstrap'
 import { refreshAppOrderReminder, startAppOrderReminder } from '@/services/app-order-reminder'
+import { captureInviteContext, consumePendingInviteContext } from '@/services/invite-context'
 
 let lastRuntimeArgs = ''
 
@@ -31,12 +32,15 @@ function parseRuntimeCallback(args) {
 }
 
 export default {
-	onLaunch: function () {
+	onLaunch: function (options) {
+		captureInviteContext(options)
 		loadPlatformSettings().catch(() => null)
-		bootstrapSession().catch(() => null)
+		bootstrapSession().then(() => consumePendingInviteContext()).catch(() => null)
 		startAppOrderReminder()
 	},
-	onShow: function () {
+	onShow: function (options) {
+		captureInviteContext(options)
+		consumePendingInviteContext().catch(() => null)
 		refreshAppOrderReminder().catch(() => null)
 		// #ifdef APP-PLUS
 		const options = parseRuntimeCallback(plus.runtime.arguments)
@@ -78,6 +82,17 @@ body {
 
 view {
 	box-sizing: border-box;
+}
+
+/* Custom-navigation business pages start below the native status bar. */
+page .page-container:not(.home-page):not(.immersive-page) {
+	/* All custom-navigation pages reserve the status/menu-button area. */
+	padding-top: 84px !important;
+}
+
+page .page-container.home-page,
+page .page-container.immersive-page {
+	padding-top: 0 !important;
 }
 
 .back-icon {

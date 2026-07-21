@@ -120,7 +120,7 @@ CREATE TABLE `infra_api_access_log`  (
   `request_method` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '请求方法名',
   `request_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '请求地址',
   `request_params` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '请求参数',
-  `response_body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '响应结果',
+  `response_body` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '响应结果',
   `user_ip` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '用户 IP',
   `user_agent` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '浏览器 UA',
   `operate_module` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '操作模块',
@@ -1862,6 +1862,7 @@ CREATE TABLE IF NOT EXISTS `lb_commission_order` (
   `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_lb_commission_order_no` (`commission_no`),
+  UNIQUE KEY `uk_lb_commission_order_source_unit` (`promoter_id`, `source_order_id`, `source_unit_id`),
   KEY `idx_lb_commission_order_promoter_id` (`promoter_id`),
   KEY `idx_lb_commission_order_user_id` (`user_id`),
   KEY `idx_lb_commission_order_status` (`status`),
@@ -2359,6 +2360,9 @@ CREATE TABLE IF NOT EXISTS `lb_promoter_relation` (
   `bind_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '绑定时间',
   `first_order_id` BIGINT DEFAULT NULL COMMENT '首单订单ID',
   `convert_status` VARCHAR(32) NOT NULL DEFAULT 'PENDING' COMMENT '转化状态 PENDING/CONVERTED',
+  `invite_code` VARCHAR(64) DEFAULT NULL COMMENT '绑定时使用的邀请码审计快照',
+  `source_channel` VARCHAR(32) DEFAULT NULL COMMENT '邀请来源渠道 SHARE_CARD/TIMELINE/QRCODE/MANUAL/UNKNOWN',
+  `source_page` VARCHAR(255) DEFAULT NULL COMMENT '捕获邀请码的来源页面',
   `tenant_id` BIGINT NOT NULL DEFAULT 1 COMMENT '租户编号',
   `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -2367,10 +2371,34 @@ CREATE TABLE IF NOT EXISTS `lb_promoter_relation` (
   `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_lb_promoter_relation_promoter_user` (`promoter_id`, `user_id`),
-  KEY `idx_lb_promoter_relation_user_id` (`user_id`),
+  UNIQUE KEY `uk_lb_promoter_relation_user_id` (`user_id`),
   KEY `idx_lb_promoter_relation_bind_time` (`bind_time`),
   KEY `idx_lb_promoter_relation_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='推广员绑定关系表';
+
+DROP TABLE IF EXISTS `lb_promoter_operation_log`;
+CREATE TABLE IF NOT EXISTS `lb_promoter_operation_log` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `promoter_id` BIGINT NOT NULL COMMENT '推广员ID',
+  `user_id` BIGINT DEFAULT NULL COMMENT '关联用户ID',
+  `biz_type` VARCHAR(32) NOT NULL COMMENT '业务对象类型',
+  `biz_id` BIGINT DEFAULT NULL COMMENT '业务对象ID',
+  `operation_type` VARCHAR(32) NOT NULL COMMENT '操作类型 BIND/CONVERT/COMMISSION_CREATE/COMMISSION_REFUND/STATUS_CHANGE',
+  `before_status` VARCHAR(32) DEFAULT NULL COMMENT '变更前状态',
+  `after_status` VARCHAR(32) DEFAULT NULL COMMENT '变更后状态',
+  `remark` VARCHAR(500) DEFAULT NULL COMMENT '操作说明',
+  `tenant_id` BIGINT NOT NULL DEFAULT 1 COMMENT '租户编号',
+  `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_lb_promoter_operation_log_promoter_time` (`promoter_id`, `create_time`),
+  KEY `idx_lb_promoter_operation_log_biz` (`biz_type`, `biz_id`),
+  KEY `idx_lb_promoter_operation_log_user_id` (`user_id`),
+  KEY `idx_lb_promoter_operation_log_tenant_id` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='推广员业务操作日志表';
 
 DROP TABLE IF EXISTS `lb_partner_info`;
 CREATE TABLE IF NOT EXISTS `lb_partner_info` (

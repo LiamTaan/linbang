@@ -103,7 +103,6 @@ export default {
         }
     },
     onShow() {
-        uni.hideTabBar()
         syncMessageUnreadCount({ silent: true })
         this.reloadList()
     },

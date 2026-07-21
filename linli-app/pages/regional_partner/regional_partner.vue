@@ -59,7 +59,10 @@
         <view class="panel-card">
           <view class="panel-header">
             <text class="panel-title">待审核入驻申请</text>
-            <text class="panel-link" @click="navigateTo('/pages/regional_partner/entry_audit_list')">查看全部&gt;&gt;</text>
+            <view class="panel-link" @click="navigateTo('/pages/regional_partner/entry_audit_list')">
+              <text>查看全部</text>
+              <text class="iconfont icon-youjiantou panel-link-icon"></text>
+            </view>
           </view>
           <view v-if="entryAudits.length" class="audit-list">
             <view
@@ -85,7 +88,10 @@
               <text class="panel-title">辖区纠纷</text>
               <text class="compact-desc">当前待处理纠纷：{{ summary.pendingComplaintCount || 0 }}件</text>
             </view>
-            <text class="panel-link">去处理&gt;&gt;</text>
+            <view class="panel-link">
+              <text>去处理</text>
+              <text class="iconfont icon-youjiantou panel-link-icon"></text>
+            </view>
           </view>
         </view>
       </view>
@@ -187,7 +193,7 @@ export default {
           label: '推广数据',
           iconSrc: buildEntryIcon('promote', '#c94be9'),
           className: 'entry-pink',
-          url: '/pages/regional_partner/regional_partner'
+          url: '/pages/regional_partner/promote_stat'
         },
         {
           key: 'instruction',
@@ -225,13 +231,6 @@ export default {
       this.disputePage = disputePage || { list: [] }
     },
     openEntry(item) {
-      if (item.key === 'promote') {
-        uni.showToast({
-          title: `推广数据：${this.promoteStat.newUserCount || 0}人`,
-          icon: 'none'
-        })
-        return
-      }
       navigateTo(item.url)
     }
   }
@@ -444,6 +443,13 @@ export default {
 
 .panel-link {
   color: #5c99ea;
+  font-size: 20rpx;
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.panel-link-icon {
   font-size: 20rpx;
 }
 

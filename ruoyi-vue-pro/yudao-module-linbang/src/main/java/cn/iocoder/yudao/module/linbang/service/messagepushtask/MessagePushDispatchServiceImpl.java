@@ -359,20 +359,14 @@ public class MessagePushDispatchServiceImpl implements MessagePushDispatchServic
 
     private List<MessageTemplateDO> resolveTemplates(String templateCode, MessageSceneDO scene) {
         List<MessageTemplateDO> templates = new ArrayList<>();
-        if (StrUtil.isNotBlank(templateCode)) {
-            templates.addAll(messageTemplateMapper.selectList(new LambdaQueryWrapperX<MessageTemplateDO>()
-                    .eq(MessageTemplateDO::getTemplateCode, templateCode)
-                    .eq(MessageTemplateDO::getStatus, "ENABLE")
-                    .orderByAsc(MessageTemplateDO::getSort)
-                    .orderByAsc(MessageTemplateDO::getId)));
+        if (StrUtil.isBlank(templateCode)) {
+            return templates;
         }
-        if (CollUtil.isEmpty(templates)) {
-            templates = messageTemplateMapper.selectList(new LambdaQueryWrapperX<MessageTemplateDO>()
-                    .eq(MessageTemplateDO::getSceneCode, scene.getSceneCode())
-                    .eq(MessageTemplateDO::getStatus, "ENABLE")
-                    .orderByAsc(MessageTemplateDO::getSort)
-                    .orderByAsc(MessageTemplateDO::getId));
-        }
+        templates.addAll(messageTemplateMapper.selectList(new LambdaQueryWrapperX<MessageTemplateDO>()
+                .eq(MessageTemplateDO::getTemplateCode, templateCode)
+                .eq(MessageTemplateDO::getStatus, "ENABLE")
+                .orderByAsc(MessageTemplateDO::getSort)
+                .orderByAsc(MessageTemplateDO::getId)));
         return deduplicateByChannel(templates);
     }
 

@@ -66,6 +66,7 @@
       <el-table-column label="邀请码" align="center" prop="inviteCode" min-width="140" />
       <el-table-column label="绑定人数" align="center" prop="bindUserCount" width="110" />
       <el-table-column label="转化人数" align="center" prop="convertCount" width="110" />
+      <el-table-column label="待转化" align="center" prop="pendingConvertCount" width="100" />
       <el-table-column label="累计佣金" align="center" prop="totalCommissionAmount" width="120" />
       <el-table-column label="可提现佣金" align="center" prop="availableCommissionAmount" width="130" />
       <el-table-column label="状态" align="center" prop="status" width="100">
@@ -76,7 +77,7 @@
         </template>
       </el-table-column>
       <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="操作" align="center" fixed="right" width="100">
+      <el-table-column label="操作" align="center" fixed="right" width="170">
         <template #default="{ row }">
           <el-button
             link
@@ -85,6 +86,14 @@
             @click="openDetail(row.id)"
           >
             详情
+          </el-button>
+          <el-button
+            link
+            :type="row.status === 'ENABLE' ? 'danger' : 'success'"
+            v-hasPermi="['linbang:promote:user:update']"
+            @click="handleStatusChange(row)"
+          >
+            {{ row.status === 'ENABLE' ? '停用' : '启用' }}
           </el-button>
         </template>
       </el-table-column>
@@ -102,6 +111,7 @@
 
 <script setup lang="ts">
 import type { FormInstance } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 import { dateFormatter } from '@/utils/formatTime'
 import { PromoterApi, type Promoter } from '@/api/linbang/promoter'
@@ -151,6 +161,19 @@ const resetQuery = () => {
 const detailDialogRef = ref()
 const openDetail = (id: number) => {
   detailDialogRef.value.open(id)
+}
+
+const handleStatusChange = async (row: Promoter) => {
+  const nextStatus = row.status === 'ENABLE' ? 'DISABLE' : 'ENABLE'
+  const action = nextStatus === 'ENABLE' ? '启用' : '停用'
+  await ElMessageBox.confirm(
+    nextStatus === 'DISABLE' ? '停用后该推广员的邀请码将不能继续绑定，已有归属不会删除。' : '确认重新启用该推广员？',
+    `${action}推广员`,
+    { type: 'warning' }
+  )
+  await PromoterApi.updatePromoterStatus(row.id, nextStatus)
+  ElMessage.success(`${action}成功`)
+  await getList()
 }
 
 onMounted(() => {

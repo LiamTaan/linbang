@@ -41,6 +41,10 @@
 
             </view>
 
+            <view class="form-item">
+                <input class="input-field" v-model="inviteCode" maxlength="64" placeholder="邀请码（选填）" />
+            </view>
+
             <view class="agreement">
                 <view class="agreement-item" @click="toggleAgree">
                     <view class="checkbox" :class="{ checked: agreed }">
@@ -69,6 +73,7 @@
 import { accountRegister, sendSmsCode } from '@/api/auth'
 import { applyLoginSession, redirectAfterLogin } from '@/services/session'
 import { getAgreement } from '@/api/platform'
+import { captureInviteContext } from '@/services/invite-context'
 
 export default {
     props: {
@@ -87,7 +92,8 @@ export default {
             showPassword: false,
             showConfirmPassword: false,
             codeCountdown: 0,
-            agreement: null
+            agreement: null,
+            inviteCode: ''
         }
     },
     async created() {
@@ -156,6 +162,13 @@ export default {
                 return
             }
             try {
+                if (this.inviteCode) {
+                    captureInviteContext({
+                        inviteCode: this.inviteCode,
+                        sourceChannel: 'MANUAL',
+                        sourcePage: 'pages/login/login'
+                    })
+                }
                 const loginResp = await accountRegister({
                     username: this.buildRegisterUsername(),
                     mobile: this.phone,

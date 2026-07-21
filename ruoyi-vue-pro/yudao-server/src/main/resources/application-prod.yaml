@@ -146,15 +146,15 @@ logging:
 
 wx:
   mp:
-    appid: wxb78b0f73190d11e0
-    secret: ac0de4cfb6effbc8279da4242db6851f
+    appid: ${WX_MP_APP_ID:wxb78b0f73190d11e0}
+    secret: ${WX_MP_SECRET:b84f5424bf818855d4564de8d5e04997}
     config-storage:
       type: RedisTemplate
       key-prefix: wx
       http-client-type: HttpClient
   miniapp:
-    appid: wxb78b0f73190d11e0
-    secret: ac0de4cfb6effbc8279da4242db6851f
+    appid: ${WX_MINIAPP_APPID:wxb78b0f73190d11e0}
+    secret: ${WX_MINIAPP_SECRET:b84f5424bf818855d4564de8d5e04997}
     config-storage:
       type: RedisTemplate
       key-prefix: wa
@@ -165,7 +165,7 @@ wx:
 yudao:
   web:
     admin-ui:
-      url: ${ADMIN_UI_URL:https://admin.example.com}
+      url: ${ADMIN_UI_URL:https://linlihuzhu.jiusuanhuitong.site}
   captcha:
     enable: ${YUDAO_CAPTCHA_ENABLE:false}
   security:
@@ -176,14 +176,14 @@ yudao:
     enable: true
   demo: false
   pay:
-    order-notify-url: https://域名/admin-api/pay/notify/order
-    refund-notify-url: https://域名/admin-api/pay/notify/refund
-    transfer-notify-url: https://域名/admin-api/pay/notify/transfer
+    order-notify-url: https://linlihuzhu.jiusuanhuitong.site/admin-api/pay/notify/order
+    refund-notify-url: https://linlihuzhu.jiusuanhuitong.site/admin-api/pay/notify/refund
+    transfer-notify-url: https://linlihuzhu.jiusuanhuitong.site/admin-api/pay/notify/transfer
   map:
     amap:
       enabled: true
       base-url: https://restapi.amap.com
-      key: ${AMAP_WEB_KEY:}
+      key: 5dacdd84a153a53d64f26342b6d6a948
 
 justauth:
   enabled: true
@@ -216,3 +216,8 @@ justauth:
     type: REDIS
     prefix: 'social_auth_state:'
     timeout: 24h
+
+linbang:
+  public-base-url: ${LINBANG_PUBLIC_BASE_URL:https://linlihuzhu.jiusuanhuitong.site}
+  message:
+    public-base-url: ${LINBANG_MESSAGE_PUBLIC_BASE_URL:${linbang.public-base-url}}

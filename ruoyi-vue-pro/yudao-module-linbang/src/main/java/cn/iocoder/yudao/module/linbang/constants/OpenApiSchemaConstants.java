@@ -221,7 +221,7 @@ public interface OpenApiSchemaConstants {
             "佣金类型，按推广佣金字典展示，当前常见值如 ORDER 订单佣金。";
 
     String COMMISSION_STATUS =
-            "佣金状态，按推广佣金状态字典展示，常见值如 PENDING 待结算、SETTLED 已结算、INVALID 已失效。";
+            "佣金状态，按推广佣金状态字典展示，常见值如 PENDING 待结算、SETTLED 已结算、REFUNDED 已退款冲正。";
 
     String HELP_FEEDBACK_TYPE =
             "反馈分类，按平台帮助反馈分类字典展示，例如 功能建议、异常反馈、投诉建议。";

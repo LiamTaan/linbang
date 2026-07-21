@@ -5,6 +5,7 @@ import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteInvit
 import cn.iocoder.yudao.module.linbang.controller.admin.promoter.vo.PromoterDetailRespVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.promoter.vo.PromoterPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.promoter.vo.PromoterRespVO;
+import cn.iocoder.yudao.module.linbang.controller.admin.promoter.vo.PromoterStatusUpdateReqVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderinfo.OrderInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderunit.OrderUnitDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.promoter.PromoterDO;
@@ -19,7 +20,13 @@ public interface PromoterService {
 
     void handleOrderFinished(OrderInfoDO order, OrderUnitDO unit);
 
+    void handleOrderRefunded(OrderInfoDO order, OrderUnitDO unit);
+
+    PromoterDO syncPromoterMetrics(Long promoterId);
+
     PageResult<PromoterRespVO> getPromoterPage(PromoterPageReqVO reqVO);
 
     PromoterDetailRespVO getPromoterDetail(Long id);
+
+    void updatePromoterStatus(PromoterStatusUpdateReqVO reqVO);
 }

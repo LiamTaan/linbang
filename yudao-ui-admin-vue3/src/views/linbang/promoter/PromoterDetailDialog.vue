@@ -40,7 +40,7 @@
       <el-descriptions-item label="已转化关系">{{ detailData.summary?.convertedRelationCount ?? 0 }}</el-descriptions-item>
       <el-descriptions-item label="待结算佣金单">{{ detailData.summary?.pendingCommissionCount ?? 0 }}</el-descriptions-item>
       <el-descriptions-item label="已结算佣金单">{{ detailData.summary?.settledCommissionCount ?? 0 }}</el-descriptions-item>
-      <el-descriptions-item label="已失效佣金单">{{ detailData.summary?.invalidCommissionCount ?? 0 }}</el-descriptions-item>
+      <el-descriptions-item label="退款佣金单">{{ detailData.summary?.invalidCommissionCount ?? 0 }}</el-descriptions-item>
       <el-descriptions-item label="待结算佣金额">
         {{ detailData.summary?.pendingCommissionAmount ?? 0 }}
       </el-descriptions-item>
@@ -91,6 +91,18 @@
       </el-table-column>
       <el-table-column label="结算时间" prop="settleTime" :formatter="dateFormatter" width="180" />
     </el-table>
+    <el-divider content-position="left">最近操作日志</el-divider>
+    <el-table :data="detailData.recentOperationLogs || []" size="small" border>
+      <el-table-column label="操作" prop="operationType" min-width="160" />
+      <el-table-column label="业务对象" min-width="150">
+        <template #default="{ row }">{{ row.bizType || '-' }} / {{ row.bizId || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="状态变化" min-width="160">
+        <template #default="{ row }">{{ row.beforeStatus || '-' }} → {{ row.afterStatus || '-' }}</template>
+      </el-table-column>
+      <el-table-column label="说明" prop="remark" min-width="240" />
+      <el-table-column label="时间" prop="createTime" :formatter="dateFormatter" width="180" />
+    </el-table>
   </Dialog>
 </template>
 
@@ -128,6 +140,9 @@ const open = async (id: number) => {
     }
     if (!detailData.value.recentCommissionOrders) {
       detailData.value.recentCommissionOrders = []
+    }
+    if (!detailData.value.recentOperationLogs) {
+      detailData.value.recentOperationLogs = []
     }
   } finally {
     detailLoading.value = false

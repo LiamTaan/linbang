@@ -112,6 +112,13 @@
 			}
 		},
 		{
+			"path": "pages/regional_partner/promote_stat",
+			"style": {
+				"navigationBarTitleText": "辖区推广数据",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/regional_partner/entry_audit_list",
 			"style": {
 				"navigationBarTitleText": "入驻初审",

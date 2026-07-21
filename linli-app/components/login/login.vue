@@ -10,6 +10,7 @@
                 <text class="mini-program-subtitle">登录后即可享受便民服务</text>
             </view>
             <view class="mini-program-login-actions">
+                <input class="invite-input" v-model="inviteCode" maxlength="64" placeholder="邀请码（选填）" />
                 <button class="wechat-phone-login-btn" open-type="getPhoneNumber"
                     :disabled="wechatPhoneLoading" @getphonenumber="loginByWechatMiniProgramPhone">
                     <text class="btn-text">{{ wechatPhoneLoading ? '登录中...' : '微信手机号授权登录' }}</text>
@@ -51,6 +52,10 @@
                 <view class="login-btn" @click="login">
                     <text class="btn-text">登录</text>
                 </view>
+
+                <view class="form-item">
+                    <input class="input-field" v-model="inviteCode" maxlength="64" placeholder="邀请码（选填）" />
+                </view>
             </view>
 
             <view class="register-link" @click="switchToRegister">
@@ -65,6 +70,7 @@
 <script>
 import { loginBySms, loginByWechatMiniProgramPhone, sendSmsCode } from '@/api/auth'
 import { applyLoginSession, redirectAfterLogin } from '@/services/session'
+import { captureInviteContext } from '@/services/invite-context'
 
 export default {
     props: {
@@ -78,7 +84,8 @@ export default {
             phone: '',
             code: '',
             codeCountdown: 0,
-            wechatPhoneLoading: false
+            wechatPhoneLoading: false,
+            inviteCode: ''
         }
     },
     methods: {
@@ -94,6 +101,7 @@ export default {
             if (this.wechatPhoneLoading) return
             this.wechatPhoneLoading = true
             try {
+                this.captureManualInvite()
                 const loginCode = await new Promise((resolve, reject) => {
                     uni.login({
                         provider: 'weixin',
@@ -147,6 +155,7 @@ export default {
                 return
             }
             try {
+                this.captureManualInvite()
                 const loginResp = await loginBySms({
                     mobile: this.phone,
                     code: this.code
@@ -157,6 +166,14 @@ export default {
         },
         switchToRegister() {
             this.$emit('switch-to-register')
+        },
+        captureManualInvite() {
+            if (!this.inviteCode) return
+            captureInviteContext({
+                inviteCode: this.inviteCode,
+                sourceChannel: 'MANUAL',
+                sourcePage: 'pages/login/login'
+            })
         }
     }
 }
@@ -181,7 +198,7 @@ export default {
         position: absolute;
         left: 0;
         right: 0;
-        top: calc(env(safe-area-inset-top) + 150rpx);
+        top: 150rpx;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -222,6 +239,19 @@ export default {
         right: 64rpx;
         top: 58%;
         transform: translateY(-50%);
+    }
+
+    .invite-input {
+        width: 100%;
+        height: 88rpx;
+        margin-bottom: 22rpx;
+        padding: 0 28rpx;
+        border: 2rpx solid rgba(255, 255, 255, 0.72);
+        border-radius: 14rpx;
+        background: rgba(255, 255, 255, 0.94);
+        box-sizing: border-box;
+        color: #2f3a4a;
+        font-size: 28rpx;
     }
 
     .mini-program-login-actions .wechat-phone-login-btn {

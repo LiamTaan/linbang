@@ -247,12 +247,12 @@ export default {
 }
 .upload-grid {
     margin-top: 18rpx;
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16rpx;
 }
 .upload-item {
-    width: calc(50% - 8rpx);
+    min-width: 0;
     min-height: 120rpx;
     background: #F7F9FC;
     border-radius: 14rpx;

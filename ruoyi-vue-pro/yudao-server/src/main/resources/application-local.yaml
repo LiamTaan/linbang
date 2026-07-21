@@ -253,7 +253,7 @@ yudao:
     amap:
       enabled: true
       base-url: https://restapi.amap.com
-      key: ${AMAP_WEB_KEY:6fce091b3bc68b52bc2c8a5050d32f2e}
+      key: 5dacdd84a153a53d64f26342b6d6a948
 #  wxa-code:
 #    env-version: develop # 小程序版本: 正式版为 "release"；体验版为 "trial"；开发版为 "develop"
 #  wxa-subscribe-message:

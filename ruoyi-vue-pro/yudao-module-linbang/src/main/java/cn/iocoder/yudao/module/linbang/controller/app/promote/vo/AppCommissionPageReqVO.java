@@ -8,6 +8,6 @@ import lombok.Data;
 @Data
 public class AppCommissionPageReqVO extends PageParam {
 
-    @Schema(description = "佣金单状态筛选：PENDING 待结算、SETTLED 已结算、INVALID 已失效", example = "PENDING")
+    @Schema(description = "佣金单状态筛选：PENDING 待结算、SETTLED 已结算、REFUNDED 已退款冲正", example = "PENDING")
     private String status;
 }

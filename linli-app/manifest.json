@@ -86,6 +86,11 @@
         "setting" : {
             "urlCheck" : false
         },
+        "permission" : {
+            "scope.userLocation" : {
+                "desc" : "用于选择服务地址和匹配附近服务"
+            }
+        },
         "usingComponents" : true
     },
     "mp-alipay" : {

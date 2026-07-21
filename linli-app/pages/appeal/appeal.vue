@@ -39,7 +39,7 @@
                 <text class="section-title">申诉订单</text>
                 <view class="reason-select" @click="handleOrderSelect">
                     <text class="reason-text">{{ selectedOrderTitle }}</text>
-                    <text class="reason-arrow">></text>
+                    <text class="iconfont icon-youjiantou reason-arrow"></text>
                 </view>
             </view>
 
@@ -47,7 +47,7 @@
                 <text class="section-title">申诉单元</text>
                 <view class="reason-select" @click="handleUnitSelect">
                     <text class="reason-text">{{ selectedUnitTitle }}</text>
-                    <text class="reason-arrow">></text>
+                    <text class="iconfont icon-youjiantou reason-arrow"></text>
                 </view>
             </view>
 
@@ -84,7 +84,7 @@
                     <text class="section-title">申诉进度</text>
                     <view class="view-detail" @click="handleViewDetail">
                         <text class="detail-text">查看详情</text>
-                        <text class="detail-arrow">></text>
+                        <text class="iconfont icon-youjiantou detail-arrow"></text>
                     </view>
                 </view>
                 <view class="progress-info" v-if="latestAppeal">

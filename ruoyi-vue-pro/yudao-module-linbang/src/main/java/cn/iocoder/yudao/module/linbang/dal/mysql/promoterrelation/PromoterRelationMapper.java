@@ -14,4 +14,11 @@ public interface PromoterRelationMapper extends BaseMapperX<PromoterRelationDO> 
                 .eq(PromoterRelationDO::getUserId, userId)
                 .last("LIMIT 1"));
     }
+
+    default PromoterRelationDO selectByUserId(Long userId) {
+        return selectOne(new LambdaQueryWrapperX<PromoterRelationDO>()
+                .eq(PromoterRelationDO::getUserId, userId)
+                .orderByAsc(PromoterRelationDO::getId)
+                .last("LIMIT 1"));
+    }
 }

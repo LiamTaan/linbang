@@ -425,7 +425,10 @@ public class AppPartnerServiceImpl implements AppPartnerService {
                 .in(CommissionOrderDO::getUserId, scopedUserIds)
                 .inIfPresent(CommissionOrderDO::getPromoterId, new ArrayList<>(promoterIds))
                 .orderByDesc(CommissionOrderDO::getId));
-        Set<Long> convertedOrderIds = convertSet(commissionOrders, CommissionOrderDO::getSourceOrderId, Objects::nonNull);
+        List<CommissionOrderDO> effectiveCommissionOrders = commissionOrders.stream()
+                .filter(item -> !"REFUNDED".equalsIgnoreCase(item.getStatus()))
+                .collect(Collectors.toList());
+        Set<Long> convertedOrderIds = convertSet(effectiveCommissionOrders, CommissionOrderDO::getSourceOrderId, Objects::nonNull);
         List<OrderInfoDO> convertedOrders = convertedOrderIds.isEmpty() ? Collections.emptyList()
                 : orderInfoMapper.selectBatchIds(convertedOrderIds);
         AppPartnerPromoteStatRespVO respVO = new AppPartnerPromoteStatRespVO();
@@ -435,6 +438,14 @@ public class AppPartnerServiceImpl implements AppPartnerService {
                 .count());
         respVO.setNewUserCount(scopedUsers.size());
         respVO.setBoundPromoterCount(promoterIds.size());
+        respVO.setRelationCount(promoterRelations.size());
+        respVO.setConvertedRelationCount((int) promoterRelations.stream()
+                .filter(item -> "CONVERTED".equalsIgnoreCase(item.getConvertStatus())).count());
+        respVO.setCommissionOrderCount(commissionOrders.size());
+        respVO.setCommissionAmount(effectiveCommissionOrders.stream()
+                .map(CommissionOrderDO::getCommissionAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
         respVO.setConvertOrderCount(convertedOrderIds.size());
         respVO.setTradeAmount(convertedOrders.stream()
                 .map(OrderInfoDO::getOrderAmount)

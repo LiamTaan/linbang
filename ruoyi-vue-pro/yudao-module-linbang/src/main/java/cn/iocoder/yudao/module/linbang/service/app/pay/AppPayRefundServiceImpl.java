@@ -24,6 +24,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.walletflow.WalletFlowMapper;
 import cn.iocoder.yudao.module.linbang.service.finance.LinbangFinanceService;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
 import cn.iocoder.yudao.module.linbang.service.orderflow.OrderFlowOrchestratorService;
+import cn.iocoder.yudao.module.linbang.service.promoter.PromoterService;
 import cn.iocoder.yudao.module.pay.api.notify.dto.PayRefundNotifyReqDTO;
 import cn.iocoder.yudao.module.pay.api.refund.PayRefundApi;
 import cn.iocoder.yudao.module.pay.api.refund.dto.PayRefundCreateReqDTO;
@@ -94,6 +95,8 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
     private LinbangFinanceService linbangFinanceService;
     @Resource
     private OrderFlowOrchestratorService orderFlowOrchestratorService;
+    @Resource
+    private PromoterService promoterService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -212,6 +215,7 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
                 .orderAmount(newOrderAmount)
                 .build());
         linbangFinanceService.handleRefundSuccess(order, unit, refundAmount, payRefund.getId());
+        promoterService.handleOrderRefunded(order, unit);
         orderFlowOrchestratorService.onRefundSuccess(order.getId());
         String nextOrderStatus = Optional.ofNullable(orderInfoMapper.selectById(order.getId()))
                 .map(OrderInfoDO::getStatus)

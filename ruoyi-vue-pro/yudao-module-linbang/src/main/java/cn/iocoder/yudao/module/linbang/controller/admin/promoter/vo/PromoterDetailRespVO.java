@@ -44,6 +44,8 @@ public class PromoterDetailRespVO {
     private List<RelationRespVO> recentRelations;
     @Schema(description = "最近佣金单")
     private List<CommissionRespVO> recentCommissionOrders;
+    @Schema(description = "最近推广业务操作日志")
+    private List<OperationLogRespVO> recentOperationLogs;
 
     @Data
     public static class UserRespVO {
@@ -73,7 +75,7 @@ public class PromoterDetailRespVO {
         private Integer pendingCommissionCount;
         @Schema(description = "已结算佣金单数", example = "9")
         private Integer settledCommissionCount;
-        @Schema(description = "已失效佣金单数", example = "1")
+        @Schema(description = "已退款冲正佣金单数", example = "1")
         private Integer invalidCommissionCount;
         @Schema(description = "待结算佣金金额", example = "120.00")
         private BigDecimal pendingCommissionAmount;
@@ -136,6 +138,28 @@ public class PromoterDetailRespVO {
         @Schema(description = "结算时间")
         private LocalDateTime settleTime;
         @Schema(description = "创建时间")
+        private LocalDateTime createTime;
+    }
+
+    @Data
+    public static class OperationLogRespVO {
+        @Schema(description = "日志 ID", example = "1")
+        private Long id;
+        @Schema(description = "关联用户 ID", example = "5002")
+        private Long userId;
+        @Schema(description = "业务对象类型", example = "COMMISSION")
+        private String bizType;
+        @Schema(description = "业务对象 ID", example = "2001")
+        private Long bizId;
+        @Schema(description = "操作类型", example = "COMMISSION_REFUND")
+        private String operationType;
+        @Schema(description = "变更前状态", example = "PENDING")
+        private String beforeStatus;
+        @Schema(description = "变更后状态", example = "REFUNDED")
+        private String afterStatus;
+        @Schema(description = "操作说明")
+        private String remark;
+        @Schema(description = "操作时间")
         private LocalDateTime createTime;
     }
 }

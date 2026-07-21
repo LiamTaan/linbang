@@ -8,7 +8,8 @@
       <view class="placeholder"></view>
     </view>
 
-    <scroll-view class="content-scroll" scroll-y refresher-enabled :refresher-triggered="refreshing" @refresherrefresh="loadDetail">
+    <scroll-view class="content-scroll" scroll-y :refresher-enabled="contentScrollTop <= 0"
+      :refresher-triggered="refreshing" @scroll="handleContentScroll" @refresherrefresh="loadDetail">
       <view v-if="errorText" class="summary-card">
         <text class="card-title">当前订单暂时无法查看</text>
         <text class="summary-text">{{ errorText }}</text>
@@ -168,6 +169,7 @@ export default {
       currentMerchantId: null,
       orderDetail: {},
       refreshing: false,
+      contentScrollTop: 0,
       errorText: ''
     }
   },
@@ -318,6 +320,10 @@ export default {
   },
   methods: {
     getOrderUnitStatusLabel,
+    handleContentScroll(event) {
+      const scrollTop = Number(event && event.detail && event.detail.scrollTop)
+      this.contentScrollTop = Number.isNaN(scrollTop) ? 0 : scrollTop
+    },
     async loadDetail() {
       if (!this.orderId) {
         return
@@ -740,6 +746,10 @@ export default {
         await this.loadPayStatus(true)
       } catch (error) {
         const message = error && error.errMsg ? error.errMsg : ''
+        const requestMessage = error && error.message ? error.message : ''
+        if (!message.includes('cancel') && requestMessage) {
+          uni.showToast({ title: requestMessage, icon: 'none' })
+        }
         if (message.includes('cancel')) {
           uni.showToast({ title: '已取消支付', icon: 'none' })
         }
@@ -810,11 +820,16 @@ export default {
 
 <style lang="scss" scoped>
 .page-container {
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: #f7f9fc;
 }
 
 .header {
+  flex-shrink: 0;
   background: #fff;
   padding: 60rpx 30rpx 26rpx;
   display: flex;
@@ -841,6 +856,9 @@ export default {
 }
 
 .content-scroll {
+  flex: 1;
+  height: 0;
+  min-height: 0;
   padding: 20rpx 24rpx 0;
   box-sizing: border-box;
 }
@@ -1024,13 +1042,13 @@ export default {
 }
 
 .unit-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16rpx;
 }
 
 .unit-cell {
-  width: calc(50% - 8rpx);
+  min-width: 0;
   padding: 18rpx 20rpx;
   border-radius: 16rpx;
   background: #f8fafc;
@@ -1038,7 +1056,7 @@ export default {
 }
 
 .cell-wide {
-  width: 100%;
+  grid-column: 1 / -1;
 }
 
 .cell-label,
@@ -1237,6 +1255,11 @@ export default {
 .footer-btn.secondary {
   background: #edf5ff;
   color: #4c89df;
+}
+
+.footer-btn.primary {
+  background: #2e83f0;
+  color: #fff;
 }
 
 .bottom-space {

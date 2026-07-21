@@ -21,7 +21,19 @@ public class AppPartnerPromoteStatRespVO {
     @Schema(description = "辖区推广员数，指在当前辖区用户推广关系中出现过的真实推广员数量", example = "8")
     private Integer boundPromoterCount;
 
-    @Schema(description = "辖区推广转化订单数，按真实推广佣金单关联的 sourceOrderId 去重统计", example = "15")
+    @Schema(description = "辖区内真实推广绑定关系数", example = "26")
+    private Integer relationCount;
+
+    @Schema(description = "辖区内已完成首笔有效交易的推广关系数", example = "15")
+    private Integer convertedRelationCount;
+
+    @Schema(description = "辖区推广佣金单数，包含待结算、已结算和已退款冲正", example = "18")
+    private Integer commissionOrderCount;
+
+    @Schema(description = "辖区有效推广佣金金额，不含 REFUNDED 退款冲正佣金，单位元", example = "328.00")
+    private BigDecimal commissionAmount;
+
+    @Schema(description = "辖区推广成交订单数，按非 REFUNDED 佣金单关联的 sourceOrderId 去重统计", example = "15")
     private Integer convertOrderCount;
 
     @Schema(description = "辖区推广成交额，按真实推广佣金单关联成交订单金额汇总，单位元", example = "3280.00")

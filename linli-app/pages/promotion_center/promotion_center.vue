@@ -30,13 +30,14 @@
                     <view class="meta-divider"></view>
                     <view class="meta-item">
                         <text class="meta-label">待转化</text>
-                        <text class="meta-value">{{ center.convertCount || 0 }} 人</text>
+                        <text class="meta-value">{{ center.pendingConvertCount || 0 }} 人</text>
                     </view>
                 </view>
             </view>
         </view>
 
-        <scroll-view class="content-scroll" scroll-y refresher-enabled :refresher-triggered="refreshing"
+        <scroll-view class="content-scroll" scroll-y :refresher-enabled="contentScrollTop <= 0"
+            :refresher-triggered="refreshing" @scroll="handleContentScroll"
             @refresherrefresh="handleRefresh">
             <view class="surface-card level-card">
                 <view class="card-header">
@@ -92,33 +93,30 @@
                         <text class="invite-code-label">邀请码</text>
                         <text class="invite-code">{{ center.inviteCode || '--' }}</text>
                     </view>
-                    <view class="share-button" @click="copyShareLink">
-                        <text class="share-button-text">复制链接</text>
-                    </view>
-                </view>
-
-                <view class="link-box" @click="copyShareLink">
-                    <text class="link-label">推广链接</text>
-                    <text class="link-text">{{ shareLink }}</text>
+                    <button class="share-button" open-type="share">
+                        <text class="share-button-text">微信分享</text>
+                    </button>
                 </view>
 
                 <view class="share-panel">
                     <text class="share-title">分享至</text>
                     <view class="share-row">
-                        <view class="share-item" @click="copyShareLink">
+                        <button class="share-item share-native-button" open-type="share">
                             <image class="share-icon" src="/static/img/promotion_center/wechat@3x.png" />
                             <text class="share-name">微信</text>
-                        </view>
-                        <view class="share-item" @click="copyShareLink">
+                        </button>
+                        <view class="share-item" @click="openTimelineShare">
                             <image class="share-icon" src="/static/img/promotion_center/moments@3x.png" />
                             <text class="share-name">朋友圈</text>
                         </view>
-                        <view class="share-item" @click="copyShareLink">
+                        <view class="share-item" @click="generatePoster">
                             <image class="share-icon" src="/static/img/promotion_center/qq@3x.png" />
-                            <text class="share-name">QQ</text>
+                            <text class="share-name">推广海报</text>
                         </view>
                     </view>
                 </view>
+                <image v-if="posterUrl" class="poster-preview" :src="posterUrl" mode="widthFix" @click="previewPoster" />
+                <text class="settlement-note">绑定、转化和佣金结算分别统计；二级团队仅展示，不参与佣金结算。</text>
             </view>
 
             <view class="surface-card record-card">
@@ -145,7 +143,7 @@
 </template>
 
 <script>
-import { getPromoteCenter, getTeamStats } from '@/api/promote'
+import { generatePromotePoster, getPromoteCenter, getTeamStats } from '@/api/promote'
 
 export default {
     data() {
@@ -153,7 +151,10 @@ export default {
             center: {},
             teamStats: {},
             loading: false,
-            refreshing: false
+            refreshing: false,
+            contentScrollTop: 0,
+            posterUrl: '',
+            generatingPoster: false
         }
     },
     computed: {
@@ -162,9 +163,6 @@ export default {
         },
         recentCommissionOrders() {
             return (this.center.recentCommissionOrders || []).slice(0, 5)
-        },
-        shareLink() {
-            return this.center.inviteUrl || this.center.inviteShortLink || '暂无推广链接'
         },
         levelRuleText() {
             return '0-9 初级，10-49 中级，50+ 高级'
@@ -206,6 +204,20 @@ export default {
     onShow() {
         this.loadPageData()
     },
+    onShareAppMessage() {
+        return {
+            title: '邻里互助，发现身边可信服务',
+            path: `/pages/index/index?inviteCode=${encodeURIComponent(this.center.inviteCode || '')}&sourceChannel=SHARE_CARD`,
+            imageUrl: this.posterUrl || undefined
+        }
+    },
+    onShareTimeline() {
+        return {
+            title: '邻里互助，发现身边可信服务',
+            query: `inviteCode=${encodeURIComponent(this.center.inviteCode || '')}&sourceChannel=TIMELINE`,
+            imageUrl: this.posterUrl || undefined
+        }
+    },
     methods: {
         async loadPageData() {
             if (this.loading) {
@@ -229,6 +241,10 @@ export default {
             this.refreshing = true
             this.loadPageData()
         },
+        handleContentScroll(event) {
+            const scrollTop = Number(event && event.detail && event.detail.scrollTop)
+            this.contentScrollTop = Number.isNaN(scrollTop) ? 0 : scrollTop
+        },
         copyText(text, title) {
             if (!text) {
                 return
@@ -246,9 +262,31 @@ export default {
         copyInviteCode() {
             this.copyText(this.center.inviteCode, '邀请码已复制')
         },
-        copyShareLink() {
-            const text = this.center.inviteUrl || this.center.inviteShortLink || this.center.inviteCode
-            this.copyText(text, '推广信息已复制')
+        openTimelineShare() {
+            // #ifdef MP-WEIXIN
+            uni.showShareMenu({ menus: ['shareAppMessage', 'shareTimeline'] })
+            uni.showToast({ title: '请从右上角分享到朋友圈', icon: 'none' })
+            // #endif
+            // #ifndef MP-WEIXIN
+            this.copyInviteCode()
+            // #endif
+        },
+        async generatePoster() {
+            if (this.generatingPoster) return
+            this.generatingPoster = true
+            uni.showLoading({ title: '生成中' })
+            try {
+                const result = await generatePromotePoster()
+                this.posterUrl = result && result.posterUrl ? result.posterUrl : ''
+                if (this.posterUrl) this.previewPoster()
+            } finally {
+                uni.hideLoading()
+                this.generatingPoster = false
+            }
+        },
+        previewPoster() {
+            if (!this.posterUrl) return
+            uni.previewImage({ current: this.posterUrl, urls: [this.posterUrl] })
         },
         formatCommissionDesc(item) {
             const parts = [
@@ -272,10 +310,15 @@ export default {
 
 <style lang="scss" scoped>
 .page-container {
+    height: 100vh;
     min-height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     background: #f4f7fb;
 
     .header-bg {
+        flex-shrink: 0;
         position: relative;
         background: linear-gradient(180deg, #3485f7 0%, #4a90f0 100%);
         padding-bottom: 110rpx;
@@ -352,7 +395,6 @@ export default {
     .level-desc,
     .progress-hint,
     .invite-code-label,
-    .link-label,
     .record-desc,
     .share-name,
     .empty-state {
@@ -422,6 +464,9 @@ export default {
     }
 
     .content-scroll {
+        flex: 1;
+        height: 0;
+        min-height: 0;
         margin-top: -74rpx;
         padding: 0 24rpx 36rpx;
         box-sizing: border-box;
@@ -588,22 +633,14 @@ export default {
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-    }
+        padding: 0;
+        margin: 0;
+        border: 0;
+        line-height: normal;
 
-    .link-box {
-        margin-top: 18rpx;
-        border-radius: 16rpx;
-        background: #f8fbff;
-        padding: 20rpx;
-    }
-
-    .link-text {
-        display: block;
-        margin-top: 10rpx;
-        color: #2f7df2;
-        font-size: 26rpx;
-        line-height: 1.5;
-        word-break: break-all;
+        &::after {
+            border: 0;
+        }
     }
 
     .share-panel {
@@ -636,6 +673,32 @@ export default {
         align-items: center;
         justify-content: center;
         gap: 8rpx;
+    }
+
+    .share-native-button {
+        padding: 0;
+        margin: 0;
+        border: 0;
+        line-height: normal;
+
+        &::after {
+            border: 0;
+        }
+    }
+
+    .poster-preview {
+        display: block;
+        width: 260rpx;
+        margin: 24rpx auto 0;
+        border-radius: 12rpx;
+    }
+
+    .settlement-note {
+        display: block;
+        margin-top: 20rpx;
+        color: #8290a3;
+        font-size: 22rpx;
+        line-height: 1.55;
     }
 
     .share-icon {

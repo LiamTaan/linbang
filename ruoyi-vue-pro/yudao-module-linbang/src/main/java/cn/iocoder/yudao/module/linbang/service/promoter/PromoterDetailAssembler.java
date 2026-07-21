@@ -8,6 +8,7 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.orderinfo.OrderInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderunit.OrderUnitDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.promoter.PromoterDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.promoterrelation.PromoterRelationDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.promoteroperationlog.PromoterOperationLogDO;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -22,7 +23,8 @@ final class PromoterDetailAssembler {
 
     static PromoterDetailRespVO build(PromoterDO promoter, MemberUserDO user, List<PromoterRelationDO> relations,
                                       List<CommissionOrderDO> commissionOrders, Map<Long, MemberUserDO> relatedUserMap,
-                                      Map<Long, OrderInfoDO> orderMap, Map<Long, OrderUnitDO> unitMap) {
+                                      Map<Long, OrderInfoDO> orderMap, Map<Long, OrderUnitDO> unitMap,
+                                      List<PromoterOperationLogDO> operationLogs) {
         PromoterDetailRespVO respVO = BeanUtils.toBean(promoter, PromoterDetailRespVO.class);
         if (user != null) {
             respVO.setUser(BeanUtils.toBean(user, PromoterDetailRespVO.UserRespVO.class));
@@ -30,6 +32,10 @@ final class PromoterDetailAssembler {
         respVO.setSummary(buildSummary(relations, commissionOrders));
         respVO.setRecentRelations(buildRecentRelations(relations, relatedUserMap, orderMap));
         respVO.setRecentCommissionOrders(buildRecentCommissionOrders(commissionOrders, relatedUserMap, orderMap, unitMap));
+        respVO.setRecentOperationLogs(operationLogs == null ? Collections.emptyList() : operationLogs.stream()
+                .limit(20)
+                .map(item -> BeanUtils.toBean(item, PromoterDetailRespVO.OperationLogRespVO.class))
+                .collect(Collectors.toList()));
         return respVO;
     }
 
@@ -42,7 +48,7 @@ final class PromoterDetailAssembler {
                 .count());
         summary.setPendingCommissionCount(countCommissionByStatus(commissionOrders, "PENDING"));
         summary.setSettledCommissionCount(countCommissionByStatus(commissionOrders, "SETTLED"));
-        summary.setInvalidCommissionCount(countCommissionByStatus(commissionOrders, "INVALID"));
+        summary.setInvalidCommissionCount(countCommissionByStatus(commissionOrders, "REFUNDED"));
         summary.setPendingCommissionAmount(sumCommissionByStatus(commissionOrders, "PENDING"));
         summary.setSettledCommissionAmount(sumCommissionByStatus(commissionOrders, "SETTLED"));
         return summary;

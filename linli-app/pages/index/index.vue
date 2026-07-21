@@ -1,30 +1,25 @@
 <template>
-    <view class="page-container">
-        <view class="header">
+    <view class="page-container home-page">
+        <view class="header" :style="{ paddingTop: `${Math.max(statusBarHeight + 2, menuButtonBottom - 34)}px` }">
             <view class="location-btn" @click="handleSelectAddress">
                 <image class="location-icon" src="/static/img/home/location@3x.png" />
                 <text class="location-text">{{ locationText || '请选择服务地址' }}</text>
-            </view>
-            <view class="role-switch" @click="handleSwitchRole">
-                <image class="switch-icon" src="/static/img/home/switch_role@3x.png" />
             </view>
         </view>
 
         <view class="map-area">
             <!-- #ifdef H5 -->
             <view id="home-amap" class="amap-container"></view>
-            <view class="map-center-pin">
-                <view class="map-center-pin-head"></view>
-                <view class="map-center-pin-tail"></view>
-            </view>
+            <image class="map-center-pin" src="/static/img/set/location@3x.png" mode="aspectFit" />
             <!-- #endif -->
             <!-- #ifndef H5 -->
-            <map class="native-map" :longitude="mapCenter.longitude" :latitude="mapCenter.latitude"
-                :markers="mapMarkers" scale="15" show-location></map>
+            <map id="home-native-map" class="native-map" :longitude="mapCenter.longitude" :latitude="mapCenter.latitude"
+                scale="15" show-location @tap="handleNativeMapTap" @regionchange="handleNativeMapRegionChange"></map>
+            <cover-image class="native-map-center-pin" src="/static/img/set/location@3x.png"></cover-image>
             <!-- #endif -->
         </view>
 
-        <view class="main-content">
+        <view class="main-content" :style="mainContentStyle">
             <view class="search-box">
                 <view class="search-input-wrap">
                     <image class="search-icon" src="/static/img/home/search@3x.png" />
@@ -36,7 +31,9 @@
                 </view>
             </view>
 
-            <scroll-view class="content-scroll" scroll-y refresher-enabled :refresher-triggered="refreshing"
+            <scroll-view class="content-scroll" :style="contentScrollStyle" scroll-y
+                :refresher-enabled="contentScrollTop <= 0"
+                :refresher-triggered="refreshing" @scroll="handleContentScroll"
                 @refresherrefresh="handleRefresh">
                 <view class="surface-card category-section" v-if="level1Categories.length">
                     <scroll-view class="category-scroll" scroll-x :show-scrollbar="false">
@@ -129,7 +126,7 @@
                     <view class="safety-tip" @click="handleAgreement">
                         <text class="safety-tip-label">交易保障</text>
                         <text class="safety-tip-text">{{ currentAgreementTitle }}</text>
-                        <text class="safety-tip-arrow">></text>
+                        <text class="iconfont icon-youjiantou safety-tip-arrow"></text>
                     </view>
 
                     <view class="checkbox-list" v-if="showInvoiceOption || showSplitOption">
@@ -221,6 +218,7 @@
 
 <script>
 import tabBar from '@/components/tabBar/tabBar.vue'
+import { getMenuButtonBottom, getStatusBarHeight } from '@/utils/system-ui'
 import { getAddressPage, getNearbyAddressPois, getRoleContext, resolveAddressLocation, switchRole } from '@/api/member'
 import { uploadAppFile } from '@/api/infra'
 import { getServiceCategoryList } from '@/api/merchant'
@@ -290,7 +288,12 @@ export default {
     },
     data() {
         return {
+            statusBarHeight: 0,
+            menuButtonBottom: 0,
+            mainContentHeight: 0,
+            contentScrollHeight: 0,
             searchText: '',
+            contentScrollTop: 0,
             refreshing: false,
             locating: false,
             uploading: false,
@@ -342,7 +345,25 @@ export default {
             }
         }
     },
+    onLoad() {
+        this.statusBarHeight = getStatusBarHeight()
+        this.menuButtonBottom = getMenuButtonBottom()
+        this.updateHomeViewport()
+    },
+    onResize(event) {
+        this.updateHomeViewport(event && event.size)
+    },
     computed: {
+        mainContentStyle() {
+            return this.mainContentHeight > 0
+                ? { height: `${this.mainContentHeight}px` }
+                : {}
+        },
+        contentScrollStyle() {
+            return this.contentScrollHeight > 0
+                ? { height: `${this.contentScrollHeight}px` }
+                : {}
+        },
         level1Categories() {
             return this.categories || []
         },
@@ -531,7 +552,6 @@ export default {
         }
     },
     async onShow() {
-        uni.hideTabBar()
         syncMessageUnreadCount({ silent: true })
         await this.loadPageData()
         this.consumeRepublishDraft()
@@ -553,6 +573,24 @@ export default {
         this.mapInitialized = false
     },
     methods: {
+        updateHomeViewport(size = {}) {
+            let windowHeight = Number(size.windowHeight || 0)
+            if (!windowHeight) {
+                try {
+                    const info = uni.getWindowInfo ? uni.getWindowInfo() : uni.getSystemInfoSync()
+                    windowHeight = Number(info.windowHeight || 0)
+                } catch (error) {
+                    windowHeight = 0
+                }
+            }
+            if (!windowHeight) {
+                return
+            }
+            const toPx = (rpx) => typeof uni.upx2px === 'function' ? uni.upx2px(rpx) : rpx / 2
+            const mainHeight = Math.max(windowHeight - toPx(414), toPx(240))
+            this.mainContentHeight = mainHeight
+            this.contentScrollHeight = Math.max(mainHeight - toPx(128), toPx(120))
+        },
         initHomeMap() {
             this.updateMapCenter(this.mapCenter.longitude, this.mapCenter.latitude)
             if (this.mapInitialized) {
@@ -622,6 +660,42 @@ export default {
                 this.mapResolveTimer = null
                 this.resolveMapCenterAddress()
             }, 350)
+        },
+        handleNativeMapRegionChange(event) {
+            const detail = (event && event.detail) || {}
+            if (detail.type !== 'end') {
+                return
+            }
+            const applyCenter = (center) => {
+                const longitude = center && center.longitude
+                const latitude = center && center.latitude
+                if (!longitude || !latitude) {
+                    return
+                }
+                this.updateMapCenter(longitude, latitude)
+                this.scheduleResolveMapCenter('正在解析地图中心地址')
+            }
+            if (detail.centerLocation) {
+                applyCenter(detail.centerLocation)
+                return
+            }
+            const mapContext = uni.createMapContext('home-native-map', this)
+            mapContext.getCenterLocation({
+                success: applyCenter,
+                fail: () => {
+                    this.mapStatusText = '未能读取地图中心位置，请重新拖动地图'
+                }
+            })
+        },
+        handleNativeMapTap(event) {
+            const detail = (event && event.detail) || {}
+            const longitude = detail.longitude
+            const latitude = detail.latitude
+            if (!longitude || !latitude) {
+                return
+            }
+            this.updateMapCenter(longitude, latitude)
+            this.scheduleResolveMapCenter('正在解析所选地址')
         },
         async resolveMapCenterAddress() {
             if (this.resolvingMapAddress) {
@@ -766,6 +840,10 @@ export default {
         handleRefresh() {
             this.refreshing = true
             this.loadPageData(this.searchText)
+        },
+        handleContentScroll(event) {
+            const scrollTop = Number(event && event.detail && event.detail.scrollTop)
+            this.contentScrollTop = Number.isNaN(scrollTop) ? 0 : scrollTop
         },
         ensureCategorySelection() {
             if (!this.categories.length) {
@@ -1499,6 +1577,7 @@ export default {
                 showCancel: false
             })
         },
+        /* role switching is available from the profile page */
         async handleSwitchRole() {
             if (!this.switchableRoles.length) {
                 uni.showToast({
@@ -1534,14 +1613,16 @@ export default {
 
 <style lang="scss" scoped>
 .page-container {
+    height: 100vh;
     min-height: 100vh;
+    overflow: hidden;
     background: linear-gradient(180deg, #eff3f8 0%, #f7f8fb 26%, #f3f5f9 100%);
-    padding-bottom: 120rpx;
+    padding-bottom: 0;
 
     .header {
-        padding: 56rpx 26rpx 0;
+        padding: 0 26rpx;
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-start;
         align-items: center;
         position: absolute;
         top: 0;
@@ -1576,21 +1657,6 @@ export default {
             }
         }
 
-        .role-switch {
-            width: 68rpx;
-            height: 68rpx;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 34rpx;
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 12rpx 26rpx rgba(34, 53, 86, 0.1);
-
-            .switch-icon {
-                width: 48rpx;
-                height: 48rpx;
-            }
-        }
     }
 
     .map-area {
@@ -1608,6 +1674,17 @@ export default {
             height: 100%;
         }
 
+        .native-map-center-pin {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            z-index: 10;
+            width: 52rpx;
+            height: 58rpx;
+            transform: translate(-50%, -100%);
+            pointer-events: none;
+        }
+
         .amap-container :deep(.amap-logo) {
             bottom: 116rpx !important;
         }
@@ -1621,29 +1698,10 @@ export default {
             left: 50%;
             top: 50%;
             z-index: 2;
-            transform: translate(-50%, -78%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            width: 52rpx;
+            height: 58rpx;
+            transform: translate(-50%, -100%);
             pointer-events: none;
-        }
-
-        .map-center-pin-head {
-            width: 30rpx;
-            height: 30rpx;
-            border: 10rpx solid #4a90f0;
-            border-radius: 50% 50% 50% 0;
-            background: #4a90f0;
-            transform: rotate(-45deg);
-            box-shadow: 0 10rpx 22rpx rgba(74, 144, 240, 0.22);
-        }
-
-        .map-center-pin-tail {
-            width: 6rpx;
-            height: 38rpx;
-            margin-top: -4rpx;
-            border-radius: 999rpx;
-            background: #4a90f0;
         }
 
         &::after {
@@ -1662,8 +1720,12 @@ export default {
         margin-top: -86rpx;
         position: relative;
         z-index: 10;
-        min-height: calc(100vh - 414rpx);
+        height: calc(100vh - 414rpx);
+        min-height: 0;
         padding: 0 22rpx;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
 
         .search-box {
             display: flex;
@@ -1717,7 +1779,10 @@ export default {
 
         .content-scroll {
             flex: 1;
+            min-height: 0;
             box-sizing: border-box;
+            overflow: hidden;
+            -webkit-overflow-scrolling: touch;
 
             .surface-card {
                 background: #fff;
@@ -2267,7 +2332,7 @@ export default {
             }
 
             .bottom-space {
-                height: 80rpx;
+                height: calc(128rpx + env(safe-area-inset-bottom));
             }
         }
     }

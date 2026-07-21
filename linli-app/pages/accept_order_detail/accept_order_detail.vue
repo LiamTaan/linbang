@@ -16,7 +16,8 @@
       </view>
     </view>
 
-    <scroll-view class="content-scroll" scroll-y refresher-enabled :refresher-triggered="refreshing" @refresherrefresh="loadDetail">
+    <scroll-view class="content-scroll" scroll-y :refresher-enabled="contentScrollTop <= 0"
+      :refresher-triggered="refreshing" @scroll="handleContentScroll" @refresherrefresh="loadDetail">
       <view v-if="errorText" class="card error-card">
         <text class="section-title">当前需求暂时无法抢单</text>
         <text class="section-desc">{{ errorText }}</text>
@@ -117,6 +118,7 @@ export default {
       detail: {},
       guaranteeConfig: {},
       refreshing: false,
+      contentScrollTop: 0,
       accepting: false,
       errorText: ''
     }
@@ -159,6 +161,10 @@ export default {
   },
   methods: {
     getPriceItemTypeLabel,
+    handleContentScroll(event) {
+      const scrollTop = Number(event && event.detail && event.detail.scrollTop)
+      this.contentScrollTop = Number.isNaN(scrollTop) ? 0 : scrollTop
+    },
     async loadDetail() {
       if (!this.orderId) {
         return
@@ -235,11 +241,16 @@ export default {
 
 <style lang="scss" scoped>
 .page-container {
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: #f4f7fb;
 }
 
 .hero {
+  flex-shrink: 0;
   background: linear-gradient(180deg, #3384f6 0%, #4e97ff 100%);
   border-bottom-left-radius: 32rpx;
   border-bottom-right-radius: 32rpx;
@@ -291,6 +302,9 @@ export default {
 }
 
 .content-scroll {
+  flex: 1;
+  height: 0;
+  min-height: 0;
   margin-top: -22rpx;
   padding: 0 24rpx;
   box-sizing: border-box;

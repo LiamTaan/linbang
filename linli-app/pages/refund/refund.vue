@@ -8,8 +8,8 @@
             <view class="placeholder"></view>
         </view>
 
-        <scroll-view class="content-scroll" scroll-y refresher-enabled :refresher-triggered="refreshing"
-            @refresherrefresh="handleRefresh">
+        <scroll-view class="content-scroll" scroll-y :refresher-enabled="contentScrollTop <= 0"
+            :refresher-triggered="refreshing" @scroll="handleContentScroll" @refresherrefresh="handleRefresh">
             <view class="order-card" @click="selectOrder">
                 <view class="card-header">
                     <text class="header-label">退款订单</text>
@@ -109,6 +109,7 @@ export default {
     data() {
         return {
             refreshing: false,
+            contentScrollTop: 0,
             submitting: false,
             orderId: null,
             unitId: null,
@@ -178,6 +179,10 @@ export default {
         handleRefresh() {
             this.refreshing = true
             this.loadPageData()
+        },
+        handleContentScroll(event) {
+            const scrollTop = Number(event && event.detail && event.detail.scrollTop)
+            this.contentScrollTop = Number.isNaN(scrollTop) ? 0 : scrollTop
         },
         async loadPageData() {
             try {
@@ -304,10 +309,15 @@ export default {
 
 <style lang="scss" scoped>
 .page-container {
+    height: 100vh;
     min-height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     background: #F5F5F5;
 
     .header {
+        flex-shrink: 0;
         background: #fff;
         padding: 60rpx 30rpx 30rpx;
         display: flex;
@@ -334,6 +344,8 @@ export default {
 
     .content-scroll {
         flex: 1;
+        height: 0;
+        min-height: 0;
         padding: 20rpx;
         box-sizing: border-box;
 

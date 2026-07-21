@@ -7,7 +7,8 @@
       <text class="title">服务经营资料</text>
       <view class="placeholder"></view>
     </view>
-    <scroll-view class="content-scroll" scroll-y refresher-enabled :refresher-triggered="refreshing" @refresherrefresh="loadPageData">
+    <scroll-view class="content-scroll" scroll-y :refresher-enabled="contentScrollTop <= 0"
+      :refresher-triggered="refreshing" @scroll="handleContentScroll" @refresherrefresh="loadPageData">
       <view class="card">
         <text class="section-title">当前经营类目</text>
         <text class="sub">{{ categoryAbilityText }}</text>
@@ -137,6 +138,7 @@ export default {
   data() {
     return {
       refreshing: false,
+      contentScrollTop: 0,
       profile: {},
       servicePoints: [],
       referencePrices: [],
@@ -167,6 +169,10 @@ export default {
     this.loadPageData()
   },
   methods: {
+    handleContentScroll(event) {
+      const scrollTop = Number(event && event.detail && event.detail.scrollTop)
+      this.contentScrollTop = Number.isNaN(scrollTop) ? 0 : scrollTop
+    },
     async loadPageData() {
       try {
         this.refreshing = true
@@ -332,12 +338,12 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.page-container { min-height: 100vh; background: #f5f7fb; }
-.header { background: #fff; padding: 60rpx 30rpx 24rpx; display: flex; justify-content: space-between; align-items: center; border-bottom: 1rpx solid #eef2f7; }
+.page-container { height: 100vh; min-height: 100vh; overflow: hidden; display: flex; flex-direction: column; background: #f5f7fb; }
+.header { flex-shrink: 0; background: #fff; padding: 60rpx 30rpx 24rpx; display: flex; justify-content: space-between; align-items: center; border-bottom: 1rpx solid #eef2f7; }
 .back-btn,.placeholder { width: 60rpx; }
 .back-icon { font-size: 40rpx; color: #333; transform: rotate(180deg); }
 .title { font-size: 34rpx; font-weight: bold; color: #1f2937; }
-.content-scroll { padding: 20rpx; box-sizing: border-box; }
+.content-scroll { flex: 1; height: 0; min-height: 0; padding: 20rpx; box-sizing: border-box; }
 .card { background: #fff; border-radius: 24rpx; padding: 24rpx; margin-bottom: 20rpx; box-shadow: 0 8rpx 24rpx rgba(15,23,42,.05); }
 .row { display: flex; align-items: center; }
 .between { justify-content: space-between; }

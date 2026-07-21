@@ -16,6 +16,10 @@ export function getTeamStats() {
   return get('/promote/team-stats/get')
 }
 
-export function bindInviteCode(data) {
-  return post('/promote/invite-code/bind', data)
+export function bindInviteCode(data, options = {}) {
+  return post('/promote/invite-code/bind', data, options)
+}
+
+export function generatePromotePoster() {
+  return post('/promote/poster/generate', {})
 }

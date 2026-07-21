@@ -22,7 +22,7 @@ public class AppCommissionPageItemRespVO {
     @Schema(description = "佣金金额")
     private BigDecimal commissionAmount;
 
-    @Schema(description = "佣金单状态：PENDING 待结算、SETTLED 已结算、INVALID 已失效", example = "PENDING")
+    @Schema(description = "佣金单状态：PENDING 待结算、SETTLED 已结算、REFUNDED 已退款冲正", example = "PENDING")
     private String status;
 
     @Schema(description = "结算时间")

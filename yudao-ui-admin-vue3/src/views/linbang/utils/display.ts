@@ -155,7 +155,7 @@ export const SENSITIVE_WORD_MATCH_TYPE_OPTIONS = [{ label: '包含匹配', value
 export const COMMISSION_STATUS_OPTIONS = [
   { label: '待结算', value: 'PENDING' },
   { label: '已结算', value: 'SETTLED' },
-  { label: '已失效', value: 'INVALID' }
+  { label: '已退款冲正', value: 'REFUNDED' }
 ]
 
 export const MATCH_STATUS_OPTIONS = [
@@ -418,6 +418,7 @@ const APPEAL_STATUS_LABELS: Record<string, string> = {
 const COMMISSION_STATUS_LABELS: Record<string, string> = {
   PENDING: '待结算',
   SETTLED: '已结算',
+  REFUNDED: '已退款冲正',
   INVALID: '已失效'
 }
 
@@ -623,7 +624,7 @@ export const getCommissionStatusTagType = (value?: string) => {
   if (value === 'SETTLED') {
     return 'success'
   }
-  if (value === 'INVALID') {
+  if (value === 'INVALID' || value === 'REFUNDED') {
     return 'info'
   }
   return 'warning'

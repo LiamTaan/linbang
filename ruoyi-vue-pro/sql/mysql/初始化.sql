@@ -1046,8 +1046,8 @@ VALUES
 (620102, 'linbang_platform', 2, 'App 个体执照代办入口地址', 'linbang.app.license-agent-entry-url', 'https://example.com/license-agent', b'1', '资金域 P0 默认配置', 'admin', NOW(), 'admin', NOW(), b'0'),
 (620103, 'linbang_platform', 2, 'App 个体执照代办入口标题', 'linbang.app.license-agent-entry-title', '个体执照代办', b'1', '资金域 P0 默认配置', 'admin', NOW(), 'admin', NOW(), b'0'),
 (620104, 'linbang_platform', 2, 'App 提现说明', 'linbang.app.withdraw-notice', '提现申请审核通过后预计 T+1 到账，实际到账时间以银行处理为准。', b'1', '资金域 P0 默认配置', 'admin', NOW(), 'admin', NOW(), b'0'),
-(620105, 'linbang_platform', 2, '高德地图 JS API Key', 'linbang.app.amap-js-key', '', b'1', 'App H5 首页真实地图使用的高德 JS API Key', 'admin', NOW(), 'admin', NOW(), b'0'),
-(620106, 'linbang_platform', 2, '高德地图 JS API 安全密钥', 'linbang.app.amap-security-js-code', '', b'1', '高德 JS API securityJsCode，未启用安全密钥时可为空', 'admin', NOW(), 'admin', NOW(), b'0');
+(620105, 'linbang_platform', 2, '高德地图 JS API Key', 'linbang.app.amap-js-key', '8339941bfd632eac92ca1de6ef8de10b', b'1', 'App H5 首页真实地图使用的高德 JS API Key', 'admin', NOW(), 'admin', NOW(), b'0'),
+(620106, 'linbang_platform', 2, '高德地图 JS API 安全密钥', 'linbang.app.amap-security-js-code', '17fbedba495ba11a985b182162a5d83b', b'1', '高德 JS API securityJsCode，未启用安全密钥时可为空', 'admin', NOW(), 'admin', NOW(), b'0');
 
 COMMIT;
 

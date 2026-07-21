@@ -11,6 +11,7 @@ export interface Promoter {
   inviteUrl?: string
   bindUserCount?: number
   convertCount?: number
+  pendingConvertCount?: number
   totalCommissionAmount?: number
   availableCommissionAmount?: number
   status?: string
@@ -23,6 +24,7 @@ export interface PromoterDetail extends Promoter {
   summary?: PromoterSummary
   recentRelations?: PromoterRelation[]
   recentCommissionOrders?: PromoterCommissionOrder[]
+  recentOperationLogs?: PromoterOperationLog[]
 }
 
 export interface PromoterUser {
@@ -76,11 +78,26 @@ export interface PromoterCommissionOrder {
   createTime?: string
 }
 
+export interface PromoterOperationLog {
+  id?: number
+  userId?: number
+  bizType?: string
+  bizId?: number
+  operationType?: string
+  beforeStatus?: string
+  afterStatus?: string
+  remark?: string
+  createTime?: string
+}
+
 export const PromoterApi = {
   getPromoterPage: async (params: any) => {
     return await request.get({ url: '/promote/user/page', params })
   },
   getPromoter: async (id: number) => {
     return await request.get<PromoterDetail>({ url: `/promote/user/get?id=${id}` })
+  },
+  updatePromoterStatus: async (id: number, status: 'ENABLE' | 'DISABLE') => {
+    return await request.put({ url: '/promote/user/update-status', data: { id, status } })
   }
 }

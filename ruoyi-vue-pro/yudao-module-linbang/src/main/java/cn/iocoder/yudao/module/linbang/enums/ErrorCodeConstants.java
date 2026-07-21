@@ -166,6 +166,10 @@ public interface ErrorCodeConstants {
     ErrorCode PROMOTER_PENALTY_RECORD_NOT_EXISTS = new ErrorCode(1_099_007_017, "推广员处罚记录不存在");
     ErrorCode MESSAGE_SCENE_NOT_EXISTS = new ErrorCode(1_099_007_018, "消息场景不存在");
     ErrorCode MESSAGE_CAMPAIGN_NOT_EXISTS = new ErrorCode(1_099_007_019, "消息投放活动不存在");
+    ErrorCode PROMOTER_INVITE_SELF_BIND = new ErrorCode(1_099_007_020, "不能绑定自己的邀请码");
+    ErrorCode PROMOTER_INVITE_ALREADY_BOUND = new ErrorCode(1_099_007_021, "当前用户已经绑定其他推广员，推广归属不可更换");
+    ErrorCode PROMOTER_DISABLED = new ErrorCode(1_099_007_022, "推广员已停用，邀请码不可使用");
+    ErrorCode PROMOTER_QRCODE_GENERATE_FAILED = new ErrorCode(1_099_007_023, "推广小程序码生成失败，请稍后重试");
     ErrorCode MESSAGE_CAMPAIGN_AUDIT_STATUS_INVALID = new ErrorCode(1_099_007_020, "当前投放活动状态不允许审核");
     ErrorCode MESSAGE_CAMPAIGN_EXECUTE_STATUS_INVALID = new ErrorCode(1_099_007_021, "当前投放活动状态不允许执行");
     ErrorCode MESSAGE_CAMPAIGN_CANCEL_STATUS_INVALID = new ErrorCode(1_099_007_022, "当前投放活动状态不允许取消");

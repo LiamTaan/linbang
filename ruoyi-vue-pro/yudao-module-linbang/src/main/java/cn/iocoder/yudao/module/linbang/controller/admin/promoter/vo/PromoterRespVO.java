@@ -38,6 +38,9 @@ public class PromoterRespVO {
     @ExcelProperty("转化人数")
     private Integer convertCount;
 
+    @ExcelProperty("待转化人数")
+    private Integer pendingConvertCount;
+
     @ExcelProperty("累计佣金")
     private BigDecimal totalCommissionAmount;
 

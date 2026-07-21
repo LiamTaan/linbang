@@ -1,5 +1,6 @@
 import { bootstrapSession } from '@/services/app-bootstrap'
 import { clearPendingSocialAuth, clearSession, setTokenInfo } from '@/utils/auth'
+import { consumePendingInviteContext } from '@/services/invite-context'
 
 export async function applyLoginSession(loginResp) {
   if (!loginResp || !loginResp.accessToken) {
@@ -12,6 +13,7 @@ export async function applyLoginSession(loginResp) {
     userId: loginResp.userId
   })
   clearPendingSocialAuth()
+  await consumePendingInviteContext()
   const session = await bootstrapSession()
   uni.$emit('linbang:session-updated', session)
   return session

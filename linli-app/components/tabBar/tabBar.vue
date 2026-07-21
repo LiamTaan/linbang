@@ -113,8 +113,7 @@ export default {
     justify-content: space-around;
     box-shadow: 0rpx -8rpx 24rpx rgba(74, 144, 240, 0.08);
     border-top: 1rpx solid rgba(205, 225, 247, 0.9);
-    // padding-bottom: env(safe-area-inset-bottom);
-    padding: 20rpx 0;
+    padding: 20rpx 0 calc(20rpx + env(safe-area-inset-bottom));
     z-index: 999;
     .tab-item {
         display: flex;

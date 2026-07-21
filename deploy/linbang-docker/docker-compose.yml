@@ -1,0 +1,101 @@
+services:
+  mysql:
+    image: mysql:8.0.36
+    container_name: linbang-mysql
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: linbang
+      MYSQL_USER: linbang
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - linbang
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: linbang-redis
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - linbang
+
+  backend:
+    image: eclipse-temurin:8-jre
+    container_name: linbang-backend
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 48080
+      DB_URL: jdbc:mysql://mysql:3306/linbang?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true&useUnicode=true&characterEncoding=UTF-8
+      DB_USERNAME: linbang
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_SLAVE_URL: jdbc:mysql://mysql:3306/linbang?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true&useUnicode=true&characterEncoding=UTF-8
+      DB_SLAVE_USERNAME: linbang
+      DB_SLAVE_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DATABASE: 1
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      ADMIN_UI_URL: https://linlihuzhu.jiusuanhuitong.site
+      ADMIN_UI_HOST: https://linlihuzhu.jiusuanhuitong.site
+      LINBANG_PUBLIC_BASE_URL: https://linlihuzhu.jiusuanhuitong.site
+      LINBANG_MESSAGE_PUBLIC_BASE_URL: https://linlihuzhu.jiusuanhuitong.site
+      WX_MP_APP_ID: ${WX_MP_APP_ID}
+      WX_MP_SECRET: ${WX_MP_SECRET}
+      WX_MINIAPP_APPID: ${WX_MINIAPP_APPID}
+      WX_MINIAPP_SECRET: ${WX_MINIAPP_SECRET}
+      LOG_FILE: /www/wwwlogs/linbang/yudao-server.log
+      YUDAO_CAPTCHA_ENABLE: "false"
+      JAVA_OPTS: -Xms512m -Xmx1024m -Djava.security.egd=file:/dev/./urandom
+    command: ["sh", "-c", "java $$JAVA_OPTS -jar /app/yudao-server.jar"]
+    volumes:
+      - ./backend/yudao-server.jar:/app/yudao-server.jar:ro
+      - ./upload-files:/www/wwwroot/linbang-docker/upload-files
+      - ./logs:/www/wwwlogs/linbang
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - linbang
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: linbang-nginx
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:8013:80
+    volumes:
+      - ./frontend/dist-prod:/usr/share/nginx/html:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - linbang
+
+networks:
+  linbang:
+    name: linbang-network

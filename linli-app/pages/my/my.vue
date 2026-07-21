@@ -1,5 +1,5 @@
 <template>
-    <view class="page-container">
+    <view class="page-container immersive-page">
         <view class="page-container-header">
             <view class="user-card">
                 <view class="user-info">
@@ -321,7 +321,6 @@ export default {
         }
     },
     onShow() {
-        uni.hideTabBar()
         syncMessageUnreadCount({ silent: true })
         this.loadPageData()
     },
@@ -572,15 +571,18 @@ export default {
 
     .page-container-header {
         position: relative;
-        padding-top: 40rpx;
+        padding-top: 84px;
+        padding-bottom: 28rpx;
+        background: linear-gradient(180deg, #3485f7 0%, #4a90f0 100%);
+        border-radius: 0 0 34rpx 34rpx;
     }
 
     .user-card {
-        width: 90%;
-        margin: 0 auto 60rpx;
-        background: linear-gradient(158deg, #71AFFF, #2E83F0);
-        border-radius: 14rpx;
-        padding: 40rpx 30rpx 100rpx;
+        width: auto;
+        margin: 0 24rpx;
+        background: transparent;
+        border-radius: 0;
+        padding: 40rpx 20rpx 92rpx;
         position: relative;
         z-index: 1;
 
@@ -714,8 +716,8 @@ export default {
     }
 
     .stats-card {
-        width: 85%;
-        margin: -140rpx auto 20rpx;
+        width: auto;
+        margin: -70rpx 24rpx 0;
         background: rgba(255, 255, 255, 0.96);
         border-radius: 24rpx;
         padding: 32rpx 40rpx;

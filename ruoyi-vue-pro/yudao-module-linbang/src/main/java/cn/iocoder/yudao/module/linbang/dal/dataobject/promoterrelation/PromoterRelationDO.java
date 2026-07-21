@@ -30,4 +30,10 @@ public class PromoterRelationDO extends BaseDO {
     private Long firstOrderId;
 
     private String convertStatus;
+
+    private String inviteCode;
+
+    private String sourceChannel;
+
+    private String sourcePage;
 }
