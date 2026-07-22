@@ -1,0 +1,20 @@
+{
+	servers {
+		protocols h1 h2
+	}
+}
+
+linlihuzhu.jiusuanhuitong.site {
+	tls /certs/fullchain.pem /certs/privkey.pem
+
+	reverse_proxy nginx:80
+
+	log {
+		output file /data/logs/linbang-access.log {
+			roll_size 50MiB
+			roll_keep 10
+			roll_keep_for 720h
+		}
+		format json
+	}
+}

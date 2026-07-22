@@ -26,5 +26,6 @@ upload-files/
 # WeChat Pay merchant certificates and private keys
 apiclient_key.pem
 apiclient_cert.pem
+deploy/linbang-docker/certs/
 apiclient_cert.p12
 *_cert.zip

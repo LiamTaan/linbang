@@ -96,6 +96,29 @@ services:
     networks:
       - linbang
 
+  caddy:
+    image: caddy:2.10-alpine
+    container_name: linbang-caddy
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/certs:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - nginx
+    networks:
+      - linbang
+
 networks:
   linbang:
     name: linbang-network
+
+volumes:
+  caddy_data:
+  caddy_config:
