@@ -165,7 +165,7 @@ wx:
 yudao:
   web:
     admin-ui:
-      url: ${ADMIN_UI_URL:https://linlihuzhu.jiusuanhuitong.site}
+      url: ${ADMIN_UI_URL:https://llhz.yunying2026.top}
   captcha:
     enable: ${YUDAO_CAPTCHA_ENABLE:false}
   security:
@@ -176,9 +176,9 @@ yudao:
     enable: true
   demo: false
   pay:
-    order-notify-url: https://linlihuzhu.jiusuanhuitong.site/admin-api/pay/notify/order
-    refund-notify-url: https://linlihuzhu.jiusuanhuitong.site/admin-api/pay/notify/refund
-    transfer-notify-url: https://linlihuzhu.jiusuanhuitong.site/admin-api/pay/notify/transfer
+    order-notify-url: ${YUDAO_PAY_ORDER_NOTIFY_URL:https://llhz.yunying2026.top/admin-api/pay/notify/order}
+    refund-notify-url: ${YUDAO_PAY_REFUND_NOTIFY_URL:https://llhz.yunying2026.top/admin-api/pay/notify/refund}
+    transfer-notify-url: ${YUDAO_PAY_TRANSFER_NOTIFY_URL:https://llhz.yunying2026.top/admin-api/pay/notify/transfer}
   map:
     amap:
       enabled: true
@@ -218,6 +218,6 @@ justauth:
     timeout: 24h
 
 linbang:
-  public-base-url: ${LINBANG_PUBLIC_BASE_URL:https://linlihuzhu.jiusuanhuitong.site}
+  public-base-url: ${LINBANG_PUBLIC_BASE_URL:https://llhz.yunying2026.top}
   message:
     public-base-url: ${LINBANG_MESSAGE_PUBLIC_BASE_URL:${linbang.public-base-url}}

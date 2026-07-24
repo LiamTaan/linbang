@@ -58,10 +58,13 @@ services:
       REDIS_PORT: 6379
       REDIS_DATABASE: 1
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-      ADMIN_UI_URL: https://linlihuzhu.jiusuanhuitong.site
-      ADMIN_UI_HOST: https://linlihuzhu.jiusuanhuitong.site
-      LINBANG_PUBLIC_BASE_URL: https://linlihuzhu.jiusuanhuitong.site
-      LINBANG_MESSAGE_PUBLIC_BASE_URL: https://linlihuzhu.jiusuanhuitong.site
+      ADMIN_UI_URL: https://llhz.yunying2026.top
+      ADMIN_UI_HOST: https://llhz.yunying2026.top
+      LINBANG_PUBLIC_BASE_URL: https://llhz.yunying2026.top
+      LINBANG_MESSAGE_PUBLIC_BASE_URL: https://llhz.yunying2026.top
+      YUDAO_PAY_ORDER_NOTIFY_URL: https://llhz.yunying2026.top/admin-api/pay/notify/order
+      YUDAO_PAY_REFUND_NOTIFY_URL: https://llhz.yunying2026.top/admin-api/pay/notify/refund
+      YUDAO_PAY_TRANSFER_NOTIFY_URL: https://llhz.yunying2026.top/admin-api/pay/notify/transfer
       WX_MP_APP_ID: ${WX_MP_APP_ID}
       WX_MP_SECRET: ${WX_MP_SECRET}
       WX_MINIAPP_APPID: ${WX_MINIAPP_APPID}

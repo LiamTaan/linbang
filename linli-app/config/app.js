@@ -1,4 +1,4 @@
-const DEFAULT_API_HOST = 'https://linlihuzhu.jiusuanhuitong.site'
+const DEFAULT_API_HOST = 'https://llhz.yunying2026.top'
 const API_PREFIX = '/app-api'
 const DEFAULT_AMAP_JS_KEY = '8339941bfd632eac92ca1de6ef8de10b'
 

@@ -4,7 +4,7 @@
 	}
 }
 
-linlihuzhu.jiusuanhuitong.site {
+llhz.yunying2026.top {
 	tls /certs/fullchain.pem /certs/privkey.pem
 
 	reverse_proxy nginx:80
