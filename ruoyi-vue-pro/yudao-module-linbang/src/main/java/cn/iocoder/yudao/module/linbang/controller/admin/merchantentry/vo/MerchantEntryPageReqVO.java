@@ -49,7 +49,7 @@ public class MerchantEntryPageReqVO extends PageParam {
     @Schema(description = OpenApiSchemaConstants.MERCHANT_ENTRY_STATUS, example = "PENDING")
     private String status;
 
-    @Schema(description = "备注", example = "??")
+    @Schema(description = "备注", example = "补充材料")
     private String remark;
 
     @Schema(description = "创建时间")

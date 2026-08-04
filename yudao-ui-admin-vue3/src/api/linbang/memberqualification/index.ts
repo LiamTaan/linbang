@@ -1,4 +1,5 @@
 import request from '@/config/axios'
+import { buildDynamicKeyHeaders } from '@/api/linbang/security'
 import type { Dayjs } from 'dayjs'
 
 export interface MemberQualification {
@@ -134,10 +135,16 @@ export const MemberQualificationApi = {
   },
 
   getMemberQualification: async (id: number) => {
-    return await request.get<MemberQualificationDetail>({ url: `/member/qualification/get?id=${id}` })
+    return await request.get<MemberQualificationDetail>({
+      url: `/member/qualification/get?id=${id}`
+    })
   },
 
-  auditMemberQualification: async (data: MemberQualificationAuditReqVO) => {
-    return await request.post({ url: `/member/qualification/audit`, data })
+  auditMemberQualification: async (data: MemberQualificationAuditReqVO, verifyToken?: string) => {
+    return await request.post({
+      url: `/member/qualification/audit`,
+      data,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   }
 }

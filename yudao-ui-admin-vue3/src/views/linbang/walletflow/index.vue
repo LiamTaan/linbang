@@ -74,14 +74,6 @@
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
         <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
         <el-button
-          type="primary"
-          plain
-          @click="openForm('create')"
-          v-hasPermi="['linbang:wallet:flow:create']"
-        >
-          <Icon icon="ep:plus" class="mr-5px" /> 新增
-        </el-button>
-        <el-button
           type="success"
           plain
           @click="handleExport"
@@ -90,15 +82,6 @@
         >
           <Icon icon="ep:download" class="mr-5px" /> 导出
         </el-button>
-        <el-button
-            type="danger"
-            plain
-            :disabled="isEmpty(checkedIds)"
-            @click="handleDeleteBatch"
-            v-hasPermi="['linbang:wallet:flow:delete']"
-        >
-          <Icon icon="ep:delete" class="mr-5px" /> 批量删除
-        </el-button>
       </el-form-item>
     </el-form>
   </ContentWrap>
@@ -106,14 +89,12 @@
   <!-- 列表 -->
   <ContentWrap>
     <el-table
-        row-key="id"
-        v-loading="loading"
-        :data="list"
-        :stripe="true"
-        :show-overflow-tooltip="true"
-        @selection-change="handleRowCheckboxChange"
+      row-key="id"
+      v-loading="loading"
+      :data="list"
+      :stripe="true"
+      :show-overflow-tooltip="true"
     >
-      <el-table-column type="selection" width="55" />
       <el-table-column label="流水号" align="center" prop="flowNo" />
       <el-table-column label="用户" align="center" min-width="220">
         <template #default="{ row }">
@@ -126,7 +107,9 @@
         <template #default="{ row }">
           <div class="leading-20px">
             <div class="font-600">{{ formatWalletAccountDisplay(row) }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ formatEnableStatus(row.walletStatus) }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              formatEnableStatus(row.walletStatus)
+            }}</div>
             <div class="text-[var(--el-text-color-secondary)]">
               可提现：{{ row.walletAvailableAmount ?? '-' }}
             </div>
@@ -164,22 +147,6 @@
           >
             详情
           </el-button>
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['linbang:wallet:flow:update']"
-          >
-            编辑
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['linbang:wallet:flow:delete']"
-          >
-            删除
-          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -192,28 +159,27 @@
     />
   </ContentWrap>
 
-  <!-- 表单弹窗：添加/修改 -->
-  <WalletFlowForm ref="formRef" @success="getList" />
   <WalletFlowDetailDialog ref="detailDialogRef" />
 </template>
 
 <script setup lang="ts">
-import { isEmpty } from '@/utils/is'
 import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
 import { WalletFlowApi, WalletFlow } from '@/api/linbang/walletflow'
-import { FLOW_TYPE_OPTIONS, formatBizType, formatEnableStatus, formatFlowType } from '../utils/display'
-import WalletFlowForm from './WalletFlowForm.vue'
+import {
+  FLOW_TYPE_OPTIONS,
+  formatBizType,
+  formatEnableStatus,
+  formatFlowType
+} from '../utils/display'
 import WalletFlowDetailDialog from './WalletFlowDetailDialog.vue'
 
 import { onMounted, reactive, ref } from 'vue'
-import { useI18n } from '@/hooks/web/useI18n'
 import { useMessage } from '@/hooks/web/useMessage'
 /** 钱包流水 列表 */
 defineOptions({ name: 'WalletFlow' })
 
 const message = useMessage() // 消息弹窗
-const { t } = useI18n() // 国际化
 
 const loading = ref(true) // 列表的加载中
 const list = ref<WalletFlow[]>([]) // 列表的数据
@@ -231,7 +197,9 @@ const queryParams = reactive({
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
 
-const formatWalletAccountDisplay = (row?: Pick<WalletFlow, 'walletRoleCode' | 'walletAccountId'>) => {
+const formatWalletAccountDisplay = (
+  row?: Pick<WalletFlow, 'walletRoleCode' | 'walletAccountId'>
+) => {
   if (!row) {
     return '-'
   }
@@ -262,45 +230,9 @@ const resetQuery = () => {
   handleQuery()
 }
 
-/** 添加/修改操作 */
-const formRef = ref()
-const openForm = (type: string, id?: number) => {
-  formRef.value.open(type, id)
-}
-
 const detailDialogRef = ref()
 const openDetail = (id: number) => {
   detailDialogRef.value.open(id)
-}
-
-/** 删除按钮操作 */
-const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await WalletFlowApi.deleteWalletFlow(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
-}
-
-/** 批量删除钱包流水 */
-const handleDeleteBatch = async () => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    await WalletFlowApi.deleteWalletFlowList(checkedIds.value);
-    checkedIds.value = [];
-    message.success(t('common.delSuccess'))
-    await getList();
-  } catch {}
-}
-
-const checkedIds = ref<number[]>([])
-const handleRowCheckboxChange = (records: WalletFlow[]) => {
-  checkedIds.value = records.map((item) => item.id!);
 }
 
 /** 导出按钮操作 */

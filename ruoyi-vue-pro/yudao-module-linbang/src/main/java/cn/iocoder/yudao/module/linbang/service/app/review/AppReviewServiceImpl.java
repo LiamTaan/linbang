@@ -6,6 +6,8 @@ import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.iocoder.yudao.module.infra.dal.dataobject.file.FileDO;
+import cn.iocoder.yudao.module.infra.service.file.FileService;
 import cn.iocoder.yudao.module.linbang.constants.LinbangRiskConstants;
 import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppAppealCreateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.review.vo.AppAppealPageReqVO;
@@ -55,6 +57,7 @@ import cn.iocoder.yudao.module.linbang.service.reviewcomment.MerchantReviewMetri
 import cn.iocoder.yudao.module.linbang.service.reviewcomment.ReviewCommentMetricsService;
 import cn.iocoder.yudao.module.linbang.service.sensitiveword.SensitiveContentDetectService;
 import cn.iocoder.yudao.module.linbang.service.sensitiveword.SensitiveDetectResult;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -115,6 +118,8 @@ public class AppReviewServiceImpl implements AppReviewService {
     @Resource
     private ReviewCommentMapper reviewCommentMapper;
     @Resource
+    private FileService fileService;
+    @Resource
     private CreditRuleMapper creditRuleMapper;
     @Resource
     private CreditRecordService creditRecordService;
@@ -133,8 +138,14 @@ public class AppReviewServiceImpl implements AppReviewService {
     @Transactional(rollbackFor = Exception.class)
     public Long createComplaint(Long authUserId, @Valid AppComplaintCreateReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
-        OrderInfoDO order = validateOrderAccess(authUserId, loginUser.getId(), reqVO.getOrderId());
-        validateUnit(reqVO.getUnitId(), order.getId());
+        OrderInfoDO order = validateOrderAccessForUpdate(authUserId, loginUser.getId(), reqVO.getOrderId());
+        OrderUnitDO unit = validateOptionalUnitForUpdate(reqVO.getUnitId(), order.getId());
+        validateComplaintRespondent(loginUser.getId(), order, unit, reqVO.getRespondentUserId());
+        ComplaintDO existing = complaintMapper.selectActiveForUpdate(order.getId(), reqVO.getUnitId(),
+                loginUser.getId(), reqVO.getRespondentUserId(), reqVO.getComplaintType());
+        if (existing != null) {
+            return existing.getId();
+        }
         SensitiveDetectResult detectResult = sensitiveContentDetectService.detect(
                 LinbangRiskConstants.SCENE_COMPLAINT, loginUser.getId(), "COMPLAINT", order.getId(), reqVO.getContent());
 
@@ -148,8 +159,17 @@ public class AppReviewServiceImpl implements AppReviewService {
                 .content(detectResult.getProcessedContent())
                 .status("PENDING")
                 .build();
-        complaintMapper.insert(complaint);
-        saveComplaintFiles(complaint.getId(), reqVO.getFileIds());
+        try {
+            complaintMapper.insert(complaint);
+        } catch (DuplicateKeyException ex) {
+            ComplaintDO concurrent = complaintMapper.selectActiveForUpdate(order.getId(), reqVO.getUnitId(),
+                    loginUser.getId(), reqVO.getRespondentUserId(), reqVO.getComplaintType());
+            if (concurrent != null) {
+                return concurrent.getId();
+            }
+            throw ex;
+        }
+        saveComplaintFiles(complaint.getId(), reqVO.getFileIds(), authUserId);
         orderInfoMapper.updateById(OrderInfoDO.builder().id(order.getId()).status("AFTER_SALE").build());
         return complaint.getId();
     }
@@ -158,10 +178,15 @@ public class AppReviewServiceImpl implements AppReviewService {
     @Transactional(rollbackFor = Exception.class)
     public Long createAppeal(Long authUserId, @Valid AppAppealCreateReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
-        OrderInfoDO order = validateOrderAccess(authUserId, loginUser.getId(), reqVO.getOrderId());
-        OrderUnitDO unit = validateUnit(reqVO.getUnitId(), order.getId());
+        OrderInfoDO order = validateOrderAccessForUpdate(authUserId, loginUser.getId(), reqVO.getOrderId());
+        OrderUnitDO unit = validateOptionalUnitForUpdate(reqVO.getUnitId(), order.getId());
         if (unit != null && (unit.getAppealExpireTime() == null || !LocalDateTime.now().isBefore(unit.getAppealExpireTime()))) {
             throw exception(ORDER_APPEAL_EXPIRED);
+        }
+        AppealDO existing = appealMapper.selectActiveForUpdate(order.getId(), reqVO.getUnitId(),
+                loginUser.getId(), reqVO.getAppealType());
+        if (existing != null) {
+            return existing.getId();
         }
         SensitiveDetectResult detectResult = sensitiveContentDetectService.detect(
                 LinbangRiskConstants.SCENE_APPEAL, loginUser.getId(), "APPEAL", order.getId(), reqVO.getContent());
@@ -177,8 +202,17 @@ public class AppReviewServiceImpl implements AppReviewService {
                 .auditStatus("PENDING")
                 .appealExpireTime(unit != null ? unit.getAppealExpireTime() : null)
                 .build();
-        appealMapper.insert(appeal);
-        saveAppealFiles(appeal.getId(), reqVO.getFileIds());
+        try {
+            appealMapper.insert(appeal);
+        } catch (DuplicateKeyException ex) {
+            AppealDO concurrent = appealMapper.selectActiveForUpdate(order.getId(), reqVO.getUnitId(),
+                    loginUser.getId(), reqVO.getAppealType());
+            if (concurrent != null) {
+                return concurrent.getId();
+            }
+            throw ex;
+        }
+        saveAppealFiles(appeal.getId(), reqVO.getFileIds(), authUserId);
         orderInfoMapper.updateById(OrderInfoDO.builder().id(order.getId()).status("AFTER_SALE").build());
         if (unit != null) {
             orderUnitMapper.updateById(OrderUnitDO.builder().id(unit.getId()).status("APPEALING").build());
@@ -202,7 +236,11 @@ public class AppReviewServiceImpl implements AppReviewService {
         }
         ReviewCommentDO review = buildReview(context, loginUser.getId(), reqVO.getToUserId(),
                 reqVO.getStarLevel(), detectResult.getProcessedContent(), false, true);
-        reviewCommentMapper.insert(review);
+        try {
+            reviewCommentMapper.insert(review);
+        } catch (DuplicateKeyException ex) {
+            throw exception(REVIEW_DUPLICATED);
+        }
         applyReviewCreditRule(review, context.targetMerchant);
         return review.getId();
     }
@@ -211,7 +249,7 @@ public class AppReviewServiceImpl implements AppReviewService {
     @Transactional(rollbackFor = Exception.class)
     public void updateReview(Long authUserId, @Valid AppReviewUpdateReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
-        ReviewCommentDO review = reviewCommentMapper.selectById(reqVO.getId());
+        ReviewCommentDO review = reviewCommentMapper.selectByIdForUpdate(reqVO.getId());
         if (review == null || !Objects.equals(review.getStatus(), REVIEW_STATUS_ENABLE)) {
             throw exception(REVIEW_COMMENT_NOT_EXISTS);
         }
@@ -347,7 +385,8 @@ public class AppReviewServiceImpl implements AppReviewService {
         List<OrderUnitDO> units = orderUnitMapper.selectList(new LambdaQueryWrapperX<OrderUnitDO>()
                 .eq(OrderUnitDO::getStatus, UNIT_STATUS_FINISHED)
                 .in(CollUtil.isNotEmpty(orderIds), OrderUnitDO::getOrderId, orderIds)
-                .orderByDesc(OrderUnitDO::getFinishTime, OrderUnitDO::getId));
+                .orderByDesc(OrderUnitDO::getFinishTime, OrderUnitDO::getId)
+                .last("LIMIT 500"));
         if (units.isEmpty()) {
             return Collections.emptyList();
         }
@@ -508,7 +547,16 @@ public class AppReviewServiceImpl implements AppReviewService {
                 .editCount(0)
                 .status(REVIEW_STATUS_ENABLE)
                 .build();
-        reviewCommentMapper.insert(review);
+        try {
+            reviewCommentMapper.insert(review);
+        } catch (DuplicateKeyException ex) {
+            ReviewCommentDO concurrentReview = reviewCommentMapper
+                    .selectActiveByUnitIdAndFromUserIdForUpdate(unit.getId(), fromUserId);
+            if (concurrentReview != null) {
+                return concurrentReview.getId();
+            }
+            throw ex;
+        }
         applyReviewCreditRule(review, getMerchantByUserId(toUserId));
         return review.getId();
     }
@@ -546,6 +594,15 @@ public class AppReviewServiceImpl implements AppReviewService {
 
     private OrderInfoDO validateOrderAccess(Long authUserId, Long lbUserId, Long orderId) {
         OrderInfoDO order = orderInfoMapper.selectById(orderId);
+        return validateOrderAccess(authUserId, lbUserId, orderId, order);
+    }
+
+    private OrderInfoDO validateOrderAccessForUpdate(Long authUserId, Long lbUserId, Long orderId) {
+        OrderInfoDO order = orderInfoMapper.selectOneForUpdate(OrderInfoDO::getId, orderId);
+        return validateOrderAccess(authUserId, lbUserId, orderId, order);
+    }
+
+    private OrderInfoDO validateOrderAccess(Long authUserId, Long lbUserId, Long orderId, OrderInfoDO order) {
         if (order == null) {
             throw exception(ORDER_INFO_NOT_EXISTS);
         }
@@ -567,6 +624,17 @@ public class AppReviewServiceImpl implements AppReviewService {
         throw exception(REVIEW_ACCESS_DENIED);
     }
 
+    private OrderUnitDO validateOptionalUnitForUpdate(Long unitId, Long orderId) {
+        if (unitId == null) {
+            return null;
+        }
+        OrderUnitDO unit = orderUnitMapper.selectByIdForUpdate(unitId);
+        if (unit == null || !Objects.equals(unit.getOrderId(), orderId)) {
+            throw exception(ORDER_UNIT_NOT_EXISTS);
+        }
+        return unit;
+    }
+
     private OrderUnitDO validateUnit(Long unitId, Long orderId) {
         if (unitId == null) {
             throw exception(ORDER_UNIT_NOT_EXISTS);
@@ -576,6 +644,22 @@ public class AppReviewServiceImpl implements AppReviewService {
             throw exception(ORDER_UNIT_NOT_EXISTS);
         }
         return unit;
+    }
+
+    private void validateComplaintRespondent(Long complainantUserId, OrderInfoDO order, OrderUnitDO unit,
+                                             Long respondentUserId) {
+        Long expectedRespondentUserId;
+        if (Objects.equals(order.getUserId(), complainantUserId)) {
+            Long merchantId = unit != null && unit.getMerchantId() != null ? unit.getMerchantId() : order.getMerchantId();
+            MerchantInfoDO merchant = merchantId == null ? null : merchantInfoMapper.selectById(merchantId);
+            expectedRespondentUserId = merchant == null ? null : merchant.getUserId();
+        } else {
+            expectedRespondentUserId = order.getUserId();
+        }
+        if (expectedRespondentUserId == null || Objects.equals(complainantUserId, respondentUserId)
+                || !Objects.equals(expectedRespondentUserId, respondentUserId)) {
+            throw exception(REVIEW_ACCESS_DENIED);
+        }
     }
 
     private ReviewCommentDO buildReview(ReviewContext context, Long fromUserId, Long toUserId,
@@ -680,11 +764,19 @@ public class AppReviewServiceImpl implements AppReviewService {
                 .last("LIMIT 1"));
     }
 
-    private void saveComplaintFiles(Long complaintId, List<Long> fileIds) {
+    private void saveComplaintFiles(Long complaintId, List<Long> fileIds, Long userId) {
         if (CollUtil.isEmpty(fileIds)) {
             return;
         }
+        if (fileIds.size() > 10) {
+            throw exception(REVIEW_ACCESS_DENIED);
+        }
+        Set<Long> uniqueIds = new java.util.HashSet<>();
         for (Long fileId : fileIds) {
+            if (fileId == null || !uniqueIds.add(fileId)) {
+                throw exception(REVIEW_ACCESS_DENIED);
+            }
+            validateOwnedEvidenceFile(fileId, userId);
             complaintFileRelMapper.insert(ComplaintFileRelDO.builder()
                     .complaintId(complaintId)
                     .fileId(fileId)
@@ -692,15 +784,34 @@ public class AppReviewServiceImpl implements AppReviewService {
         }
     }
 
-    private void saveAppealFiles(Long appealId, List<Long> fileIds) {
+    private void saveAppealFiles(Long appealId, List<Long> fileIds, Long userId) {
         if (CollUtil.isEmpty(fileIds)) {
             return;
         }
+        if (fileIds.size() > 10) {
+            throw exception(REVIEW_ACCESS_DENIED);
+        }
+        Set<Long> uniqueIds = new java.util.HashSet<>();
         for (Long fileId : fileIds) {
+            if (fileId == null || !uniqueIds.add(fileId)) {
+                throw exception(REVIEW_ACCESS_DENIED);
+            }
+            validateOwnedEvidenceFile(fileId, userId);
             appealFileRelMapper.insert(AppealFileRelDO.builder()
                     .appealId(appealId)
                     .fileId(fileId)
                     .build());
+        }
+    }
+
+    private void validateOwnedEvidenceFile(Long fileId, Long userId) {
+        FileDO file = fileService.getFile(fileId);
+        String type = file == null ? null : file.getType();
+        if (file == null || !Objects.equals(file.getCreator(), String.valueOf(userId))
+                || !(StrUtil.startWithIgnoreCase(type, "image/")
+                || StrUtil.startWithIgnoreCase(type, "video/")
+                || "application/pdf".equalsIgnoreCase(type))) {
+            throw exception(REVIEW_ACCESS_DENIED);
         }
     }
 

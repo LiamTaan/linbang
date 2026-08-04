@@ -36,6 +36,7 @@ public class AppReviewCreditRespVO {
     private List<CreditBenefitItem> benefits;
 
     @Data
+    @Schema(description = "用户 App - 信用规则项目 Response VO")
     public static class CreditRuleItem {
 
         @Schema(description = "规则编码")
@@ -55,6 +56,7 @@ public class AppReviewCreditRespVO {
     }
 
     @Data
+    @Schema(description = "用户 App - 最近记录项目 Response VO")
     public static class RecentRecordItem {
 
         @Schema(description = "主键", example = "1")
@@ -77,6 +79,7 @@ public class AppReviewCreditRespVO {
     }
 
     @Data
+    @Schema(description = "用户 App - 信用权益项目 Response VO")
     public static class CreditBenefitItem {
 
         @Schema(description = "等级编码", example = "NORMAL")

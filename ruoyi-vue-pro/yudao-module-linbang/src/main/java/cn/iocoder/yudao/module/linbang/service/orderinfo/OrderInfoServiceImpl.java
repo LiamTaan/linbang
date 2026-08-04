@@ -53,6 +53,7 @@ import cn.iocoder.yudao.module.pay.dal.mysql.refund.PayRefundMapper;
 import cn.iocoder.yudao.module.pay.enums.refund.PayRefundStatusEnum;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.iocoder.yudao.module.linbang.constants.FinanceDisplayConstants.REFUND_CHANNEL_FAILURE_REASON;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertMap;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertSet;
@@ -301,7 +302,8 @@ public class OrderInfoServiceImpl implements OrderInfoService {
             refundResp.setRejectReason(refund.getRejectReason());
             refundResp.setRefundPrice(refund.getRefundPrice());
             refundResp.setReason(refund.getReason());
-            refundResp.setChannelErrorMsg(refund.getChannelErrorMsg());
+            refundResp.setChannelErrorMsg(PayRefundStatusEnum.isFailure(refund.getStatus())
+                    ? REFUND_CHANNEL_FAILURE_REASON : null);
             refundResp.setSuccessTime(refund.getSuccessTime());
             refundResp.setCreateTime(refund.getCreateTime());
             return refundResp;

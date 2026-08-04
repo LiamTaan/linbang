@@ -25,4 +25,11 @@ public interface PunishLogMapper extends BaseMapperX<PunishLogDO> {
                 .eq(PunishLogDO::getSourceRecordId, sourceRecordId)
                 .last("LIMIT 1"));
     }
+
+    default PunishLogDO selectBySourceRecordForUpdate(String sourceRecordType, Long sourceRecordId) {
+        return selectOne(new LambdaQueryWrapperX<PunishLogDO>()
+                .eq(PunishLogDO::getSourceRecordType, sourceRecordType)
+                .eq(PunishLogDO::getSourceRecordId, sourceRecordId)
+                .last("LIMIT 1 FOR UPDATE"));
+    }
 }

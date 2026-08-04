@@ -11,21 +11,36 @@
         <el-input v-model="formData.flowNo" placeholder="请输入流水号" />
       </el-form-item>
       <el-form-item label="用户" prop="userId">
-        <el-input :model-value="selectedUserLabel" placeholder="请选择用户" readonly @click="openUserDialog">
+        <el-input
+          :model-value="selectedUserLabel"
+          placeholder="请选择用户"
+          readonly
+          @click="openUserDialog"
+        >
           <template #append>
             <el-button @click="openUserDialog">选择</el-button>
           </template>
         </el-input>
       </el-form-item>
       <el-form-item label="关联订单" prop="relatedOrderId">
-        <el-input :model-value="selectedOrderLabel" placeholder="请选择关联订单" readonly @click="openOrderDialog">
+        <el-input
+          :model-value="selectedOrderLabel"
+          placeholder="请选择关联订单"
+          readonly
+          @click="openOrderDialog"
+        >
           <template #append>
             <el-button @click="openOrderDialog">选择</el-button>
           </template>
         </el-input>
       </el-form-item>
       <el-form-item label="关联单元" prop="relatedUnitId">
-        <el-input :model-value="selectedUnitLabel" placeholder="请选择关联单元" readonly @click="openUnitDialog">
+        <el-input
+          :model-value="selectedUnitLabel"
+          placeholder="请选择关联单元"
+          readonly
+          @click="openUnitDialog"
+        >
           <template #append>
             <el-button @click="openUnitDialog">选择</el-button>
           </template>
@@ -66,14 +81,24 @@
         <el-input v-model="formData.afterAmount" placeholder="请输入变动后金额" />
       </el-form-item>
       <el-form-item label="关联支付订单" prop="relatedPayOrderId">
-        <el-input :model-value="selectedPayOrderLabel" placeholder="请选择关联支付订单" readonly @click="openPayOrderDialog">
+        <el-input
+          :model-value="selectedPayOrderLabel"
+          placeholder="请选择关联支付订单"
+          readonly
+          @click="openPayOrderDialog"
+        >
           <template #append>
             <el-button @click="openPayOrderDialog">选择</el-button>
           </template>
         </el-input>
       </el-form-item>
       <el-form-item label="关联退款单" prop="relatedRefundId">
-        <el-input :model-value="selectedRefundLabel" placeholder="请选择关联退款单" readonly @click="openRefundDialog">
+        <el-input
+          :model-value="selectedRefundLabel"
+          placeholder="请选择关联退款单"
+          readonly
+          @click="openRefundDialog"
+        >
           <template #append>
             <el-button @click="openRefundDialog">选择</el-button>
           </template>
@@ -91,7 +116,10 @@
   <MemberUserSelectDialog ref="userSelectDialogRef" @selected="handleUserSelected" />
   <OrderSelectDialog ref="orderSelectDialogRef" @selected="handleOrderSelected" />
   <OrderUnitSelectDialog ref="unitSelectDialogRef" @selected="handleUnitSelected" />
-  <WalletAccountSelectDialog ref="walletAccountSelectDialogRef" @selected="handleWalletAccountSelected" />
+  <WalletAccountSelectDialog
+    ref="walletAccountSelectDialogRef"
+    @selected="handleWalletAccountSelected"
+  />
   <PayOrderSelectDialog ref="payOrderSelectDialogRef" @selected="handlePayOrderSelected" />
   <PayRefundSelectDialog ref="refundSelectDialogRef" @selected="handleRefundSelected" />
 </template>
@@ -174,9 +202,7 @@ const selectedUnitLabel = computed(() => {
   if (!selectedUnit.value) {
     return ''
   }
-  return [selectedUnit.value.unitNo, selectedUnit.value.unitTitle]
-    .filter(Boolean)
-    .join(' / ')
+  return [selectedUnit.value.unitNo, selectedUnit.value.unitTitle].filter(Boolean).join(' / ')
 })
 
 const selectedWalletAccountLabel = computed(() => {

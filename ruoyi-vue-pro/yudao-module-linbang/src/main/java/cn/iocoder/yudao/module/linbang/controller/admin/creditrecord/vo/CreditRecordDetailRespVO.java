@@ -62,6 +62,7 @@ public class CreditRecordDetailRespVO {
     private RuleRespVO rule;
 
     @Data
+    @Schema(description = "管理后台 - 用户摘要 Response VO")
     public static class UserRespVO {
         @Schema(description = "用户 ID", example = "1001")
         private Long id;
@@ -78,6 +79,7 @@ public class CreditRecordDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 服务商摘要 Response VO")
     public static class MerchantRespVO {
         @Schema(description = "服务商 ID", example = "2001")
         private Long id;
@@ -100,6 +102,7 @@ public class CreditRecordDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 规则摘要 Response VO")
     public static class RuleRespVO {
         @Schema(description = "规则 ID", example = "3001")
         private Long id;

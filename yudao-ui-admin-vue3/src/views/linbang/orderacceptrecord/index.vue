@@ -91,11 +91,11 @@
           <Icon icon="ep:download" class="mr-5px" /> 导出
         </el-button>
         <el-button
-            type="danger"
-            plain
-            :disabled="isEmpty(checkedIds)"
-            @click="handleDeleteBatch"
-            v-hasPermi="['linbang:order:accept-record:delete']"
+          type="danger"
+          plain
+          :disabled="isEmpty(checkedIds)"
+          @click="handleDeleteBatch"
+          v-hasPermi="['linbang:order:accept-record:delete']"
         >
           <Icon icon="ep:delete" class="mr-5px" /> 批量删除
         </el-button>
@@ -106,22 +106,28 @@
   <!-- 列表 -->
   <ContentWrap>
     <el-table
-        row-key="id"
-        v-loading="loading"
-        :data="list"
-        :stripe="true"
-        :show-overflow-tooltip="true"
-        @selection-change="handleRowCheckboxChange"
+      row-key="id"
+      v-loading="loading"
+      :data="list"
+      :stripe="true"
+      :show-overflow-tooltip="true"
+      @selection-change="handleRowCheckboxChange"
     >
-    <el-table-column type="selection" width="55" />
+      <el-table-column type="selection" width="55" />
       <el-table-column label="订单号" align="center" prop="orderNo" min-width="180" />
       <el-table-column label="单元号" align="center" prop="unitNo" min-width="160" />
       <el-table-column label="接单服务商" align="center" min-width="220">
         <template #default="{ row }">
           <div class="leading-20px">
-            <div class="font-600">{{ row.merchantName || (row.merchantId ? '服务商信息缺失' : '-') }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactName || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactMobile || '-' }}</div>
+            <div class="font-600">{{
+              row.merchantName || (row.merchantId ? '服务商信息缺失' : '-')
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactName || '-'
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactMobile || '-'
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -178,11 +184,19 @@
       <el-descriptions-item label="接单结果">
         {{ formatAcceptResult(detailData?.acceptResult) }}
       </el-descriptions-item>
-      <el-descriptions-item label="订单号">{{ detailData?.order?.orderNo || detailData?.orderNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="单元号">{{ detailData?.unit?.unitNo || detailData?.unitNo || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="订单号">{{
+        detailData?.order?.orderNo || detailData?.orderNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="单元号">{{
+        detailData?.unit?.unitNo || detailData?.unitNo || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="接单服务商">{{ formatMerchantDisplay() }}</el-descriptions-item>
-      <el-descriptions-item label="距离公里">{{ detailData?.distanceKm ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="接单时间">{{ formatDate(detailData?.acceptTime) }}</el-descriptions-item>
+      <el-descriptions-item label="距离公里">{{
+        detailData?.distanceKm ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="接单时间">{{
+        formatDate(detailData?.acceptTime)
+      }}</el-descriptions-item>
       <el-descriptions-item label="备注">{{ detailData?.remark || '-' }}</el-descriptions-item>
     </el-descriptions>
 
@@ -211,7 +225,9 @@
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">接单服务商</div>
-          <div class="mt-8px text-16px font-600">{{ detailData?.merchant?.merchantName || '-' }}</div>
+          <div class="mt-8px text-16px font-600">{{
+            detailData?.merchant?.merchantName || '-'
+          }}</div>
           <div class="mt-6px text-13px">{{ detailData?.merchant?.contactName || '-' }}</div>
           <div class="mt-6px text-[var(--el-text-color-secondary)]">
             状态：{{ formatEnableStatus(detailData?.merchant?.status) }}
@@ -221,18 +237,31 @@
     </el-row>
 
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="订单金额">{{ detailData?.order?.orderAmount ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="下单用户">{{ formatOrderUserDisplay(detailData?.order) }}</el-descriptions-item>
-      <el-descriptions-item label="单元序号">{{ detailData?.unit?.unitSeq || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="单元金额">{{ detailData?.unit?.unitAmount ?? '-' }}</el-descriptions-item>
+      <el-descriptions-item label="订单金额">{{
+        detailData?.order?.orderAmount ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="下单用户">{{
+        formatOrderUserDisplay(detailData?.order)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="单元序号">{{
+        detailData?.unit?.unitSeq || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="单元金额">{{
+        detailData?.unit?.unitAmount ?? '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="锁单状态">
         <span v-if="detailData?.unit">{{ detailData.unit.isLocked ? '已锁定' : '未锁定' }}</span>
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="锁单原因">{{ detailData?.unit?.lockReason || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="商家联系人">{{ detailData?.merchant?.contactMobile || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="锁单原因">{{
+        detailData?.unit?.lockReason || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="商家联系人">{{
+        detailData?.merchant?.contactMobile || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="信用分 / 等级">
-        {{ detailData?.merchant?.creditScore ?? '-' }} / {{ detailData?.merchant?.creditLevel || '-' }}
+        {{ detailData?.merchant?.creditScore ?? '-' }} /
+        {{ detailData?.merchant?.creditLevel || '-' }}
       </el-descriptions-item>
     </el-descriptions>
 
@@ -241,14 +270,17 @@
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">匹配记录数</div>
-          <div class="mt-8px text-24px font-600">{{ detailData?.summary?.matchRecordCount ?? 0 }}</div>
+          <div class="mt-8px text-24px font-600">{{
+            detailData?.summary?.matchRecordCount ?? 0
+          }}</div>
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">已推送 / 已接受</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.pushedCount ?? 0 }} / {{ detailData?.summary?.acceptedCount ?? 0 }}
+            {{ detailData?.summary?.pushedCount ?? 0 }} /
+            {{ detailData?.summary?.acceptedCount ?? 0 }}
           </div>
         </el-card>
       </el-col>
@@ -256,7 +288,8 @@
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">已拒绝 / 最高匹配分</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.rejectedCount ?? 0 }} / {{ detailData?.summary?.highestMatchScore ?? '-' }}
+            {{ detailData?.summary?.rejectedCount ?? 0 }} /
+            {{ detailData?.summary?.highestMatchScore ?? '-' }}
           </div>
         </el-card>
       </el-col>
@@ -297,7 +330,11 @@
 import { isEmpty } from '@/utils/is'
 import { dateFormatter, formatDate } from '@/utils/formatTime'
 import download from '@/utils/download'
-import { OrderAcceptRecordApi, OrderAcceptRecord, OrderAcceptRecordDetail } from '@/api/linbang/orderacceptrecord'
+import {
+  OrderAcceptRecordApi,
+  OrderAcceptRecord,
+  OrderAcceptRecordDetail
+} from '@/api/linbang/orderacceptrecord'
 import {
   ACCEPT_RESULT_OPTIONS,
   formatAcceptResult,
@@ -336,7 +373,9 @@ const queryParams = reactive({
 })
 
 const formatOrderUserDisplay = (order?: OrderAcceptRecordDetail['order']) => {
-  const summary = [order?.userNickname, order?.userMobile, order?.userNo].filter(Boolean).join(' / ')
+  const summary = [order?.userNickname, order?.userMobile, order?.userNo]
+    .filter(Boolean)
+    .join(' / ')
   return summary || (order?.userId ? '用户信息缺失' : '-')
 }
 
@@ -412,16 +451,16 @@ const handleDeleteBatch = async () => {
   try {
     // 删除的二次确认
     await message.delConfirm()
-    await OrderAcceptRecordApi.deleteOrderAcceptRecordList(checkedIds.value);
-    checkedIds.value = [];
+    await OrderAcceptRecordApi.deleteOrderAcceptRecordList(checkedIds.value)
+    checkedIds.value = []
     message.success(t('common.delSuccess'))
-    await getList();
+    await getList()
   } catch {}
 }
 
 const checkedIds = ref<number[]>([])
 const handleRowCheckboxChange = (records: OrderAcceptRecord[]) => {
-  checkedIds.value = records.map((item) => item.id!);
+  checkedIds.value = records.map((item) => item.id!)
 }
 
 /** 导出按钮操作 */

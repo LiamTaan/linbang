@@ -9,7 +9,7 @@
     </div>
 
     <div v-else-if="item.type === MsgType.Image">
-      <a target="_blank" :href="item.mediaUrl">
+      <a target="_blank" rel="noopener noreferrer" :href="toOpenableUrl(item.mediaUrl)">
         <img :src="item.mediaUrl" style="width: 100px" />
       </a>
     </div>
@@ -22,7 +22,13 @@
     </div>
 
     <div v-else-if="item.type === MsgType.Link" class="avue-card__detail">
-      <el-link type="success" :underline="false" target="_blank" :href="item.url">
+      <el-link
+        type="success"
+        :underline="false"
+        target="_blank"
+        rel="noopener noreferrer"
+        :href="toOpenableUrl(item.url)"
+      >
         <div class="avue-card__title"><i class="el-icon-link"></i>{{ item.title }}</div>
       </el-link>
       <div class="avue-card__info" style="height: unset">{{ item.description }}</div>
@@ -56,6 +62,7 @@ import WxLocation from '@/views/mp/components/wx-location'
 import WxMusic from '@/views/mp/components/wx-music'
 import MsgEvent from './MsgEvent.vue'
 import { MsgType } from '../types'
+import { toOpenableUrl } from '@/utils/url'
 
 defineOptions({ name: 'Msg' })
 

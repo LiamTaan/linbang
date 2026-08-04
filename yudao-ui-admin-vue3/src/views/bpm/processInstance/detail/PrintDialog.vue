@@ -412,7 +412,7 @@ const getPrintTemplateHTML = () => {
   const mentions = doc.querySelectorAll('[data-w-e-type="mention"]')
   mentions.forEach((item) => {
     const mentionId = JSON.parse(decodeURIComponent(item.getAttribute('data-info') ?? ''))['id']
-    item.innerHTML = printDataMap.value[mentionId] ?? ''
+    item.textContent = printDataMap.value[mentionId] ?? ''
   })
   // 替换流程记录
   const processRecords = doc.querySelectorAll('[data-w-e-type="process-record"]')
@@ -441,7 +441,7 @@ const getPrintTemplateHTML = () => {
     })
   }
   processRecords.forEach((item) => {
-    item.innerHTML = processRecordTable.outerHTML
+    item.replaceWith(processRecordTable.cloneNode(true))
   })
   // 返回 html
   return doc.body.innerHTML
@@ -459,7 +459,7 @@ const printObj = ref({
 <template>
   <el-dialog v-loading="loading" v-model="visible" :show-close="false">
     <div id="printDivTag" style="word-break: break-all">
-      <div v-if="printData.printTemplateEnable" v-html="getPrintTemplateHTML()"></div>
+      <div v-if="printData.printTemplateEnable" v-dompurify-html="getPrintTemplateHTML()"></div>
       <div v-else>
         <h2 class="text-center">{{ printData.processInstance.name }}</h2>
         <div class="text-right text-15px">{{ '打印人员: ' + userName }}</div>
@@ -498,7 +498,7 @@ const printObj = ref({
                 {{ item.name }}
               </td>
               <td class="p-5px w-80%" colspan="3">
-                <div v-html="item.html"></div>
+                <div v-dompurify-html="item.html"></div>
               </td>
             </tr>
           </tbody>

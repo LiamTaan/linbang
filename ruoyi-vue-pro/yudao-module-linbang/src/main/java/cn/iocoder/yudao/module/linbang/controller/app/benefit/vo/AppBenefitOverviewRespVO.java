@@ -32,6 +32,7 @@ public class AppBenefitOverviewRespVO {
     private List<PointRecordSimpleRespVO> recentPointRecords;
 
     @Data
+    @Schema(description = "用户 App - 权益项目 Response VO")
     public static class BenefitItemRespVO {
         @Schema(description = OpenApiSchemaConstants.BENEFIT_TYPE, example = "CREDIT_LEVEL")
         private String benefitType;
@@ -44,6 +45,7 @@ public class AppBenefitOverviewRespVO {
     }
 
     @Data
+    @Schema(description = "用户 App - 积分记录摘要 Response VO")
     public static class PointRecordSimpleRespVO {
         @Schema(description = "积分记录 ID", example = "1")
         private Long id;

@@ -1,6 +1,7 @@
 package cn.iocoder.yudao.module.linbang.dal.mysql.messagerecord;
 
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.iocoder.yudao.framework.common.pojo.PageParam;
 import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.controller.admin.messagerecord.vo.MessageRecordPageReqVO;
@@ -8,6 +9,7 @@ import cn.iocoder.yudao.module.linbang.controller.app.message.vo.AppMessageRecor
 import cn.iocoder.yudao.module.linbang.dal.dataobject.messagerecord.MessageRecordDO;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.Collection;
 import java.util.List;
 
 @Mapper
@@ -15,6 +17,10 @@ public interface MessageRecordMapper extends BaseMapperX<MessageRecordDO> {
 
     default MessageRecordDO selectByDedupeKey(String dedupeKey) {
         return selectOne(MessageRecordDO::getDedupeKey, dedupeKey);
+    }
+
+    default MessageRecordDO selectByDedupeKeyForUpdate(String dedupeKey) {
+        return selectOneForUpdate(MessageRecordDO::getDedupeKey, dedupeKey);
     }
 
     default PageResult<MessageRecordDO> selectPage(MessageRecordPageReqVO reqVO, List<Long> matchedReceiverUserIds) {
@@ -38,6 +44,24 @@ public interface MessageRecordMapper extends BaseMapperX<MessageRecordDO> {
                 .eqIfPresent(MessageRecordDO::getSendStatus, reqVO.getSendStatus())
                 .eqIfPresent(MessageRecordDO::getMessageCategory, reqVO.getMessageCategory())
                 .eqIfPresent(MessageRecordDO::getReadStatus, reqVO.getReadStatus())
+                .orderByDesc(MessageRecordDO::getId));
+    }
+
+    default PageResult<MessageRecordDO> selectAppPage(Long userId, PageParam pageParam, String sendStatus,
+                                                      Collection<String> messageCategories) {
+        return selectPage(pageParam, new LambdaQueryWrapperX<MessageRecordDO>()
+                .eq(MessageRecordDO::getReceiverUserId, userId)
+                .eqIfPresent(MessageRecordDO::getSendStatus, sendStatus)
+                .inIfPresent(MessageRecordDO::getMessageCategory, messageCategories)
+                .orderByDesc(MessageRecordDO::getId));
+    }
+
+    default PageResult<MessageRecordDO> selectQualificationReminderPage(Long userId, String readStatus,
+                                                                          PageParam pageParam, String bizType) {
+        return selectPage(pageParam, new LambdaQueryWrapperX<MessageRecordDO>()
+                .eq(MessageRecordDO::getReceiverUserId, userId)
+                .eq(MessageRecordDO::getBizType, bizType)
+                .eqIfPresent(MessageRecordDO::getReadStatus, readStatus)
                 .orderByDesc(MessageRecordDO::getId));
     }
 }

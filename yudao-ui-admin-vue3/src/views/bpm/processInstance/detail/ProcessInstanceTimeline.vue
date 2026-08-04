@@ -146,9 +146,10 @@
                     />
                     <el-link
                       v-else
-                      :href="attachment"
+                      :href="toOpenableUrl(attachment)"
                       :underline="false"
                       target="_blank"
+                      rel="noopener noreferrer"
                       type="primary"
                     >
                       <Icon class="mr-1" icon="ep:document" />
@@ -215,6 +216,7 @@ import parallelSvg from '@/assets/svgs/bpm/parallel.svg'
 import finishSvg from '@/assets/svgs/bpm/finish.svg'
 import transactorSvg from '@/assets/svgs/bpm/transactor.svg'
 import childProcessSvg from '@/assets/svgs/bpm/child-process.svg'
+import { toOpenableUrl } from '@/utils/url'
 
 defineOptions({ name: 'BpmProcessInstanceTimeline' })
 const props = withDefaults(

@@ -1,23 +1,18 @@
 package cn.iocoder.yudao.module.pay.dal.mysql.wallet;
 
 
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.map.MapUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageParam;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.iocoder.yudao.framework.mybatis.core.query.QueryWrapperX;
 import cn.iocoder.yudao.module.pay.controller.app.wallet.vo.transaction.AppPayWalletTransactionPageReqVO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.wallet.PayWalletTransactionDO;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 import static cn.iocoder.yudao.module.pay.controller.app.wallet.vo.transaction.AppPayWalletTransactionPageReqVO.*;
 
@@ -38,18 +33,17 @@ public interface PayWalletTransactionMapper extends BaseMapperX<PayWalletTransac
         return selectPage(pageParam, query);
     }
 
-    default Integer selectPriceSum(Long walletId, Integer type, LocalDateTime[] createTime) {
-        // SQL sum 查询
-        List<Map<String, Object>> result = selectMaps(new QueryWrapperX<PayWalletTransactionDO>()
-                .select("SUM(price) AS priceSum")
-                .gt(Objects.equals(type, TYPE_INCOME), "price", 0) // 收入
-                .lt(Objects.equals(type, TYPE_EXPENSE), "price", 0) // 支出
-                .eq("wallet_id", walletId)
-                .between("create_time", createTime[0], createTime[1]));
-        // 获得 sum 结果
-        Map<String, Object> first = CollUtil.getFirst(result);
-        return MapUtil.getInt(first, "priceSum", 0);
-    }
+    @Select({"<script>",
+            "SELECT COALESCE(SUM(price), 0)",
+            "FROM pay_wallet_transaction",
+            "WHERE wallet_id = #{walletId}",
+            "AND create_time BETWEEN #{createTime[0]} AND #{createTime[1]}",
+            "<if test='type != null and type == 1'>AND price &gt; 0</if>",
+            "<if test='type != null and type == 2'>AND price &lt; 0</if>",
+            "</script>"})
+    Integer selectPriceSum(@Param("walletId") Long walletId,
+                           @Param("type") Integer type,
+                           @Param("createTime") LocalDateTime[] createTime);
 
     default PayWalletTransactionDO selectByNo(String no) {
         return selectOne(PayWalletTransactionDO::getNo, no);
@@ -61,7 +55,6 @@ public interface PayWalletTransactionMapper extends BaseMapperX<PayWalletTransac
     }
 
 }
-
 
 
 

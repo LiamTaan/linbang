@@ -16,6 +16,9 @@ import java.util.List;
  */
 public interface FileService {
 
+    long MAX_FILE_SIZE_BYTES = 20L * 1024 * 1024;
+    String PRESIGNED_UPLOAD_CONTENT_TYPE = "application/octet-stream";
+
     /**
      * 获得文件分页
      *
@@ -52,10 +55,11 @@ public interface FileService {
      * 生成文件预签名地址信息，用于上传
      *
      * @param name      文件名
+     * @param size      文件大小，单位字节
      * @param directory 目录
      * @return 预签名地址信息
      */
-    FilePresignedUrlRespVO presignPutUrl(@NotEmpty(message = "文件名不能为空") String name,
+    FilePresignedUrlRespVO presignPutUrl(@NotEmpty(message = "文件名不能为空") String name, long size,
                                          String directory);
     /**
      * 生成文件预签名地址信息，用于读取
@@ -99,6 +103,16 @@ public interface FileService {
     byte[] getFileContent(Long configId, String path) throws Exception;
 
     /**
+     * 受限大小读取文件，最多返回 maxBytes + 1 字节。
+     *
+     * @param configId 文件配置编号
+     * @param path 文件路径
+     * @param maxBytes 最大允许字节数
+     * @return 文件内容；返回长度大于 maxBytes 表示文件超限
+     */
+    byte[] getFileContent(Long configId, String path, long maxBytes) throws Exception;
+
+    /**
      * 获得文件
      *
      * @param configId 配置编号
@@ -106,5 +120,12 @@ public interface FileService {
      * @return 文件
      */
     FileDO getFileByConfigIdAndPath(Long configId, String path);
+
+    /**
+     * 清理已过期且未完成的预签名上传。
+     *
+     * @return 已清理的文件记录数
+     */
+    int cleanExpiredPendingUploads();
 
 }

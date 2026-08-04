@@ -1,6 +1,5 @@
 import * as FileApi from '@/api/infra/file'
 import {
-  UploadRawFile,
   UploadRequestOptions,
   UploadProgressEvent
 } from 'element-plus/es/components/upload/src/upload'
@@ -32,21 +31,21 @@ export const useUpload = (directory?: string) => {
       // 1.1 生成文件名称
       const fileName = options.file.name || options.filename
       // 1.2 获取文件预签名地址
-      const presignedInfo = await FileApi.getFilePresignedUrl(fileName, directory)
+      const presignedInfo = await FileApi.getFilePresignedUrl(
+        fileName,
+        options.file.size,
+        directory
+      )
       // 1.3 上传文件（不能使用 ElUpload 的 ajaxUpload 方法的原因：其使用的是 FormData 上传，Minio 不支持）
-      return axios
-        .put(presignedInfo.uploadUrl, options.file, {
-          headers: {
-            'Content-Type': options.file.type || 'application/octet-stream'
-          },
-          onUploadProgress: uploadProgressHandler
-        })
-        .then(() => {
-          // 1.4. 记录文件信息到后端（异步）
-          createFile(presignedInfo, options.file, fileName)
-          // 通知成功，数据格式保持与后端上传的返回结果一致
-          return { data: presignedInfo.url }
-        })
+      await axios.put(presignedInfo.uploadUrl, options.file, {
+        headers: {
+          'Content-Type': presignedInfo.uploadContentType
+        },
+        onUploadProgress: uploadProgressHandler
+      })
+      // 1.4. 等待后端完成真实大小、类型和对象元数据校验后，再通知上传成功
+      await createFile(presignedInfo)
+      return { data: presignedInfo.url }
     } else {
       // 模式二：后端上传
       // 重写 el-upload httpRequest 文件上传成功会走成功的钩子，失败走失败的钩子
@@ -75,20 +74,12 @@ export const useUpload = (directory?: string) => {
 /**
  * 创建文件信息
  * @param vo 文件预签名信息
- * @param file 文件
- * @param fileName
  */
-function createFile(vo: FileApi.FilePresignedUrlRespVO, file: UploadRawFile, fileName: string) {
-  const fileVo = {
+function createFile(vo: FileApi.FilePresignedUrlRespVO) {
+  return FileApi.createFile({
     configId: vo.configId,
-    url: vo.url,
-    path: vo.path,
-    name: fileName,
-    type: file.type || 'application/octet-stream',
-    size: file.size
-  }
-  FileApi.createFile(fileVo)
-  return fileVo
+    path: vo.path
+  })
 }
 
 /**

@@ -1,31 +1,31 @@
 import request from '@/config/axios'
-import type { Dayjs } from 'dayjs';
+import type { Dayjs } from 'dayjs'
 
 /** 订单匹配记录信息 */
 export interface OrderMatchRecord {
-          id: number; // 主键
-          orderId?: number; // 订单ID
-          orderNo?: string
-          unitId?: number; // 单元ID
-          unitNo?: string
-          merchantId?: number; // 服务商ID
-          merchantName?: string
-          merchantContactName?: string
-          merchantContactMobile?: string
-          matchRuleCode: string; // 命中规则编码
-          matchScore: number; // 匹配分值
-          distanceKm: number; // 距离公里
-          stageNo?: number
-          pushBatchNo?: number
-          priorityLayer?: string
-          priorityPoolFlag?: boolean
-          categoryMatchLevel?: string
-          pushTime?: string | Dayjs; // 推送时间
-          acceptDeadlineTime: string | Dayjs; // 接单截止时间
-          expiredTime?: string | Dayjs
-          status?: string; // 状态
-          finalResult?: string
-  }
+  id: number // 主键
+  orderId?: number // 订单ID
+  orderNo?: string
+  unitId?: number // 单元ID
+  unitNo?: string
+  merchantId?: number // 服务商ID
+  merchantName?: string
+  merchantContactName?: string
+  merchantContactMobile?: string
+  matchRuleCode: string // 命中规则编码
+  matchScore: number // 匹配分值
+  distanceKm: number // 距离公里
+  stageNo?: number
+  pushBatchNo?: number
+  priorityLayer?: string
+  priorityPoolFlag?: boolean
+  categoryMatchLevel?: string
+  pushTime?: string | Dayjs // 推送时间
+  acceptDeadlineTime: string | Dayjs // 接单截止时间
+  expiredTime?: string | Dayjs
+  status?: string // 状态
+  finalResult?: string
+}
 
 export interface OrderMatchRecordDetail extends OrderMatchRecord {
   createTime?: string | Dayjs

@@ -188,7 +188,8 @@ public class OAuth2ClientServiceImplTest extends BaseDbUnitTest {
 
             // mock 方法
             OAuth2ClientDO client = randomPojo(OAuth2ClientDO.class).setClientId("default")
-                    .setStatus(CommonStatusEnum.ENABLE.getStatus());
+                    .setStatus(CommonStatusEnum.ENABLE.getStatus())
+                    .setRedirectUris(Collections.singletonList("https://client.example/callback"));
             oauth2ClientMapper.insert(client);
             OAuth2ClientDO client02 = randomPojo(OAuth2ClientDO.class).setClientId("disable")
                     .setStatus(CommonStatusEnum.DISABLE.getStatus());
@@ -207,6 +208,12 @@ public class OAuth2ClientServiceImplTest extends BaseDbUnitTest {
                     null, null, Collections.singleton(randomString()), null), OAUTH2_CLIENT_SCOPE_OVER);
             assertServiceException(() -> oauth2ClientService.validOAuthClientFromCache("default",
                     null, null, null, "test"), OAUTH2_CLIENT_REDIRECT_URI_NOT_MATCH, "test");
+            assertServiceException(() -> oauth2ClientService.validOAuthClientFromCache("default",
+                    null, null, null, "https://client.example/callback.evil"),
+                    OAUTH2_CLIENT_REDIRECT_URI_NOT_MATCH, "https://client.example/callback.evil");
+            assertServiceException(() -> oauth2ClientService.validOAuthClientFromCache("default",
+                    null, null, null, "https://client.example.evil/callback"),
+                    OAUTH2_CLIENT_REDIRECT_URI_NOT_MATCH, "https://client.example.evil/callback");
             // 成功调用（1：参数完整）
             OAuth2ClientDO result = oauth2ClientService.validOAuthClientFromCache(client.getClientId(), client.getSecret(),
                     client.getAuthorizedGrantTypes().get(0), client.getScopes(), client.getRedirectUris().get(0));

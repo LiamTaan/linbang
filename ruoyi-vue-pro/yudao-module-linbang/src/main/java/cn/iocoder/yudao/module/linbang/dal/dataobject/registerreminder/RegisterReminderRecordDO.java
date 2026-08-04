@@ -36,6 +36,7 @@ public class RegisterReminderRecordDO extends BaseDO {
 
     private Integer socialType;
 
+    @ToString.Exclude
     private String socialOpenid;
 
     private Integer triggerCount;

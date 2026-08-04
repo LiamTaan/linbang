@@ -1,11 +1,29 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="状态" prop="status">
-        <el-input v-model="queryParams.status" placeholder="如 PENDING/APPROVED" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.status"
+          placeholder="如 PENDING/APPROVED"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="内容 ID" prop="contentId">
-        <el-input v-model="queryParams.contentId" placeholder="请输入推广内容 ID" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.contentId"
+          placeholder="请输入推广内容 ID"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item>
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
@@ -37,7 +55,12 @@
         </template>
       </el-table-column>
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 </template>
 

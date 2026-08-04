@@ -30,7 +30,12 @@
           />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable class="!w-180px">
+          <el-select
+            v-model="queryParams.status"
+            placeholder="请选择状态"
+            clearable
+            class="!w-180px"
+          >
             <el-option
               v-for="item in ENABLE_STATUS_OPTIONS"
               :key="item.value"
@@ -40,7 +45,12 @@
           </el-select>
         </el-form-item>
         <el-form-item label="默认卡">
-          <el-select v-model="queryParams.isDefault" placeholder="请选择默认卡" clearable class="!w-180px">
+          <el-select
+            v-model="queryParams.isDefault"
+            placeholder="请选择默认卡"
+            clearable
+            class="!w-180px"
+          >
             <el-option
               v-for="item in BOOLEAN_YES_NO_OPTIONS"
               :key="String(item.value)"
@@ -199,7 +209,9 @@ const open = async (row?: WalletBankCard, user?: MemberUser) => {
   selectedId.value = row?.id
   selectedRow.value = row
   queryParams.pageNo = 1
-  queryParams.userKeyword = user ? user.userNo || user.mobile || user.nickname || undefined : undefined
+  queryParams.userKeyword = user
+    ? user.userNo || user.mobile || user.nickname || undefined
+    : undefined
   await getList()
 }
 

@@ -26,7 +26,7 @@ public abstract class AbstractSmsClient implements SmsClient {
      * 初始化
      */
     public final void init() {
-        log.debug("[init][配置({}) 初始化完成]", properties);
+        log.debug("[init][短信渠道({}) 初始化完成]", properties.getId());
     }
 
     public final void refresh(SmsChannelProperties properties) {
@@ -34,7 +34,7 @@ public abstract class AbstractSmsClient implements SmsClient {
         if (properties.equals(this.properties)) {
             return;
         }
-        log.info("[refresh][配置({})发生变化，重新初始化]", properties);
+        log.info("[refresh][短信渠道({})配置发生变化，重新初始化]", properties.getId());
         this.properties = properties;
         // 初始化
         this.init();

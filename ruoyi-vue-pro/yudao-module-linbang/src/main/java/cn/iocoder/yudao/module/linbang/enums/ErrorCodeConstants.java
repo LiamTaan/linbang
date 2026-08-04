@@ -34,6 +34,15 @@ public interface ErrorCodeConstants {
     ErrorCode MEMBER_USER_BUSINESS_LICENSE_REQUIRED = new ErrorCode(1_099_001_021, "企业注册必须上传营业执照");
     ErrorCode MEMBER_ROLE_SWITCH_NOT_ALLOWED = new ErrorCode(1_099_001_022, "当前角色尚未开通或不允许切换");
     ErrorCode CURRENT_ROLE_NOT_ALLOWED = new ErrorCode(1_099_001_023, "请先切换到{}角色后再继续当前操作");
+    ErrorCode MEMBER_SOCIAL_REDIRECT_URI_INVALID = new ErrorCode(1_099_001_024, "第三方登录回调地址不合法");
+    ErrorCode MEMBER_USER_BUSINESS_LICENSE_INVALID = new ErrorCode(1_099_001_025,
+            "营业执照文件无效、已过期或不属于当前注册手机号");
+    ErrorCode MEMBER_USER_REAL_NAME_STATUS_INVALID = new ErrorCode(1_099_001_026,
+            "实名认证已通过，不允许直接修改身份资料");
+    ErrorCode MEMBER_USER_QUALIFICATION_AUDIT_STATUS_INVALID = new ErrorCode(1_099_001_027,
+            "当前用户资质状态不允许审核或重新提交");
+    ErrorCode CERT_EXEMPTION_AUDIT_STATUS_INVALID = new ErrorCode(1_099_001_028,
+            "当前证件豁免申请状态不允许审核");
 
     // ========== MERCHANT 模块 1-099-002-000 ==========
     ErrorCode MERCHANT_SERVICE_CATEGORY_NOT_EXISTS = new ErrorCode(1_099_002_000, "服务类目不存在");
@@ -52,6 +61,8 @@ public interface ErrorCodeConstants {
     ErrorCode MERCHANT_REFERENCE_PRICE_NOT_EXISTS = new ErrorCode(1_099_002_013, "服务商参考价格不存在");
     ErrorCode MERCHANT_REFERENCE_PRICE_RANGE_INVALID = new ErrorCode(1_099_002_014, "参考价格区间不合法");
     ErrorCode MERCHANT_ROLE_REQUIRED = new ErrorCode(1_099_002_015, "请先切换到服务商角色后再继续当前操作");
+    ErrorCode MERCHANT_ENTRY_AUDIT_STATUS_INVALID = new ErrorCode(1_099_002_016,
+            "当前服务商入驻状态不允许执行该审核操作");
 
     // ========== RISK 模块 1-099-003-000 ==========
     ErrorCode RISK_RULE_NOT_EXISTS = new ErrorCode(1_099_003_000, "风控规则不存在");
@@ -118,6 +129,13 @@ public interface ErrorCodeConstants {
             "微信支付参数生成失败，请稍后重试");
     ErrorCode ORDER_WECHAT_PAY_APP_NOT_CONFIGURED = new ErrorCode(1_099_004_047,
             "未找到已启用微信小程序支付渠道的支付应用，请先在管理端完成配置");
+    ErrorCode ORDER_PAY_RETURN_URL_INVALID = new ErrorCode(1_099_004_048, "支付回跳地址不合法");
+    ErrorCode ORDER_SPLIT_RULE_INVALID = new ErrorCode(1_099_004_049, "订单拆单规则不合法：{}");
+    ErrorCode ORDER_AMOUNT_EXCEED_PAY_LIMIT = new ErrorCode(1_099_004_050, "订单金额超过支付渠道支持上限");
+    ErrorCode ORDER_SPLIT_RULE_IN_USE = new ErrorCode(1_099_004_052, "订单拆单规则已被订单引用，不能删除");
+    ErrorCode ORDER_ACCEPT_PAGE_WINDOW_TOO_LARGE = new ErrorCode(1_099_004_051, "接单大厅最多查询前 10000 条候选记录");
+    ErrorCode ORDER_ABNORMAL_FINAL_AUDIT_STATUS_INVALID = new ErrorCode(1_099_004_053,
+            "当前异常订单状态不允许终审");
 
     // ========== WALLET 模块 1-099-005-000 ==========
     ErrorCode WALLET_ACCOUNT_NOT_EXISTS = new ErrorCode(1_099_005_000, "钱包账户不存在");
@@ -132,6 +150,8 @@ public interface ErrorCodeConstants {
     ErrorCode WALLET_WITHDRAW_AUDIT_STATUS_INVALID = new ErrorCode(1_099_005_009, "当前提现申请状态不允许执行该审核或重试操作");
     ErrorCode WALLET_WITHDRAW_TRANSFER_NOTIFY_INVALID = new ErrorCode(1_099_005_010, "提现转账回调数据不合法");
     ErrorCode WALLET_WITHDRAW_PAY_APP_NOT_CONFIGURED = new ErrorCode(1_099_005_011, "未找到可用的支付应用配置，无法发起提现打款");
+    ErrorCode DIVIDE_RULE_INVALID = new ErrorCode(1_099_005_012, "分账规则不合法：{}");
+    ErrorCode DIVIDE_RULE_IN_USE = new ErrorCode(1_099_005_013, "分账规则已被订单引用，不能删除");
 
     // ========== REVIEW 模块 1-099-006-000 ==========
     ErrorCode COMPLAINT_NOT_EXISTS = new ErrorCode(1_099_006_000, "投诉单不存在");
@@ -144,6 +164,11 @@ public interface ErrorCodeConstants {
     ErrorCode REVIEW_DUPLICATED = new ErrorCode(1_099_006_007, "当前单元已提交过评价");
     ErrorCode REVIEW_EDIT_NOT_ALLOWED = new ErrorCode(1_099_006_008, "当前评价不允许修改");
     ErrorCode REVIEW_EDIT_EXPIRED = new ErrorCode(1_099_006_009, "评价可编辑时间已过");
+    ErrorCode CREDIT_RULE_INVALID = new ErrorCode(1_099_006_010, "信用规则不合法：{}");
+    ErrorCode CREDIT_RULE_CODE_DUPLICATE = new ErrorCode(1_099_006_011, "信用规则编码已存在");
+    ErrorCode CREDIT_RULE_IN_USE = new ErrorCode(1_099_006_012, "信用规则已产生信用记录，不能删除");
+    ErrorCode COMPLAINT_STATUS_INVALID = new ErrorCode(1_099_006_013, "当前投诉状态不允许处理");
+    ErrorCode APPEAL_AUDIT_STATUS_INVALID = new ErrorCode(1_099_006_014, "当前申诉状态不允许审核");
 
     // ========== PROMOTE / PARTNER / MESSAGE 模块 1-099-007-000 ==========
     ErrorCode PROMOTER_NOT_EXISTS = new ErrorCode(1_099_007_000, "推广员不存在");
@@ -170,10 +195,10 @@ public interface ErrorCodeConstants {
     ErrorCode PROMOTER_INVITE_ALREADY_BOUND = new ErrorCode(1_099_007_021, "当前用户已经绑定其他推广员，推广归属不可更换");
     ErrorCode PROMOTER_DISABLED = new ErrorCode(1_099_007_022, "推广员已停用，邀请码不可使用");
     ErrorCode PROMOTER_QRCODE_GENERATE_FAILED = new ErrorCode(1_099_007_023, "推广小程序码生成失败，请稍后重试");
-    ErrorCode MESSAGE_CAMPAIGN_AUDIT_STATUS_INVALID = new ErrorCode(1_099_007_020, "当前投放活动状态不允许审核");
-    ErrorCode MESSAGE_CAMPAIGN_EXECUTE_STATUS_INVALID = new ErrorCode(1_099_007_021, "当前投放活动状态不允许执行");
-    ErrorCode MESSAGE_CAMPAIGN_CANCEL_STATUS_INVALID = new ErrorCode(1_099_007_022, "当前投放活动状态不允许取消");
-    ErrorCode MESSAGE_FINANCE_SMS_REQUIRED = new ErrorCode(1_099_007_023, "金额变动类消息必须包含短信通道");
+    ErrorCode MESSAGE_CAMPAIGN_AUDIT_STATUS_INVALID = new ErrorCode(1_099_007_039, "当前投放活动状态不允许审核");
+    ErrorCode MESSAGE_CAMPAIGN_EXECUTE_STATUS_INVALID = new ErrorCode(1_099_007_040, "当前投放活动状态不允许执行");
+    ErrorCode MESSAGE_CAMPAIGN_CANCEL_STATUS_INVALID = new ErrorCode(1_099_007_041, "当前投放活动状态不允许取消");
+    ErrorCode MESSAGE_FINANCE_SMS_REQUIRED = new ErrorCode(1_099_007_042, "金额变动类消息必须包含短信通道");
     ErrorCode APP_MESSAGE_SETTING_NOT_EXISTS = new ErrorCode(1_099_007_024, "消息偏好设置不存在");
     ErrorCode MESSAGE_FEEDBACK_STAT_NOT_EXISTS = new ErrorCode(1_099_007_025, "消息反馈统计不存在");
     ErrorCode MESSAGE_OPTIMIZATION_NOT_EXISTS = new ErrorCode(1_099_007_026, "消息优化记录不存在");
@@ -186,6 +211,11 @@ public interface ErrorCodeConstants {
     ErrorCode PARTNER_ROLE_REQUIRED = new ErrorCode(1_099_007_033, "当前账号未开通区域合作商身份");
     ErrorCode MEMBER_USER_RESTRICT_STATUS_INVALID = new ErrorCode(1_099_007_034, "当前用户限制状态不允许执行该操作");
     ErrorCode HELP_FAQ_NOT_EXISTS = new ErrorCode(1_099_007_035, "常见问题不存在");
+    ErrorCode PARTNER_DISPUTE_TYPE_INVALID = new ErrorCode(1_099_007_036, "纠纷类型仅支持投诉或申诉");
+    ErrorCode PARTNER_ESCALATE_REMARK_REQUIRED = new ErrorCode(1_099_007_037, "升级平台终审时必须填写升级备注");
+    ErrorCode PARTNER_INSTRUCTION_CATEGORY_INVALID = new ErrorCode(1_099_007_038, "合作商消息分类不受支持");
+    ErrorCode SHOWCASE_REWARD_NOT_EXISTS = new ErrorCode(1_099_007_043, "晒单悬赏申请不存在");
+    ErrorCode SHOWCASE_REWARD_AUDIT_STATUS_INVALID = new ErrorCode(1_099_007_044, "当前晒单悬赏申请状态不允许审核");
 
     // ========== CONTENT / SENSITIVE 模块 1-099-009-000 ==========
     ErrorCode CONTENT_SENSITIVE_BLOCKED = new ErrorCode(1_099_009_000, "内容包含敏感信息，已被拦截");

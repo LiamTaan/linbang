@@ -1,6 +1,12 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="用户" prop="userKeyword">
         <el-input
           v-model="queryParams.userKeyword"
@@ -85,12 +91,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
         <el-button
           type="success"
           plain
@@ -109,9 +111,15 @@
       <el-table-column label="服务商" align="center" min-width="220">
         <template #default="{ row }">
           <div class="leading-20px">
-            <div class="font-600">{{ row.merchantName || (row.merchantId ? '服务商信息缺失' : '-') }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactName || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactMobile || '-' }}</div>
+            <div class="font-600">{{
+              row.merchantName || (row.merchantId ? '服务商信息缺失' : '-')
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactName || '-'
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactMobile || '-'
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -120,7 +128,9 @@
           <div class="leading-20px">
             <div class="font-600">{{ row.userNickname || '-' }}</div>
             <div class="text-[var(--el-text-color-secondary)]">{{ row.userMobile || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.userNo || formatIdFallback(row.userId) }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.userNo || formatIdFallback(row.userId)
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -128,31 +138,69 @@
       <el-table-column label="区域编码" align="center" prop="regionCode" width="120" />
       <el-table-column label="初审状态" align="center" prop="firstAuditStatus" width="110">
         <template #default="{ row }">
-          <dict-tag v-if="row.firstAuditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.firstAuditStatus" />
+          <dict-tag
+            v-if="row.firstAuditStatus"
+            :type="DICT_TYPE.LB_AUDIT_STATUS"
+            :value="row.firstAuditStatus"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="初审人" align="center" prop="firstAuditBy" width="100" />
-      <el-table-column label="初审时间" align="center" prop="firstAuditTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="初审时间"
+        align="center"
+        prop="firstAuditTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="终审状态" align="center" prop="finalAuditStatus" width="110">
         <template #default="{ row }">
-          <dict-tag v-if="row.finalAuditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.finalAuditStatus" />
+          <dict-tag
+            v-if="row.finalAuditStatus"
+            :type="DICT_TYPE.LB_AUDIT_STATUS"
+            :value="row.finalAuditStatus"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="终审人" align="center" prop="finalAuditBy" width="100" />
-      <el-table-column label="终审时间" align="center" prop="finalAuditTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="终审时间"
+        align="center"
+        prop="finalAuditTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="流程状态" align="center" prop="status" width="120">
         <template #default="{ row }">
-          <dict-tag v-if="row.status" :type="DICT_TYPE.LB_MERCHANT_ENTRY_STATUS" :value="row.status" />
+          <dict-tag
+            v-if="row.status"
+            :type="DICT_TYPE.LB_MERCHANT_ENTRY_STATUS"
+            :value="row.status"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="180" />
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="操作" align="center" fixed="right" :show-overflow-tooltip="false" min-width="180">
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
+      <el-table-column
+        label="操作"
+        align="center"
+        fixed="right"
+        :show-overflow-tooltip="false"
+        min-width="180"
+      >
         <template #default="{ row }">
-          <div class="flex flex-wrap items-center justify-center gap-x-8px gap-y-4px whitespace-normal">
+          <div
+            class="flex flex-wrap items-center justify-center gap-x-8px gap-y-4px whitespace-normal"
+          >
             <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
             <el-button
               v-if="getAuditActionLabel(row)"
@@ -179,15 +227,29 @@
     <el-descriptions v-loading="detailLoading" :column="2" border>
       <el-descriptions-item label="入驻单号">{{ detailData?.entryNo || '-' }}</el-descriptions-item>
       <el-descriptions-item label="申请用户">{{ formatDetailUserDisplay() }}</el-descriptions-item>
-      <el-descriptions-item label="服务商">{{ formatDetailMerchantDisplay() }}</el-descriptions-item>
-      <el-descriptions-item label="区域编码">{{ detailData?.regionCode || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="服务商">{{
+        formatDetailMerchantDisplay()
+      }}</el-descriptions-item>
+      <el-descriptions-item label="区域编码">{{
+        detailData?.regionCode || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="流程状态">
-        <dict-tag v-if="detailData?.status" :type="DICT_TYPE.LB_MERCHANT_ENTRY_STATUS" :value="detailData.status" />
+        <dict-tag
+          v-if="detailData?.status"
+          :type="DICT_TYPE.LB_MERCHANT_ENTRY_STATUS"
+          :value="detailData.status"
+        />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="进度状态">{{ detailData?.progressStatus || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="当前阶段">{{ detailData?.currentStageName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="阶段时间">{{ formatDate(detailData?.currentStageTime) }}</el-descriptions-item>
+      <el-descriptions-item label="进度状态">{{
+        detailData?.progressStatus || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="当前阶段">{{
+        detailData?.currentStageName || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="阶段时间">{{
+        formatDate(detailData?.currentStageTime)
+      }}</el-descriptions-item>
       <el-descriptions-item label="初审状态">
         <dict-tag
           v-if="detailData?.firstAuditStatus"
@@ -204,38 +266,79 @@
         />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="初审时间">{{ formatDate(detailData?.firstAuditTime) }}</el-descriptions-item>
-      <el-descriptions-item label="终审时间">{{ formatDate(detailData?.finalAuditTime) }}</el-descriptions-item>
-      <el-descriptions-item label="接单权限">{{ detailData?.acceptEnabled ? '已开通' : '未开通' }}</el-descriptions-item>
-      <el-descriptions-item label="绑卡阻塞">{{ detailData?.bankCardRequired ? '需要先绑卡' : '否' }}</el-descriptions-item>
-      <el-descriptions-item label="阻塞原因" :span="2">{{ detailData?.onboardingBlockedReason || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="驳回原因" :span="2">{{ detailData?.rejectReason || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="备注" :span="2">{{ detailData?.remark || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="初审时间">{{
+        formatDate(detailData?.firstAuditTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="终审时间">{{
+        formatDate(detailData?.finalAuditTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="接单权限">{{
+        detailData?.acceptEnabled ? '已开通' : '未开通'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="绑卡阻塞">{{
+        detailData?.bankCardRequired ? '需要先绑卡' : '否'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="阻塞原因" :span="2">{{
+        detailData?.onboardingBlockedReason || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="驳回原因" :span="2">{{
+        detailData?.rejectReason || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="备注" :span="2">{{
+        detailData?.remark || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">申请人信息</el-divider>
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="用户编号">{{ detailData?.applicant?.userNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="昵称">{{ detailData?.applicant?.nickname || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="手机号">{{ detailData?.applicant?.mobile || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="用户编号">{{
+        detailData?.applicant?.userNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="昵称">{{
+        detailData?.applicant?.nickname || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="手机号">{{
+        detailData?.applicant?.mobile || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="当前角色">
-        <dict-tag v-if="detailData?.applicant?.currentRoleCode" :type="DICT_TYPE.LB_ROLE_CODE" :value="detailData.applicant.currentRoleCode" />
+        <dict-tag
+          v-if="detailData?.applicant?.currentRoleCode"
+          :type="DICT_TYPE.LB_ROLE_CODE"
+          :value="detailData.applicant.currentRoleCode"
+        />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="用户状态">{{ formatEnableStatus(detailData?.applicant?.status) }}</el-descriptions-item>
-      <el-descriptions-item label="最近登录时间">{{ formatDate(detailData?.applicant?.lastLoginTime) }}</el-descriptions-item>
-      <el-descriptions-item label="最近登录 IP" :span="2">{{ detailData?.applicant?.lastLoginIp || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="用户状态">{{
+        formatEnableStatus(detailData?.applicant?.status)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="最近登录时间">{{
+        formatDate(detailData?.applicant?.lastLoginTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="最近登录 IP" :span="2">{{
+        detailData?.applicant?.lastLoginIp || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">服务商信息</el-divider>
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="服务商名称">{{ detailData?.merchant?.merchantName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="联系人">{{ detailData?.merchant?.contactName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="联系电话">{{ detailData?.merchant?.contactMobile || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="服务商状态">{{ formatEnableStatus(detailData?.merchant?.status) }}</el-descriptions-item>
-      <el-descriptions-item label="接单状态">{{ formatAcceptStatus(detailData?.merchant?.acceptStatus) }}</el-descriptions-item>
+      <el-descriptions-item label="服务商名称">{{
+        detailData?.merchant?.merchantName || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="联系人">{{
+        detailData?.merchant?.contactName || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="联系电话">{{
+        detailData?.merchant?.contactMobile || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="服务商状态">{{
+        formatEnableStatus(detailData?.merchant?.status)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="接单状态">{{
+        formatAcceptStatus(detailData?.merchant?.acceptStatus)
+      }}</el-descriptions-item>
       <el-descriptions-item label="信用分 / 等级">
-        {{ detailData?.merchant?.creditScore ?? '-' }} / {{ detailData?.merchant?.creditLevel || '-' }}
+        {{ detailData?.merchant?.creditScore ?? '-' }} /
+        {{ detailData?.merchant?.creditLevel || '-' }}
       </el-descriptions-item>
       <el-descriptions-item label="服务范围说明" :span="2">
         {{ detailData?.merchant?.serviceScopeDesc || '-' }}
@@ -247,22 +350,28 @@
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">历史入驻数</div>
-          <div class="mt-8px text-24px font-600">{{ detailData?.summary?.historyEntryCount ?? 0 }}</div>
+          <div class="mt-8px text-24px font-600">{{
+            detailData?.summary?.historyEntryCount ?? 0
+          }}</div>
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">已通过 / 已驳回</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.approvedEntryCount ?? 0 }} / {{ detailData?.summary?.rejectedEntryCount ?? 0 }}
+            {{ detailData?.summary?.approvedEntryCount ?? 0 }} /
+            {{ detailData?.summary?.rejectedEntryCount ?? 0 }}
           </div>
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card shadow="never">
-          <div class="text-14px text-[var(--el-text-color-secondary)]">类目 / 资质 / 已通过资质</div>
+          <div class="text-14px text-[var(--el-text-color-secondary)]"
+            >类目 / 资质 / 已通过资质</div
+          >
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.categoryCount ?? 0 }} / {{ detailData?.summary?.qualificationCount ?? 0 }} /
+            {{ detailData?.summary?.categoryCount ?? 0 }} /
+            {{ detailData?.summary?.qualificationCount ?? 0 }} /
             {{ detailData?.summary?.approvedQualificationCount ?? 0 }}
           </div>
         </el-card>
@@ -270,7 +379,9 @@
     </el-row>
 
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="实名姓名">{{ detailData?.realName?.realName || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="实名姓名">{{
+        detailData?.realName?.realName || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="实名状态">
         <dict-tag
           v-if="detailData?.realName?.auditStatus"
@@ -279,17 +390,31 @@
         />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="身份证号">{{ detailData?.realName?.idCardNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="实名审核时间">{{ formatDate(detailData?.realName?.auditTime) }}</el-descriptions-item>
-      <el-descriptions-item label="营业执照已上传">{{ detailData?.summary?.businessLicenseUploaded ? '是' : '否' }}</el-descriptions-item>
-      <el-descriptions-item label="保险已上传">{{ detailData?.summary?.insuranceUploaded ? '是' : '否' }}</el-descriptions-item>
+      <el-descriptions-item label="身份证号">{{
+        detailData?.realName?.idCardNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="实名审核时间">{{
+        formatDate(detailData?.realName?.auditTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="营业执照已上传">{{
+        detailData?.summary?.businessLicenseUploaded ? '是' : '否'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="保险已上传">{{
+        detailData?.summary?.insuranceUploaded ? '是' : '否'
+      }}</el-descriptions-item>
       <el-descriptions-item label="实名审核备注" :span="2">
         {{ detailData?.realName?.auditRemark || detailData?.realName?.rejectReason || '-' }}
       </el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">服务类目</el-divider>
-    <el-table v-if="detailData?.categories?.length" :data="detailData.categories" size="small" border max-height="220">
+    <el-table
+      v-if="detailData?.categories?.length"
+      :data="detailData.categories"
+      size="small"
+      border
+      max-height="220"
+    >
       <el-table-column label="类目" min-width="180">
         <template #default="{ row }">
           {{ row.categoryName || (row.categoryId ? '类目信息缺失' : '-') }}
@@ -338,7 +463,11 @@
       <el-table-column label="资质编号" prop="qualificationNo" width="160" />
       <el-table-column label="审核状态" prop="auditStatus" width="110">
         <template #default="{ row }">
-          <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+          <dict-tag
+            v-if="row.auditStatus"
+            :type="DICT_TYPE.LB_AUDIT_STATUS"
+            :value="row.auditStatus"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
@@ -363,19 +492,31 @@
       <el-table-column label="区域编码" prop="regionCode" width="120" />
       <el-table-column label="初审" width="100">
         <template #default="{ row }">
-          <dict-tag v-if="row.firstAuditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.firstAuditStatus" />
+          <dict-tag
+            v-if="row.firstAuditStatus"
+            :type="DICT_TYPE.LB_AUDIT_STATUS"
+            :value="row.firstAuditStatus"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="终审" width="100">
         <template #default="{ row }">
-          <dict-tag v-if="row.finalAuditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.finalAuditStatus" />
+          <dict-tag
+            v-if="row.finalAuditStatus"
+            :type="DICT_TYPE.LB_AUDIT_STATUS"
+            :value="row.finalAuditStatus"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="流程状态" width="120">
         <template #default="{ row }">
-          <dict-tag v-if="row.status" :type="DICT_TYPE.LB_MERCHANT_ENTRY_STATUS" :value="row.status" />
+          <dict-tag
+            v-if="row.status"
+            :type="DICT_TYPE.LB_MERCHANT_ENTRY_STATUS"
+            :value="row.status"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
@@ -423,7 +564,11 @@
           placeholder="请输入审核备注"
         />
       </el-form-item>
-      <el-form-item v-if="auditFormData.auditStatus === 'REJECTED'" label="驳回原因" prop="rejectReason">
+      <el-form-item
+        v-if="auditFormData.auditStatus === 'REJECTED'"
+        label="驳回原因"
+        prop="rejectReason"
+      >
         <el-input
           v-model="auditFormData.rejectReason"
           type="textarea"
@@ -517,7 +662,9 @@ const formatIdFallback = (userId?: number) => {
   return userId ? '用户信息缺失' : '-'
 }
 
-const formatRowUserDisplay = (row?: Pick<MerchantEntry, 'userNickname' | 'userMobile' | 'userNo' | 'userId'>) => {
+const formatRowUserDisplay = (
+  row?: Pick<MerchantEntry, 'userNickname' | 'userMobile' | 'userNo' | 'userId'>
+) => {
   if (!row) {
     return '-'
   }
@@ -532,7 +679,10 @@ const formatDetailUserDisplay = () => {
 }
 
 const formatRowMerchantDisplay = (
-  row?: Pick<MerchantEntry, 'merchantName' | 'merchantContactName' | 'merchantContactMobile' | 'merchantId'>
+  row?: Pick<
+    MerchantEntry,
+    'merchantName' | 'merchantContactName' | 'merchantContactMobile' | 'merchantId'
+  >
 ) => {
   if (!row) {
     return '-'

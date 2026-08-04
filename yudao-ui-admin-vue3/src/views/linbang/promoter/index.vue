@@ -1,6 +1,12 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="用户" prop="userKeyword">
         <el-input
           v-model="queryParams.userKeyword"
@@ -41,12 +47,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
       </el-form-item>
     </el-form>
   </ContentWrap>
@@ -58,7 +60,9 @@
           <div class="leading-20px">
             <div class="font-600">{{ row.userNickname || '-' }}</div>
             <div class="text-[var(--el-text-color-secondary)]">{{ row.userMobile || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.userNo || formatIdFallback(row.userId) }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.userNo || formatIdFallback(row.userId)
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -68,7 +72,12 @@
       <el-table-column label="转化人数" align="center" prop="convertCount" width="110" />
       <el-table-column label="待转化" align="center" prop="pendingConvertCount" width="100" />
       <el-table-column label="累计佣金" align="center" prop="totalCommissionAmount" width="120" />
-      <el-table-column label="可提现佣金" align="center" prop="availableCommissionAmount" width="130" />
+      <el-table-column
+        label="可提现佣金"
+        align="center"
+        prop="availableCommissionAmount"
+        width="130"
+      />
       <el-table-column label="状态" align="center" prop="status" width="100">
         <template #default="{ row }">
           <el-tag :type="row.status === 'ENABLE' ? 'success' : 'info'">
@@ -76,7 +85,13 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="操作" align="center" fixed="right" width="170">
         <template #default="{ row }">
           <el-button
@@ -167,7 +182,9 @@ const handleStatusChange = async (row: Promoter) => {
   const nextStatus = row.status === 'ENABLE' ? 'DISABLE' : 'ENABLE'
   const action = nextStatus === 'ENABLE' ? '启用' : '停用'
   await ElMessageBox.confirm(
-    nextStatus === 'DISABLE' ? '停用后该推广员的邀请码将不能继续绑定，已有归属不会删除。' : '确认重新启用该推广员？',
+    nextStatus === 'DISABLE'
+      ? '停用后该推广员的邀请码将不能继续绑定，已有归属不会删除。'
+      : '确认重新启用该推广员？',
     `${action}推广员`,
     { type: 'warning' }
   )

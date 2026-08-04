@@ -29,7 +29,12 @@
         />
       </el-form-item>
       <el-form-item label="批次状态">
-        <el-select v-model="queryParams.status" placeholder="请选择批次状态" class="!w-220px" clearable>
+        <el-select
+          v-model="queryParams.status"
+          placeholder="请选择批次状态"
+          class="!w-220px"
+          clearable
+        >
           <el-option
             v-for="item in BATCH_STATUS_OPTIONS"
             :key="item.value"
@@ -52,10 +57,16 @@
           <div class="leading-20px">
             <div class="font-600">{{ row.orderNo || formatIdFallback(row.orderId) }}</div>
             <div class="text-[var(--el-text-color-secondary)]">
-              <dict-tag v-if="row.orderStatus" :type="DICT_TYPE.LB_ORDER_STATUS" :value="row.orderStatus" />
+              <dict-tag
+                v-if="row.orderStatus"
+                :type="DICT_TYPE.LB_ORDER_STATUS"
+                :value="row.orderStatus"
+              />
               <span v-else>-</span>
             </div>
-            <div class="text-[var(--el-text-color-secondary)]">订单ID：{{ row.orderId ?? '-' }}</div>
+            <div class="text-[var(--el-text-color-secondary)]"
+              >订单ID：{{ row.orderId ?? '-' }}</div
+            >
           </div>
         </template>
       </el-table-column>
@@ -64,7 +75,9 @@
           <div class="leading-20px">
             <div class="font-600">{{ row.userNickname || '-' }}</div>
             <div class="text-[var(--el-text-color-secondary)]">{{ row.userMobile || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.userNo || formatIdFallback(row.userId) }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.userNo || formatIdFallback(row.userId)
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -76,7 +89,11 @@
             <div class="text-[var(--el-text-color-secondary)]">
               第 {{ row.unitSeq ?? '-' }} 单元
               <span class="mx-4px">/</span>
-              <dict-tag v-if="row.unitStatus" :type="DICT_TYPE.LB_ORDER_UNIT_STATUS" :value="row.unitStatus" />
+              <dict-tag
+                v-if="row.unitStatus"
+                :type="DICT_TYPE.LB_ORDER_UNIT_STATUS"
+                :value="row.unitStatus"
+              />
               <span v-else>-</span>
             </div>
           </div>
@@ -89,7 +106,9 @@
             <div class="text-[var(--el-text-color-secondary)]">
               {{ row.pushedMerchantNames || '当前批次暂无推送明细' }}
             </div>
-            <div class="text-[var(--el-text-color-secondary)]">已接单 {{ row.acceptedMatchCount ?? 0 }} 家</div>
+            <div class="text-[var(--el-text-color-secondary)]"
+              >已接单 {{ row.acceptedMatchCount ?? 0 }} 家</div
+            >
           </div>
         </template>
       </el-table-column>
@@ -97,8 +116,12 @@
         <template #default="{ row }">
           <div class="leading-20px">
             <div class="font-600">{{ row.acceptedMerchantName || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.acceptedMerchantContactName || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.acceptedMerchantContactMobile || '-' }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.acceptedMerchantContactName || '-'
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.acceptedMerchantContactMobile || '-'
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -117,7 +140,9 @@
       <el-table-column label="过期时间" prop="expiredAt" :formatter="dateFormatter" width="180" />
       <el-table-column label="批次状态" width="120">
         <template #default="{ row }">
-          <el-tag :type="getBatchStatusTagType(row.status)">{{ formatBatchStatus(row.status) }}</el-tag>
+          <el-tag :type="getBatchStatusTagType(row.status)">{{
+            formatBatchStatus(row.status)
+          }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="触发类型" min-width="140">

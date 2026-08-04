@@ -31,7 +31,8 @@ import java.time.Duration;
  */
 public class S3FileClient extends AbstractFileClient<S3FileClientConfig> {
 
-    private static final Duration EXPIRATION_DEFAULT = Duration.ofHours(24);
+    private static final Duration GET_EXPIRATION_DEFAULT = Duration.ofHours(24);
+    private static final Duration PUT_EXPIRATION_DEFAULT = Duration.ofMinutes(10);
 
     private S3Client client;
     private S3Presigner presigner;
@@ -106,10 +107,30 @@ public class S3FileClient extends AbstractFileClient<S3FileClientConfig> {
     }
 
     @Override
-    public String presignPutUrl(String path) {
+    public byte[] getContent(String path, long maxBytes) {
+        if (maxBytes < 0 || maxBytes >= Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("maxBytes must be between 0 and Integer.MAX_VALUE - 1");
+        }
+        GetObjectRequest getRequest = GetObjectRequest.builder()
+                .bucket(config.getBucket())
+                .key(path)
+                .range("bytes=0-" + maxBytes)
+                .build();
+        return IoUtil.readBytes(client.getObject(getRequest));
+    }
+
+    @Override
+    public String presignPutUrl(String path, String contentType, long contentLength) {
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(config.getBucket())
+                .key(path)
+                .contentType(contentType)
+                .contentLength(contentLength)
+                .build();
         return presigner.presignPutObject(PutObjectPresignRequest.builder()
-                .signatureDuration(EXPIRATION_DEFAULT)
-                .putObjectRequest(b -> b.bucket(config.getBucket()).key(path)).build())
+                .signatureDuration(PUT_EXPIRATION_DEFAULT)
+                .putObjectRequest(putObjectRequest)
+                .build())
                 .url().toString();
     }
 
@@ -132,7 +153,7 @@ public class S3FileClient extends AbstractFileClient<S3FileClientConfig> {
 
         // 2.2 情况二：私有访问：生成 GET 预签名 URL
         String finalPath = path;
-        Duration expiration = expirationSeconds != null ? Duration.ofSeconds(expirationSeconds) : EXPIRATION_DEFAULT;
+        Duration expiration = expirationSeconds != null ? Duration.ofSeconds(expirationSeconds) : GET_EXPIRATION_DEFAULT;
         URL signedUrl = presigner.presignGetObject(GetObjectPresignRequest.builder()
                 .signatureDuration(expiration)
                 .getObjectRequest(b -> b.bucket(config.getBucket()).key(finalPath)).build())

@@ -20,10 +20,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.dao.DuplicateKeyException;
 
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -42,6 +44,18 @@ class PromoterServiceImplTest extends BaseMockitoUnitTest {
     @Mock private OrderUnitMapper orderUnitMapper;
     @Mock private DivideRuleMapper divideRuleMapper;
     @Mock private PromoterOperationLogMapper promoterOperationLogMapper;
+
+    @Test
+    void getOrCreatePromoter_returnsConcurrentInsertAfterDuplicateKey() {
+        PromoterDO concurrent = PromoterDO.builder().id(6L).userId(40L).inviteCode("LBEXIST1").build();
+        when(promoterMapper.selectByUserId(40L)).thenReturn(null);
+        when(memberUserMapper.selectById(40L)).thenReturn(MemberUserDO.builder().id(40L).build());
+        when(promoterMapper.insert(any(PromoterDO.class)))
+                .thenThrow(new DuplicateKeyException("duplicate promoter"));
+        when(promoterMapper.selectByUserIdForUpdate(40L)).thenReturn(concurrent);
+
+        assertSame(concurrent, promoterService.getOrCreatePromoter(40L));
+    }
 
     @Test
     void bindInviteCode_rejectsSelfBinding() {

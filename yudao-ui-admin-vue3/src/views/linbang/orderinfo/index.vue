@@ -1,6 +1,12 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="订单号" prop="orderNo">
         <el-input
           v-model="queryParams.orderNo"
@@ -44,7 +50,12 @@
         </el-select>
       </el-form-item>
       <el-form-item label="订单状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择订单状态" clearable class="!w-220px">
+        <el-select
+          v-model="queryParams.status"
+          placeholder="请选择订单状态"
+          clearable
+          class="!w-220px"
+        >
           <el-option
             v-for="dict in getStrDictOptions(DICT_TYPE.LB_ORDER_STATUS)"
             :key="dict.value"
@@ -68,14 +79,6 @@
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
         <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
         <el-button
-          type="primary"
-          plain
-          v-hasPermi="['linbang:order:info:create']"
-          @click="openForm('create')"
-        >
-          <Icon icon="ep:plus" class="mr-5px" /> 新增
-        </el-button>
-        <el-button
           type="success"
           plain
           :loading="exportLoading"
@@ -83,15 +86,6 @@
           @click="handleExport"
         >
           <Icon icon="ep:download" class="mr-5px" /> 导出
-        </el-button>
-        <el-button
-          type="danger"
-          plain
-          :disabled="checkedIds.length === 0"
-          v-hasPermi="['linbang:order:info:delete']"
-          @click="handleDeleteBatch"
-        >
-          <Icon icon="ep:delete" class="mr-5px" /> 批量删除
         </el-button>
       </el-form-item>
     </el-form>
@@ -104,16 +98,16 @@
       :stripe="true"
       :show-overflow-tooltip="true"
       row-key="id"
-      @selection-change="handleRowCheckboxChange"
     >
-      <el-table-column type="selection" width="55" />
       <el-table-column label="订单号" align="center" prop="orderNo" min-width="180" />
       <el-table-column label="下单用户" align="center" min-width="220">
         <template #default="{ row }">
           <div class="leading-20px">
             <div class="font-600">{{ row.userNickname || '-' }}</div>
             <div class="text-[var(--el-text-color-secondary)]">{{ row.userMobile || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.userNo || formatIdFallback(row.userId) }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.userNo || formatIdFallback(row.userId)
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -121,8 +115,12 @@
         <template #default="{ row }">
           <div class="leading-20px">
             <div class="font-600">{{ row.merchantName || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactName || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactMobile || '-' }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactName || '-'
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactMobile || '-'
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -130,7 +128,11 @@
       <el-table-column label="订单标题" align="center" prop="title" min-width="180" />
       <el-table-column label="计价方式" align="center" prop="pricingMode" width="120">
         <template #default="{ row }">
-          <dict-tag v-if="row.pricingMode" :type="DICT_TYPE.LB_PRICING_MODE" :value="row.pricingMode" />
+          <dict-tag
+            v-if="row.pricingMode"
+            :type="DICT_TYPE.LB_PRICING_MODE"
+            :value="row.pricingMode"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
@@ -146,26 +148,16 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="操作" align="center" fixed="right" width="190">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
-          <el-button
-            link
-            type="primary"
-            v-hasPermi="['linbang:order:info:update']"
-            @click="openForm('update', row.id)"
-          >
-            编辑
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            v-hasPermi="['linbang:order:info:delete']"
-            @click="handleDelete(row.id)"
-          >
-            删除
-          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -181,43 +173,93 @@
     <el-descriptions v-loading="detailLoading" :column="2" border>
       <el-descriptions-item label="订单号">{{ detailData?.orderNo || '-' }}</el-descriptions-item>
       <el-descriptions-item label="订单状态">
-        <dict-tag v-if="detailData?.status" :type="DICT_TYPE.LB_ORDER_STATUS" :value="detailData.status" />
+        <dict-tag
+          v-if="detailData?.status"
+          :type="DICT_TYPE.LB_ORDER_STATUS"
+          :value="detailData.status"
+        />
         <span v-else>-</span>
       </el-descriptions-item>
       <el-descriptions-item label="下单用户">{{ formatDetailUserDisplay() }}</el-descriptions-item>
       <el-descriptions-item label="服务商">{{ formatMerchantDisplay() }}</el-descriptions-item>
-      <el-descriptions-item label="派单轮次">{{ detailData?.dispatchStageNo ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="派单截止">{{ formatDate(detailData?.dispatchDeadlineTime) }}</el-descriptions-item>
-      <el-descriptions-item label="流单时间">{{ formatDate(detailData?.flowTime) }}</el-descriptions-item>
+      <el-descriptions-item label="派单轮次">{{
+        detailData?.dispatchStageNo ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="派单截止">{{
+        formatDate(detailData?.dispatchDeadlineTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="流单时间">{{
+        formatDate(detailData?.flowTime)
+      }}</el-descriptions-item>
       <el-descriptions-item label="自动退款">
-        {{ [detailData?.autoRefundStatus, detailData?.autoRefundId].filter(Boolean).join(' / ') || '-' }}
+        {{
+          [detailData?.autoRefundStatus, detailData?.autoRefundId].filter(Boolean).join(' / ') ||
+          '-'
+        }}
       </el-descriptions-item>
       <el-descriptions-item label="类目">
         {{ detailData?.categoryName || (detailData?.categoryId ? '类目信息缺失' : '-') }}
       </el-descriptions-item>
       <el-descriptions-item label="计价方式">
-        <dict-tag v-if="detailData?.pricingMode" :type="DICT_TYPE.LB_PRICING_MODE" :value="detailData.pricingMode" />
+        <dict-tag
+          v-if="detailData?.pricingMode"
+          :type="DICT_TYPE.LB_PRICING_MODE"
+          :value="detailData.pricingMode"
+        />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="预算金额">{{ detailData?.budgetAmount ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="订单金额">{{ detailData?.orderAmount ?? '-' }}</el-descriptions-item>
+      <el-descriptions-item label="预算金额">{{
+        detailData?.budgetAmount ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="订单金额">{{
+        detailData?.orderAmount ?? '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="数量">{{ detailData?.quantity ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="工期描述">{{ detailData?.serviceDurationDesc || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="拆单状态">{{ formatSplitStatus(detailData?.splitStatus) }}</el-descriptions-item>
+      <el-descriptions-item label="工期描述">{{
+        detailData?.serviceDurationDesc || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="拆单状态">{{
+        formatSplitStatus(detailData?.splitStatus)
+      }}</el-descriptions-item>
       <el-descriptions-item label="支付订单">
-        {{ detailData?.payRecord?.merchantOrderId || (detailData?.payOrderId ? '支付订单信息缺失' : '-') }}
+        {{
+          detailData?.payRecord?.merchantOrderId ||
+          (detailData?.payOrderId ? '支付订单信息缺失' : '-')
+        }}
       </el-descriptions-item>
       <el-descriptions-item label="价格明细展示">
         {{ formatBooleanYesNo(detailData?.priceDetailEnabled) }}
       </el-descriptions-item>
-      <el-descriptions-item label="是否开票">{{ formatBooleanYesNo(detailData?.needInvoice) }}</el-descriptions-item>
-      <el-descriptions-item label="是否拆单">{{ formatBooleanYesNo(detailData?.needSplit) }}</el-descriptions-item>
-      <el-descriptions-item label="协议确认">{{ detailData?.agreementConfirmed ? '已确认' : '未确认' }}</el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData?.createTime) }}</el-descriptions-item>
-      <el-descriptions-item label="需求描述" :span="2">{{ detailData?.requireDesc || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="流单原因" :span="2">{{ detailData?.flowReason || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="是否开票">{{
+        formatBooleanYesNo(detailData?.needInvoice)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="是否拆单">{{
+        formatBooleanYesNo(detailData?.needSplit)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="协议确认">{{
+        detailData?.agreementConfirmed ? '已确认' : '未确认'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData?.createTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="需求描述" :span="2">{{
+        detailData?.requireDesc || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="流单原因" :span="2">{{
+        detailData?.flowReason || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="服务地址" :span="2">
-        {{ [detailData?.province, detailData?.city, detailData?.district, detailData?.street, detailData?.detailAddress].filter(Boolean).join(' / ') || '-' }}
+        {{
+          [
+            detailData?.province,
+            detailData?.city,
+            detailData?.district,
+            detailData?.street,
+            detailData?.detailAddress
+          ]
+            .filter(Boolean)
+            .join(' / ') || '-'
+        }}
       </el-descriptions-item>
     </el-descriptions>
 
@@ -227,7 +269,9 @@
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">商城入口</div>
           <div class="mt-8px text-16px font-600">
-            {{ detailData?.mallEntry?.enabled ? (detailData?.mallEntry?.title || '已开启') : '未开启' }}
+            {{
+              detailData?.mallEntry?.enabled ? detailData?.mallEntry?.title || '已开启' : '未开启'
+            }}
           </div>
           <div class="mt-6px text-13px break-all">{{ detailData?.mallEntry?.url || '-' }}</div>
         </el-card>
@@ -235,18 +279,27 @@
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">商城消费关联</div>
-          <div class="mt-8px text-16px font-600">{{ detailData?.mallConsumeRelation?.consumeRecordNo || '-' }}</div>
+          <div class="mt-8px text-16px font-600">{{
+            detailData?.mallConsumeRelation?.consumeRecordNo || '-'
+          }}</div>
           <div class="mt-6px text-13px">
-            {{ detailData?.mallConsumeRelation?.consumeAmount ?? '-' }} / {{ detailData?.mallConsumeRelation?.consumeStatus || '-' }}
+            {{ detailData?.mallConsumeRelation?.consumeAmount ?? '-' }} /
+            {{ detailData?.mallConsumeRelation?.consumeStatus || '-' }}
           </div>
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">推广抵扣</div>
-          <div class="mt-8px text-16px font-600">{{ detailData?.promoteDeduct?.deductAmount ?? '-' }}</div>
+          <div class="mt-8px text-16px font-600">{{
+            detailData?.promoteDeduct?.deductAmount ?? '-'
+          }}</div>
           <div class="mt-6px text-13px">
-            {{ [detailData?.promoteDeduct?.sourceType, detailData?.promoteDeduct?.sourceNo].filter(Boolean).join(' / ') || '-' }}
+            {{
+              [detailData?.promoteDeduct?.sourceType, detailData?.promoteDeduct?.sourceNo]
+                .filter(Boolean)
+                .join(' / ') || '-'
+            }}
           </div>
           <div class="mt-6px text-13px text-[var(--el-text-color-secondary)]">
             抵扣后应付：{{ detailData?.promoteDeduct?.payableAmountAfterDeduct ?? '-' }}
@@ -275,21 +328,30 @@
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">拆分单元数</div>
           <div class="mt-8px text-24px font-600">{{ detailData?.units?.length ?? 0 }}</div>
-          <div class="mt-6px text-[var(--el-text-color-secondary)]">交付凭证：{{ detailData?.proofs?.length ?? 0 }}</div>
+          <div class="mt-6px text-[var(--el-text-color-secondary)]"
+            >交付凭证：{{ detailData?.proofs?.length ?? 0 }}</div
+          >
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">退款 / 投诉 / 申诉</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.refunds?.length ?? 0 }} / {{ detailData?.complaints?.length ?? 0 }} / {{ detailData?.appeals?.length ?? 0 }}
+            {{ detailData?.refunds?.length ?? 0 }} / {{ detailData?.complaints?.length ?? 0 }} /
+            {{ detailData?.appeals?.length ?? 0 }}
           </div>
         </el-card>
       </el-col>
     </el-row>
 
     <el-divider content-position="left">价格明细</el-divider>
-    <el-table v-if="detailData?.priceItems?.length" :data="detailData.priceItems" size="small" border max-height="220">
+    <el-table
+      v-if="detailData?.priceItems?.length"
+      :data="detailData.priceItems"
+      size="small"
+      border
+      max-height="220"
+    >
       <el-table-column label="类型" prop="itemType" width="120" />
       <el-table-column label="名称" prop="itemName" min-width="180" />
       <el-table-column label="金额" prop="itemAmount" width="120" />
@@ -298,7 +360,13 @@
     <el-empty v-else description="暂无价格明细" :image-size="80" />
 
     <el-divider content-position="left">拆分单元</el-divider>
-    <el-table v-if="detailData?.units?.length" :data="detailData.units" size="small" border max-height="240">
+    <el-table
+      v-if="detailData?.units?.length"
+      :data="detailData.units"
+      size="small"
+      border
+      max-height="240"
+    >
       <el-table-column label="单元号" prop="unitNo" min-width="160" />
       <el-table-column label="序号" prop="unitSeq" width="90" />
       <el-table-column label="标题" prop="unitTitle" min-width="160" />
@@ -359,7 +427,13 @@
     <el-empty v-else description="暂无订单时间线" :image-size="80" />
 
     <el-divider content-position="left">抢单记录</el-divider>
-    <el-table v-if="detailData?.acceptRecords?.length" :data="detailData.acceptRecords" size="small" border max-height="220">
+    <el-table
+      v-if="detailData?.acceptRecords?.length"
+      :data="detailData.acceptRecords"
+      size="small"
+      border
+      max-height="220"
+    >
       <el-table-column label="ID" prop="id" width="90" />
       <el-table-column label="单元号" width="140">
         <template #default="{ row }">
@@ -370,8 +444,12 @@
         <template #default="{ row }">
           <div class="leading-20px">
             <div class="font-600">{{ row.merchantName || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactName || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactMobile || '-' }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactName || '-'
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactMobile || '-'
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -386,7 +464,13 @@
     <el-empty v-else description="暂无抢单记录" :image-size="80" />
 
     <el-divider content-position="left">退款记录</el-divider>
-    <el-table v-if="detailData?.refunds?.length" :data="detailData.refunds" size="small" border max-height="220">
+    <el-table
+      v-if="detailData?.refunds?.length"
+      :data="detailData.refunds"
+      size="small"
+      border
+      max-height="220"
+    >
       <el-table-column label="ID" prop="id" width="90" />
       <el-table-column label="退款单号" prop="merchantRefundId" min-width="160" />
       <el-table-column label="退款金额" prop="refundPrice" width="110" />
@@ -402,7 +486,11 @@
       </el-table-column>
       <el-table-column label="审核状态" prop="auditStatus" width="120">
         <template #default="{ row }">
-          <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+          <dict-tag
+            v-if="row.auditStatus"
+            :type="DICT_TYPE.LB_AUDIT_STATUS"
+            :value="row.auditStatus"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
@@ -415,11 +503,21 @@
     <el-divider content-position="left">投诉与申诉</el-divider>
     <el-row :gutter="12">
       <el-col :span="12">
-        <el-table v-if="detailData?.complaints?.length" :data="detailData.complaints" size="small" border max-height="220">
+        <el-table
+          v-if="detailData?.complaints?.length"
+          :data="detailData.complaints"
+          size="small"
+          border
+          max-height="220"
+        >
           <el-table-column label="投诉单号" prop="complaintNo" min-width="150" />
           <el-table-column label="状态" prop="status" width="100">
             <template #default="{ row }">
-              <dict-tag v-if="row.status" :type="DICT_TYPE.LB_COMPLAINT_STATUS" :value="row.status" />
+              <dict-tag
+                v-if="row.status"
+                :type="DICT_TYPE.LB_COMPLAINT_STATUS"
+                :value="row.status"
+              />
               <span v-else>-</span>
             </template>
           </el-table-column>
@@ -430,11 +528,21 @@
         <el-empty v-else description="暂无投诉" :image-size="70" />
       </el-col>
       <el-col :span="12">
-        <el-table v-if="detailData?.appeals?.length" :data="detailData.appeals" size="small" border max-height="220">
+        <el-table
+          v-if="detailData?.appeals?.length"
+          :data="detailData.appeals"
+          size="small"
+          border
+          max-height="220"
+        >
           <el-table-column label="申诉单号" prop="appealNo" min-width="150" />
           <el-table-column label="审核状态" prop="auditStatus" width="100">
             <template #default="{ row }">
-              <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+              <dict-tag
+                v-if="row.auditStatus"
+                :type="DICT_TYPE.LB_AUDIT_STATUS"
+                :value="row.auditStatus"
+              />
               <span v-else>-</span>
             </template>
           </el-table-column>
@@ -447,7 +555,13 @@
     </el-row>
 
     <el-divider content-position="left">操作日志</el-divider>
-    <el-table v-if="detailData?.operateLogs?.length" :data="detailData.operateLogs" size="small" border max-height="240">
+    <el-table
+      v-if="detailData?.operateLogs?.length"
+      :data="detailData.operateLogs"
+      size="small"
+      border
+      max-height="240"
+    >
       <el-table-column label="ID" prop="id" width="90" />
       <el-table-column label="类型" prop="operateType" width="140">
         <template #default="{ row }">{{ formatOperateType(row.operateType) }}</template>
@@ -468,8 +582,6 @@
     </el-table>
     <el-empty v-else description="暂无操作日志" :image-size="80" />
   </Dialog>
-
-  <OrderInfoForm ref="formRef" @success="getList" />
 </template>
 
 <script setup lang="ts">
@@ -485,15 +597,12 @@ import {
   formatOperateType,
   formatSplitStatus
 } from '../utils/display'
-import OrderInfoForm from './OrderInfoForm.vue'
 import { onMounted, reactive, ref } from 'vue'
-import { useI18n } from '@/hooks/web/useI18n'
 import { useMessage } from '@/hooks/web/useMessage'
 
 defineOptions({ name: 'OrderInfo' })
 
 const message = useMessage()
-const { t } = useI18n()
 const loading = ref(false)
 const exportLoading = ref(false)
 const detailVisible = ref(false)
@@ -502,8 +611,6 @@ const list = ref<OrderInfo[]>([])
 const detailData = ref<OrderInfoDetail>()
 const total = ref(0)
 const queryFormRef = ref()
-const formRef = ref()
-const checkedIds = ref<number[]>([])
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
@@ -522,7 +629,11 @@ const formatIdFallback = (userId?: number) => {
 }
 
 const formatDetailUserDisplay = () => {
-  const summary = [detailData.value?.userNickname, detailData.value?.userMobile, detailData.value?.userNo]
+  const summary = [
+    detailData.value?.userNickname,
+    detailData.value?.userMobile,
+    detailData.value?.userNo
+  ]
     .filter(Boolean)
     .join(' / ')
   return summary || formatIdFallback(detailData.value?.userId)
@@ -530,8 +641,11 @@ const formatDetailUserDisplay = () => {
 
 const formatMerchantDisplay = () => {
   const merchant = detailData.value?.merchant
-  return [merchant?.merchantName, merchant?.contactName, merchant?.contactMobile].filter(Boolean).join(' / ')
-    || (detailData.value?.merchantId ? '服务商信息缺失' : '-')
+  return (
+    [merchant?.merchantName, merchant?.contactName, merchant?.contactMobile]
+      .filter(Boolean)
+      .join(' / ') || (detailData.value?.merchantId ? '服务商信息缺失' : '-')
+  )
 }
 
 const formatAcceptRecordUnitDisplay = (unitId?: number) => {
@@ -563,10 +677,6 @@ const resetQuery = () => {
   handleQuery()
 }
 
-const openForm = (type: string, id?: number) => {
-  formRef.value.open(type, id)
-}
-
 const openDetail = async (id: number) => {
   detailVisible.value = true
   detailLoading.value = true
@@ -575,29 +685,6 @@ const openDetail = async (id: number) => {
   } finally {
     detailLoading.value = false
   }
-}
-
-const handleDelete = async (id: number) => {
-  try {
-    await message.delConfirm()
-    await OrderInfoApi.deleteOrderInfo(id)
-    message.success(t('common.delSuccess'))
-    await getList()
-  } catch {}
-}
-
-const handleDeleteBatch = async () => {
-  try {
-    await message.delConfirm()
-    await OrderInfoApi.deleteOrderInfoList(checkedIds.value)
-    checkedIds.value = []
-    message.success(t('common.delSuccess'))
-    await getList()
-  } catch {}
-}
-
-const handleRowCheckboxChange = (records: OrderInfo[]) => {
-  checkedIds.value = records.map((item) => item.id)
 }
 
 const handleExport = async () => {

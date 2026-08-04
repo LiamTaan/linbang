@@ -206,8 +206,7 @@ public class PayRefundServiceImpl implements PayRefundService {
             // 注意：这里仅打印异常，不进行抛出。
             // 原因是：虽然调用支付渠道进行退款发生异常（网络请求超时），实际退款成功。这个结果，后续通过退款回调、或者退款轮询补偿可以拿到。
             // 最终，在异常的情况下，支付中心会异步回调业务的退款回调接口，提供退款结果
-            log.error("[createPayRefund][退款 id({}) requestDTO({}) 发生异常]",
-                    refund.getId(), reqDTO, e);
+            log.error("[createPayRefund][退款 id({}) 调用支付渠道发生异常]", refund.getId(), e);
         }
 
         // 返回退款编号

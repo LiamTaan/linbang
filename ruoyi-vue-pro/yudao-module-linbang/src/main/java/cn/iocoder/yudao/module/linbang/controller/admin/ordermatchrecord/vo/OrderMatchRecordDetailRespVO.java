@@ -50,6 +50,7 @@ public class OrderMatchRecordDetailRespVO {
     private List<AcceptRecordRespVO> acceptRecords;
 
     @Data
+    @Schema(description = "管理后台 - 主订单摘要 Response VO")
     public static class OrderRespVO {
         @Schema(description = "订单 ID", example = "1001")
         private Long id;
@@ -72,6 +73,7 @@ public class OrderMatchRecordDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 订单单元摘要 Response VO")
     public static class UnitRespVO {
         @Schema(description = "单元 ID", example = "2001")
         private Long id;
@@ -98,6 +100,7 @@ public class OrderMatchRecordDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 服务商摘要 Response VO")
     public static class MerchantRespVO {
         @Schema(description = "服务商 ID", example = "3001")
         private Long id;
@@ -118,6 +121,7 @@ public class OrderMatchRecordDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 规则摘要 Response VO")
     public static class RuleRespVO {
         @Schema(description = "规则 ID", example = "310005")
         private Long id;
@@ -138,6 +142,7 @@ public class OrderMatchRecordDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 统计摘要 Response VO")
     public static class SummaryRespVO {
         @Schema(description = "关联抢单记录数")
         private Integer acceptRecordCount;
@@ -152,6 +157,7 @@ public class OrderMatchRecordDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 抢单记录摘要 Response VO")
     public static class AcceptRecordRespVO {
         @Schema(description = "抢单记录 ID", example = "1")
         private Long id;

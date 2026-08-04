@@ -2,6 +2,7 @@ package cn.iocoder.yudao.module.linbang.service.app.pay;
 
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.security.config.SecurityProperties;
+import cn.iocoder.yudao.framework.common.exception.ServiceException;
 import cn.iocoder.yudao.framework.test.core.ut.BaseMockitoUnitTest;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangPayOrderCreateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.pay.vo.AppLinbangWechatMiniProgramPaySubmitRespVO;
@@ -10,7 +11,10 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.orderinfo.OrderInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderinfo.OrderInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderoperatelog.OrderOperateLogMapper;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
+import cn.iocoder.yudao.module.linbang.service.risk.LinbangRiskFacade;
+import cn.iocoder.yudao.module.pay.api.notify.dto.PayOrderNotifyReqDTO;
 import cn.iocoder.yudao.module.pay.api.order.PayOrderApi;
+import cn.iocoder.yudao.module.pay.api.order.dto.PayOrderRespDTO;
 import cn.iocoder.yudao.module.pay.controller.admin.order.vo.PayOrderSubmitReqVO;
 import cn.iocoder.yudao.module.pay.controller.admin.order.vo.PayOrderSubmitRespVO;
 import cn.iocoder.yudao.module.pay.dal.dataobject.app.PayAppDO;
@@ -34,8 +38,10 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -60,6 +66,8 @@ class AppLinbangPayOrderServiceImplTest extends BaseMockitoUnitTest {
     private PayOrderService payOrderService;
     @Mock
     private SocialUserApi socialUserApi;
+    @Mock
+    private LinbangRiskFacade linbangRiskFacade;
     @Test
     void submitWechatMiniProgramPay_usesWxLiteAndBoundOpenid() {
         Long userId = 1L;
@@ -108,6 +116,39 @@ class AppLinbangPayOrderServiceImplTest extends BaseMockitoUnitTest {
         assertThat(result.getChannelCode()).isEqualTo(PayChannelEnum.WX_LITE.getCode());
         assertThat(result.getPaymentParams().getPackageValue()).isEqualTo("prepay_id=wx001");
         assertThat(result.getPaymentParams().getPaySign()).isEqualTo("signed");
+    }
+
+    @Test
+    void updatePaid_rejectsMissingPayOrderPrice() {
+        PayOrderNotifyReqDTO reqDTO = new PayOrderNotifyReqDTO();
+        reqDTO.setPayOrderId(900L);
+        reqDTO.setMerchantOrderId("100");
+        OrderInfoDO order = OrderInfoDO.builder().id(100L).status("PENDING_PAY")
+                .orderAmount(new BigDecimal("12.34")).build();
+        PayOrderRespDTO payOrder = new PayOrderRespDTO();
+        payOrder.setId(900L);
+        payOrder.setMerchantOrderId("100");
+        payOrder.setStatus(PayOrderStatusEnum.SUCCESS.getStatus());
+        payOrder.setPrice(null);
+        when(linbangRiskFacade.markDepositPaid(reqDTO)).thenReturn(false);
+        when(orderInfoMapper.selectById(100L)).thenReturn(order);
+        when(payOrderApi.getOrder(900L)).thenReturn(payOrder);
+
+        assertThrows(ServiceException.class, () -> service.updatePaid(reqDTO));
+
+        verify(orderInfoMapper, never()).update(any(), any());
+    }
+
+    @Test
+    void updatePaid_rejectsNumericMerchantOrderIdOutsideLongRange() {
+        PayOrderNotifyReqDTO reqDTO = new PayOrderNotifyReqDTO();
+        reqDTO.setPayOrderId(900L);
+        reqDTO.setMerchantOrderId("999999999999999999999999999999999999");
+        when(linbangRiskFacade.markDepositPaid(reqDTO)).thenReturn(false);
+
+        assertThrows(ServiceException.class, () -> service.updatePaid(reqDTO));
+
+        verify(orderInfoMapper, never()).selectById(any());
     }
 
 }

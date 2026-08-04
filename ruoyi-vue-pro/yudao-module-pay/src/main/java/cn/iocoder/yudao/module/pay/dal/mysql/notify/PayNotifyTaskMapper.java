@@ -15,6 +15,8 @@ import java.util.List;
 @Mapper
 public interface PayNotifyTaskMapper extends BaseMapperX<PayNotifyTaskDO> {
 
+    int NOTIFY_BATCH_SIZE = 100;
+
     /**
      * 获得需要通知的 PayNotifyTaskDO 记录。需要满足如下条件：
      *
@@ -27,7 +29,9 @@ public interface PayNotifyTaskMapper extends BaseMapperX<PayNotifyTaskDO> {
         return selectList(new LambdaQueryWrapper<PayNotifyTaskDO>()
                 .in(PayNotifyTaskDO::getStatus, PayNotifyStatusEnum.WAITING.getStatus(),
                         PayNotifyStatusEnum.REQUEST_SUCCESS.getStatus(), PayNotifyStatusEnum.REQUEST_FAILURE.getStatus())
-                .le(PayNotifyTaskDO::getNextNotifyTime, LocalDateTime.now()));
+                .le(PayNotifyTaskDO::getNextNotifyTime, LocalDateTime.now())
+                .orderByAsc(PayNotifyTaskDO::getNextNotifyTime, PayNotifyTaskDO::getId)
+                .last("LIMIT " + NOTIFY_BATCH_SIZE));
     }
 
     default PageResult<PayNotifyTaskDO> selectPage(PayNotifyTaskPageReqVO reqVO) {

@@ -170,7 +170,9 @@ export const getRefund = (id: number) => {
 }
 
 export const getRefundBizContext = (payRefundId: number) => {
-  return request.get<RefundBizContextVO>({ url: '/admin-api/pay/refund-context/get?payRefundId=' + payRefundId })
+  return request.get<RefundBizContextVO>({
+    url: '/admin-api/pay/refund-context/get?payRefundId=' + payRefundId
+  })
 }
 
 // 审核退款订单

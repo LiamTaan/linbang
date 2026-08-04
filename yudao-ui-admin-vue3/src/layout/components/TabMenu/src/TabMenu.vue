@@ -13,6 +13,7 @@ import { isUrl } from '@/utils/is'
 import { createRouteLocation } from '@/utils/routeParams'
 import { getRootPath, isHeaderMixedNavLayout, isTwoColumnLayout } from '@/utils/layout'
 import { getRootMenuRoute, normalizeMenuTargetPath } from '@/layout/components/Menu/src/menuRoute'
+import { openSafeUrl } from '@/utils/url'
 
 const { getPrefixCls, variables } = useDesign()
 
@@ -207,11 +208,11 @@ export default defineComponent({
     const tabClick = (item: AppRouteRecordRaw) => {
       const link = item.meta?.link
       if (typeof link === 'string') {
-        window.open(link)
+        openSafeUrl(link)
         return
       }
       if (isUrl(item.path)) {
-        window.open(item.path)
+        openSafeUrl(item.path)
         return
       }
       const newPath = normalizeMenuTargetPath(item.path)

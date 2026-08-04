@@ -6,6 +6,7 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.walletaccount.WalletAccoun
 import cn.iocoder.yudao.module.linbang.dal.dataobject.walletbankcard.WalletBankCardDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.walletflow.WalletFlowDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.walletwithdraw.WalletWithdrawDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.walletwithdraw.WalletWithdrawStatDTO;
 import cn.hutool.core.util.StrUtil;
 
 import java.math.BigDecimal;
@@ -44,7 +45,7 @@ final class WalletAccountDetailAssembler {
         WalletAccountDetailRespVO.MemberUserSimpleRespVO respVO = new WalletAccountDetailRespVO.MemberUserSimpleRespVO();
         respVO.setId(user.getId());
         respVO.setUserNo(user.getUserNo());
-        respVO.setMobile(user.getMobile());
+        respVO.setMobile(maskMobile(user.getMobile()));
         respVO.setNickname(user.getNickname());
         respVO.setCurrentRoleCode(user.getCurrentRoleCode());
         respVO.setStatus(user.getStatus());
@@ -62,11 +63,18 @@ final class WalletAccountDetailAssembler {
         respVO.setBankCode(bankCard.getBankCode());
         respVO.setCardNoMask(bankCard.getCardNoMask());
         respVO.setAccountName(bankCard.getAccountName());
-        respVO.setReservedMobile(bankCard.getReservedMobile());
+        respVO.setReservedMobile(maskMobile(bankCard.getReservedMobile()));
         respVO.setStatus(bankCard.getStatus());
         respVO.setIsDefault(bankCard.getIsDefault());
         respVO.setCreateTime(bankCard.getCreateTime());
         return respVO;
+    }
+
+    private static String maskMobile(String mobile) {
+        if (mobile == null || mobile.length() < 7) {
+            return mobile == null ? null : "******";
+        }
+        return mobile.substring(0, 3) + "****" + mobile.substring(mobile.length() - 4);
     }
 
     static List<WalletAccountDetailRespVO.WalletFlowSimpleRespVO> buildFlows(List<WalletFlowDO> flows) {
@@ -136,41 +144,18 @@ final class WalletAccountDetailAssembler {
         }).collect(Collectors.toList());
     }
 
-    static WalletAccountDetailRespVO.WithdrawStatRespVO buildWithdrawStats(List<WalletWithdrawDO> withdraws) {
+    static WalletAccountDetailRespVO.WithdrawStatRespVO buildWithdrawStats(WalletWithdrawStatDTO stat) {
         WalletAccountDetailRespVO.WithdrawStatRespVO respVO = new WalletAccountDetailRespVO.WithdrawStatRespVO();
-        respVO.setTotalCount(withdraws == null ? 0 : withdraws.size());
-        respVO.setTotalApplyAmount(sumAmount(withdraws, null));
-        respVO.setPendingCount(countByStatus(withdraws, "PENDING"));
-        respVO.setPendingAmount(sumAmount(withdraws, "PENDING"));
-        respVO.setSuccessCount(countByStatus(withdraws, "SUCCESS"));
-        respVO.setSuccessAmount(sumAmount(withdraws, "SUCCESS"));
+        respVO.setTotalCount(stat == null || stat.getTotalCount() == null ? 0 : stat.getTotalCount());
+        respVO.setTotalApplyAmount(stat == null || stat.getTotalApplyAmount() == null
+                ? BigDecimal.ZERO : stat.getTotalApplyAmount());
+        respVO.setPendingCount(stat == null || stat.getPendingCount() == null ? 0 : stat.getPendingCount());
+        respVO.setPendingAmount(stat == null || stat.getPendingAmount() == null
+                ? BigDecimal.ZERO : stat.getPendingAmount());
+        respVO.setSuccessCount(stat == null || stat.getSuccessCount() == null ? 0 : stat.getSuccessCount());
+        respVO.setSuccessAmount(stat == null || stat.getSuccessAmount() == null
+                ? BigDecimal.ZERO : stat.getSuccessAmount());
         return respVO;
-    }
-
-    private static Integer countByStatus(List<WalletWithdrawDO> withdraws, String status) {
-        if (withdraws == null || withdraws.isEmpty()) {
-            return 0;
-        }
-        int count = 0;
-        for (WalletWithdrawDO withdraw : withdraws) {
-            if (status.equalsIgnoreCase(withdraw.getStatus())) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    private static BigDecimal sumAmount(List<WalletWithdrawDO> withdraws, String status) {
-        if (withdraws == null || withdraws.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-        BigDecimal total = BigDecimal.ZERO;
-        for (WalletWithdrawDO withdraw : withdraws) {
-            if (status == null || status.equalsIgnoreCase(withdraw.getStatus())) {
-                total = total.add(withdraw.getApplyAmount() == null ? BigDecimal.ZERO : withdraw.getApplyAmount());
-            }
-        }
-        return total;
     }
 
     private static String resolveBillType(String bizType) {

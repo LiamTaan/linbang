@@ -184,7 +184,8 @@ public class PayWalletRechargeServiceImpl implements PayWalletRechargeService {
         try {
             socialClientApi.uploadWxaOrderShippingInfo(UserTypeEnum.MEMBER.getValue(), reqDTO);
         } catch (Exception ex) {
-            log.error("[sendWalletRechargerPaidMessage][订单({}) 上传订单物流信息到微信小程序失败]", payOrder, ex);
+            log.error("[sendWalletRechargerPaidMessage][支付订单({}) 上传订单物流信息到微信小程序失败]",
+                    payOrder.getId(), ex);
         }
     }
 

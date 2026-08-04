@@ -90,7 +90,11 @@
         <div
           v-for="refund in detailData.refunds"
           :key="refund.id"
-          style="padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--el-border-color-light)"
+          style="
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--el-border-color-light);
+          "
         >
           <div>退款单号：{{ refund.no || '-' }}</div>
           <div>商户退款单号：{{ refund.merchantRefundId || '-' }}</div>
@@ -115,7 +119,11 @@
         <div
           v-for="extension in detailData.extensionHistory"
           :key="extension.id"
-          style="padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--el-border-color-light)"
+          style="
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--el-border-color-light);
+          "
         >
           <div>扩展单号：{{ extension.no || '-' }}</div>
           <div>渠道编码：{{ extension.channelCode || '-' }}</div>

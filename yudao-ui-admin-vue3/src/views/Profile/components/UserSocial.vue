@@ -25,6 +25,7 @@
 import { SystemUserSocialTypeEnum } from '@/utils/constants'
 import { getBindSocialUserList } from '@/api/system/social/user'
 import { socialAuthRedirect, socialBind, socialUnbind } from '@/api/system/user/socialUser'
+import { navigateToSafeUrl } from '@/utils/url'
 
 defineOptions({ name: 'UserSocial' })
 defineProps<{
@@ -80,7 +81,9 @@ const bind = (row) => {
   const redirectUri = location.origin + '/user/profile?' + encodeURIComponent(`type=${row.type}`)
   // 进行跳转
   socialAuthRedirect(row.type, encodeURIComponent(redirectUri)).then((res) => {
-    window.location.href = res
+    if (!navigateToSafeUrl(res)) {
+      message.error('授权地址不合法')
+    }
   })
 }
 const unbind = async (row) => {

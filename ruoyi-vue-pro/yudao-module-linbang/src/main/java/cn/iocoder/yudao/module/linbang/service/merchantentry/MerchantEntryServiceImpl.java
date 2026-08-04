@@ -142,9 +142,13 @@ public class MerchantEntryServiceImpl implements MerchantEntryService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void auditMerchantEntry(MerchantEntryAuditReqVO reqVO) {
-        MerchantEntryDO entry = merchantEntryMapper.selectById(reqVO.getId());
+        MerchantEntryDO entry = merchantEntryMapper.selectByIdForUpdate(reqVO.getId());
         if (entry == null) {
             throw exception(MERCHANT_ENTRY_NOT_EXISTS);
+        }
+        validateAuditTransition(entry.getStatus(), reqVO.getAuditStatus());
+        if (entry.getMerchantId() != null) {
+            merchantInfoMapper.selectByIdForUpdate(entry.getMerchantId());
         }
         Long loginUserId = SecurityFrameworkUtils.getLoginUserId();
         LocalDateTime now = LocalDateTime.now();
@@ -216,6 +220,17 @@ public class MerchantEntryServiceImpl implements MerchantEntryService {
         if ("APPROVED".equals(reqVO.getAuditStatus())) {
             creditRecordService.applyCreditRule(entry.getUserId(), entry.getMerchantId(), "MERCHANT_ENTRY_APPROVED",
                     "MERCHANT_ENTRY", entry.getId(), "服务商入驻审核通过");
+        }
+    }
+
+    private void validateAuditTransition(String currentStatus, String auditStatus) {
+        boolean firstApprove = "FIRST_APPROVED".equals(auditStatus) && "PENDING".equals(currentStatus);
+        boolean finalApprove = "APPROVED".equals(auditStatus)
+                && ("PENDING".equals(currentStatus) || "FIRST_APPROVED".equals(currentStatus));
+        boolean reject = "REJECTED".equals(auditStatus)
+                && ("PENDING".equals(currentStatus) || "FIRST_APPROVED".equals(currentStatus));
+        if (!firstApprove && !finalApprove && !reject) {
+            throw exception(MERCHANT_ENTRY_AUDIT_STATUS_INVALID);
         }
     }
 

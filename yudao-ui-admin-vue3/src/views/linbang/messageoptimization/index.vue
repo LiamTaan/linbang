@@ -8,10 +8,20 @@
         </el-select>
       </el-form-item>
       <el-form-item label="场景编码">
-        <el-input v-model="queryParams.sceneCode" placeholder="请输入场景编码" clearable class="!w-220px" />
+        <el-input
+          v-model="queryParams.sceneCode"
+          placeholder="请输入场景编码"
+          clearable
+          class="!w-220px"
+        />
       </el-form-item>
       <el-form-item label="负责人">
-        <el-input v-model="queryParams.owner" placeholder="请输入负责人" clearable class="!w-180px" />
+        <el-input
+          v-model="queryParams.owner"
+          placeholder="请输入负责人"
+          clearable
+          class="!w-180px"
+        />
       </el-form-item>
       <el-form-item>
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" />搜索</el-button>
@@ -47,7 +57,12 @@
         </template>
       </el-table-column>
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 
   <Dialog v-model="dialogVisible" title="编辑优化项" width="620px">
@@ -65,16 +80,31 @@
         <el-input :model-value="formatPercent(formData.clickRate)" disabled />
       </el-form-item>
       <el-form-item label="优化备注">
-        <el-input v-model="formData.optimizationNote" type="textarea" :rows="3" placeholder="请输入优化备注" />
+        <el-input
+          v-model="formData.optimizationNote"
+          type="textarea"
+          :rows="3"
+          placeholder="请输入优化备注"
+        />
       </el-form-item>
       <el-form-item label="下一步">
-        <el-input v-model="formData.nextAction" type="textarea" :rows="3" placeholder="请输入下一步动作" />
+        <el-input
+          v-model="formData.nextAction"
+          type="textarea"
+          :rows="3"
+          placeholder="请输入下一步动作"
+        />
       </el-form-item>
       <el-form-item label="负责人">
         <el-input v-model="formData.owner" placeholder="请输入负责人" />
       </el-form-item>
       <el-form-item label="截止时间">
-        <el-date-picker v-model="formData.deadline" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" class="!w-full" />
+        <el-date-picker
+          v-model="formData.deadline"
+          type="datetime"
+          value-format="YYYY-MM-DD HH:mm:ss"
+          class="!w-full"
+        />
       </el-form-item>
     </el-form>
     <template #footer>

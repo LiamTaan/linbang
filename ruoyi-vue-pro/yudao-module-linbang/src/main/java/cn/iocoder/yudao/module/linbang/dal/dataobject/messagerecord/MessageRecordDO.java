@@ -68,4 +68,6 @@ public class MessageRecordDO extends BaseDO {
     private String voiceText;
 
     private String providerMessageId;
+
+    private String externalClickToken;
 }

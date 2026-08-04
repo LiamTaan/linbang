@@ -110,7 +110,8 @@ public class WalletBankCardServiceImpl implements WalletBankCardService {
         WalletBankCardDetailRespVO respVO = WalletBankCardDetailAssembler.buildDetail(walletBankCard, user);
         respVO.setWalletAccounts(WalletBankCardDetailAssembler.buildWalletAccounts(walletAccounts));
         respVO.setRecentWithdraws(WalletBankCardDetailAssembler.buildWithdraws(recentWithdraws));
-        respVO.setWithdrawStats(WalletBankCardDetailAssembler.buildWithdrawStats(recentWithdraws));
+        respVO.setWithdrawStats(WalletBankCardDetailAssembler.buildWithdrawStats(
+                walletWithdrawMapper.selectStatsByBankCardId(walletBankCard.getId())));
         return respVO;
     }
 
@@ -122,6 +123,9 @@ public class WalletBankCardServiceImpl implements WalletBankCardService {
         }
         PageResult<WalletBankCardDO> pageResult = walletBankCardMapper.selectPage(pageReqVO, matchedUserIds);
         List<WalletBankCardRespVO> list = BeanUtils.toBean(pageResult.getList(), WalletBankCardRespVO.class);
+        list.forEach(item -> {
+            item.setReservedMobile(maskMobile(item.getReservedMobile()));
+        });
         fillUserDisplayInfo(list);
         return new PageResult<>(list, pageResult.getTotal());
     }
@@ -145,8 +149,15 @@ public class WalletBankCardServiceImpl implements WalletBankCardService {
             }
             item.setUserNo(user.getUserNo());
             item.setUserNickname(user.getNickname());
-            item.setUserMobile(user.getMobile());
+            item.setUserMobile(maskMobile(user.getMobile()));
         });
+    }
+
+    private String maskMobile(String mobile) {
+        if (StrUtil.isBlank(mobile) || mobile.length() < 7) {
+            return mobile == null ? null : "******";
+        }
+        return mobile.substring(0, 3) + "****" + mobile.substring(mobile.length() - 4);
     }
 
 }

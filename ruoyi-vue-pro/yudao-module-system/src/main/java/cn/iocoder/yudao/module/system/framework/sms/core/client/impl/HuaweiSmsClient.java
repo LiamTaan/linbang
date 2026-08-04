@@ -4,7 +4,6 @@ import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.date.format.FastDateFormat;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.SecureUtil;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -121,7 +120,7 @@ public class HuaweiSmsClient extends AbstractSmsClient {
         String canonicalRequest = method + "\n" + uri + "\n" + canonicalQueryString + "\n"
                 + canonicalHeaders + "\n" + SIGNEDHEADERS + "\n" + sha256Hex(requestBody);
         String stringToSign = "SDK-HMAC-SHA256" + "\n" + sdkDate + "\n" + sha256Hex(canonicalRequest);
-        String signature = SecureUtil.hmacSha256(properties.getApiSecret()).digestHex(stringToSign);  // 计算签名
+        String signature = SmsSignatureUtils.hmacSha256Hex(properties.getApiSecret(), stringToSign);
         headers.put("Authorization", "SDK-HMAC-SHA256" + " " + "Access=" + getAccessKey()
                 + ", " + "SignedHeaders=" + SIGNEDHEADERS + ", " + "Signature=" + signature);
 

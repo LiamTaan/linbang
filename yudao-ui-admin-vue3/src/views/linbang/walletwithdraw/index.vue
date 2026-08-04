@@ -8,7 +8,13 @@
       class="-mb-15px"
     >
       <el-form-item label="提现单号" prop="withdrawNo">
-        <el-input v-model="queryParams.withdrawNo" placeholder="请输入提现单号" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.withdrawNo"
+          placeholder="请输入提现单号"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="用户" prop="userKeyword">
         <el-input
@@ -30,7 +36,12 @@
         </el-select>
       </el-form-item>
       <el-form-item label="审核状态" prop="auditStatus">
-        <el-select v-model="queryParams.auditStatus" placeholder="请选择审核状态" clearable class="!w-220px">
+        <el-select
+          v-model="queryParams.auditStatus"
+          placeholder="请选择审核状态"
+          clearable
+          class="!w-220px"
+        >
           <el-option
             v-for="dict in getStrDictOptions(DICT_TYPE.LB_AUDIT_STATUS)"
             :key="dict.value"
@@ -82,16 +93,22 @@
         <template #default="{ row }">
           <div class="leading-20px">
             <div class="font-600">{{ formatWalletAccountDisplay(row) }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ formatEnableStatus(row.walletStatus) }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              formatEnableStatus(row.walletStatus)
+            }}</div>
           </div>
         </template>
       </el-table-column>
       <el-table-column label="提现银行卡" align="center" min-width="220">
         <template #default="{ row }">
           <div class="leading-20px">
-            <div class="font-600">{{ row.bankName || (row.bankCardId ? '银行卡信息缺失' : '-') }}</div>
+            <div class="font-600">{{
+              row.bankName || (row.bankCardId ? '银行卡信息缺失' : '-')
+            }}</div>
             <div class="text-[var(--el-text-color-secondary)]">{{ row.cardNoMask || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.bankAccountName || '-' }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.bankAccountName || '-'
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -106,18 +123,45 @@
       </el-table-column>
       <el-table-column label="审核状态" align="center" prop="auditStatus" width="110">
         <template #default="{ row }">
-          <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+          <dict-tag
+            v-if="row.auditStatus"
+            :type="DICT_TYPE.LB_AUDIT_STATUS"
+            :value="row.auditStatus"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="审核备注" align="center" prop="auditRemark" min-width="160" />
       <el-table-column label="驳回原因" align="center" prop="rejectReason" min-width="160" />
       <el-table-column label="出款单号" align="center" prop="payTransferNo" min-width="180" />
-      <el-table-column label="出款失败原因" align="center" prop="transferErrorMsg" min-width="180" />
+      <el-table-column
+        label="出款失败原因"
+        align="center"
+        prop="transferErrorMsg"
+        min-width="180"
+      />
       <el-table-column label="审核人" align="center" prop="auditBy" width="100" />
-      <el-table-column label="审核时间" align="center" prop="auditTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="打款时间" align="center" prop="payTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="审核时间"
+        align="center"
+        prop="auditTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
+      <el-table-column
+        label="打款时间"
+        align="center"
+        prop="payTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="操作" align="center" fixed="right" width="180">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetailDialog(row.id)">详情</el-button>
@@ -180,7 +224,11 @@
           placeholder="请输入审核备注"
         />
       </el-form-item>
-      <el-form-item v-if="auditFormData.auditStatus === 'REJECTED'" label="驳回原因" prop="rejectReason">
+      <el-form-item
+        v-if="auditFormData.auditStatus === 'REJECTED'"
+        label="驳回原因"
+        prop="rejectReason"
+      >
         <el-input
           v-model="auditFormData.rejectReason"
           type="textarea"
@@ -234,7 +282,9 @@ const queryParams = reactive({
   createTime: [] as string[]
 })
 
-const formatUserDisplay = (row?: Pick<WalletWithdraw, 'userNickname' | 'userMobile' | 'userNo' | 'userId'>) => {
+const formatUserDisplay = (
+  row?: Pick<WalletWithdraw, 'userNickname' | 'userMobile' | 'userNo' | 'userId'>
+) => {
   if (!row) {
     return '-'
   }
@@ -242,7 +292,9 @@ const formatUserDisplay = (row?: Pick<WalletWithdraw, 'userNickname' | 'userMobi
   return summary || (row.userId ? '用户信息缺失' : '-')
 }
 
-const formatWalletAccountDisplay = (row?: Pick<WalletWithdraw, 'walletRoleCode' | 'walletAccountId'>) => {
+const formatWalletAccountDisplay = (
+  row?: Pick<WalletWithdraw, 'walletRoleCode' | 'walletAccountId'>
+) => {
   if (!row) {
     return '-'
   }
@@ -322,7 +374,7 @@ const openAuditDialog = (row: WalletWithdraw) => {
 }
 
 const canRetryTransfer = (row: WalletWithdraw) => {
-  return row.auditStatus === 'APPROVED' && (row.status === 'FAILED' || row.status === 'PROCESSING')
+  return row.auditStatus === 'APPROVED' && row.status === 'FAILED'
 }
 
 const submitAudit = async () => {

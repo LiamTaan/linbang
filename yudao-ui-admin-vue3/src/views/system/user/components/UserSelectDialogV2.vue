@@ -250,7 +250,7 @@ const handleRowDblClick = (row: UserSelectRow) => {
 const queryParams = reactive({
   pageNo: 1, // 页码
   pageSize: 10, // 每页条数
-    username: undefined as string | undefined, // 登录账号
+  username: undefined as string | undefined, // 登录账号
   nickname: undefined as string | undefined, // 用户昵称
   mobile: undefined as string | undefined, // 手机号码
   status: CommonStatusEnum.ENABLE as number | undefined, // 状态：默认只查启用

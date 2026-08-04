@@ -13,6 +13,7 @@ import static cn.iocoder.yudao.framework.common.util.date.DateUtils.FORMAT_YEAR_
 @Data
 public class UserRestrictRecordPageReqVO extends PageParam {
 
+    @Schema(description = "平台用户 ID，关联用户档案")
     private Long userId;
 
     @Schema(description = "用户关键词")
@@ -25,5 +26,6 @@ public class UserRestrictRecordPageReqVO extends PageParam {
     private String status;
 
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
+    @Schema(description = "记录创建时间")
     private LocalDateTime[] createTime;
 }

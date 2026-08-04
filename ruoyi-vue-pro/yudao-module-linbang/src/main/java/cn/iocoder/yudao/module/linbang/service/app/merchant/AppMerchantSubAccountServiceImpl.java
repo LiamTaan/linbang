@@ -9,11 +9,15 @@ import cn.iocoder.yudao.module.linbang.controller.app.merchant.subaccount.vo.App
 import cn.iocoder.yudao.module.linbang.controller.app.merchant.subaccount.vo.AppMerchantSubAccountStatusUpdateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.merchant.subaccount.vo.AppMerchantSubAccountUpdateReqVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantsubaccount.MerchantSubAccountDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantsubaccountservicepointrel.MerchantSubAccountServicePointRelDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantservicepoint.MerchantServicePointMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantsubaccount.MerchantSubAccountMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantsubaccountservicepointrel.MerchantSubAccountServicePointRelMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
+import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -26,6 +30,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_DISABLED;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_NOT_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MERCHANT_AUTH_REQUIRED;
 
 @Service
@@ -40,21 +46,33 @@ public class AppMerchantSubAccountServiceImpl implements AppMerchantSubAccountSe
     private MerchantServicePointMapper merchantServicePointMapper;
     @Resource
     private AppMerchantOperatorContextService merchantOperatorContextService;
+    @Resource
+    private MemberUserService memberUserService;
+    @Resource
+    private MemberUserMapper memberUserMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long create(Long authUserId, @Valid AppMerchantSubAccountCreateReqVO reqVO) {
         AppMerchantOperatorContext context = merchantOperatorContextService.getRequiredMerchantManageContext(authUserId);
         MerchantInfoDO merchant = context.getMerchant();
+        MemberUserDO user = validateSubAccountUser(reqVO, merchant, null);
         MerchantSubAccountDO subAccount = MerchantSubAccountDO.builder()
                 .merchantId(merchant.getId())
-                .userId(reqVO.getUserId())
-                .mobile(reqVO.getMobile())
+                .userId(user.getId())
+                .mobile(user.getMobile())
                 .permissionCodesJson(JsonUtils.toJsonString(reqVO.getPermissionCodes()))
                 .status("ENABLE")
                 .remark(reqVO.getRemark())
                 .build();
-        merchantSubAccountMapper.insert(subAccount);
+        try {
+            merchantSubAccountMapper.insert(subAccount);
+        } catch (DuplicateKeyException ex) {
+            if (merchantSubAccountMapper.selectByUserIdForUpdate(user.getId()) != null) {
+                throw exception(MERCHANT_AUTH_REQUIRED);
+            }
+            throw ex;
+        }
         return subAccount.getId();
     }
 
@@ -63,11 +81,12 @@ public class AppMerchantSubAccountServiceImpl implements AppMerchantSubAccountSe
     public void update(Long authUserId, @Valid AppMerchantSubAccountUpdateReqVO reqVO) {
         AppMerchantOperatorContext context = merchantOperatorContextService.getRequiredMerchantManageContext(authUserId);
         MerchantInfoDO merchant = context.getMerchant();
-        MerchantSubAccountDO existed = validateSubAccountBelongsToMerchant(reqVO.getId(), merchant.getId());
+        MerchantSubAccountDO existed = validateSubAccountBelongsToMerchantForUpdate(reqVO.getId(), merchant.getId());
+        MemberUserDO user = validateSubAccountUser(reqVO, merchant, existed.getId());
         merchantSubAccountMapper.updateById(MerchantSubAccountDO.builder()
                 .id(existed.getId())
-                .userId(reqVO.getUserId())
-                .mobile(reqVO.getMobile())
+                .userId(user.getId())
+                .mobile(user.getMobile())
                 .permissionCodesJson(JsonUtils.toJsonString(reqVO.getPermissionCodes()))
                 .remark(reqVO.getRemark())
                 .build());
@@ -101,7 +120,7 @@ public class AppMerchantSubAccountServiceImpl implements AppMerchantSubAccountSe
     public void updateStatus(Long authUserId, @Valid AppMerchantSubAccountStatusUpdateReqVO reqVO) {
         AppMerchantOperatorContext context = merchantOperatorContextService.getRequiredMerchantManageContext(authUserId);
         MerchantInfoDO merchant = context.getMerchant();
-        MerchantSubAccountDO existed = validateSubAccountBelongsToMerchant(reqVO.getId(), merchant.getId());
+        MerchantSubAccountDO existed = validateSubAccountBelongsToMerchantForUpdate(reqVO.getId(), merchant.getId());
         merchantSubAccountMapper.updateById(MerchantSubAccountDO.builder()
                 .id(existed.getId())
                 .status(reqVO.getStatus())
@@ -113,7 +132,7 @@ public class AppMerchantSubAccountServiceImpl implements AppMerchantSubAccountSe
     public void updateServicePoints(Long authUserId, @Valid AppMerchantSubAccountServicePointUpdateReqVO reqVO) {
         AppMerchantOperatorContext context = merchantOperatorContextService.getRequiredMerchantManageContext(authUserId);
         MerchantInfoDO merchant = context.getMerchant();
-        MerchantSubAccountDO existed = validateSubAccountBelongsToMerchant(reqVO.getId(), merchant.getId());
+        MerchantSubAccountDO existed = validateSubAccountBelongsToMerchantForUpdate(reqVO.getId(), merchant.getId());
         long validPointCount = merchantServicePointMapper.selectListByMerchantId(merchant.getId()).stream()
                 .filter(item -> reqVO.getServicePointIds().contains(item.getId()))
                 .count();
@@ -130,11 +149,37 @@ public class AppMerchantSubAccountServiceImpl implements AppMerchantSubAccountSe
         }
     }
 
-    private MerchantSubAccountDO validateSubAccountBelongsToMerchant(Long subAccountId, Long merchantId) {
-        MerchantSubAccountDO subAccount = merchantSubAccountMapper.selectById(subAccountId);
+    private MerchantSubAccountDO validateSubAccountBelongsToMerchantForUpdate(Long subAccountId, Long merchantId) {
+        MerchantSubAccountDO subAccount = merchantSubAccountMapper.selectByIdForUpdate(subAccountId);
         if (subAccount == null || !Objects.equals(subAccount.getMerchantId(), merchantId)) {
             throw exception(MERCHANT_AUTH_REQUIRED);
         }
         return subAccount;
+    }
+
+    private MemberUserDO validateSubAccountUser(AppMerchantSubAccountCreateReqVO reqVO,
+                                                MerchantInfoDO merchant, Long currentSubAccountId) {
+        MemberUserDO user = reqVO.getUserId() != null
+                ? memberUserService.getMemberUser(reqVO.getUserId())
+                : memberUserService.getMemberUserByMobile(reqVO.getMobile());
+        if (user == null) {
+            throw exception(MEMBER_USER_NOT_EXISTS);
+        }
+        user = memberUserMapper.selectByIdForUpdate(user.getId());
+        if (user == null) {
+            throw exception(MEMBER_USER_NOT_EXISTS);
+        }
+        if (!Objects.equals(user.getMobile(), reqVO.getMobile())
+                || Objects.equals(user.getId(), merchant.getUserId())) {
+            throw exception(MERCHANT_AUTH_REQUIRED);
+        }
+        if (!Objects.equals(user.getStatus(), "ENABLE")) {
+            throw exception(MEMBER_USER_DISABLED);
+        }
+        MerchantSubAccountDO existed = merchantSubAccountMapper.selectByUserIdForUpdate(user.getId());
+        if (existed != null && !Objects.equals(existed.getId(), currentSubAccountId)) {
+            throw exception(MERCHANT_AUTH_REQUIRED);
+        }
+        return user;
     }
 }

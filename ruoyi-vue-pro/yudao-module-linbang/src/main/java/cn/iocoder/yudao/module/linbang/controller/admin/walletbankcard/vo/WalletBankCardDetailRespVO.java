@@ -20,16 +20,12 @@ public class WalletBankCardDetailRespVO {
     private String userNo;
     @Schema(description = "用户昵称", example = "邻里用户")
     private String userNickname;
-    @Schema(description = "用户手机号", example = "13800138000")
+    @Schema(description = "脱敏用户手机号", example = "138****8000")
     private String userMobile;
     @Schema(description = "银行名称", example = "中国建设银行")
     private String bankName;
     @Schema(description = "银行编码；提现出款时传给第三方通道识别收款银行", example = "CCB")
     private String bankCode;
-    @Schema(description = "加密卡号")
-    private String cardNoEncrypt;
-    @Schema(description = "出款收款账号；第三方提现时实际传输的收款账号", example = "6222020202020202020")
-    private String transferAccount;
     @Schema(description = "脱敏卡号", example = "6222****8888")
     private String cardNoMask;
     @Schema(description = "开户名", example = "张三")
@@ -38,7 +34,7 @@ public class WalletBankCardDetailRespVO {
     private String bankProvince;
     @Schema(description = "开户城市；第三方出款需要的开户行城市", example = "深圳市")
     private String bankCity;
-    @Schema(description = "银行预留手机号；第三方出款校验使用", example = "13800138000")
+    @Schema(description = "脱敏银行预留手机号；第三方出款校验使用", example = "138****8000")
     private String reservedMobile;
     @Schema(description = OpenApiSchemaConstants.BANK_CARD_STATUS, example = "ENABLE")
     private String status;
@@ -56,6 +52,7 @@ public class WalletBankCardDetailRespVO {
     private WithdrawStatRespVO withdrawStats;
 
     @Data
+    @Schema(description = "管理后台 - 钱包账户摘要 Response VO")
     public static class WalletAccountSimpleRespVO {
         @Schema(description = "钱包账户 ID", example = "2001")
         private Long id;
@@ -78,6 +75,7 @@ public class WalletBankCardDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 提现记录摘要 Response VO")
     public static class WalletWithdrawSimpleRespVO {
         @Schema(description = "提现申请 ID", example = "1")
         private Long id;
@@ -106,6 +104,7 @@ public class WalletBankCardDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 提现统计摘要 Response VO")
     public static class WithdrawStatRespVO {
         @Schema(description = "提现总次数")
         private Integer totalCount;

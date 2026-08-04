@@ -22,6 +22,9 @@ final class MemberUserRealNameDetailAssembler {
                                                 MerchantEntryDO latestEntry, List<MemberUserQualificationDO> qualifications,
                                                 List<CreditRecordDO> creditRecords) {
         MemberUserRealNameDetailRespVO respVO = BeanUtils.toBean(realName, MemberUserRealNameDetailRespVO.class);
+        if (realName != null) {
+            respVO.setIdCardNo(maskIdCardNo(realName.getIdCardNo()));
+        }
         if (user != null) {
             respVO.setUser(BeanUtils.toBean(user, MemberUserRealNameDetailRespVO.UserRespVO.class));
         }
@@ -35,6 +38,16 @@ final class MemberUserRealNameDetailAssembler {
         respVO.setQualifications(buildQualifications(qualifications));
         respVO.setCreditRecords(buildCreditRecords(creditRecords));
         return respVO;
+    }
+
+    private static String maskIdCardNo(String idCardNo) {
+        if (idCardNo == null || idCardNo.trim().isEmpty()) {
+            return idCardNo;
+        }
+        if (idCardNo.length() <= 4) {
+            return "****";
+        }
+        return idCardNo.substring(0, 2) + "********" + idCardNo.substring(idCardNo.length() - 2);
     }
 
     private static MemberUserRealNameDetailRespVO.SummaryRespVO buildSummary(MemberUserRealNameDO realName, MerchantInfoDO merchant,

@@ -138,11 +138,11 @@
           <Icon icon="ep:download" class="mr-5px" /> 导出
         </el-button>
         <el-button
-            type="danger"
-            plain
-            :disabled="isEmpty(checkedIds)"
-            @click="handleDeleteBatch"
-            v-hasPermi="['linbang:order:abnormal:delete']"
+          type="danger"
+          plain
+          :disabled="isEmpty(checkedIds)"
+          @click="handleDeleteBatch"
+          v-hasPermi="['linbang:order:abnormal:delete']"
         >
           <Icon icon="ep:delete" class="mr-5px" /> 批量删除
         </el-button>
@@ -153,14 +153,14 @@
   <!-- 列表 -->
   <ContentWrap>
     <el-table
-        row-key="id"
-        v-loading="loading"
-        :data="list"
-        :stripe="true"
-        :show-overflow-tooltip="true"
-        @selection-change="handleRowCheckboxChange"
+      row-key="id"
+      v-loading="loading"
+      :data="list"
+      :stripe="true"
+      :show-overflow-tooltip="true"
+      @selection-change="handleRowCheckboxChange"
     >
-    <el-table-column type="selection" width="55" />
+      <el-table-column type="selection" width="55" />
       <el-table-column label="订单号" align="center" prop="orderNo" min-width="180" />
       <el-table-column label="单元号" align="center" prop="unitNo" min-width="160" />
       <el-table-column label="异常单号" align="center" prop="abnormalNo" />
@@ -240,7 +240,12 @@
   <OrderAbnormalForm ref="formRef" @success="getList" />
 
   <Dialog v-model="finalAuditVisible" title="异常订单终审" width="520px">
-    <el-form ref="finalAuditFormRef" :model="finalAuditFormData" :rules="finalAuditFormRules" label-width="88px">
+    <el-form
+      ref="finalAuditFormRef"
+      :model="finalAuditFormData"
+      :rules="finalAuditFormRules"
+      label-width="88px"
+    >
       <el-form-item label="异常单号">
         <el-input :model-value="currentRow?.abnormalNo" disabled />
       </el-form-item>
@@ -266,7 +271,9 @@
     </el-form>
     <template #footer>
       <el-button @click="finalAuditVisible = false">取消</el-button>
-      <el-button type="primary" :loading="finalAuditLoading" @click="submitFinalAudit">提交终审</el-button>
+      <el-button type="primary" :loading="finalAuditLoading" @click="submitFinalAudit"
+        >提交终审</el-button
+      >
     </template>
   </Dialog>
 </template>
@@ -371,7 +378,8 @@ const openForm = (type: string, id?: number) => {
 const openFinalAuditDialog = (row: OrderAbnormal) => {
   currentRow.value = row
   finalAuditFormData.id = row.id
-  finalAuditFormData.finalAuditStatus = row.finalAuditStatus === 'REJECTED' ? 'REJECTED' : 'APPROVED'
+  finalAuditFormData.finalAuditStatus =
+    row.finalAuditStatus === 'REJECTED' ? 'REJECTED' : 'APPROVED'
   finalAuditFormData.finalAuditRemark = row.finalAuditRemark || row.remark || ''
   finalAuditVisible.value = true
 }
@@ -394,16 +402,16 @@ const handleDeleteBatch = async () => {
   try {
     // 删除的二次确认
     await message.delConfirm()
-    await OrderAbnormalApi.deleteOrderAbnormalList(checkedIds.value);
-    checkedIds.value = [];
+    await OrderAbnormalApi.deleteOrderAbnormalList(checkedIds.value)
+    checkedIds.value = []
     message.success(t('common.delSuccess'))
-    await getList();
+    await getList()
   } catch {}
 }
 
 const checkedIds = ref<number[]>([])
 const handleRowCheckboxChange = (records: OrderAbnormal[]) => {
-  checkedIds.value = records.map((item) => item.id!);
+  checkedIds.value = records.map((item) => item.id!)
 }
 
 /** 导出按钮操作 */

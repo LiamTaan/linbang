@@ -28,8 +28,7 @@ const md = new MarkdownIt({
       lang && hljs.getLanguage(lang)
         ? hljs.highlight(str, { language: lang, ignoreIllegals: true }).value
         : md.utils.escapeHtml(str)
-    const copyHtml =
-      '<button type="button" class="copy-btn" data-copy-code="1">复制</button>'
+    const copyHtml = '<button type="button" class="copy-btn" data-copy-code="1">复制</button>'
     return `<pre class="code-block">${copyHtml}<code class="hljs">${codeHtml}</code></pre>`
   }
 })

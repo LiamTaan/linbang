@@ -61,6 +61,7 @@ public class MessageTemplateDetailRespVO {
     private List<MessageRecordSimpleRespVO> recentRecords;
 
     @Data
+    @Schema(description = "管理后台 - 渠道统计摘要 Response VO")
     public static class ChannelStatRespVO {
         @Schema(description = OpenApiSchemaConstants.MESSAGE_CHANNEL_TYPE, example = "APP_POPUP")
         private String channelType;
@@ -69,6 +70,7 @@ public class MessageTemplateDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 消息记录摘要 Response VO")
     public static class MessageRecordSimpleRespVO {
         @Schema(description = "消息记录 ID", example = "1")
         private Long id;

@@ -6,15 +6,13 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantinfo.MerchantInfoD
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.controller.admin.partnerinfo.vo.PartnerInfoDetailRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantpricereport.MerchantPriceReportDO;
-import cn.iocoder.yudao.module.linbang.dal.dataobject.orderinfo.OrderInfoDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.partnercoordination.dto.PartnerWorkbenchAggregateDTO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.partnerinfo.PartnerInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.partnerregionrel.PartnerRegionRelDO;
 
-import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 final class PartnerInfoDetailAssembler {
@@ -23,9 +21,10 @@ final class PartnerInfoDetailAssembler {
     }
 
     static PartnerInfoDetailRespVO build(PartnerInfoDO partnerInfo, MemberUserDO user, List<PartnerRegionRelDO> regions,
-                                         List<String> regionAdcodes, List<OrderInfoDO> orders, List<Long> orderIds,
+                                         List<String> regionAdcodes, PartnerWorkbenchAggregateDTO aggregate,
                                          List<MerchantPriceReportDO> priceReports, Long pendingEntryAuditCount,
                                          Long pendingComplaintCount, Long pendingPriceReportCount,
+                                         Long approvedPriceReportCount, Long rejectedPriceReportCount,
                                          Map<Long, MerchantInfoDO> merchantMap,
                                          Map<Long, MerchantServiceCategoryDO> categoryMap) {
         PartnerInfoDetailRespVO respVO = BeanUtils.toBean(partnerInfo, PartnerInfoDetailRespVO.class);
@@ -36,8 +35,8 @@ final class PartnerInfoDetailAssembler {
         }
         respVO.setRegionAdcodes(regionAdcodes == null ? Collections.emptyList() : regionAdcodes);
         respVO.setRegions(buildRegions(regions));
-        respVO.setSummary(buildSummary(regions, orders, priceReports, pendingEntryAuditCount, pendingComplaintCount,
-                pendingPriceReportCount));
+        respVO.setSummary(buildSummary(regions, aggregate, pendingEntryAuditCount, pendingComplaintCount,
+                pendingPriceReportCount, approvedPriceReportCount, rejectedPriceReportCount));
         respVO.setRecentPriceReports(buildRecentPriceReports(priceReports, merchantMap, categoryMap));
         return respVO;
     }
@@ -50,10 +49,12 @@ final class PartnerInfoDetailAssembler {
                 .collect(Collectors.toList());
     }
 
-    private static PartnerInfoDetailRespVO.SummaryRespVO buildSummary(List<PartnerRegionRelDO> regions, List<OrderInfoDO> orders,
-                                                                      List<MerchantPriceReportDO> priceReports,
+    private static PartnerInfoDetailRespVO.SummaryRespVO buildSummary(List<PartnerRegionRelDO> regions,
+                                                                      PartnerWorkbenchAggregateDTO aggregate,
                                                                       Long pendingEntryAuditCount, Long pendingComplaintCount,
-                                                                      Long pendingPriceReportCount) {
+                                                                      Long pendingPriceReportCount,
+                                                                      Long approvedPriceReportCount,
+                                                                      Long rejectedPriceReportCount) {
         PartnerInfoDetailRespVO.SummaryRespVO summary = new PartnerInfoDetailRespVO.SummaryRespVO();
         summary.setRegionCount(regions == null ? 0 : regions.size());
         summary.setEnabledRegionCount(regions == null ? 0 : (int) regions.stream()
@@ -62,25 +63,12 @@ final class PartnerInfoDetailAssembler {
         summary.setPendingEntryAuditCount(pendingEntryAuditCount == null ? 0L : pendingEntryAuditCount);
         summary.setPendingComplaintCount(pendingComplaintCount == null ? 0L : pendingComplaintCount);
         summary.setPendingPriceReportCount(pendingPriceReportCount == null ? 0L : pendingPriceReportCount);
-        summary.setOrderCount(orders == null ? 0L : (long) orders.size());
-        summary.setTradeAmount(sumTradeAmount(orders));
-        summary.setApprovedPriceReportCount(priceReports == null ? 0 : (int) priceReports.stream()
-                .filter(item -> "APPROVED".equalsIgnoreCase(item.getStatus()))
-                .count());
-        summary.setRejectedPriceReportCount(priceReports == null ? 0 : (int) priceReports.stream()
-                .filter(item -> "REJECTED".equalsIgnoreCase(item.getStatus()))
-                .count());
+        summary.setOrderCount(aggregate == null || aggregate.getOrderCount() == null ? 0L : aggregate.getOrderCount());
+        summary.setTradeAmount(aggregate == null || aggregate.getTradeAmount() == null
+                ? java.math.BigDecimal.ZERO : aggregate.getTradeAmount());
+        summary.setApprovedPriceReportCount(Math.toIntExact(approvedPriceReportCount == null ? 0L : approvedPriceReportCount));
+        summary.setRejectedPriceReportCount(Math.toIntExact(rejectedPriceReportCount == null ? 0L : rejectedPriceReportCount));
         return summary;
-    }
-
-    private static BigDecimal sumTradeAmount(List<OrderInfoDO> orders) {
-        if (orders == null || orders.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-        return orders.stream()
-                .map(OrderInfoDO::getOrderAmount)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private static List<PartnerInfoDetailRespVO.RecentPriceReportRespVO> buildRecentPriceReports(

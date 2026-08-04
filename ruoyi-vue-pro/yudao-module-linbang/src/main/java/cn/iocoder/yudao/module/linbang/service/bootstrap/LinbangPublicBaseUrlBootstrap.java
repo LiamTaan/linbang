@@ -24,6 +24,7 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.URI;
 import java.util.Enumeration;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,8 @@ import java.util.Set;
 @Component
 @Slf4j
 public class LinbangPublicBaseUrlBootstrap implements ApplicationRunner {
+
+    private static final int FILE_URL_SYNC_BATCH_SIZE = 500;
 
     @Value("${linbang.public-base-url:}")
     private String publicBaseUrl;
@@ -55,33 +58,56 @@ public class LinbangPublicBaseUrlBootstrap implements ApplicationRunner {
         if (masterConfig == null || masterConfig.getConfig() == null) {
             return;
         }
-        Map<String, Object> updatedConfig = buildUpdatedConfig(masterConfig, normalizedBaseUrl);
-        if (updatedConfig == null) {
+        if (!isSupportedFileClientConfig(masterConfig.getConfig())) {
             return;
         }
-        FileConfigSaveReqVO reqVO = new FileConfigSaveReqVO();
-        reqVO.setId(masterConfig.getId());
-        reqVO.setName(masterConfig.getName());
-        reqVO.setStorage(masterConfig.getStorage());
-        reqVO.setRemark(masterConfig.getRemark());
-        reqVO.setConfig(updatedConfig);
-        fileConfigService.updateFileConfig(reqVO);
-        syncHistoricalFileUrls(masterConfig.getId(), normalizedBaseUrl);
-        log.info("[linbang] 已同步主文件配置域名为 {}", normalizedBaseUrl);
+        Map<String, Object> updatedConfig = buildUpdatedConfig(masterConfig, normalizedBaseUrl);
+        if (updatedConfig != null) {
+            FileConfigSaveReqVO reqVO = new FileConfigSaveReqVO();
+            reqVO.setId(masterConfig.getId());
+            reqVO.setName(masterConfig.getName());
+            reqVO.setStorage(masterConfig.getStorage());
+            reqVO.setRemark(masterConfig.getRemark());
+            reqVO.setConfig(updatedConfig);
+            fileConfigService.updateFileConfig(reqVO);
+        }
+        int updatedFileCount = syncHistoricalFileUrls(masterConfig.getId(), normalizedBaseUrl);
+        log.info("[linbang] 已同步主文件配置域名为 {}，校正历史文件 URL {} 条", normalizedBaseUrl, updatedFileCount);
     }
 
-    private void syncHistoricalFileUrls(Long configId, String normalizedBaseUrl) {
-        List<FileDO> files = fileMapper.selectListByConfigId(configId);
-        for (FileDO file : files) {
-            String expectedUrl = buildPublicFileUrl(normalizedBaseUrl, configId, file.getPath());
-            if (StrUtil.equals(normalizeUrl(file.getUrl()), expectedUrl)) {
-                continue;
+    int syncHistoricalFileUrls(Long configId, String normalizedBaseUrl) {
+        Long afterId = null;
+        int updatedCount = 0;
+        while (true) {
+            List<FileDO> files = fileMapper.selectListByConfigIdAfterId(
+                    configId, afterId, FILE_URL_SYNC_BATCH_SIZE);
+            if (files.isEmpty()) {
+                break;
             }
-            FileDO updateObj = new FileDO();
-            updateObj.setId(file.getId());
-            updateObj.setUrl(expectedUrl);
-            fileMapper.updateById(updateObj);
+            List<FileDO> updates = new ArrayList<>();
+            for (FileDO file : files) {
+                String expectedUrl = buildPublicFileUrl(normalizedBaseUrl, configId, file.getPath());
+                if (StrUtil.equals(normalizeUrl(file.getUrl()), expectedUrl)) {
+                    continue;
+                }
+                updates.add(new FileDO().setId(file.getId()).setUrl(expectedUrl));
+            }
+            if (!updates.isEmpty()) {
+                if (!Boolean.TRUE.equals(fileMapper.updateBatch(updates, FILE_URL_SYNC_BATCH_SIZE))) {
+                    throw new IllegalStateException("Historical file URL batch update failed");
+                }
+                updatedCount += updates.size();
+            }
+            afterId = files.get(files.size() - 1).getId();
+            if (files.size() < FILE_URL_SYNC_BATCH_SIZE) {
+                break;
+            }
         }
+        return updatedCount;
+    }
+
+    private boolean isSupportedFileClientConfig(Object fileClientConfig) {
+        return fileClientConfig instanceof LocalFileClientConfig || fileClientConfig instanceof DBFileClientConfig;
     }
 
     private Map<String, Object> buildUpdatedConfig(FileConfigDO masterConfig, String normalizedBaseUrl) {

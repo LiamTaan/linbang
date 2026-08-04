@@ -93,16 +93,16 @@ watch(
 
 <style scoped>
 .logo-mark {
-  align-items: center;
-  background: linear-gradient(135deg, #0f4c81, #0b7a75);
-  border-radius: 8px;
-  color: #fff;
   display: inline-flex;
-  flex: 0 0 auto;
+  width: calc(var(--logo-height) - 10px);
+  height: calc(var(--logo-height) - 10px);
   font-size: 16px;
   font-weight: 700;
-  height: calc(var(--logo-height) - 10px);
+  color: #fff;
+  background: linear-gradient(135deg, #0f4c81, #0b7a75);
+  border-radius: 8px;
+  align-items: center;
+  flex: 0 0 auto;
   justify-content: center;
-  width: calc(var(--logo-height) - 10px);
 }
 </style>

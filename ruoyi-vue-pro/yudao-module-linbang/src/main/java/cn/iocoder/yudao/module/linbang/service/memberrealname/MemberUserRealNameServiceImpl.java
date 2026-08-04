@@ -141,28 +141,49 @@ public class MemberUserRealNameServiceImpl implements MemberUserRealNameService 
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void auditMemberUserRealName(MemberUserRealNameAuditReqVO reqVO) {
-        MemberUserRealNameDO record = memberUserRealNameMapper.selectById(reqVO.getId());
-        if (record == null) {
+        MemberUserRealNameDO snapshot = memberUserRealNameMapper.selectById(reqVO.getId());
+        if (snapshot == null) {
             throw exception(MEMBER_USER_REAL_NAME_NOT_EXISTS);
+        }
+        MemberUserDO user = memberUserMapper.selectByIdForUpdate(snapshot.getUserId());
+        if (user == null) {
+            throw exception(MEMBER_USER_NOT_EXISTS);
+        }
+        MemberUserRealNameDO record = memberUserRealNameMapper.selectByIdForUpdate(reqVO.getId());
+        if (record == null || !Objects.equals(record.getUserId(), user.getId())) {
+            throw exception(MEMBER_USER_REAL_NAME_NOT_EXISTS);
+        }
+        String auditStatus = StrUtil.trimToEmpty(reqVO.getAuditStatus()).toUpperCase(Locale.ROOT);
+        if (!"PENDING".equals(record.getAuditStatus())
+                || (!"APPROVED".equals(auditStatus) && !"REJECTED".equals(auditStatus))) {
+            throw exception(MEMBER_USER_REAL_NAME_STATUS_INVALID);
+        }
+        if ("APPROVED".equals(auditStatus)
+                && (!"PASS".equals(record.getLivenessResult()) || !"PASS".equals(record.getFaceVerifyResult()))) {
+            throw exception(MEMBER_USER_REAL_NAME_STATUS_INVALID);
+        }
+        if ("REJECTED".equals(auditStatus) && StrUtil.isBlank(reqVO.getRejectReason())) {
+            throw exception(MEMBER_USER_REAL_NAME_STATUS_INVALID);
         }
         LocalDateTime now = LocalDateTime.now();
         MemberUserRealNameDO updateObj = new MemberUserRealNameDO();
         updateObj.setId(reqVO.getId());
-        updateObj.setAuditStatus(reqVO.getAuditStatus());
+        updateObj.setAuditStatus(auditStatus);
         updateObj.setAuditRemark(reqVO.getAuditRemark());
-        updateObj.setRejectReason(reqVO.getRejectReason());
+        updateObj.setRejectReason("REJECTED".equals(auditStatus) ? reqVO.getRejectReason() : null);
         updateObj.setAuditBy(SecurityFrameworkUtils.getLoginUserId());
         updateObj.setAuditTime(now);
         memberUserRealNameMapper.updateById(updateObj);
-        if ("APPROVED".equals(reqVO.getAuditStatus())) {
+        if ("APPROVED".equals(auditStatus)) {
             memberUserService.updateMemberUserNickname(record.getUserId(), record.getRealName());
             creditRecordService.applyCreditRule(record.getUserId(), null, "REAL_NAME_APPROVED",
                     "REAL_NAME", record.getId(), "实名认证审核通过");
         }
         merchantAccessStateService.refreshMerchantAcceptStatus(record.getUserId());
         messagePushDispatchService.dispatchSingle("",
-                "APPROVED".equals(reqVO.getAuditStatus()) ? "实名认证审核已通过" : "实名认证审核已驳回",
+                "APPROVED".equals(auditStatus) ? "实名认证审核已通过" : "实名认证审核已驳回",
                 "REAL_NAME", record.getId(), record.getUserId(), "实名认证审核结果已更新");
     }
 
@@ -174,6 +195,7 @@ public class MemberUserRealNameServiceImpl implements MemberUserRealNameService 
         }
         PageResult<MemberUserRealNameDO> pageResult = memberUserRealNameMapper.selectPage(pageReqVO, matchedUserIds);
         List<MemberUserRealNameRespVO> list = BeanUtils.toBean(pageResult.getList(), MemberUserRealNameRespVO.class);
+        list.forEach(item -> item.setIdCardNo(maskIdCardNo(item.getIdCardNo())));
         fillUserDisplayInfo(list);
         return new PageResult<>(list, pageResult.getTotal());
     }
@@ -199,6 +221,16 @@ public class MemberUserRealNameServiceImpl implements MemberUserRealNameService 
             item.setUserNickname(user.getNickname());
             item.setUserMobile(user.getMobile());
         });
+    }
+
+    private String maskIdCardNo(String idCardNo) {
+        if (StrUtil.isBlank(idCardNo)) {
+            return idCardNo;
+        }
+        if (idCardNo.length() <= 4) {
+            return "****";
+        }
+        return idCardNo.substring(0, 2) + "********" + idCardNo.substring(idCardNo.length() - 2);
     }
 
 }

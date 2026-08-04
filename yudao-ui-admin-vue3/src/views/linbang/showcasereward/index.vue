@@ -2,10 +2,20 @@
   <ContentWrap>
     <el-form :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
       <el-form-item label="服务商 ID">
-        <el-input v-model="queryParams.merchantId" placeholder="请输入服务商 ID" class="!w-220px" clearable />
+        <el-input
+          v-model="queryParams.merchantId"
+          placeholder="请输入服务商 ID"
+          class="!w-220px"
+          clearable
+        />
       </el-form-item>
       <el-form-item label="审核状态">
-        <el-input v-model="queryParams.auditStatus" placeholder="请输入审核状态" class="!w-220px" clearable />
+        <el-input
+          v-model="queryParams.auditStatus"
+          placeholder="请输入审核状态"
+          class="!w-220px"
+          clearable
+        />
       </el-form-item>
       <el-form-item>
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
@@ -22,8 +32,18 @@
       <el-table-column label="优先权生效" width="100">
         <template #default="{ row }">{{ formatBooleanYesNo(row.priorityEnabled) }}</template>
       </el-table-column>
-      <el-table-column label="开始时间" prop="effectiveStartTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="结束时间" prop="effectiveEndTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="开始时间"
+        prop="effectiveStartTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
+      <el-table-column
+        label="结束时间"
+        prop="effectiveEndTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="操作" width="160" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="loadParticipations(row)">参与记录</el-button>
@@ -32,7 +52,12 @@
         </template>
       </el-table-column>
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 
   <ContentWrap v-if="selectedRewardId">

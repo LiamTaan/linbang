@@ -1,19 +1,39 @@
 <template>
-    <Dialog v-model="dialogVisible" title="钱包账户详情" width="820px" :loading="detailLoading">
+  <Dialog v-model="dialogVisible" title="钱包账户详情" width="820px" :loading="detailLoading">
     <el-descriptions :column="2" label-class-name="desc-label">
       <el-descriptions-item label="用户">{{ formatUserDisplay() }}</el-descriptions-item>
       <el-descriptions-item label="账户角色">
-        <dict-tag v-if="detailData.roleCode" :type="DICT_TYPE.LB_ROLE_CODE" :value="detailData.roleCode" />
+        <dict-tag
+          v-if="detailData.roleCode"
+          :type="DICT_TYPE.LB_ROLE_CODE"
+          :value="detailData.roleCode"
+        />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="状态">{{ formatEnableStatus(detailData.status) }}</el-descriptions-item>
-      <el-descriptions-item label="总资产">{{ detailData.totalAmount ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="可提现金额">{{ detailData.availableAmount ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="冻结金额">{{ detailData.frozenAmount ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="托管金额">{{ detailData.escrowAmount ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="佣金金额">{{ detailData.commissionAmount ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData.createTime) }}</el-descriptions-item>
-      <el-descriptions-item label="更新时间">{{ formatDate(detailData.updateTime) }}</el-descriptions-item>
+      <el-descriptions-item label="状态">{{
+        formatEnableStatus(detailData.status)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="总资产">{{
+        detailData.totalAmount ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="可提现金额">{{
+        detailData.availableAmount ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="冻结金额">{{
+        detailData.frozenAmount ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="托管金额">{{
+        detailData.escrowAmount ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="佣金金额">{{
+        detailData.commissionAmount ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData.createTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="更新时间">{{
+        formatDate(detailData.updateTime)
+      }}</el-descriptions-item>
     </el-descriptions>
     <el-divider />
     <el-descriptions :column="3" border>
@@ -131,7 +151,12 @@ import { ref } from 'vue'
 import { DICT_TYPE } from '@/utils/dict'
 import { formatDate, dateFormatter } from '@/utils/formatTime'
 import { WalletAccountApi, type WalletAccountDetail } from '@/api/linbang/walletaccount'
-import { formatBizType, formatBooleanYesNo, formatEnableStatus, formatFlowType } from '../utils/display'
+import {
+  formatBizType,
+  formatBooleanYesNo,
+  formatEnableStatus,
+  formatFlowType
+} from '../utils/display'
 
 defineOptions({ name: 'WalletAccountDetailDialog' })
 

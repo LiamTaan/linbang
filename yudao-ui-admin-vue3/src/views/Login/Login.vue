@@ -95,16 +95,16 @@ $prefix-cls: #{$namespace}-login;
 }
 
 .brand-mark {
-  align-items: center;
+  display: inline-flex;
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+  font-weight: 700;
   background: rgb(255 255 255 / 16%);
   border: 1px solid rgb(255 255 255 / 24%);
   border-radius: 8px;
-  display: inline-flex;
-  font-size: 20px;
-  font-weight: 700;
-  height: 48px;
+  align-items: center;
   justify-content: center;
-  width: 48px;
 }
 </style>
 

@@ -78,12 +78,7 @@
         />
       </el-form-item>
       <el-form-item label="状态" prop="status">
-        <el-select
-          v-model="queryParams.status"
-          placeholder="请选择状态"
-          clearable
-          class="!w-240px"
-        >
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable class="!w-240px">
           <el-option
             v-for="item in ENABLE_STATUS_OPTIONS"
             :key="item.value"
@@ -107,14 +102,6 @@
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
         <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
         <el-button
-          type="primary"
-          plain
-          @click="openForm('create')"
-          v-hasPermi="['linbang:wallet:account:create']"
-        >
-          <Icon icon="ep:plus" class="mr-5px" /> 新增
-        </el-button>
-        <el-button
           type="success"
           plain
           @click="handleExport"
@@ -123,15 +110,6 @@
         >
           <Icon icon="ep:download" class="mr-5px" /> 导出
         </el-button>
-        <el-button
-            type="danger"
-            plain
-            :disabled="isEmpty(checkedIds)"
-            @click="handleDeleteBatch"
-            v-hasPermi="['linbang:wallet:account:delete']"
-        >
-          <Icon icon="ep:delete" class="mr-5px" /> 批量删除
-        </el-button>
       </el-form-item>
     </el-form>
   </ContentWrap>
@@ -139,14 +117,12 @@
   <!-- 列表 -->
   <ContentWrap>
     <el-table
-        row-key="id"
-        v-loading="loading"
-        :data="list"
-        :stripe="true"
-        :show-overflow-tooltip="true"
-        @selection-change="handleRowCheckboxChange"
+      row-key="id"
+      v-loading="loading"
+      :data="list"
+      :stripe="true"
+      :show-overflow-tooltip="true"
     >
-    <el-table-column type="selection" width="55" />
       <el-table-column label="用户" align="center" min-width="220">
         <template #default="{ row }">
           <div class="leading-20px">
@@ -188,22 +164,6 @@
           >
             详情
           </el-button>
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['linbang:wallet:account:update']"
-          >
-            编辑
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['linbang:wallet:account:delete']"
-          >
-            删除
-          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -216,29 +176,23 @@
     />
   </ContentWrap>
 
-  <!-- 表单弹窗：添加/修改 -->
-  <WalletAccountForm ref="formRef" @success="getList" />
   <WalletAccountDetailDialog ref="detailDialogRef" />
 </template>
 
 <script setup lang="ts">
 import { DICT_TYPE, getStrDictOptions } from '@/utils/dict'
-import { isEmpty } from '@/utils/is'
 import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
 import { WalletAccountApi, WalletAccount } from '@/api/linbang/walletaccount'
 import { ENABLE_STATUS_OPTIONS, formatEnableStatus } from '../utils/display'
-import WalletAccountForm from './WalletAccountForm.vue'
 import WalletAccountDetailDialog from './WalletAccountDetailDialog.vue'
 
 import { onMounted, reactive, ref } from 'vue'
-import { useI18n } from '@/hooks/web/useI18n'
 import { useMessage } from '@/hooks/web/useMessage'
 /** 钱包账户 列表 */
 defineOptions({ name: 'WalletAccount' })
 
 const message = useMessage() // 消息弹窗
-const { t } = useI18n() // 国际化
 
 const loading = ref(true) // 列表的加载中
 const list = ref<WalletAccount[]>([]) // 列表的数据
@@ -283,45 +237,9 @@ const resetQuery = () => {
   handleQuery()
 }
 
-/** 添加/修改操作 */
-const formRef = ref()
-const openForm = (type: string, id?: number) => {
-  formRef.value.open(type, id)
-}
-
 const detailDialogRef = ref()
 const openDetail = (id: number) => {
   detailDialogRef.value.open(id)
-}
-
-/** 删除按钮操作 */
-const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await WalletAccountApi.deleteWalletAccount(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
-}
-
-/** 批量删除钱包账户 */
-const handleDeleteBatch = async () => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    await WalletAccountApi.deleteWalletAccountList(checkedIds.value);
-    checkedIds.value = [];
-    message.success(t('common.delSuccess'))
-    await getList();
-  } catch {}
-}
-
-const checkedIds = ref<number[]>([])
-const handleRowCheckboxChange = (records: WalletAccount[]) => {
-  checkedIds.value = records.map((item) => item.id!);
 }
 
 /** 导出按钮操作 */

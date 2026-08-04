@@ -37,6 +37,7 @@ public class MemberUserRealNameDO extends BaseDO {
     /**
      * 身份证号
      */
+    @ToString.Exclude
     private String idCardNo;
     /**
      * 身份证正面文件ID

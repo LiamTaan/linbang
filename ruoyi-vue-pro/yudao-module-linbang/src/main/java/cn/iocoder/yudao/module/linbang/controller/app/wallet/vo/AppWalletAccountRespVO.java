@@ -50,6 +50,7 @@ public class AppWalletAccountRespVO {
     private List<BenefitItemRespVO> benefits;
 
     @Data
+    @Schema(description = "用户 App - 默认银行卡摘要 Response VO")
     public static class DefaultBankCardRespVO {
         @Schema(description = "银行卡 ID", example = "1")
         private Long id;
@@ -65,6 +66,7 @@ public class AppWalletAccountRespVO {
     }
 
     @Data
+    @Schema(description = "用户 App - 权益项目 Response VO")
     public static class BenefitItemRespVO {
         @Schema(description = "权益类型，例如 CREDIT_LEVEL、PROMOTER、PRIORITY_DISPATCH")
         private String benefitType;

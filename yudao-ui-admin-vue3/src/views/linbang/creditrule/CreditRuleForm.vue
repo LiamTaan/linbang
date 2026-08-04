@@ -41,8 +41,13 @@
   </Dialog>
 </template>
 <script setup lang="ts">
-import { CreditRuleApi, type CreditRuleDetail, type CreditRuleFormData } from '@/api/linbang/creditrule'
+import {
+  CreditRuleApi,
+  type CreditRuleDetail,
+  type CreditRuleFormData
+} from '@/api/linbang/creditrule'
 import { ENABLE_STATUS_OPTIONS, TRIGGER_TYPE_OPTIONS } from '../utils/display'
+import { requestDynamicKeyToken } from '../shared/dynamic-key'
 
 import { reactive, ref } from 'vue'
 import { useI18n } from '@/hooks/web/useI18n'
@@ -112,11 +117,14 @@ const submitForm = async () => {
   formLoading.value = true
   try {
     const data = formData.value as CreditRuleFormData
+    const verifyToken = await requestDynamicKeyToken(
+      formType.value === 'create' ? '新增信用分规则' : '修改信用分规则'
+    )
     if (formType.value === 'create') {
-      await CreditRuleApi.createCreditRule(data)
+      await CreditRuleApi.createCreditRule(data, verifyToken)
       message.success(t('common.createSuccess'))
     } else {
-      await CreditRuleApi.updateCreditRule(data)
+      await CreditRuleApi.updateCreditRule(data, verifyToken)
       message.success(t('common.updateSuccess'))
     }
     dialogVisible.value = false

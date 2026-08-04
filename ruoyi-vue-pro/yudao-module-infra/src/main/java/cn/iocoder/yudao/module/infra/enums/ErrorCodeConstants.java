@@ -34,6 +34,11 @@ public interface ErrorCodeConstants {
     ErrorCode FILE_NOT_EXISTS = new ErrorCode(1_001_003_001, "文件不存在");
     ErrorCode FILE_IS_EMPTY = new ErrorCode(1_001_003_002, "文件为空");
     ErrorCode FILE_PATH_INVALID = new ErrorCode(1_001_003_003, "文件路径不正确");
+    ErrorCode FILE_SIZE_EXCEED = new ErrorCode(1_001_003_004, "文件大小超过限制");
+    ErrorCode FILE_TYPE_INVALID = new ErrorCode(1_001_003_005, "文件类型不支持");
+    ErrorCode FILE_UPLOAD_RESERVATION_INVALID = new ErrorCode(1_001_003_006, "文件上传预约不存在、已失效或无权访问");
+    ErrorCode FILE_UPLOAD_SIZE_MISMATCH = new ErrorCode(1_001_003_007, "实际上传文件大小与申请大小不一致");
+    ErrorCode FILE_UPLOAD_TOO_MANY_PENDING = new ErrorCode(1_001_003_008, "待完成的文件上传过多，请稍后重试");
 
     // ========== 代码生成器 1-001-004-000 ==========
     ErrorCode CODEGEN_TABLE_EXISTS = new ErrorCode(1_001_004_002, "表定义已经存在");

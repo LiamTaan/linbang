@@ -6,8 +6,11 @@ import lombok.Data;
 
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.Max;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -21,10 +24,12 @@ public class OrderSplitRuleSaveReqVO {
 
     @Schema(description = "规则名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "金额超 200 自动拆单")
     @NotBlank(message = "规则名称不能为空")
+    @Size(max = 128, message = "规则名称不能超过 128 个字符")
     private String ruleName;
 
     @Schema(description = "规则编码", requiredMode = Schema.RequiredMode.REQUIRED, example = "AMOUNT_GE_200")
     @NotBlank(message = "规则编码不能为空")
+    @Pattern(regexp = "[A-Za-z0-9_]{2,64}", message = "规则编码仅支持 2 到 64 位字母、数字和下划线")
     private String ruleCode;
 
     @Schema(description = OpenApiSchemaConstants.RULE_MATCH_MODE, requiredMode = Schema.RequiredMode.REQUIRED, example = "ANY")
@@ -47,6 +52,7 @@ public class OrderSplitRuleSaveReqVO {
 
     @Schema(description = "触发最小服务人数，例如 >=2 人时触发", example = "2")
     @Min(value = 1, message = "触发最小服务人数必须大于 0")
+    @Max(value = 1000, message = "触发最小服务人数不能超过 1000")
     private Integer minWorkerCount;
 
     @Schema(description = OpenApiSchemaConstants.ORDER_SPLIT_MODE, requiredMode = Schema.RequiredMode.REQUIRED, example = "BY_PROGRESS")
@@ -56,6 +62,7 @@ public class OrderSplitRuleSaveReqVO {
     @Schema(description = "默认拆分单元数。命中规则但无法从金额/数量/人数推导出更多单元时，按该数量兜底", requiredMode = Schema.RequiredMode.REQUIRED, example = "2")
     @NotNull(message = "默认拆分单元数不能为空")
     @Min(value = 1, message = "默认拆分单元数必须大于 0")
+    @Max(value = 100, message = "默认拆分单元数不能超过 100")
     private Integer defaultUnitCount;
 
     @Schema(description = "单元金额上限，单位元", requiredMode = Schema.RequiredMode.REQUIRED, example = "200.00")
@@ -68,6 +75,8 @@ public class OrderSplitRuleSaveReqVO {
 
     @Schema(description = "优先级排序号，越小越优先", requiredMode = Schema.RequiredMode.REQUIRED, example = "10")
     @NotNull(message = "排序号不能为空")
+    @Min(value = 0, message = "排序号不能小于 0")
+    @Max(value = 100000, message = "排序号不能超过 100000")
     private Integer sortNo;
 
     @Schema(description = OpenApiSchemaConstants.ENABLE_DISABLE_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "ENABLE")
@@ -75,6 +84,7 @@ public class OrderSplitRuleSaveReqVO {
     private String status;
 
     @Schema(description = "备注", example = "工程类默认拆 3 单元")
+    @Size(max = 500, message = "备注不能超过 500 个字符")
     private String remark;
 
 }

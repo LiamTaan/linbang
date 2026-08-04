@@ -30,6 +30,8 @@ public class MessageOptimizationDO extends BaseDO {
 
     private String refType;
 
+    private String optimizationKey;
+
     private Long templateId;
 
     private Long campaignId;

@@ -39,7 +39,7 @@ final class DivideRuleDetailAssembler {
         BigDecimal partnerRate = defaultZero(divideRule.getPartnerRate());
         BigDecimal promoterRate = defaultZero(divideRule.getPromoterRate());
         BigDecimal taxWithholdRate = defaultZero(divideRule.getTaxWithholdRate());
-        BigDecimal totalRate = merchantRate.add(platformRate).add(partnerRate).add(promoterRate).add(taxWithholdRate);
+        BigDecimal totalRate = merchantRate.add(platformRate).add(partnerRate).add(promoterRate);
         respVO.setTotalRate(totalRate);
         respVO.setIncomeRate(merchantRate.add(partnerRate).add(promoterRate));
         respVO.setRateBalanced(totalRate.compareTo(ONE_HUNDRED) == 0);

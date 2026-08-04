@@ -1,5 +1,7 @@
 package cn.iocoder.yudao.module.infra.framework.file.core.client;
 
+import java.util.Arrays;
+
 /**
  * 文件客户端
  *
@@ -40,15 +42,36 @@ public interface FileClient {
      */
     byte[] getContent(String path) throws Exception;
 
+    /**
+     * 获得至多 {@code maxBytes + 1} 字节的文件内容，用于在不完整下载超大对象的前提下校验大小。
+     *
+     * @param path 相对路径
+     * @param maxBytes 允许的最大字节数
+     * @return 文件内容；返回长度大于 maxBytes 表示对象超限
+     */
+    default byte[] getContent(String path, long maxBytes) throws Exception {
+        if (maxBytes < 0 || maxBytes >= Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("maxBytes must be between 0 and Integer.MAX_VALUE - 1");
+        }
+        byte[] content = getContent(path);
+        if (content == null || content.length <= maxBytes) {
+            return content;
+        }
+        int resultLength = (int) maxBytes + 1;
+        return Arrays.copyOf(content, Math.min(content.length, resultLength));
+    }
+
     // ========== 文件签名，目前仅 S3 支持 ==========
 
     /**
      * 获得文件预签名地址，用于上传
      *
      * @param path 相对路径
+     * @param contentType 必须由上传请求使用的 MIME 类型
+     * @param contentLength 必须由上传请求使用的内容长度
      * @return 文件预签名地址
      */
-    default String presignPutUrl(String path) {
+    default String presignPutUrl(String path, String contentType, long contentLength) {
         throw new UnsupportedOperationException("不支持的操作");
     }
 

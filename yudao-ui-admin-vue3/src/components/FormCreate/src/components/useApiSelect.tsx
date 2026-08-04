@@ -33,6 +33,11 @@ export const useApiSelect = (option: ApiSelectProps) => {
         type: String,
         default: ''
       },
+      // 选项数组在接口响应中的路径，例如 list、data.items
+      dataPath: {
+        type: String,
+        default: ''
+      },
       // 请求参数
       data: {
         type: String,
@@ -114,35 +119,52 @@ export const useApiSelect = (option: ApiSelectProps) => {
           return
         }
 
-        switch (props.method) {
+        const safeUrl = normalizeApiPath(props.url)
+        if (!safeUrl) {
+          console.warn(`接口选择器地址[${props.url}]不是合法的站内接口路径`)
+          return
+        }
+
+        switch (props.method.toUpperCase()) {
           case 'GET':
-            let url: string = props.url
+            let url: string = safeUrl
             if (props.remote) {
               if (queryParam.value != undefined) {
+                const field = encodeURIComponent(props.remoteField)
+                const value = encodeURIComponent(String(queryParam.value))
                 if (url.includes('?')) {
-                  url = `${url}&${props.remoteField}=${queryParam.value}`
+                  url = `${url}&${field}=${value}`
                 } else {
-                  url = `${url}?${props.remoteField}=${queryParam.value}`
+                  url = `${url}?${field}=${value}`
                 }
               }
             }
             parseOptions(await request.get({ url: url }))
             break
           case 'POST':
-            const data: any = jsonParse(props.data)
+            const parsedData = jsonParse(props.data)
+            const data: Record<string, unknown> =
+              parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData)
+                ? parsedData
+                : {}
             if (props.remote) {
               data[props.remoteField] = queryParam.value
             }
-            parseOptions(await request.post({ url: props.url, data: data }))
+            parseOptions(await request.post({ url: safeUrl, data: data }))
             break
         }
       }
 
       function parseOptions(data: any) {
-        //  情况一：如果有自定义解析函数优先使用自定义解析
-        if (!isEmpty(props.parseFunc)) {
-          options.value = parseFunc()?.(data)
-          return
+        // 自定义响应仅允许通过属性路径提取，禁止执行表单配置中的 JavaScript。
+        const configuredPath = props.dataPath || props.parseFunc
+        if (!isEmpty(configuredPath)) {
+          const customOptions = getValueByPath(data, configuredPath)
+          if (Array.isArray(customOptions)) {
+            parseOptions0(customOptions)
+            return
+          }
+          console.warn(`接口[${props.url}]的选项数组路径[${configuredPath}]无效`)
         }
         // 情况二：返回的直接是一个列表
         if (Array.isArray(data)) {
@@ -183,26 +205,17 @@ export const useApiSelect = (option: ApiSelectProps) => {
         console.warn(`接口[${props.url}] 返回结果不是一个数组`)
       }
 
-      function parseFunc() {
-        let parse: any = null
-        if (!!props.parseFunc) {
-          // 解析字符串函数
-          parse = new Function(`return ${props.parseFunc}`)()
-        }
-        return parse
-      }
-
       function parseExpression(data: any, template: string) {
         // 检测是否使用了表达式
         if (template.indexOf('${') === -1) {
-          return data[template]
+          return getValueByPath(data, template)
         }
         // 正则表达式匹配模板字符串中的 ${...}
         const pattern = /\$\{([^}]*)}/g
         // 使用replace函数配合正则表达式和回调函数来进行替换
         return template.replace(pattern, (_, expr) => {
           // expr 是匹配到的 ${} 内的表达式（这里是属性名），从 data 中获取对应的值
-          const result = data[expr.trim()] // 去除前后空白，以防用户输入带空格的属性名
+          const result = getValueByPath(data, expr.trim())
           if (!result) {
             console.warn(
               `接口选择器选项模版[${template}][${expr.trim()}] 解析值失败结果为[${result}], 请检查属性名称是否存在于接口返回值中,存在则忽略此条！！！`
@@ -210,6 +223,49 @@ export const useApiSelect = (option: ApiSelectProps) => {
           }
           return result
         })
+      }
+
+      function getValueByPath(data: any, rawPath: string): any {
+        let path = rawPath.trim()
+        if (path === 'data') {
+          return data
+        }
+        if (path.startsWith('data.')) {
+          path = path.slice(5)
+        }
+        const segments = path.split('.')
+        if (
+          !segments.length ||
+          segments.some(
+            (segment) =>
+              !/^[A-Za-z_$][\w$]*$/.test(segment) ||
+              ['__proto__', 'prototype', 'constructor'].includes(segment)
+          )
+        ) {
+          return undefined
+        }
+        return segments.reduce((value, segment) => value?.[segment], data)
+      }
+
+      function normalizeApiPath(rawUrl: string): string | null {
+        const url = rawUrl.trim()
+        if (
+          !url.startsWith('/') ||
+          url.startsWith('//') ||
+          url.includes('\\') ||
+          /[\u0000-\u001f]/.test(url)
+        ) {
+          return null
+        }
+        try {
+          const parsed = new URL(url, window.location.origin)
+          if (parsed.origin !== window.location.origin || parsed.hash) {
+            return null
+          }
+          return `${parsed.pathname}${parsed.search}`
+        } catch {
+          return null
+        }
       }
 
       const remoteMethod = async (query: any) => {

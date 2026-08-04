@@ -8,21 +8,36 @@
       v-loading="formLoading"
     >
       <el-form-item label="关联订单" prop="orderId">
-        <el-input :model-value="selectedOrderLabel" placeholder="请选择关联订单" readonly @click="openOrderDialog">
+        <el-input
+          :model-value="selectedOrderLabel"
+          placeholder="请选择关联订单"
+          readonly
+          @click="openOrderDialog"
+        >
           <template #append>
             <el-button @click="openOrderDialog">选择</el-button>
           </template>
         </el-input>
       </el-form-item>
       <el-form-item label="关联单元" prop="unitId">
-        <el-input :model-value="selectedUnitLabel" placeholder="请选择关联单元" readonly @click="openUnitDialog">
+        <el-input
+          :model-value="selectedUnitLabel"
+          placeholder="请选择关联单元"
+          readonly
+          @click="openUnitDialog"
+        >
           <template #append>
             <el-button @click="openUnitDialog">选择</el-button>
           </template>
         </el-input>
       </el-form-item>
       <el-form-item label="服务商" prop="merchantId">
-        <el-input :model-value="selectedMerchantLabel" placeholder="请选择服务商" readonly @click="openMerchantDialog">
+        <el-input
+          :model-value="selectedMerchantLabel"
+          placeholder="请选择服务商"
+          readonly
+          @click="openMerchantDialog"
+        >
           <template #append>
             <el-button @click="openMerchantDialog">选择</el-button>
           </template>
@@ -68,7 +83,11 @@ import {
   type OrderAcceptRecord,
   type OrderAcceptRecordDetail
 } from '@/api/linbang/orderacceptrecord'
-import { MerchantInfoApi, type MerchantInfo, type MerchantInfoDetail } from '@/api/linbang/merchantinfo'
+import {
+  MerchantInfoApi,
+  type MerchantInfo,
+  type MerchantInfoDetail
+} from '@/api/linbang/merchantinfo'
 import { OrderInfoApi, type OrderInfo } from '@/api/linbang/orderinfo'
 import { OrderUnitApi, type OrderUnit } from '@/api/linbang/orderunit'
 import { ACCEPT_RESULT_OPTIONS } from '../utils/display'

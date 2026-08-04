@@ -20,7 +20,7 @@
         </div>
         <div class="flex w-300px flex-row justify-end" v-if="activeConversation">
           <el-button type="primary" bg plain size="small" @click="openChatConversationUpdateForm">
-            <span v-html="activeConversation?.modelName"></span>
+            <span>{{ activeConversation?.modelName }}</span>
             <Icon icon="ep:setting" class="ml-10px" />
           </el-button>
           <el-button size="small" class="p-10px" @click="handlerMessageClear">

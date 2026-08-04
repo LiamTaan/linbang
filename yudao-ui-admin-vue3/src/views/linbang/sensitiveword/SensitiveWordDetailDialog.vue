@@ -3,18 +3,32 @@
     <el-descriptions :column="2" label-class-name="desc-label">
       <el-descriptions-item label="词条ID">{{ detailData.id ?? '-' }}</el-descriptions-item>
       <el-descriptions-item label="关键词">{{ detailData.word || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="词库类型">{{ formatSensitiveWordType(detailData.wordType) }}</el-descriptions-item>
-      <el-descriptions-item label="匹配方式">{{ formatSensitiveWordMatchType(detailData.matchType) }}</el-descriptions-item>
-      <el-descriptions-item label="拦截级别">{{ detailData.blockLevel || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="适用场景">{{ detailData.sceneType || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="替换文案">{{ detailData.replaceText || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="词库类型">{{
+        formatSensitiveWordType(detailData.wordType)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="匹配方式">{{
+        formatSensitiveWordMatchType(detailData.matchType)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="拦截级别">{{
+        detailData.blockLevel || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="适用场景">{{
+        detailData.sceneType || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="替换文案">{{
+        detailData.replaceText || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="状态">
         <el-tag :type="detailData.status === 'ENABLE' ? 'success' : 'info'">
           {{ formatEnableStatus(detailData.status) }}
         </el-tag>
       </el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData.createTime) }}</el-descriptions-item>
-      <el-descriptions-item label="更新时间">{{ formatDate(detailData.updateTime) }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData.createTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="更新时间">{{
+        formatDate(detailData.updateTime)
+      }}</el-descriptions-item>
     </el-descriptions>
     <el-divider />
     <el-descriptions :column="3" border>
@@ -53,7 +67,11 @@
 import { ref } from 'vue'
 import { dateFormatter, formatDate } from '@/utils/formatTime'
 import { SensitiveWordApi, type SensitiveWordDetail } from '@/api/linbang/sensitiveword'
-import { formatEnableStatus, formatSensitiveWordMatchType, formatSensitiveWordType } from '../utils/display'
+import {
+  formatEnableStatus,
+  formatSensitiveWordMatchType,
+  formatSensitiveWordType
+} from '../utils/display'
 
 defineOptions({ name: 'SensitiveWordDetailDialog' })
 

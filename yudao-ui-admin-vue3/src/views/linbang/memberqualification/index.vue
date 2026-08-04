@@ -67,12 +67,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
       </el-form-item>
     </el-form>
   </ContentWrap>
@@ -103,9 +99,10 @@
       <el-table-column label="资质附件" align="center" min-width="200">
         <template #default="{ row }">
           <el-link
-            v-if="row.fileId && fileMap[row.fileId]?.url"
-            :href="fileMap[row.fileId].url"
+            v-if="row.fileId && getOpenableFileUrl(fileMap[row.fileId])"
+            :href="getOpenableFileUrl(fileMap[row.fileId])"
             target="_blank"
+            rel="noopener noreferrer"
             type="primary"
             :underline="false"
           >
@@ -123,18 +120,42 @@
       <el-table-column label="结束日期" align="center" prop="validEndDate" width="120" />
       <el-table-column label="审核状态" align="center" prop="auditStatus" width="110">
         <template #default="{ row }">
-          <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+          <dict-tag
+            v-if="row.auditStatus"
+            :type="DICT_TYPE.LB_AUDIT_STATUS"
+            :value="row.auditStatus"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="审核备注" align="center" prop="auditRemark" min-width="160" />
       <el-table-column label="驳回原因" align="center" prop="rejectReason" min-width="160" />
       <el-table-column label="审核人" align="center" prop="auditBy" width="100" />
-      <el-table-column label="审核时间" align="center" prop="auditTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="操作" align="center" fixed="right" :show-overflow-tooltip="false" min-width="180">
+      <el-table-column
+        label="审核时间"
+        align="center"
+        prop="auditTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
+      <el-table-column
+        label="操作"
+        align="center"
+        fixed="right"
+        :show-overflow-tooltip="false"
+        min-width="180"
+      >
         <template #default="{ row }">
-          <div class="flex flex-wrap items-center justify-center gap-x-8px gap-y-4px whitespace-normal">
+          <div
+            class="flex flex-wrap items-center justify-center gap-x-8px gap-y-4px whitespace-normal"
+          >
             <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
             <el-button
               link
@@ -167,13 +188,18 @@
         />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="资质名称">{{ detailData?.qualificationName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="资质编号">{{ detailData?.qualificationNo || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="资质名称">{{
+        detailData?.qualificationName || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="资质编号">{{
+        detailData?.qualificationNo || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="资质附件">
         <el-link
-          v-if="detailData?.fileId && fileMap[detailData.fileId]?.url"
-          :href="fileMap[detailData.fileId].url"
+          v-if="detailData?.fileId && getOpenableFileUrl(fileMap[detailData.fileId])"
+          :href="getOpenableFileUrl(fileMap[detailData.fileId])"
           target="_blank"
+          rel="noopener noreferrer"
           type="primary"
           :underline="false"
         >
@@ -181,18 +207,38 @@
         </el-link>
         <span v-else>{{ formatQualificationFile(detailData?.fileId) }}</span>
       </el-descriptions-item>
-      <el-descriptions-item label="视频凭证">{{ detailData?.videoFileId || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="视频凭证">{{
+        detailData?.videoFileId || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="审核状态">
-        <dict-tag v-if="detailData?.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="detailData.auditStatus" />
+        <dict-tag
+          v-if="detailData?.auditStatus"
+          :type="DICT_TYPE.LB_AUDIT_STATUS"
+          :value="detailData.auditStatus"
+        />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="审核时间">{{ formatDate(detailData?.auditTime) }}</el-descriptions-item>
-      <el-descriptions-item label="优先权益">{{ detailData?.priorityEnabled ? '生效中' : '未生效' }}</el-descriptions-item>
-      <el-descriptions-item label="有效开始">{{ detailData?.validStartDate || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="有效结束">{{ detailData?.validEndDate || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="已批准豁免数">{{ detailData?.summary?.approvedExemptionCount ?? 0 }}</el-descriptions-item>
-      <el-descriptions-item label="审核备注" :span="2">{{ detailData?.auditRemark || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="驳回原因" :span="2">{{ detailData?.rejectReason || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="审核时间">{{
+        formatDate(detailData?.auditTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="优先权益">{{
+        detailData?.priorityEnabled ? '生效中' : '未生效'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="有效开始">{{
+        detailData?.validStartDate || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="有效结束">{{
+        detailData?.validEndDate || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="已批准豁免数">{{
+        detailData?.summary?.approvedExemptionCount ?? 0
+      }}</el-descriptions-item>
+      <el-descriptions-item label="审核备注" :span="2">{{
+        detailData?.auditRemark || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="驳回原因" :span="2">{{
+        detailData?.rejectReason || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">用户与实名上下文</el-divider>
@@ -204,7 +250,11 @@
           <div class="mt-6px text-13px">{{ detailData?.user?.mobile || '-' }}</div>
           <div class="mt-6px text-[var(--el-text-color-secondary)]">
             角色：
-            <dict-tag v-if="detailData?.user?.currentRoleCode" :type="DICT_TYPE.LB_ROLE_CODE" :value="detailData.user.currentRoleCode" />
+            <dict-tag
+              v-if="detailData?.user?.currentRoleCode"
+              :type="DICT_TYPE.LB_ROLE_CODE"
+              :value="detailData.user.currentRoleCode"
+            />
             <span v-else>-</span>
           </div>
         </el-card>
@@ -228,7 +278,9 @@
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">服务商信息</div>
-          <div class="mt-8px text-16px font-600">{{ detailData?.merchant?.merchantName || '-' }}</div>
+          <div class="mt-8px text-16px font-600">{{
+            detailData?.merchant?.merchantName || '-'
+          }}</div>
           <div class="mt-6px text-13px">{{ detailData?.merchant?.contactName || '-' }}</div>
           <div class="mt-6px text-[var(--el-text-color-secondary)]">
             状态：{{ formatEnableStatus(detailData?.merchant?.status) }}
@@ -238,17 +290,28 @@
     </el-row>
 
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="用户编号">{{ detailData?.user?.userNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="最近登录时间">{{ formatDate(detailData?.user?.lastLoginTime) }}</el-descriptions-item>
+      <el-descriptions-item label="用户编号">{{
+        detailData?.user?.userNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="最近登录时间">{{
+        formatDate(detailData?.user?.lastLoginTime)
+      }}</el-descriptions-item>
       <el-descriptions-item label="服务商联系人">
         {{ detailData?.merchant?.contactMobile || '-' }}
       </el-descriptions-item>
       <el-descriptions-item label="信用分 / 等级">
-        {{ detailData?.merchant?.creditScore ?? '-' }} / {{ detailData?.merchant?.creditLevel || '-' }}
+        {{ detailData?.merchant?.creditScore ?? '-' }} /
+        {{ detailData?.merchant?.creditLevel || '-' }}
       </el-descriptions-item>
-      <el-descriptions-item label="最近入驻申请">{{ detailData?.latestEntry?.entryNo || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="最近入驻申请">{{
+        detailData?.latestEntry?.entryNo || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="入驻状态">
-        <dict-tag v-if="detailData?.latestEntry?.status" :type="DICT_TYPE.LB_MERCHANT_ENTRY_STATUS" :value="detailData.latestEntry.status" />
+        <dict-tag
+          v-if="detailData?.latestEntry?.status"
+          :type="DICT_TYPE.LB_MERCHANT_ENTRY_STATUS"
+          :value="detailData.latestEntry.status"
+        />
         <span v-else>-</span>
       </el-descriptions-item>
     </el-descriptions>
@@ -259,7 +322,8 @@
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">同用户资质 / 已通过</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.sameUserQualificationCount ?? 0 }} / {{ detailData?.summary?.approvedQualificationCount ?? 0 }}
+            {{ detailData?.summary?.sameUserQualificationCount ?? 0 }} /
+            {{ detailData?.summary?.approvedQualificationCount ?? 0 }}
           </div>
         </el-card>
       </el-col>
@@ -267,7 +331,8 @@
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">已驳回 / 30天内到期</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.rejectedQualificationCount ?? 0 }} / {{ detailData?.summary?.expiringSoonCount ?? 0 }}
+            {{ detailData?.summary?.rejectedQualificationCount ?? 0 }} /
+            {{ detailData?.summary?.expiringSoonCount ?? 0 }}
           </div>
         </el-card>
       </el-col>
@@ -275,7 +340,8 @@
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">最新信用分 / 等级</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.latestCreditScore ?? '-' }} / {{ detailData?.summary?.latestCreditLevel || '-' }}
+            {{ detailData?.summary?.latestCreditScore ?? '-' }} /
+            {{ detailData?.summary?.latestCreditLevel || '-' }}
           </div>
         </el-card>
       </el-col>
@@ -303,12 +369,18 @@
       <el-table-column label="资质编号" prop="qualificationNo" width="160" />
       <el-table-column label="审核状态" prop="auditStatus" width="110">
         <template #default="{ row }">
-          <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+          <dict-tag
+            v-if="row.auditStatus"
+            :type="DICT_TYPE.LB_AUDIT_STATUS"
+            :value="row.auditStatus"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="有效期" min-width="180">
-        <template #default="{ row }">{{ row.validStartDate || '-' }} ~ {{ row.validEndDate || '-' }}</template>
+        <template #default="{ row }"
+          >{{ row.validStartDate || '-' }} ~ {{ row.validEndDate || '-' }}</template
+        >
       </el-table-column>
     </el-table>
     <el-empty v-else description="暂无其他资质" :image-size="80" />
@@ -324,12 +396,19 @@
       <el-table-column label="豁免类型" prop="exemptionType" width="140" />
       <el-table-column label="审核状态" prop="auditStatus" width="110">
         <template #default="{ row }">
-          <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+          <dict-tag
+            v-if="row.auditStatus"
+            :type="DICT_TYPE.LB_AUDIT_STATUS"
+            :value="row.auditStatus"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="生效时间" min-width="220">
-        <template #default="{ row }">{{ formatDate(row.effectiveStartTime) }} ~ {{ formatDate(row.effectiveEndTime) }}</template>
+        <template #default="{ row }"
+          >{{ formatDate(row.effectiveStartTime) }} ~
+          {{ formatDate(row.effectiveEndTime) }}</template
+        >
       </el-table-column>
       <el-table-column label="驳回原因" prop="rejectReason" min-width="180" />
       <el-table-column label="申请原因" prop="reason" min-width="220" />
@@ -391,7 +470,11 @@
           placeholder="请输入审核备注"
         />
       </el-form-item>
-      <el-form-item v-if="auditFormData.auditStatus === 'REJECTED'" label="驳回原因" prop="rejectReason">
+      <el-form-item
+        v-if="auditFormData.auditStatus === 'REJECTED'"
+        label="驳回原因"
+        prop="rejectReason"
+      >
         <el-input
           v-model="auditFormData.rejectReason"
           type="textarea"
@@ -422,7 +505,13 @@ import {
   type MemberQualificationAuditReqVO
 } from '@/api/linbang/memberqualification'
 import { formatEnableStatus, formatTriggerType } from '../utils/display'
-import { formatFileBrief, loadFilesByIds, type FileLookupMap } from '../shared/file-display'
+import {
+  formatFileBrief,
+  getOpenableFileUrl,
+  loadFilesByIds,
+  type FileLookupMap
+} from '../shared/file-display'
+import { requestDynamicKeyToken } from '../shared/dynamic-key'
 
 defineOptions({ name: 'MemberQualification' })
 
@@ -504,7 +593,9 @@ const auditFormRules = reactive<FormRules>({
   ]
 })
 
-const formatUserDisplay = (row?: Pick<MemberQualification, 'userNickname' | 'userMobile' | 'userNo' | 'userId'>) => {
+const formatUserDisplay = (
+  row?: Pick<MemberQualification, 'userNickname' | 'userMobile' | 'userNo' | 'userId'>
+) => {
   if (!row) {
     return '-'
   }
@@ -548,13 +639,17 @@ const submitAudit = async () => {
   await auditFormRef.value?.validate()
   try {
     await message.confirm('确认提交用户资质审核结果？')
+    const verifyToken = await requestDynamicKeyToken('用户资质审核')
     auditLoading.value = true
-    await MemberQualificationApi.auditMemberQualification({
-      id: auditFormData.id,
-      auditStatus: auditFormData.auditStatus,
-      auditRemark: auditFormData.auditRemark,
-      rejectReason: auditFormData.auditStatus === 'REJECTED' ? auditFormData.rejectReason : ''
-    })
+    await MemberQualificationApi.auditMemberQualification(
+      {
+        id: auditFormData.id,
+        auditStatus: auditFormData.auditStatus,
+        auditRemark: auditFormData.auditRemark,
+        rejectReason: auditFormData.auditStatus === 'REJECTED' ? auditFormData.rejectReason : ''
+      },
+      verifyToken
+    )
     message.success('用户资质审核成功')
     auditDialogVisible.value = false
     await getList()

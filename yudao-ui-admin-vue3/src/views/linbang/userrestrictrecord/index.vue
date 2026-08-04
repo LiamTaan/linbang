@@ -1,14 +1,38 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="用户" prop="userKeyword">
-        <el-input v-model="queryParams.userKeyword" placeholder="用户编号/昵称/手机号" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.userKeyword"
+          placeholder="用户编号/昵称/手机号"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="限制类型" prop="restrictType">
-        <el-input v-model="queryParams.restrictType" placeholder="如 PUBLISH/ACCEPT" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.restrictType"
+          placeholder="如 PUBLISH/ACCEPT"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="状态" prop="status">
-        <el-input v-model="queryParams.status" placeholder="如 ACTIVE/RELEASED" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.status"
+          placeholder="如 ACTIVE/RELEASED"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="创建时间" prop="createTime">
         <el-date-picker
@@ -43,7 +67,9 @@
       <el-table-column label="状态" prop="status" width="120" />
       <el-table-column label="来源规则" prop="sourceRuleCode" min-width="160" />
       <el-table-column label="来源业务" min-width="140">
-        <template #default="{ row }">{{ row.sourceBizType || '-' }} / {{ row.sourceBizId || '-' }}</template>
+        <template #default="{ row }"
+          >{{ row.sourceBizType || '-' }} / {{ row.sourceBizId || '-' }}</template
+        >
       </el-table-column>
       <el-table-column label="生效时间" prop="startTime" :formatter="dateFormatter" width="180" />
       <el-table-column label="结束时间" prop="endTime" :formatter="dateFormatter" width="180" />
@@ -64,30 +90,68 @@
         </template>
       </el-table-column>
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 
   <Dialog v-model="detailVisible" title="限制记录详情" width="720px">
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="用户">{{ detailData?.userNickname || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="手机号">{{ detailData?.userMobile || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="限制类型">{{ detailData?.restrictType || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="用户">{{
+        detailData?.userNickname || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="手机号">{{
+        detailData?.userMobile || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="限制类型">{{
+        detailData?.restrictType || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="状态">{{ detailData?.status || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="来源规则">{{ detailData?.sourceRuleCode || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="来源业务">{{ detailData?.sourceBizType || '-' }} / {{ detailData?.sourceBizId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="生效时间">{{ detailData?.startTime || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="来源规则">{{
+        detailData?.sourceRuleCode || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="来源业务"
+        >{{ detailData?.sourceBizType || '-' }} /
+        {{ detailData?.sourceBizId || '-' }}</el-descriptions-item
+      >
+      <el-descriptions-item label="生效时间">{{
+        detailData?.startTime || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="结束时间">{{ detailData?.endTime || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="解除人">{{ detailData?.releasedBy || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="解除时间">{{ detailData?.releasedTime || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="原因" :span="2">{{ detailData?.reason || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="解除备注" :span="2">{{ detailData?.releaseRemark || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="解除人">{{
+        detailData?.releasedBy || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="解除时间">{{
+        detailData?.releasedTime || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="原因" :span="2">{{
+        detailData?.reason || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="解除备注" :span="2">{{
+        detailData?.releaseRemark || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
   </Dialog>
 
   <Dialog v-model="releaseVisible" title="解除限制" width="520px">
-    <el-form ref="releaseFormRef" :model="releaseFormData" :rules="releaseFormRules" label-width="88px">
+    <el-form
+      ref="releaseFormRef"
+      :model="releaseFormData"
+      :rules="releaseFormRules"
+      label-width="88px"
+    >
       <el-form-item label="限制记录">
-        <el-input :model-value="currentRow ? `${currentRow.userNickname || '-'} / ${currentRow.restrictType || '-'}` : ''" disabled />
+        <el-input
+          :model-value="
+            currentRow
+              ? `${currentRow.userNickname || '-'} / ${currentRow.restrictType || '-'}`
+              : ''
+          "
+          disabled
+        />
       </el-form-item>
       <el-form-item label="解除备注" prop="releaseRemark">
         <el-input

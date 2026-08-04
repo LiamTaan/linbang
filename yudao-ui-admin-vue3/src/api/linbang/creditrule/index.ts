@@ -1,4 +1,5 @@
 import request from '@/config/axios'
+import { buildDynamicKeyHeaders } from '@/api/linbang/security'
 
 /** 信用分规则信息 */
 export interface CreditRule {
@@ -52,23 +53,37 @@ export const CreditRuleApi = {
   },
 
   // 新增信用分规则
-  createCreditRule: async (data: CreditRuleFormData) => {
-    return await request.post({ url: `/review/credit-rule/create`, data })
+  createCreditRule: async (data: CreditRuleFormData, verifyToken?: string) => {
+    return await request.post({
+      url: `/review/credit-rule/create`,
+      data,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   },
 
   // 修改信用分规则
-  updateCreditRule: async (data: CreditRuleFormData) => {
-    return await request.put({ url: `/review/credit-rule/update`, data })
+  updateCreditRule: async (data: CreditRuleFormData, verifyToken?: string) => {
+    return await request.put({
+      url: `/review/credit-rule/update`,
+      data,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   },
 
   // 删除信用分规则
-  deleteCreditRule: async (id: number) => {
-    return await request.delete({ url: `/review/credit-rule/delete?id=` + id })
+  deleteCreditRule: async (id: number, verifyToken?: string) => {
+    return await request.delete({
+      url: `/review/credit-rule/delete?id=` + id,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   },
 
   /** 批量删除信用分规则 */
-  deleteCreditRuleList: async (ids: number[]) => {
-    return await request.delete({ url: `/review/credit-rule/delete-list?ids=${ids.join(',')}` })
+  deleteCreditRuleList: async (ids: number[], verifyToken?: string) => {
+    return await request.delete({
+      url: `/review/credit-rule/delete-list?ids=${ids.join(',')}`,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   },
 
   // 导出信用分规则 Excel

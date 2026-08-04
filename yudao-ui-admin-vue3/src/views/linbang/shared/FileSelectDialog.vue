@@ -58,16 +58,24 @@
         <el-table-column label="预览" width="120" align="center">
           <template #default="{ row }">
             <el-image
-              v-if="isImage(row)"
+              v-if="isImage(row) && isOpenableUrl(row.url)"
               class="h-60px w-60px rounded-4px"
               fit="cover"
               :src="row.url"
               :preview-src-list="[row.url]"
               preview-teleported
             />
-            <el-link v-else :href="row.url" target="_blank" type="primary" :underline="false">
+            <el-link
+              v-else-if="isOpenableUrl(row.url)"
+              :href="row.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              type="primary"
+              :underline="false"
+            >
               查看文件
             </el-link>
+            <span v-else>不可预览</span>
           </template>
         </el-table-column>
         <el-table-column label="文件大小" width="120" align="center">
@@ -75,7 +83,12 @@
             {{ formatFileSizeValue(row.size) }}
           </template>
         </el-table-column>
-        <el-table-column label="上传时间" prop="createTime" width="180" :formatter="dateFormatter" />
+        <el-table-column
+          label="上传时间"
+          prop="createTime"
+          width="180"
+          :formatter="dateFormatter"
+        />
       </el-table>
 
       <Pagination
@@ -100,6 +113,7 @@ import { reactive, ref } from 'vue'
 import { dateFormatter } from '@/utils/formatTime'
 import { fileSizeFormatter } from '@/utils'
 import { useMessage } from '@/hooks/web/useMessage'
+import { isOpenableUrl } from '@/utils/url'
 import FileForm from '@/views/infra/file/FileForm.vue'
 import { getFile, getFilePage, type FileVO } from '@/api/infra/file'
 

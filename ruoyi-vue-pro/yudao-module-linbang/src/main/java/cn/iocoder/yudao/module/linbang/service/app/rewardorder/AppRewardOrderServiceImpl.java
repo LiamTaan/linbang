@@ -13,9 +13,11 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.rewardorderparticipation.RewardOrderParticipationDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.showcasereward.ShowcaseRewardDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.rewardorderparticipation.RewardOrderParticipationMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.showcasereward.ShowcaseRewardMapper;
 import cn.iocoder.yudao.module.linbang.service.match.ShowcaseRewardService;
 import cn.iocoder.yudao.module.linbang.service.app.merchant.AppMerchantPriorityFacadeService;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -23,6 +25,9 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 import javax.validation.Valid;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -43,6 +48,8 @@ public class AppRewardOrderServiceImpl implements AppRewardOrderService {
     private ShowcaseRewardService showcaseRewardService;
     @Resource
     private RewardOrderParticipationMapper rewardOrderParticipationMapper;
+    @Resource
+    private ShowcaseRewardMapper showcaseRewardMapper;
 
     @Override
     public Long createRewardOrder(Long authUserId, @Valid AppRewardOrderCreateReqVO reqVO) {
@@ -72,18 +79,23 @@ public class AppRewardOrderServiceImpl implements AppRewardOrderService {
     @Transactional(rollbackFor = Exception.class)
     public Long participateRewardOrder(Long authUserId, @Valid AppRewardOrderParticipateReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
-        ShowcaseRewardDO reward = showcaseRewardService.getReward(reqVO.getRewardOrderId());
+        ShowcaseRewardDO reward = showcaseRewardMapper.selectOneForUpdate(ShowcaseRewardDO::getId,
+                reqVO.getRewardOrderId());
         if (reward == null) {
             throw exception(ORDER_INFO_NOT_EXISTS);
+        }
+        if (!"APPROVED".equalsIgnoreCase(reward.getAuditStatus())
+                || (reward.getEffectiveStartTime() != null && java.time.LocalDateTime.now().isBefore(reward.getEffectiveStartTime()))
+                || (reward.getEffectiveEndTime() != null && !java.time.LocalDateTime.now().isBefore(reward.getEffectiveEndTime()))) {
+            throw exception(ORDER_ACCESS_DENIED);
         }
         if (Objects.equals(reward.getUserId(), loginUser.getId())) {
             throw exception(ORDER_ACCESS_DENIED);
         }
-        if (rewardOrderParticipationMapper.existsByRewardOrderIdAndParticipantUserId(reward.getId(), loginUser.getId())) {
-            List<RewardOrderParticipationDO> exists = rewardOrderParticipationMapper.selectListByRewardOrderId(reward.getId()).stream()
-                    .filter(item -> Objects.equals(item.getParticipantUserId(), loginUser.getId()))
-                    .collect(Collectors.toList());
-            return exists.isEmpty() ? null : exists.get(0).getId();
+        RewardOrderParticipationDO existing = rewardOrderParticipationMapper
+                .selectByRewardAndParticipantForUpdate(reward.getId(), loginUser.getId());
+        if (existing != null) {
+            return existing.getId();
         }
         RewardOrderParticipationDO participation = RewardOrderParticipationDO.builder()
                 .rewardOrderId(reward.getId())
@@ -94,7 +106,16 @@ public class AppRewardOrderServiceImpl implements AppRewardOrderService {
                 .status("PENDING")
                 .participateRemark(reqVO.getParticipateRemark())
                 .build();
-        rewardOrderParticipationMapper.insert(participation);
+        try {
+            rewardOrderParticipationMapper.insert(participation);
+        } catch (DuplicateKeyException ex) {
+            RewardOrderParticipationDO concurrent = rewardOrderParticipationMapper
+                    .selectByRewardAndParticipantForUpdate(reward.getId(), loginUser.getId());
+            if (concurrent != null) {
+                return concurrent.getId();
+            }
+            throw ex;
+        }
         return participation.getId();
     }
 
@@ -104,8 +125,13 @@ public class AppRewardOrderServiceImpl implements AppRewardOrderService {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
         PageResult<RewardOrderParticipationDO> pageResult = rewardOrderParticipationMapper.selectPageByParticipant(loginUser.getId(), reqVO);
         List<AppRewardOrderParticipationRespVO> list = new ArrayList<>();
+        Set<Long> rewardIds = pageResult.getList().stream().map(RewardOrderParticipationDO::getRewardOrderId)
+                .filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, ShowcaseRewardDO> rewardMap = rewardIds.isEmpty() ? Collections.emptyMap()
+                : showcaseRewardMapper.selectBatchIds(rewardIds).stream()
+                .collect(Collectors.toMap(ShowcaseRewardDO::getId, item -> item, (left, right) -> left));
         for (RewardOrderParticipationDO item : pageResult.getList()) {
-            ShowcaseRewardDO reward = showcaseRewardService.getReward(item.getRewardOrderId());
+            ShowcaseRewardDO reward = rewardMap.get(item.getRewardOrderId());
             AppRewardOrderParticipationRespVO respVO = new AppRewardOrderParticipationRespVO();
             respVO.setId(item.getId());
             respVO.setRewardOrderId(item.getRewardOrderId());

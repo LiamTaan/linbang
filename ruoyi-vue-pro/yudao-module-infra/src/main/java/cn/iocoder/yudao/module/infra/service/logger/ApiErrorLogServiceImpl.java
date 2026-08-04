@@ -49,7 +49,8 @@ public class ApiErrorLogServiceImpl implements ApiErrorLogService {
             }
         } catch (Exception ex) {
             // 兜底处理，目前只有 yudao-cloud 会发生：https://gitee.com/yudaocode/yudao-cloud-mini/issues/IC1O0A
-            log.error("[createApiErrorLog][记录时({}) 发生异常]", createDTO, ex);
+            log.error("[createApiErrorLog][traceId({}) url({}) 记录失败]",
+                    createDTO.getTraceId(), createDTO.getRequestUrl(), ex);
         }
     }
 

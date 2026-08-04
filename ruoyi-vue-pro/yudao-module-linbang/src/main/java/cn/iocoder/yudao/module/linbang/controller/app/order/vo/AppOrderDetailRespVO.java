@@ -477,7 +477,7 @@ public class AppOrderDetailRespVO {
         @Schema(description = "退款原因")
         private String reason;
 
-        @Schema(description = "渠道失败原因")
+        @Schema(description = "面向用户的稳定退款失败说明，不包含渠道原始错误或内部诊断信息")
         private String channelErrorMsg;
 
         @Schema(description = "退款成功时间")

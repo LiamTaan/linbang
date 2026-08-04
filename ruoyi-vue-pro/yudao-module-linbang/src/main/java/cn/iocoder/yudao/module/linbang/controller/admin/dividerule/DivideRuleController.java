@@ -14,7 +14,7 @@ import javax.servlet.http.*;
 import java.util.*;
 import java.io.IOException;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -90,7 +90,7 @@ public class DivideRuleController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportDivideRuleExcel(@Valid DivideRulePageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<DivideRuleRespVO> list = divideRuleService.getDivideRulePage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "分账规则.xls", "数据", DivideRuleRespVO.class, list);

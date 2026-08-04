@@ -62,6 +62,7 @@ public class AppMemberRoleApplyRespVO {
     private LocalDateTime updateTime;
 
     @Data
+    @Schema(description = "用户 App - 流程节点 Response VO")
     public static class ProcessNode {
 
         @Schema(description = "节点编码", example = "SUBMIT")

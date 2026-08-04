@@ -12,6 +12,10 @@ import java.util.List;
 @Mapper
 public interface ShowcaseRewardMapper extends BaseMapperX<ShowcaseRewardDO> {
 
+    default ShowcaseRewardDO selectByIdForUpdate(Long id) {
+        return selectOneForUpdate(ShowcaseRewardDO::getId, id);
+    }
+
     default ShowcaseRewardDO selectActiveByMerchantId(Long merchantId, LocalDateTime now) {
         return selectOne(new LambdaQueryWrapperX<ShowcaseRewardDO>()
                 .eq(ShowcaseRewardDO::getMerchantId, merchantId)
@@ -26,7 +30,8 @@ public interface ShowcaseRewardMapper extends BaseMapperX<ShowcaseRewardDO> {
     default List<ShowcaseRewardDO> selectListByMerchantId(Long merchantId) {
         return selectList(new LambdaQueryWrapperX<ShowcaseRewardDO>()
                 .eq(ShowcaseRewardDO::getMerchantId, merchantId)
-                .orderByDesc(ShowcaseRewardDO::getId));
+                .orderByDesc(ShowcaseRewardDO::getId)
+                .last("LIMIT 500"));
     }
 
     default PageResult<ShowcaseRewardDO> selectPage(cn.iocoder.yudao.framework.common.pojo.PageParam pageParam,

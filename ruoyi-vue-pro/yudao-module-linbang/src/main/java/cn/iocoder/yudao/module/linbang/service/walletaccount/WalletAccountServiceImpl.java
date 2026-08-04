@@ -127,7 +127,8 @@ public class WalletAccountServiceImpl implements WalletAccountService {
         respVO.setRecentFlows(WalletAccountDetailAssembler.buildFlows(recentFlows));
         respVO.setRecentBills(WalletAccountDetailAssembler.buildBills(recentFlows));
         respVO.setRecentWithdraws(WalletAccountDetailAssembler.buildWithdraws(recentWithdraws));
-        respVO.setWithdrawStats(WalletAccountDetailAssembler.buildWithdrawStats(recentWithdraws));
+        respVO.setWithdrawStats(WalletAccountDetailAssembler.buildWithdrawStats(
+                walletWithdrawMapper.selectStatsByWalletAccountId(walletAccount.getId())));
         return respVO;
     }
 
@@ -162,8 +163,15 @@ public class WalletAccountServiceImpl implements WalletAccountService {
             }
             item.setUserNo(user.getUserNo());
             item.setUserNickname(user.getNickname());
-            item.setUserMobile(user.getMobile());
+            item.setUserMobile(maskMobile(user.getMobile()));
         });
+    }
+
+    private String maskMobile(String mobile) {
+        if (StrUtil.isBlank(mobile) || mobile.length() < 7) {
+            return mobile == null ? null : "******";
+        }
+        return mobile.substring(0, 3) + "****" + mobile.substring(mobile.length() - 4);
     }
 
 }

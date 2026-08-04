@@ -69,26 +69,6 @@ export const MerchantInfoApi = {
     return await request.get<MerchantInfoDetail>({ url: `/linbang/merchant-info/get?id=` + id })
   },
 
-  // 新增服务商信息表
-  createMerchantInfo: async (data: MerchantInfo) => {
-    return await request.post({ url: `/linbang/merchant-info/create`, data })
-  },
-
-  // 修改服务商信息表
-  updateMerchantInfo: async (data: MerchantInfo) => {
-    return await request.put({ url: `/linbang/merchant-info/update`, data })
-  },
-
-  // 删除服务商信息表
-  deleteMerchantInfo: async (id: number) => {
-    return await request.delete({ url: `/linbang/merchant-info/delete?id=` + id })
-  },
-
-  /** 批量删除服务商信息表 */
-  deleteMerchantInfoList: async (ids: number[]) => {
-    return await request.delete({ url: `/linbang/merchant-info/delete-list?ids=${ids.join(',')}` })
-  },
-
   // 导出服务商信息表 Excel
   exportMerchantInfo: async (params) => {
     return await request.download({ url: `/linbang/merchant-info/export-excel`, params })

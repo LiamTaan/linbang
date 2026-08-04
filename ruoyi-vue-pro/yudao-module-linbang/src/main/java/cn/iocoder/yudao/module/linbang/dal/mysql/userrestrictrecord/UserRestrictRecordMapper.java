@@ -5,10 +5,12 @@ import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.controller.admin.userrestrictrecord.vo.UserRestrictRecordPageReqVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.userrestrictrecord.UserRestrictRecordDO;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 
 @Mapper
 public interface UserRestrictRecordMapper extends BaseMapperX<UserRestrictRecordDO> {
@@ -29,14 +31,27 @@ public interface UserRestrictRecordMapper extends BaseMapperX<UserRestrictRecord
                 .eq(UserRestrictRecordDO::getRestrictType, restrictType)
                 .eq(UserRestrictRecordDO::getStatus, "ACTIVE")
                 .le(UserRestrictRecordDO::getStartTime, now)
-                .ge(UserRestrictRecordDO::getEndTime, now)
+                .and(wrapper -> wrapper.isNull(UserRestrictRecordDO::getEndTime)
+                        .or().ge(UserRestrictRecordDO::getEndTime, now))
                 .last("LIMIT 1"));
     }
 
-    default java.util.List<UserRestrictRecordDO> selectBatchByMinId(Long minId, int limit) {
-        return selectList(new LambdaQueryWrapperX<UserRestrictRecordDO>()
+    default UserRestrictRecordDO selectActiveBlocking(Long userId, LocalDateTime now) {
+        return selectOne(new LambdaQueryWrapperX<UserRestrictRecordDO>()
+                .eq(UserRestrictRecordDO::getUserId, userId)
+                .in(UserRestrictRecordDO::getSourceBizType, "BAN", "BLACKLIST")
+                .eq(UserRestrictRecordDO::getStatus, "ACTIVE")
+                .le(UserRestrictRecordDO::getStartTime, now)
+                .and(wrapper -> wrapper.isNull(UserRestrictRecordDO::getEndTime)
+                        .or().ge(UserRestrictRecordDO::getEndTime, now))
+                .last("LIMIT 1"));
+    }
+
+    default List<UserRestrictRecordDO> selectBatchByMinId(Long minId, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 1000));
+        return selectPage(new Page<UserRestrictRecordDO>(1, safeLimit, false),
+                new LambdaQueryWrapperX<UserRestrictRecordDO>()
                 .gtIfPresent(UserRestrictRecordDO::getId, minId)
-                .orderByAsc(UserRestrictRecordDO::getId)
-                .last("LIMIT " + limit));
+                .orderByAsc(UserRestrictRecordDO::getId)).getRecords();
     }
 }

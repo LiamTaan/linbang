@@ -3,12 +3,12 @@ package cn.iocoder.yudao.module.infra.service.file;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Assert;
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.http.HttpUtils;
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.iocoder.yudao.framework.security.core.LoginUser;
+import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
 import cn.iocoder.yudao.module.infra.controller.admin.file.vo.file.FileCreateReqVO;
 import cn.iocoder.yudao.module.infra.controller.admin.file.vo.file.FilePageReqVO;
 import cn.iocoder.yudao.module.infra.controller.admin.file.vo.file.FilePresignedUrlRespVO;
@@ -19,14 +19,27 @@ import cn.iocoder.yudao.module.infra.framework.file.core.utils.FilePathUtils;
 import cn.iocoder.yudao.module.infra.framework.file.core.utils.FileTypeUtils;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.UUID;
 
 import static cn.hutool.core.date.DatePattern.PURE_DATE_PATTERN;
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants.FILE_IS_EMPTY;
 import static cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants.FILE_NOT_EXISTS;
+import static cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants.FILE_SIZE_EXCEED;
+import static cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants.FILE_TYPE_INVALID;
+import static cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants.FILE_UPLOAD_RESERVATION_INVALID;
+import static cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants.FILE_UPLOAD_SIZE_MISMATCH;
+import static cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants.FILE_UPLOAD_TOO_MANY_PENDING;
 
 /**
  * 文件 Service 实现类
@@ -34,7 +47,15 @@ import static cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants.FILE_NOT_EX
  * @author 芋道源码
  */
 @Service
+@Slf4j
 public class FileServiceImpl implements FileService {
+
+    private static final String PENDING_UPLOAD_PREFIX = ".pending/";
+    private static final long PRESIGNED_UPLOAD_TTL_MINUTES = 10L;
+    private static final int MAX_ACTIVE_PRESIGNED_UPLOADS = 20;
+    private static final int EXPIRED_UPLOAD_CLEANUP_BATCH_SIZE = 20;
+    private static final int GLOBAL_EXPIRED_UPLOAD_CLEANUP_BATCH_SIZE = 100;
+    private static final int GLOBAL_EXPIRED_UPLOAD_CLEANUP_MAX_BATCHES = 10;
 
     /**
      * 上传文件的前缀，是否包含日期（yyyyMMdd）
@@ -45,10 +66,9 @@ public class FileServiceImpl implements FileService {
     /**
      * 上传文件的后缀，是否启用
      *
-     * 算法：当前时间戳（毫秒）+ 5 位随机数；目的是保证文件的唯一性，避免覆盖
-     * 定制：可按需调整成 UUID、或者其他方式
+     * 使用 128 位随机 UUID，兼顾唯一性并避免公开文件路径可预测。
      */
-    static boolean PATH_SUFFIX_TIMESTAMP_ENABLE = false;
+    static boolean PATH_SUFFIX_TIMESTAMP_ENABLE = true;
     /**
      * 后缀是否作为上级目录
      *
@@ -62,6 +82,17 @@ public class FileServiceImpl implements FileService {
 
     @Resource
     private FileMapper fileMapper;
+
+    private static final Set<String> BLOCKED_CONTENT_TYPES = new HashSet<>(Arrays.asList(
+            "text/html", "application/xhtml+xml", "image/svg+xml", "text/javascript",
+            "application/javascript", "application/x-javascript", "application/ecmascript",
+            "text/ecmascript", "text/css", "text/vbscript", "application/x-sh",
+            "application/x-httpd-php", "application/x-msdownload", "application/x-dosexec",
+            "application/hta", "application/wasm", "application/xml", "text/xml"));
+    private static final Set<String> BLOCKED_EXTENSIONS = new HashSet<>(Arrays.asList(
+            "html", "htm", "xhtml", "svg", "js", "mjs", "jsx", "ts", "tsx", "css",
+            "php", "phtml", "jsp", "jspx", "asp", "aspx", "cgi", "sh", "bash", "bat",
+            "cmd", "com", "exe", "dll", "msi", "jar", "war", "class", "ps1", "vbs"));
 
     @Override
     public PageResult<FileDO> getFilePage(FilePageReqVO pageReqVO) {
@@ -77,17 +108,17 @@ public class FileServiceImpl implements FileService {
     @Override
     @SneakyThrows
     public FileDO createFileInfo(byte[] content, String name, String directory, String type) {
+        validateUploadContent(content);
         // 1.1 处理 name 的合法性，禁止携带目录路径
         name = FilePathUtils.validateFileName(name);
+        validateFileExtension(name);
 
-        // 1.2.1 处理 type 为空的情况
-        if (StrUtil.isEmpty(type)) {
-            type = FileTypeUtils.getMineType(content, name);
-        }
-        // 1.2.2 处理 name 为空的情况
+        // 1.2 处理 name 为空的情况
         if (StrUtil.isEmpty(name)) {
             name = DigestUtil.sha256Hex(content);
         }
+        // Never trust a client supplied MIME type. Detect it from the bytes and file name.
+        type = detectSafeContentType(content, name);
         if (StrUtil.isEmpty(FileUtil.extName(name))) {
             // 如果 name 没有后缀 type，则补充后缀
             String extension = FileTypeUtils.getExtension(type);
@@ -97,7 +128,7 @@ public class FileServiceImpl implements FileService {
         }
 
         // 2.1 生成上传的 path，需要保证唯一
-        String path = generateUploadPath(name, directory);
+        String path = generateUploadPath(name, directory, true);
         // 2.2 上传到文件存储器
         FileClient client = fileConfigService.getMasterFileClient();
         Assert.notNull(client, "客户端(master) 不能为空");
@@ -107,12 +138,24 @@ public class FileServiceImpl implements FileService {
         FileDO file = new FileDO().setConfigId(client.getId())
                 .setName(name).setPath(path).setUrl(url)
                 .setType(type).setSize((long) content.length);
-        fileMapper.insert(file);
+        try {
+            int inserted = fileMapper.insert(file);
+            if (inserted != 1) {
+                throw new IllegalStateException("File metadata insert did not affect exactly one row");
+            }
+        } catch (RuntimeException ex) {
+            cleanupUploadedObject(client, path, ex);
+            throw ex;
+        }
         return file;
     }
 
     @VisibleForTesting
     String generateUploadPath(String name, String directory) {
+        return generateUploadPath(name, directory, false);
+    }
+
+    private String generateUploadPath(String name, String directory, boolean forceUnique) {
         // 1.1 处理 name 和 directory 的合法性
         name = FilePathUtils.validateFileName(name);
         FilePathUtils.validatePath(name);
@@ -123,9 +166,8 @@ public class FileServiceImpl implements FileService {
             prefix = LocalDateTimeUtil.format(LocalDateTimeUtil.now(), PURE_DATE_PATTERN);
         }
         String suffix = null;
-        if (PATH_SUFFIX_TIMESTAMP_ENABLE) {
-            // 5 位随机数，避免同一毫秒内的重复
-            suffix = String.valueOf(System.currentTimeMillis()) + RandomUtil.randomInt(10000, 100000);
+        if (forceUnique || PATH_SUFFIX_TIMESTAMP_ENABLE) {
+            suffix = UUID.randomUUID().toString().replace("-", "");
         }
 
         // 2.1 先拼接 suffix 后缀
@@ -149,21 +191,38 @@ public class FileServiceImpl implements FileService {
         if (StrUtil.isNotEmpty(directory)) {
             name = directory + StrUtil.SLASH + name;
         }
+        FilePathUtils.validatePath(name);
         return name;
     }
 
     @Override
     @SneakyThrows
-    public FilePresignedUrlRespVO presignPutUrl(String name, String directory) {
-        // 1. 生成上传的 path，需要保证唯一
-        String path = generateUploadPath(name, directory);
+    public FilePresignedUrlRespVO presignPutUrl(String name, long size, String directory) {
+        validatePresignedUploadSize(size);
+        String validatedName = FilePathUtils.validateFileName(name);
+        validateFileExtension(validatedName);
+        String path = generateUploadPath(validatedName, directory, true);
+        String pendingPath = buildPendingUploadPath(path);
 
-        // 2. 获取文件预签名地址
         FileClient fileClient = fileConfigService.getMasterFileClient();
-        String uploadUrl = fileClient.presignPutUrl(path);
+        Assert.notNull(fileClient, "客户端(master) 不能为空");
+        String ownerKey = getCurrentUploadOwnerKey();
+        LocalDateTime activeAfter = LocalDateTime.now().minusMinutes(PRESIGNED_UPLOAD_TTL_MINUTES);
+        cleanupExpiredPendingUploads(ownerKey, activeAfter);
+        if (fileMapper.selectActivePendingUploadCount(ownerKey, activeAfter) >= MAX_ACTIVE_PRESIGNED_UPLOADS) {
+            throw exception(FILE_UPLOAD_TOO_MANY_PENDING);
+        }
+
+        String uploadUrl = fileClient.presignPutUrl(pendingPath, PRESIGNED_UPLOAD_CONTENT_TYPE, size);
         String visitUrl = fileClient.presignGetUrl(path, null);
+        // A negative size marks an upload reservation and also stores the exact expected byte length.
+        FileDO reservation = new FileDO().setConfigId(fileClient.getId())
+                .setName(validatedName).setPath(path).setUrl(visitUrl).setSize(-size);
+        reservation.setUpdater(ownerKey);
+        fileMapper.insert(reservation);
         return new FilePresignedUrlRespVO().setConfigId(fileClient.getId())
-                .setPath(path).setUploadUrl(uploadUrl).setUrl(visitUrl);
+                .setPath(path).setUploadUrl(uploadUrl).setUploadContentType(PRESIGNED_UPLOAD_CONTENT_TYPE)
+                .setUrl(visitUrl);
     }
 
     @Override
@@ -173,17 +232,66 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    @SneakyThrows
     public Long createFile(FileCreateReqVO createReqVO) {
-        // 1.1 校验参数的合法性
         FilePathUtils.validatePath(createReqVO.getPath());
-        createReqVO.setName(FilePathUtils.validateFileName(createReqVO.getName()));
-        // 1.2 处理 URL 的合法性，移除 URL 中的查询参数（例如签名参数），保证 URL 的唯一性
-        createReqVO.setUrl(HttpUtils.removeUrlQuery(createReqVO.getUrl())); // 目的：移除私有桶情况下，URL 的签名参数
+        FileDO reservation = fileMapper.selectLatestByConfigIdAndPath(
+                createReqVO.getConfigId(), createReqVO.getPath());
+        String ownerKey = getCurrentUploadOwnerKey();
+        if (reservation == null || !ownerKey.equals(reservation.getUpdater()) || reservation.getSize() == null) {
+            throw exception(FILE_UPLOAD_RESERVATION_INVALID);
+        }
+        FileClient client = fileConfigService.getFileClient(reservation.getConfigId());
+        Assert.notNull(client, "客户端({}) 不能为空", reservation.getConfigId());
+        String pendingPath = buildPendingUploadPath(reservation.getPath());
+        if (reservation.getSize() > 0L) {
+            deletePendingUploadBestEffort(client, pendingPath, reservation.getId());
+            return reservation.getId();
+        }
+        if (reservation.getSize() >= 0L) {
+            throw exception(FILE_UPLOAD_RESERVATION_INVALID);
+        }
 
-        // 2. 保存到数据库
-        FileDO file = BeanUtils.toBean(createReqVO, FileDO.class);
-        fileMapper.insert(file);
-        return file.getId();
+        byte[] content = client.getContent(pendingPath, MAX_FILE_SIZE_BYTES);
+        String name;
+        String type;
+        try {
+            validateUploadContent(content);
+            long expectedSize = Math.negateExact(reservation.getSize());
+            if (content.length != expectedSize) {
+                throw exception(FILE_UPLOAD_SIZE_MISMATCH);
+            }
+            name = FilePathUtils.validateFileName(reservation.getName());
+            validateFileExtension(name);
+            type = detectSafeContentType(content, name);
+        } catch (RuntimeException ex) {
+            cleanupRejectedPresignedUpload(reservation, client, false, ex);
+            throw ex;
+        }
+
+        String url;
+        try {
+            // Promote from the isolated pending key to the final key and rewrite all untrusted metadata.
+            url = client.upload(content, reservation.getPath(), type);
+        } catch (Exception ex) {
+            cleanupRejectedPresignedUpload(reservation, client, true, ex);
+            throw ex;
+        }
+        FileDO completedFile = new FileDO().setId(reservation.getId())
+                .setName(name).setUrl(HttpUtils.removeUrlQuery(url))
+                .setType(type).setSize((long) content.length);
+        completedFile.setUpdater(ownerKey);
+        try {
+            int updated = fileMapper.updateById(completedFile);
+            if (updated != 1) {
+                throw new IllegalStateException("File reservation update did not affect exactly one row");
+            }
+        } catch (RuntimeException ex) {
+            cleanupRejectedPresignedUpload(reservation, client, true, ex);
+            throw ex;
+        }
+        deletePendingUploadBestEffort(client, pendingPath, reservation.getId());
+        return reservation.getId();
     }
 
     @Override
@@ -201,7 +309,7 @@ public class FileServiceImpl implements FileService {
         // 2.1 从文件存储器中删除
         FileClient client = fileConfigService.getFileClient(file.getConfigId());
         Assert.notNull(client, "客户端({}) 不能为空", file.getConfigId());
-        client.delete(file.getPath());
+        client.delete(resolveStoredPath(file));
 
         // 2.2 删除记录
         fileMapper.deleteById(id);
@@ -210,19 +318,22 @@ public class FileServiceImpl implements FileService {
     @Override
     @SneakyThrows
     public void deleteFileList(List<Long> ids) {
-        // 删除文件
         List<FileDO> files = fileMapper.selectByIds(ids);
+        Exception firstFailure = null;
         for (FileDO file : files) {
-            FilePathUtils.validatePath(file.getPath());
-            // 获取客户端
-            FileClient client = fileConfigService.getFileClient(file.getConfigId());
-            Assert.notNull(client, "客户端({}) 不能为空", file.getPath());
-            // 删除文件
-            client.delete(file.getPath());
+            try {
+                deleteStoredFile(file);
+            } catch (Exception ex) {
+                if (firstFailure == null) {
+                    firstFailure = ex;
+                } else {
+                    firstFailure.addSuppressed(ex);
+                }
+            }
         }
-
-        // 删除记录
-        fileMapper.deleteByIds(ids);
+        if (firstFailure != null) {
+            throw firstFailure;
+        }
     }
 
     private FileDO validateFileExists(Long id) {
@@ -246,8 +357,187 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    public byte[] getFileContent(Long configId, String path, long maxBytes) throws Exception {
+        FilePathUtils.validatePath(path);
+        if (maxBytes < 0 || maxBytes >= Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("maxBytes must be between 0 and Integer.MAX_VALUE - 1");
+        }
+        FileClient client = fileConfigService.getFileClient(configId);
+        Assert.notNull(client, "客户端({}) 不能为空", configId);
+        return client.getContent(path, maxBytes);
+    }
+
+    @Override
     public FileDO getFileByConfigIdAndPath(Long configId, String path) {
         return fileMapper.selectLatestByConfigIdAndPath(configId, path);
+    }
+
+    @Override
+    public int cleanExpiredPendingUploads() {
+        LocalDateTime expireBefore = LocalDateTime.now().minusMinutes(PRESIGNED_UPLOAD_TTL_MINUTES);
+        Long afterId = null;
+        int cleaned = 0;
+        for (int batch = 0; batch < GLOBAL_EXPIRED_UPLOAD_CLEANUP_MAX_BATCHES; batch++) {
+            List<FileDO> expiredUploads = fileMapper.selectExpiredPendingUploads(expireBefore, afterId,
+                    GLOBAL_EXPIRED_UPLOAD_CLEANUP_BATCH_SIZE);
+            if (expiredUploads.isEmpty()) {
+                break;
+            }
+            for (FileDO expiredUpload : expiredUploads) {
+                afterId = expiredUpload.getId();
+                if (cleanupExpiredPendingUpload(expiredUpload)) {
+                    cleaned++;
+                }
+            }
+            if (expiredUploads.size() < GLOBAL_EXPIRED_UPLOAD_CLEANUP_BATCH_SIZE) {
+                break;
+            }
+        }
+        return cleaned;
+    }
+
+    private void validateUploadContent(byte[] content) {
+        if (content == null || content.length == 0) {
+            throw exception(FILE_IS_EMPTY);
+        }
+        if (content.length > FileService.MAX_FILE_SIZE_BYTES) {
+            throw exception(FILE_SIZE_EXCEED);
+        }
+    }
+
+    private void validatePresignedUploadSize(long size) {
+        if (size <= 0L) {
+            throw exception(FILE_IS_EMPTY);
+        }
+        if (size > MAX_FILE_SIZE_BYTES) {
+            throw exception(FILE_SIZE_EXCEED);
+        }
+    }
+
+    private String detectSafeContentType(byte[] content, String name) {
+        String contentOnlyType = FileTypeUtils.getMineType(content);
+        validateContentType(contentOnlyType);
+        String resolvedType = FileTypeUtils.getMineType(content, name);
+        validateContentType(resolvedType);
+        return resolvedType;
+    }
+
+    private void validateContentType(String type) {
+        if (StrUtil.isBlank(type)) {
+            return;
+        }
+        String normalizedType = StrUtil.subBefore(type, ';', false).trim().toLowerCase(Locale.ROOT);
+        if (BLOCKED_CONTENT_TYPES.contains(normalizedType) || normalizedType.endsWith("+xml")) {
+            throw exception(FILE_TYPE_INVALID);
+        }
+    }
+
+    private void validateFileExtension(String name) {
+        String extension = FileUtil.extName(name);
+        if (StrUtil.isNotBlank(extension)
+                && BLOCKED_EXTENSIONS.contains(extension.toLowerCase(Locale.ROOT))) {
+            throw exception(FILE_TYPE_INVALID);
+        }
+    }
+
+    private String getCurrentUploadOwnerKey() {
+        LoginUser loginUser = SecurityFrameworkUtils.getLoginUser();
+        if (loginUser == null || loginUser.getId() == null || loginUser.getUserType() == null) {
+            throw exception(FILE_UPLOAD_RESERVATION_INVALID);
+        }
+        return loginUser.getUserType() + ":" + loginUser.getId();
+    }
+
+    private String buildPendingUploadPath(String finalPath) {
+        String pendingPath = PENDING_UPLOAD_PREFIX + finalPath;
+        FilePathUtils.validatePath(pendingPath);
+        return pendingPath;
+    }
+
+    private String resolveStoredPath(FileDO file) {
+        return file.getSize() != null && file.getSize() < 0L
+                ? buildPendingUploadPath(file.getPath()) : file.getPath();
+    }
+
+    private void cleanupExpiredPendingUploads(String ownerKey, LocalDateTime expireBefore) {
+        List<FileDO> expiredUploads = fileMapper.selectExpiredPendingUploads(
+                ownerKey, expireBefore, EXPIRED_UPLOAD_CLEANUP_BATCH_SIZE);
+        for (FileDO expiredUpload : expiredUploads) {
+            cleanupExpiredPendingUpload(expiredUpload);
+        }
+    }
+
+    private boolean cleanupExpiredPendingUpload(FileDO expiredUpload) {
+        FileClient client = fileConfigService.getFileClient(expiredUpload.getConfigId());
+        if (client == null) {
+            log.warn("[cleanupExpiredPendingUpload][fileId({}) configId({}) client missing]",
+                    expiredUpload.getId(), expiredUpload.getConfigId());
+            return false;
+        }
+        try {
+            client.delete(buildPendingUploadPath(expiredUpload.getPath()));
+            return fileMapper.deleteById(expiredUpload.getId()) > 0;
+        } catch (Exception ex) {
+            log.warn("[cleanupExpiredPendingUpload][fileId({}) cleanup failed]", expiredUpload.getId(), ex);
+            return false;
+        }
+    }
+
+    private void cleanupRejectedPresignedUpload(FileDO reservation, FileClient client,
+                                                 boolean deleteFinalObject, Throwable original) {
+        boolean objectCleanupSucceeded = true;
+        try {
+            client.delete(buildPendingUploadPath(reservation.getPath()));
+        } catch (Exception cleanupException) {
+            objectCleanupSucceeded = false;
+            original.addSuppressed(cleanupException);
+            log.error("[cleanupRejectedPresignedUpload][fileId({}) pending object cleanup failed]",
+                    reservation.getId(), cleanupException);
+        }
+        if (deleteFinalObject) {
+            try {
+                client.delete(reservation.getPath());
+            } catch (Exception cleanupException) {
+                objectCleanupSucceeded = false;
+                original.addSuppressed(cleanupException);
+                log.error("[cleanupRejectedPresignedUpload][fileId({}) final object cleanup failed]",
+                        reservation.getId(), cleanupException);
+            }
+        }
+        if (objectCleanupSucceeded) {
+            try {
+                fileMapper.deleteById(reservation.getId());
+            } catch (RuntimeException cleanupException) {
+                original.addSuppressed(cleanupException);
+                log.error("[cleanupRejectedPresignedUpload][fileId({}) metadata cleanup failed]",
+                        reservation.getId(), cleanupException);
+            }
+        }
+    }
+
+    private void cleanupUploadedObject(FileClient client, String path, RuntimeException original) {
+        try {
+            client.delete(path);
+        } catch (Exception cleanupException) {
+            original.addSuppressed(cleanupException);
+            log.error("[cleanupUploadedObject][path({}) cleanup failed]", path, cleanupException);
+        }
+    }
+
+    private void deleteStoredFile(FileDO file) throws Exception {
+        FilePathUtils.validatePath(file.getPath());
+        FileClient client = fileConfigService.getFileClient(file.getConfigId());
+        Assert.notNull(client, "客户端({}) 不能为空", file.getConfigId());
+        client.delete(resolveStoredPath(file));
+        fileMapper.deleteById(file.getId());
+    }
+
+    private void deletePendingUploadBestEffort(FileClient client, String pendingPath, Long fileId) {
+        try {
+            client.delete(pendingPath);
+        } catch (Exception ex) {
+            log.warn("[deletePendingUploadBestEffort][fileId({}) pending cleanup failed]", fileId, ex);
+        }
     }
 
 }

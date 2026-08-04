@@ -4,7 +4,9 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
 import cn.iocoder.yudao.module.infra.framework.file.core.client.AbstractFileClient;
 import cn.iocoder.yudao.module.infra.framework.file.core.utils.FilePathUtils;
+import com.google.common.io.ByteStreams;
 
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -46,6 +48,22 @@ public class LocalFileClient extends AbstractFileClient<LocalFileClientConfig> {
         String filePath = getFilePath(path);
         try {
             return FileUtil.readBytes(filePath);
+        } catch (IORuntimeException ex) {
+            if (ex.getMessage().startsWith("File not exist:")) {
+                return null;
+            }
+            throw ex;
+        }
+    }
+
+    @Override
+    public byte[] getContent(String path, long maxBytes) throws Exception {
+        if (maxBytes < 0 || maxBytes >= Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("maxBytes must be between 0 and Integer.MAX_VALUE - 1");
+        }
+        String filePath = getFilePath(path);
+        try (InputStream input = FileUtil.getInputStream(filePath)) {
+            return ByteStreams.toByteArray(ByteStreams.limit(input, maxBytes + 1));
         } catch (IORuntimeException ex) {
             if (ex.getMessage().startsWith("File not exist:")) {
                 return null;

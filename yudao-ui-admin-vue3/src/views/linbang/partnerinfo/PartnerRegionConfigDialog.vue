@@ -35,7 +35,12 @@
         </template>
       </el-table-column>
     </el-table>
-    <el-empty v-if="regions.length === 0" description="请至少配置一个辖区" :image-size="72" class="mt-12px" />
+    <el-empty
+      v-if="regions.length === 0"
+      description="请至少配置一个辖区"
+      :image-size="72"
+      class="mt-12px"
+    />
     <template #footer>
       <el-button @click="dialogVisible = false">取消</el-button>
       <el-button type="primary" :loading="submitLoading" @click="submit">保存辖区</el-button>
@@ -46,7 +51,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { getAreaTree } from '@/api/system/area'
-import { PartnerInfoApi, type PartnerInfo, type PartnerRegionUpdateItem } from '@/api/linbang/partnerinfo'
+import {
+  PartnerInfoApi,
+  type PartnerInfo,
+  type PartnerRegionUpdateItem
+} from '@/api/linbang/partnerinfo'
 import { useMessage } from '@/hooks/web/useMessage'
 
 defineOptions({ name: 'PartnerRegionConfigDialog' })
@@ -78,7 +87,9 @@ const partnerLabel = computed(() => {
   if (!partner.value) {
     return ''
   }
-  return [partner.value.partnerName, partner.value.userNickname, partner.value.userMobile].filter(Boolean).join(' / ')
+  return [partner.value.partnerName, partner.value.userNickname, partner.value.userMobile]
+    .filter(Boolean)
+    .join(' / ')
 })
 
 const ensureAreaOptions = async () => {

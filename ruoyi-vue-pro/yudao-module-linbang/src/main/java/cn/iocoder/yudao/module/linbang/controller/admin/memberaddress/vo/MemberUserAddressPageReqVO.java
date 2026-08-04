@@ -17,7 +17,7 @@ public class MemberUserAddressPageReqVO extends PageParam {
     @Schema(description = "用户关键词（用户编号 / 昵称 / 手机号）", example = "18888888888")
     private String userKeyword;
 
-    @Schema(description = "联系人", example = "??")
+    @Schema(description = "联系人", example = "张女士")
     private String receiverName;
 
     @Schema(description = "联系电话")

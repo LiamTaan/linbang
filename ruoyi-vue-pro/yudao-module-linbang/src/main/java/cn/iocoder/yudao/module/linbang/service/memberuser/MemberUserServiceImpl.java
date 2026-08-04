@@ -7,6 +7,7 @@ import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
 import cn.iocoder.yudao.module.system.api.sms.SmsCodeApi;
 import cn.iocoder.yudao.module.system.api.sms.dto.code.SmsCodeUseReqDTO;
 import cn.iocoder.yudao.module.system.enums.sms.SmsSceneEnum;
+import cn.iocoder.yudao.module.linbang.constants.LinbangRiskConstants;
 import cn.iocoder.yudao.module.linbang.controller.admin.memberuser.vo.*;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.blacklist.BlacklistDO;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
@@ -32,6 +33,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.merchantentry.MerchantEntryMapp
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.partnerinfo.PartnerInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.userrestrictrecord.UserRestrictRecordMapper;
+import cn.iocoder.yudao.module.linbang.service.punishlog.PunishLogWriteService;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -44,12 +46,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Set;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.framework.common.util.servlet.ServletUtils.getClientIP;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_NOT_EXISTS;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_MOBILE_DUPLICATED;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_RESTRICT_STATUS_INVALID;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_USERNAME_DUPLICATED;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.USER_RESTRICT_RECORD_NOT_EXISTS;
 
 /**
@@ -81,6 +86,8 @@ public class MemberUserServiceImpl implements MemberUserService {
     private CreditRecordMapper creditRecordMapper;
     @Resource
     private UserRestrictRecordMapper userRestrictRecordMapper;
+    @Resource
+    private PunishLogWriteService punishLogWriteService;
     @Resource
     private BlacklistMapper blacklistMapper;
     @Resource
@@ -207,7 +214,6 @@ public class MemberUserServiceImpl implements MemberUserService {
         try {
             memberUser = MemberUserDO.builder()
                     .userNo("LBU" + IdUtil.getSnowflakeNextIdStr())
-                    .username(mobile)
                     .mobile(mobile)
                     .nickname("邻里用户" + StrUtil.subSuf(mobile, Math.max(mobile.length() - 4, 0)))
                     .accountType("PERSONAL")
@@ -219,7 +225,11 @@ public class MemberUserServiceImpl implements MemberUserService {
             memberUserMapper.insert(memberUser);
             return memberUser;
         } catch (DuplicateKeyException ex) {
-            return memberUserMapper.selectByMobile(mobile);
+            MemberUserDO concurrent = memberUserMapper.selectByMobileForUpdate(mobile);
+            if (concurrent == null) {
+                throw ex;
+            }
+            return concurrent;
         }
     }
 
@@ -230,18 +240,12 @@ public class MemberUserServiceImpl implements MemberUserService {
                                            String agreementVersion, LocalDateTime agreementConfirmedTime) {
         MemberUserDO existedByMobile = memberUserMapper.selectByMobile(mobile);
         if (existedByMobile != null) {
-            MemberUserDO update = MemberUserDO.builder()
-                    .id(existedByMobile.getId())
-                    .username(StrUtil.blankToDefault(existedByMobile.getUsername(), username))
-                    .password(StrUtil.blankToDefault(existedByMobile.getPassword(), encodedPassword))
-                    .accountType(StrUtil.blankToDefault(accountType, existedByMobile.getAccountType()))
-                    .registerSource(StrUtil.blankToDefault(registerSource, existedByMobile.getRegisterSource()))
-                    .registerSourceDetail(registerSourceDetail)
-                    .registerAgreementVersion(agreementVersion)
-                    .registerAgreementConfirmedTime(agreementConfirmedTime)
-                    .build();
-            memberUserMapper.updateById(update);
-            return memberUserMapper.selectById(existedByMobile.getId());
+            MemberUserDO locked = memberUserMapper.selectByMobileForUpdate(mobile);
+            if (locked == null) {
+                throw exception(MEMBER_USER_NOT_EXISTS);
+            }
+            return completeAccountRegistration(locked, username, encodedPassword, accountType, registerSource,
+                    registerSourceDetail, agreementVersion, agreementConfirmedTime);
         }
         MemberUserDO memberUser = MemberUserDO.builder()
                 .userNo("LBU" + IdUtil.getSnowflakeNextIdStr())
@@ -257,8 +261,50 @@ public class MemberUserServiceImpl implements MemberUserService {
                 .currentRoleCode("USER")
                 .status("ENABLE")
                 .build();
-        memberUserMapper.insert(memberUser);
-        return memberUser;
+        try {
+            memberUserMapper.insert(memberUser);
+            return memberUser;
+        } catch (DuplicateKeyException ex) {
+            MemberUserDO concurrent = memberUserMapper.selectByMobileForUpdate(mobile);
+            if (concurrent != null) {
+                return completeAccountRegistration(concurrent, username, encodedPassword, accountType, registerSource,
+                        registerSourceDetail, agreementVersion, agreementConfirmedTime);
+            }
+            MemberUserDO usernameOwner = memberUserMapper.selectByUsernameForUpdate(username);
+            if (usernameOwner != null) {
+                throw exception(MEMBER_USER_USERNAME_DUPLICATED);
+            }
+            throw ex;
+        }
+    }
+
+    private MemberUserDO completeAccountRegistration(MemberUserDO memberUser, String username, String encodedPassword,
+                                                       String accountType, String registerSource,
+                                                       String registerSourceDetail, String agreementVersion,
+                                                       LocalDateTime agreementConfirmedTime) {
+        if (memberUser.getPassword() != null) {
+            throw exception(MEMBER_USER_MOBILE_DUPLICATED);
+        }
+        MemberUserDO update = MemberUserDO.builder()
+                .id(memberUser.getId())
+                .username(username)
+                .password(encodedPassword)
+                .accountType(StrUtil.blankToDefault(accountType, memberUser.getAccountType()))
+                .registerSource(StrUtil.blankToDefault(registerSource, memberUser.getRegisterSource()))
+                .registerSourceDetail(registerSourceDetail)
+                .registerAgreementVersion(agreementVersion)
+                .registerAgreementConfirmedTime(agreementConfirmedTime)
+                .build();
+        try {
+            memberUserMapper.updateById(update);
+        } catch (DuplicateKeyException ex) {
+            MemberUserDO usernameOwner = memberUserMapper.selectByUsernameForUpdate(username);
+            if (usernameOwner != null && !usernameOwner.getId().equals(memberUser.getId())) {
+                throw exception(MEMBER_USER_USERNAME_DUPLICATED);
+            }
+            throw ex;
+        }
+        return memberUserMapper.selectById(memberUser.getId());
     }
 
     @Override
@@ -335,31 +381,52 @@ public class MemberUserServiceImpl implements MemberUserService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void restrictMemberUser(MemberUserRestrictReqVO reqVO) {
-        validateMemberUserExists(reqVO.getUserId());
+        MemberUserDO memberUser = memberUserMapper.selectByIdForUpdate(reqVO.getUserId());
+        if (memberUser == null) {
+            throw exception(MEMBER_USER_NOT_EXISTS);
+        }
         Long loginUserId = SecurityFrameworkUtils.getLoginUserId();
         LocalDateTime now = LocalDateTime.now();
+        String actionType = reqVO.getActionType().trim().toUpperCase(Locale.ROOT);
+        String restrictType = reqVO.getRestrictType().trim().toUpperCase(Locale.ROOT);
+        if (!"RESTRICT".equals(actionType) && !"BAN".equals(actionType) && !"BLACKLIST".equals(actionType)) {
+            throw exception(MEMBER_USER_RESTRICT_STATUS_INVALID);
+        }
+        if (reqVO.getEndTime() != null && !reqVO.getEndTime().isAfter(now)) {
+            throw exception(MEMBER_USER_RESTRICT_STATUS_INVALID);
+        }
+        if (userRestrictRecordMapper.selectActive(reqVO.getUserId(), restrictType, now) != null) {
+            return;
+        }
         UserRestrictRecordDO record = UserRestrictRecordDO.builder()
                 .userId(reqVO.getUserId())
-                .restrictType(reqVO.getRestrictType())
-                .status("ACTIVE")
+                .restrictType(restrictType)
+                .status(LinbangRiskConstants.RESTRICT_STATUS_ACTIVE)
                 .startTime(now)
                 .endTime(reqVO.getEndTime())
-                .sourceBizType(reqVO.getActionType())
+                .sourceBizType(actionType)
                 .reason(reqVO.getReason())
                 .build();
         userRestrictRecordMapper.insert(record);
-        if ("BAN".equalsIgnoreCase(reqVO.getActionType())) {
+        punishLogWriteService.createPunishLog(reqVO.getUserId(), actionType + "_" + restrictType,
+                record.getStatus(), record.getReason(), actionType, null,
+                "USER_RESTRICT_RECORD", record.getId(), loginUserId, now, now, record.getEndTime(), null);
+        if ("BAN".equals(actionType)) {
             updateMemberUserStatus(reqVO.getUserId(), "DISABLE", reqVO.getReason());
         }
-        if ("BLACKLIST".equalsIgnoreCase(reqVO.getActionType())) {
-            blacklistMapper.insert(BlacklistDO.builder()
+        if ("BLACKLIST".equals(actionType)) {
+            BlacklistDO blacklist = BlacklistDO.builder()
                     .userId(reqVO.getUserId())
-                    .blackType(reqVO.getRestrictType())
+                    .blackType(restrictType)
                     .reason(reqVO.getReason())
                     .startTime(now)
                     .endTime(reqVO.getEndTime())
-                    .status("ACTIVE")
-                    .build());
+                    .status(LinbangRiskConstants.STATUS_ENABLE)
+                    .build();
+            blacklistMapper.insert(blacklist);
+            punishLogWriteService.createPunishLog(reqVO.getUserId(), "BLACKLIST_" + restrictType,
+                    blacklist.getStatus(), blacklist.getReason(), "USER", reqVO.getUserId(),
+                    "BLACKLIST_RECORD", blacklist.getId(), loginUserId, now, now, blacklist.getEndTime(), null);
             updateMemberUserStatus(reqVO.getUserId(), "DISABLE", reqVO.getReason());
         }
     }
@@ -367,25 +434,54 @@ public class MemberUserServiceImpl implements MemberUserService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void releaseMemberUserRestrict(MemberUserReleaseRestrictReqVO reqVO) {
-        UserRestrictRecordDO record = userRestrictRecordMapper.selectById(reqVO.getRestrictRecordId());
+        UserRestrictRecordDO snapshot = userRestrictRecordMapper.selectById(reqVO.getRestrictRecordId());
+        if (snapshot == null) {
+            throw exception(USER_RESTRICT_RECORD_NOT_EXISTS);
+        }
+        if (memberUserMapper.selectByIdForUpdate(snapshot.getUserId()) == null) {
+            throw exception(MEMBER_USER_NOT_EXISTS);
+        }
+        UserRestrictRecordDO record = userRestrictRecordMapper.selectOneForUpdate(
+                UserRestrictRecordDO::getId, reqVO.getRestrictRecordId());
         if (record == null) {
             throw exception(USER_RESTRICT_RECORD_NOT_EXISTS);
         }
         if (!"ACTIVE".equalsIgnoreCase(record.getStatus())) {
             throw exception(MEMBER_USER_RESTRICT_STATUS_INVALID);
         }
+        Long loginUserId = SecurityFrameworkUtils.getLoginUserId();
+        LocalDateTime now = LocalDateTime.now();
         userRestrictRecordMapper.updateById(UserRestrictRecordDO.builder()
                 .id(record.getId())
                 .status("RELEASED")
-                .releasedBy(SecurityFrameworkUtils.getLoginUserId())
-                .releasedTime(LocalDateTime.now())
+                .releasedBy(loginUserId)
+                .releasedTime(now)
                 .releaseRemark(reqVO.getReleaseRemark())
                 .build());
-        memberUserMapper.updateById(MemberUserDO.builder()
-                .id(record.getUserId())
-                .status("ENABLE")
-                .remark(reqVO.getReleaseRemark())
-                .build());
+        punishLogWriteService.releasePunishLog("USER_RESTRICT_RECORD", record.getId(),
+                LinbangRiskConstants.RESTRICT_STATUS_RELEASED, loginUserId, now, reqVO.getReleaseRemark());
+        if ("BLACKLIST".equalsIgnoreCase(record.getSourceBizType())) {
+            BlacklistDO blacklist = blacklistMapper.selectEnabledForUpdate(record.getUserId(), record.getRestrictType());
+            if (blacklist != null) {
+                blacklistMapper.updateById(BlacklistDO.builder()
+                        .id(blacklist.getId())
+                        .status(LinbangRiskConstants.STATUS_DISABLE)
+                        .build());
+                punishLogWriteService.releasePunishLog("BLACKLIST_RECORD", blacklist.getId(),
+                        LinbangRiskConstants.STATUS_DISABLE, loginUserId, now, reqVO.getReleaseRemark());
+            }
+        }
+        boolean blockingAction = "BAN".equalsIgnoreCase(record.getSourceBizType())
+                || "BLACKLIST".equalsIgnoreCase(record.getSourceBizType());
+        if (blockingAction
+                && userRestrictRecordMapper.selectActiveBlocking(record.getUserId(), now) == null
+                && blacklistMapper.selectAnyEffective(record.getUserId(), now) == null) {
+            memberUserMapper.updateById(MemberUserDO.builder()
+                    .id(record.getUserId())
+                    .status("ENABLE")
+                    .remark(reqVO.getReleaseRemark())
+                    .build());
+        }
     }
 
     @Override

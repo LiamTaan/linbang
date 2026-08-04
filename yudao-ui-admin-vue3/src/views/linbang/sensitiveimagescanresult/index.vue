@@ -1,17 +1,47 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="场景" prop="sceneType">
-        <el-input v-model="queryParams.sceneType" placeholder="如 ORDER_CREATE" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.sceneType"
+          placeholder="如 ORDER_CREATE"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="用户ID" prop="userId">
-        <el-input v-model="queryParams.userId" placeholder="请输入用户ID" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.userId"
+          placeholder="请输入用户ID"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="业务类型" prop="bizType">
-        <el-input v-model="queryParams.bizType" placeholder="如 ORDER" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.bizType"
+          placeholder="如 ORDER"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="扫描状态" prop="scanStatus">
-        <el-input v-model="queryParams.scanStatus" placeholder="如 BLOCKED/FAILED" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.scanStatus"
+          placeholder="如 BLOCKED/FAILED"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item>
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
@@ -43,13 +73,21 @@
       <el-table-column label="失败原因" prop="failureReason" min-width="180" />
       <el-table-column label="创建时间" prop="createTime" width="180" />
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { SensitiveImageScanResultApi, type SensitiveImageScanResult } from '@/api/linbang/sensitiveimagescanresult'
+import {
+  SensitiveImageScanResultApi,
+  type SensitiveImageScanResult
+} from '@/api/linbang/sensitiveimagescanresult'
 
 defineOptions({ name: 'SensitiveImageScanResult' })
 

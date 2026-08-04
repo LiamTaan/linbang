@@ -12,6 +12,14 @@ import java.util.List;
 @Mapper
 public interface RewardOrderParticipationMapper extends BaseMapperX<RewardOrderParticipationDO> {
 
+    default RewardOrderParticipationDO selectByRewardAndParticipantForUpdate(Long rewardOrderId,
+                                                                              Long participantUserId) {
+        return selectOne(new LambdaQueryWrapperX<RewardOrderParticipationDO>()
+                .eq(RewardOrderParticipationDO::getRewardOrderId, rewardOrderId)
+                .eq(RewardOrderParticipationDO::getParticipantUserId, participantUserId)
+                .last("LIMIT 1 FOR UPDATE"));
+    }
+
     default PageResult<RewardOrderParticipationDO> selectPageByParticipant(Long participantUserId,
                                                                            AppRewardOrderParticipationPageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<RewardOrderParticipationDO>()

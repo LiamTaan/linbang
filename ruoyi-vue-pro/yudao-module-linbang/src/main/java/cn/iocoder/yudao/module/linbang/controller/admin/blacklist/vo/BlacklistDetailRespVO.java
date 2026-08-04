@@ -33,6 +33,7 @@ public class BlacklistDetailRespVO {
     private List<RiskEventSimpleRespVO> recentRiskEvents;
 
     @Data
+    @Schema(description = "管理后台 - 用户摘要 Response VO")
     public static class MemberUserSimpleRespVO {
         @Schema(description = "用户 ID", example = "5001")
         private Long id;
@@ -53,6 +54,7 @@ public class BlacklistDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 风险事件摘要 Response VO")
     public static class RiskEventSimpleRespVO {
         @Schema(description = "风险事件 ID", example = "1")
         private Long id;

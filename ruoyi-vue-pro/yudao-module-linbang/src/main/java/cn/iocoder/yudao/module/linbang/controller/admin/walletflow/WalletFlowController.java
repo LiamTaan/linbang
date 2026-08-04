@@ -14,7 +14,7 @@ import javax.servlet.http.*;
 import java.util.*;
 import java.io.IOException;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -35,39 +35,6 @@ public class WalletFlowController {
 
     @Resource
     private WalletFlowService walletFlowService;
-
-    @PostMapping("/create")
-    @Operation(summary = "创建钱包流水")
-    @PreAuthorize("@ss.hasPermission('linbang:wallet:flow:create')")
-    public CommonResult<Long> createWalletFlow(@Valid @RequestBody WalletFlowSaveReqVO createReqVO) {
-        return success(walletFlowService.createWalletFlow(createReqVO));
-    }
-
-    @PutMapping("/update")
-    @Operation(summary = "更新钱包流水")
-    @PreAuthorize("@ss.hasPermission('linbang:wallet:flow:update')")
-    public CommonResult<Boolean> updateWalletFlow(@Valid @RequestBody WalletFlowSaveReqVO updateReqVO) {
-        walletFlowService.updateWalletFlow(updateReqVO);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete")
-    @Operation(summary = "删除钱包流水")
-    @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('linbang:wallet:flow:delete')")
-    public CommonResult<Boolean> deleteWalletFlow(@RequestParam("id") Long id) {
-        walletFlowService.deleteWalletFlow(id);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete-list")
-    @Parameter(name = "ids", description = "编号", required = true)
-    @Operation(summary = "批量删除钱包流水")
-                @PreAuthorize("@ss.hasPermission('linbang:wallet:flow:delete')")
-    public CommonResult<Boolean> deleteWalletFlowList(@RequestParam("ids") List<Long> ids) {
-        walletFlowService.deleteWalletFlowListByIds(ids);
-        return success(true);
-    }
 
     @GetMapping("/get")
     @Operation(summary = "获得钱包流水")
@@ -90,7 +57,7 @@ public class WalletFlowController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportWalletFlowExcel(@Valid WalletFlowPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<WalletFlowRespVO> list = walletFlowService.getWalletFlowPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "钱包流水.xls", "数据", WalletFlowRespVO.class, list);

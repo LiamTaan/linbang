@@ -72,6 +72,7 @@ public class MessageRecordDetailRespVO {
     private TemplateSummaryRespVO template;
 
     @Data
+    @Schema(description = "管理后台 - 消息模板摘要 Response VO")
     public static class TemplateSummaryRespVO {
         @Schema(description = "模板 ID", example = "10")
         private Long id;

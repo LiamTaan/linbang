@@ -182,11 +182,12 @@ public class SocialClientServiceImpl implements SocialClientService {
         AuthCallback authCallback = AuthCallback.builder().code(code).auth_code(code).state(state).build();
         // 执行请求
         AuthResponse<?> authResponse = authRequest.login(authCallback);
-        log.info("[getAuthUser][请求社交平台 type({}) request({}) response({})]", socialType,
-                toJsonString(authCallback), toJsonString(authResponse));
         if (!authResponse.ok()) {
+            log.warn("[getAuthUser][请求社交平台 type({}) 失败，errorCode({})]",
+                    socialType, authResponse.getCode());
             throw exception(SOCIAL_USER_AUTH_FAILURE, authResponse.getMsg());
         }
+        log.info("[getAuthUser][请求社交平台 type({}) 成功]", socialType);
         return (AuthUser) authResponse.getData();
     }
 
@@ -285,7 +286,7 @@ public class SocialClientServiceImpl implements SocialClientService {
         try {
             return service.getUserService().getPhoneNumber(phoneCode);
         } catch (WxErrorException e) {
-            log.error("[getPhoneNumber][userType({}) phoneCode({}) 获得手机号失败]", userType, phoneCode, e);
+            log.error("[getPhoneNumber][userType({}) 获得手机号失败]", userType, e);
             throw exception(SOCIAL_CLIENT_WEIXIN_MINI_APP_PHONE_CODE_ERROR);
         }
     }
@@ -304,7 +305,7 @@ public class SocialClientServiceImpl implements SocialClientService {
                     null,
                     ObjUtil.defaultIfNull(reqVO.getHyaline(), SocialWxQrcodeReqDTO.HYALINE));
         } catch (WxErrorException e) {
-            log.error("[getWxQrcode][reqVO({}) 获得小程序码失败]", reqVO, e);
+            log.error("[getWxQrcode][获得小程序码失败]", e);
             throw exception(SOCIAL_CLIENT_WEIXIN_MINI_APP_QRCODE_ERROR);
         }
     }
@@ -330,7 +331,8 @@ public class SocialClientServiceImpl implements SocialClientService {
             WxMaSubscribeService subscribeService = service.getSubscribeService();
             subscribeService.sendSubscribeMsg(buildMessageSendReqDTO(reqDTO, templateId, openId));
         } catch (WxErrorException e) {
-            log.error("[sendSubscribeMessage][reqVO({}) templateId({}) openId({}) 发送小程序订阅消息失败]", reqDTO, templateId, openId, e);
+            log.error("[sendSubscribeMessage][userType({}) templateId({}) 发送小程序订阅消息失败]",
+                    reqDTO.getUserType(), templateId, e);
             throw exception(SOCIAL_CLIENT_WEIXIN_MINI_APP_SUBSCRIBE_MESSAGE_ERROR);
         }
     }
@@ -389,17 +391,17 @@ public class SocialClientServiceImpl implements SocialClientService {
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 WxMaOrderShippingInfoBaseResponse response = service.getWxMaOrderShippingService().upload(request);
-                log.info("[uploadWxaOrderShippingInfo][上传微信小程序发货信息成功：request({}) response({})]", request, response);
+                log.info("[uploadWxaOrderShippingInfo][userType({}) 上传微信小程序发货信息成功]", userType);
                 return;
             } catch (WxErrorException ex) {
                 if (ex.getError().getErrorCode() == WX_ERR_CODE_PAY_ORDER_NOT_EXIST && attempt < maxAttempts) {
                     long delayMillis = UPLOAD_SHIPPING_INFO_RETRY_BACKOFF_MILLIS[attempt - 1];
-                    log.warn("[uploadWxaOrderShippingInfo][第 {} 次尝试失败，支付单不存在，{} ms 后重试：request({})]",
-                            attempt, delayMillis, request, ex);
+                    log.warn("[uploadWxaOrderShippingInfo][userType({}) 第 {} 次尝试失败，支付单不存在，{} ms 后重试]",
+                            userType, attempt, delayMillis);
                     ThreadUtil.sleep(delayMillis);
                     continue;
                 }
-                log.error("[uploadWxaOrderShippingInfo][上传微信小程序发货信息失败：request({})]", request, ex);
+                log.error("[uploadWxaOrderShippingInfo][userType({}) 上传微信小程序发货信息失败]", userType, ex);
                 throw exception(SOCIAL_CLIENT_WEIXIN_MINI_APP_ORDER_UPLOAD_SHIPPING_INFO_ERROR, ex.getError().getErrorMsg());
             }
         }
@@ -415,12 +417,13 @@ public class SocialClientServiceImpl implements SocialClientService {
         try {
             WxMaOrderShippingInfoBaseResponse response = service.getWxMaOrderShippingService().notifyConfirmReceive(request);
             if (response.getErrCode() != 0) {
-                log.error("[notifyWxaOrderConfirmReceive][确认收货提醒到微信小程序失败：request({}) response({})]", request, response);
+                log.error("[notifyWxaOrderConfirmReceive][userType({}) 确认收货提醒失败，errorCode({})]",
+                        userType, response.getErrCode());
                 throw exception(SOCIAL_CLIENT_WEIXIN_MINI_APP_ORDER_NOTIFY_CONFIRM_RECEIVE_ERROR, response.getErrMsg());
             }
-            log.info("[notifyWxaOrderConfirmReceive][确认收货提醒到微信小程序成功：request({}) response({})]", request, response);
+            log.info("[notifyWxaOrderConfirmReceive][userType({}) 确认收货提醒成功]", userType);
         } catch (WxErrorException ex) {
-            log.error("[notifyWxaOrderConfirmReceive][确认收货提醒到微信小程序失败：request({})]", request, ex);
+            log.error("[notifyWxaOrderConfirmReceive][userType({}) 确认收货提醒失败]", userType, ex);
             throw exception(SOCIAL_CLIENT_WEIXIN_MINI_APP_ORDER_NOTIFY_CONFIRM_RECEIVE_ERROR, ex.getError().getErrorMsg());
         }
     }

@@ -18,6 +18,17 @@ import cn.iocoder.yudao.module.linbang.controller.admin.merchantentry.vo.*;
 @Mapper
 public interface MerchantEntryMapper extends BaseMapperX<MerchantEntryDO> {
 
+    default MerchantEntryDO selectByIdForUpdate(Long id) {
+        return selectOneForUpdate(MerchantEntryDO::getId, id);
+    }
+
+    default MerchantEntryDO selectLatestByUserIdForUpdate(Long userId) {
+        return selectOne(new LambdaQueryWrapperX<MerchantEntryDO>()
+                .eq(MerchantEntryDO::getUserId, userId)
+                .orderByDesc(MerchantEntryDO::getId)
+                .last("LIMIT 1 FOR UPDATE"));
+    }
+
     default PageResult<MerchantEntryDO> selectPage(MerchantEntryPageReqVO reqVO, Collection<Long> userIds) {
         return selectPage(reqVO, new LambdaQueryWrapperX<MerchantEntryDO>()
                 .eqIfPresent(MerchantEntryDO::getMerchantId, reqVO.getMerchantId())

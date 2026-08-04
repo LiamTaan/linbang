@@ -104,7 +104,9 @@ export const MerchantPriceReportApi = {
     return await request.get({ url: '/partner/price-report/page', params })
   },
   getMerchantPriceReport: async (id: number) => {
-    return await request.get<MerchantPriceReportDetail>({ url: `/partner/price-report/get?id=${id}` })
+    return await request.get<MerchantPriceReportDetail>({
+      url: `/partner/price-report/get?id=${id}`
+    })
   },
 
   auditMerchantPriceReport: async (data: MerchantPriceReportAuditReqVO, verifyToken?: string) => {

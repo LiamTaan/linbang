@@ -6,6 +6,7 @@
     <el-link
       type="primary"
       target="_blank"
+      rel="noopener noreferrer"
       :href="
         'https://map.qq.com/?type=marker&isopeninfowin=1&markertype=1&pointx=' +
         locationY +

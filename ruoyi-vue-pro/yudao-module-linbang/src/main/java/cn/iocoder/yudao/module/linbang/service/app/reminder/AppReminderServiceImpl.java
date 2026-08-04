@@ -20,6 +20,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.memberqualification.MemberUserQ
 import cn.iocoder.yudao.module.linbang.dal.mysql.messagerecord.MessageRecordMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.userreminder.UserReminderMapper;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -172,25 +173,31 @@ public class AppReminderServiceImpl implements AppReminderService {
     @Transactional(rollbackFor = Exception.class)
     public void triggerDueReminders() {
         LocalDateTime now = LocalDateTime.now();
-        for (UserReminderDO reminder : userReminderMapper.selectDueList(now)) {
+        for (UserReminderDO reminder : userReminderMapper.selectDueListForUpdate(now)) {
             String dedupeKey = buildDedupeKey(reminder.getId(), reminder.getNextRemindTime());
             if (messageRecordMapper.selectByDedupeKey(dedupeKey) == null) {
-                messageRecordMapper.insert(MessageRecordDO.builder()
-                        .receiverUserId(reminder.getUserId())
-                        .sceneCode(MessageCenterConstants.SCENE_REMINDER_TRIGGER)
-                        .messageCategory(MessageCenterConstants.CATEGORY_SYSTEM)
-                        .channelType(MessageCenterConstants.CHANNEL_APP_POPUP)
-                        .bizType(MessageCenterConstants.BIZ_TYPE_USER_REMINDER)
-                        .bizId(reminder.getId())
-                        .dedupeKey(dedupeKey)
-                        .sendStatus("SUCCESS")
-                        .sendTime(now)
-                        .title(reminder.getTitle())
-                        .contentSnapshot(reminder.getContent())
-                        .routeType(reminder.getRouteType())
-                        .routeValue(reminder.getRouteValue())
-                        .readStatus(MessageCenterConstants.READ_STATUS_UNREAD)
-                        .build());
+                try {
+                    messageRecordMapper.insert(MessageRecordDO.builder()
+                            .receiverUserId(reminder.getUserId())
+                            .sceneCode(MessageCenterConstants.SCENE_REMINDER_TRIGGER)
+                            .messageCategory(MessageCenterConstants.CATEGORY_SYSTEM)
+                            .channelType(MessageCenterConstants.CHANNEL_APP_POPUP)
+                            .bizType(MessageCenterConstants.BIZ_TYPE_USER_REMINDER)
+                            .bizId(reminder.getId())
+                            .dedupeKey(dedupeKey)
+                            .sendStatus("SUCCESS")
+                            .sendTime(now)
+                            .title(reminder.getTitle())
+                            .contentSnapshot(reminder.getContent())
+                            .routeType(reminder.getRouteType())
+                            .routeValue(reminder.getRouteValue())
+                            .readStatus(MessageCenterConstants.READ_STATUS_UNREAD)
+                            .build());
+                } catch (DuplicateKeyException ex) {
+                    if (messageRecordMapper.selectByDedupeKeyForUpdate(dedupeKey) == null) {
+                        throw ex;
+                    }
+                }
             }
             userReminderMapper.updateById(UserReminderDO.builder()
                     .id(reminder.getId())

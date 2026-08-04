@@ -2,10 +2,20 @@
   <ContentWrap>
     <el-form :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
       <el-form-item label="服务商 ID">
-        <el-input v-model="queryParams.merchantId" placeholder="请输入服务商 ID" class="!w-220px" clearable />
+        <el-input
+          v-model="queryParams.merchantId"
+          placeholder="请输入服务商 ID"
+          class="!w-220px"
+          clearable
+        />
       </el-form-item>
       <el-form-item label="状态">
-        <el-input v-model="queryParams.status" placeholder="请输入状态" class="!w-220px" clearable />
+        <el-input
+          v-model="queryParams.status"
+          placeholder="请输入状态"
+          class="!w-220px"
+          clearable
+        />
       </el-form-item>
       <el-form-item>
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
@@ -23,7 +33,12 @@
       <el-table-column label="当前生效" width="100">
         <template #default="{ row }">{{ formatBooleanYesNo(row.currentFlag) }}</template>
       </el-table-column>
-      <el-table-column label="生效时间" prop="effectiveTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="生效时间"
+        prop="effectiveTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="失效时间" prop="expireTime" :formatter="dateFormatter" width="180" />
       <el-table-column label="操作" width="180" fixed="right">
         <template #default="{ row }">
@@ -32,7 +47,12 @@
         </template>
       </el-table-column>
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 </template>
 
@@ -73,13 +93,19 @@ const handleQuery = () => {
 }
 
 const freeze = async (row: PriorityPoolRecord) => {
-  await PriorityPoolApi.freezePriorityPool({ merchantId: row.merchantId!, reasonRemark: '后台手动冻结' })
+  await PriorityPoolApi.freezePriorityPool({
+    merchantId: row.merchantId!,
+    reasonRemark: '后台手动冻结'
+  })
   message.success('已冻结优先池资格')
   getList()
 }
 
 const unfreeze = async (row: PriorityPoolRecord) => {
-  await PriorityPoolApi.unfreezePriorityPool({ merchantId: row.merchantId!, reasonRemark: '后台手动解冻' })
+  await PriorityPoolApi.unfreezePriorityPool({
+    merchantId: row.merchantId!,
+    reasonRemark: '后台手动解冻'
+  })
   message.success('已解冻并触发重算')
   getList()
 }

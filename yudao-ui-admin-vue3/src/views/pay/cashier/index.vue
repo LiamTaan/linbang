@@ -92,6 +92,7 @@
             <el-link
               type="danger"
               target="_blank"
+              rel="noopener noreferrer"
               href="https://baike.baidu.com/item/条码支付/10711903"
             >
               (扫码枪/扫码盒)
@@ -120,6 +121,7 @@ import * as PayOrderApi from '@/api/pay/order'
 import { PayChannelEnum, PayDisplayModeEnum, PayOrderStatusEnum } from '@/utils/constants'
 import { formatDate } from '@/utils/formatTime'
 import { useTagsViewStore } from '@/store/modules/tagsView'
+import { navigateToSafeUrl, toSafeInternalPath } from '@/utils/url'
 
 // 导入图标
 import svg_alipay_pc from '@/assets/svgs/pay/icon/alipay_pc.svg'
@@ -351,7 +353,9 @@ const buildSubmitParam = (channelCode) => {
 
 /** 提交支付后，URL 的展示形式 */
 const displayUrl = (_channelCode, data) => {
-  location.href = data.displayContent
+  if (!navigateToSafeUrl(data.displayContent)) {
+    message.error('支付跳转地址不合法')
+  }
   submitLoading.value = false
 }
 
@@ -446,8 +450,14 @@ const goReturnUrl = (payResult) => {
       : returnUrl.value + '?payResult=' + payResult
   // 如果有配置，且是 http 开头，则浏览器跳转
   if (returnUrl.value.indexOf('http') === 0) {
-    location.href = url
+    if (!navigateToSafeUrl(url)) {
+      message.error('支付返回地址不合法')
+    }
   } else {
+    if (!toSafeInternalPath(url)) {
+      message.error('支付返回路径不合法')
+      return
+    }
     delView(unref(currentRoute))
     push({
       path: url

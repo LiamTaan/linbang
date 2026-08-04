@@ -4,11 +4,9 @@ import cn.hutool.core.codec.Base64;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.digest.DigestUtil;
-import cn.hutool.crypto.digest.HmacAlgorithm;
-import cn.hutool.http.HttpUtil;
 import cn.iocoder.yudao.framework.common.core.KeyValue;
 import cn.iocoder.yudao.framework.common.util.collection.MapUtils;
+import cn.iocoder.yudao.framework.common.util.http.HttpUtils;
 import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
 import cn.iocoder.yudao.module.system.framework.sms.core.client.dto.SmsReceiveRespDTO;
 import cn.iocoder.yudao.module.system.framework.sms.core.client.dto.SmsSendRespDTO;
@@ -16,6 +14,7 @@ import cn.iocoder.yudao.module.system.framework.sms.core.client.dto.SmsTemplateR
 import cn.iocoder.yudao.module.system.framework.sms.core.enums.SmsTemplateAuditStatusEnum;
 import cn.iocoder.yudao.module.system.framework.sms.core.property.SmsChannelProperties;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +28,8 @@ import java.util.Objects;
  * @author 芋道源码
  */
 public class DebugDingTalkSmsClient extends AbstractSmsClient {
+
+    private static final int MAX_RESPONSE_BODY_BYTES = 64 * 1024;
 
     public DebugDingTalkSmsClient(SmsChannelProperties properties) {
         super(properties);
@@ -47,7 +48,9 @@ public class DebugDingTalkSmsClient extends AbstractSmsClient {
                 mobile, sendLogId, MapUtils.convertMap(templateParams));
         params.put("text", MapUtil.builder().put("content", content).build());
         // 执行请求
-        String responseText = HttpUtil.post(url, JsonUtils.toJsonString(params));
+        String responseText = HttpUtils.postPublicHttps(url,
+                Collections.singletonMap("Content-Type", "application/json; charset=utf-8"),
+                JsonUtils.toJsonString(params), MAX_RESPONSE_BODY_BYTES).getBody();
         // 解析结果
         Map<?, ?> responseObj = JsonUtils.parseObject(responseText, Map.class);
         String errorCode = MapUtil.getStr(responseObj, "errcode");
@@ -70,7 +73,7 @@ public class DebugDingTalkSmsClient extends AbstractSmsClient {
         // 生成 sign
         String secret = properties.getApiSecret();
         String stringToSign = timestamp + "\n" + secret;
-        byte[] signData = DigestUtil.hmac(HmacAlgorithm.HmacSHA256, StrUtil.bytes(secret)).digest(stringToSign);
+        byte[] signData = SmsSignatureUtils.hmacSha256(secret, stringToSign);
         String sign = Base64.encode(signData);
         // 构建最终 URL
         return String.format("https://oapi.dingtalk.com/%s?access_token=%s&timestamp=%d&sign=%s",

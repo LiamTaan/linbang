@@ -11,6 +11,10 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface MerchantPriceReportMapper extends BaseMapperX<MerchantPriceReportDO> {
 
+    default MerchantPriceReportDO selectByIdForUpdate(Long id) {
+        return selectOneForUpdate(MerchantPriceReportDO::getId, id);
+    }
+
     default PageResult<MerchantPriceReportDO> selectPage(MerchantPriceReportPageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<MerchantPriceReportDO>()
                 .eqIfPresent(MerchantPriceReportDO::getMerchantId, reqVO.getMerchantId())

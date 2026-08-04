@@ -109,11 +109,21 @@ const formRules = {
   'config.baseUrl': [{ required: true, message: '聚合下单基础地址不能为空', trigger: 'blur' }],
   'config.merchantNo': [{ required: true, message: '收款商户号不能为空', trigger: 'blur' }],
   'config.merchantName': [{ required: true, message: '商户名称不能为空', trigger: 'blur' }],
-  'config.openApiGatewayUrl': [{ required: true, message: '退款网关地址不能为空', trigger: 'blur' }],
-  'config.transferGatewayUrl': [{ required: true, message: '提现网关地址不能为空', trigger: 'blur' }],
-  'config.privateKeyFilePath': [{ required: true, message: '商户私钥证书路径不能为空', trigger: 'blur' }],
-  'config.privateKeyPassword': [{ required: true, message: '私钥证书密码不能为空', trigger: 'blur' }],
-  'config.ysepayPublicKeyFilePath': [{ required: true, message: '银盛公钥证书路径不能为空', trigger: 'blur' }],
+  'config.openApiGatewayUrl': [
+    { required: true, message: '退款网关地址不能为空', trigger: 'blur' }
+  ],
+  'config.transferGatewayUrl': [
+    { required: true, message: '提现网关地址不能为空', trigger: 'blur' }
+  ],
+  'config.privateKeyFilePath': [
+    { required: true, message: '商户私钥证书路径不能为空', trigger: 'blur' }
+  ],
+  'config.privateKeyPassword': [
+    { required: true, message: '私钥证书密码不能为空', trigger: 'blur' }
+  ],
+  'config.ysepayPublicKeyFilePath': [
+    { required: true, message: '银盛公钥证书路径不能为空', trigger: 'blur' }
+  ],
   'config.signType': [{ required: true, message: '签名算法不能为空', trigger: 'change' }],
   'config.charset': [{ required: true, message: '字符集不能为空', trigger: 'blur' }],
   'config.version': [{ required: true, message: '接口版本不能为空', trigger: 'blur' }]

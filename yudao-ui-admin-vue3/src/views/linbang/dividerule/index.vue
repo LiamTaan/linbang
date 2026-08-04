@@ -81,12 +81,7 @@
         />
       </el-form-item>
       <el-form-item label="状态" prop="status">
-        <el-select
-          v-model="queryParams.status"
-          placeholder="请选择状态"
-          clearable
-          class="!w-240px"
-        >
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable class="!w-240px">
           <el-option
             v-for="item in ENABLE_STATUS_OPTIONS"
             :key="item.value"
@@ -138,11 +133,11 @@
           <Icon icon="ep:download" class="mr-5px" /> 导出
         </el-button>
         <el-button
-            type="danger"
-            plain
-            :disabled="isEmpty(checkedIds)"
-            @click="handleDeleteBatch"
-            v-hasPermi="['linbang:wallet:divide-rule:delete']"
+          type="danger"
+          plain
+          :disabled="isEmpty(checkedIds)"
+          @click="handleDeleteBatch"
+          v-hasPermi="['linbang:wallet:divide-rule:delete']"
         >
           <Icon icon="ep:delete" class="mr-5px" /> 批量删除
         </el-button>
@@ -153,14 +148,14 @@
   <!-- 列表 -->
   <ContentWrap>
     <el-table
-        row-key="id"
-        v-loading="loading"
-        :data="list"
-        :stripe="true"
-        :show-overflow-tooltip="true"
-        @selection-change="handleRowCheckboxChange"
+      row-key="id"
+      v-loading="loading"
+      :data="list"
+      :stripe="true"
+      :show-overflow-tooltip="true"
+      @selection-change="handleRowCheckboxChange"
     >
-    <el-table-column type="selection" width="55" />
+      <el-table-column type="selection" width="55" />
       <el-table-column label="规则名称" align="center" prop="ruleName" />
       <el-table-column label="城市等级" align="center" prop="cityLevel" />
       <el-table-column label="类目" align="center" min-width="180">
@@ -244,6 +239,7 @@ import { DivideRuleApi, DivideRule } from '@/api/linbang/dividerule'
 import { ENABLE_STATUS_OPTIONS, formatEnableStatus } from '../utils/display'
 import DivideRuleForm from './DivideRuleForm.vue'
 import DivideRuleDetailDialog from './DivideRuleDetailDialog.vue'
+import { requestDynamicKeyToken } from '../shared/dynamic-key'
 
 import { onMounted, reactive, ref } from 'vue'
 import { useI18n } from '@/hooks/web/useI18n'
@@ -315,8 +311,9 @@ const handleDelete = async (id: number) => {
   try {
     // 删除的二次确认
     await message.delConfirm()
+    const verifyToken = await requestDynamicKeyToken('删除分账规则')
     // 发起删除
-    await DivideRuleApi.deleteDivideRule(id)
+    await DivideRuleApi.deleteDivideRule(id, verifyToken)
     message.success(t('common.delSuccess'))
     // 刷新列表
     await getList()
@@ -328,16 +325,17 @@ const handleDeleteBatch = async () => {
   try {
     // 删除的二次确认
     await message.delConfirm()
-    await DivideRuleApi.deleteDivideRuleList(checkedIds.value);
-    checkedIds.value = [];
+    const verifyToken = await requestDynamicKeyToken('批量删除分账规则')
+    await DivideRuleApi.deleteDivideRuleList(checkedIds.value, verifyToken)
+    checkedIds.value = []
     message.success(t('common.delSuccess'))
-    await getList();
+    await getList()
   } catch {}
 }
 
 const checkedIds = ref<number[]>([])
 const handleRowCheckboxChange = (records: DivideRule[]) => {
-  checkedIds.value = records.map((item) => item.id!);
+  checkedIds.value = records.map((item) => item.id!)
 }
 
 /** 导出按钮操作 */

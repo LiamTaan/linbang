@@ -60,6 +60,7 @@ public class RiskEventDetailRespVO {
     private List<OrderOperateLogRespVO> orderOperateLogs;
 
     @Data
+    @Schema(description = "管理后台 - 风控规则摘要 Response VO")
     public static class RiskRuleSimpleRespVO {
         @Schema(description = "规则 ID", example = "310001")
         private Long id;
@@ -80,6 +81,7 @@ public class RiskEventDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 主订单摘要 Response VO")
     public static class OrderSimpleRespVO {
         @Schema(description = "主订单 ID", example = "2001")
         private Long id;
@@ -106,6 +108,7 @@ public class RiskEventDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 订单单元摘要 Response VO")
     public static class OrderUnitSimpleRespVO {
         @Schema(description = "单元订单 ID", example = "3001")
         private Long id;
@@ -134,6 +137,7 @@ public class RiskEventDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 异常订单摘要 Response VO")
     public static class OrderAbnormalSimpleRespVO {
         @Schema(description = "异常单 ID", example = "1")
         private Long id;
@@ -160,6 +164,7 @@ public class RiskEventDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 投诉摘要 Response VO")
     public static class ComplaintSimpleRespVO {
         @Schema(description = "投诉 ID", example = "1")
         private Long id;
@@ -186,6 +191,7 @@ public class RiskEventDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 申诉摘要 Response VO")
     public static class AppealSimpleRespVO {
         @Schema(description = "申诉 ID", example = "1")
         private Long id;
@@ -216,6 +222,7 @@ public class RiskEventDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 提现记录摘要 Response VO")
     public static class WithdrawSimpleRespVO {
         @Schema(description = "提现单 ID", example = "1")
         private Long id;
@@ -252,6 +259,7 @@ public class RiskEventDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 订单操作日志摘要 Response VO")
     public static class OrderOperateLogRespVO {
         @Schema(description = "日志 ID", example = "1")
         private Long id;

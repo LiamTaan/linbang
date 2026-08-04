@@ -30,27 +30,9 @@ export const MemberUserAddressApi = {
 
   // 查询用户地址表详情
   getMemberUserAddress: async (id: number) => {
-    return await request.get<MemberUserAddress>({ url: `/linbang/member-user-address/get?id=` + id })
-  },
-
-  // 新增用户地址表
-  createMemberUserAddress: async (data: MemberUserAddress) => {
-    return await request.post({ url: `/linbang/member-user-address/create`, data })
-  },
-
-  // 修改用户地址表
-  updateMemberUserAddress: async (data: MemberUserAddress) => {
-    return await request.put({ url: `/linbang/member-user-address/update`, data })
-  },
-
-  // 删除用户地址表
-  deleteMemberUserAddress: async (id: number) => {
-    return await request.delete({ url: `/linbang/member-user-address/delete?id=` + id })
-  },
-
-  /** 批量删除用户地址表 */
-  deleteMemberUserAddressList: async (ids: number[]) => {
-    return await request.delete({ url: `/linbang/member-user-address/delete-list?ids=${ids.join(',')}` })
+    return await request.get<MemberUserAddress>({
+      url: `/linbang/member-user-address/get?id=` + id
+    })
   },
 
   // 导出用户地址表 Excel

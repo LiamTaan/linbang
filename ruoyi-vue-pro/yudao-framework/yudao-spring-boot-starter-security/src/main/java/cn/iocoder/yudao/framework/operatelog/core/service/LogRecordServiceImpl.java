@@ -43,7 +43,8 @@ public class LogRecordServiceImpl implements ILogRecordService {
             operateLogApi.createOperateLogAsync(reqDTO);
         } catch (Throwable ex) {
             // 由于 @Async 异步调用，这里打印下日志，更容易跟进
-            log.error("[record][url({}) log({}) 发生异常]", reqDTO.getRequestUrl(), reqDTO, ex);
+            log.error("[record][url({}) traceId({}) 发生异常]",
+                    reqDTO.getRequestUrl(), reqDTO.getTraceId(), ex);
         }
     }
 

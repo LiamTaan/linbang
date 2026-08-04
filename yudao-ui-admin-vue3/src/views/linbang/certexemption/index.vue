@@ -2,14 +2,34 @@
   <ContentWrap>
     <el-form :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
       <el-form-item label="用户">
-        <el-input v-model="queryParams.userKeyword" placeholder="请输入用户编号 / 昵称 / 手机号" class="!w-220px" clearable />
+        <el-input
+          v-model="queryParams.userKeyword"
+          placeholder="请输入用户编号 / 昵称 / 手机号"
+          class="!w-220px"
+          clearable
+        />
       </el-form-item>
       <el-form-item label="豁免类型">
-        <el-input v-model="queryParams.exemptionType" placeholder="请输入豁免类型" class="!w-220px" clearable />
+        <el-input
+          v-model="queryParams.exemptionType"
+          placeholder="请输入豁免类型"
+          class="!w-220px"
+          clearable
+        />
       </el-form-item>
       <el-form-item label="审核状态">
-        <el-select v-model="queryParams.auditStatus" class="!w-220px" clearable placeholder="请选择审核状态">
-          <el-option v-for="dict in getStrDictOptions(DICT_TYPE.LB_AUDIT_STATUS)" :key="dict.value" :label="dict.label" :value="dict.value" />
+        <el-select
+          v-model="queryParams.auditStatus"
+          class="!w-220px"
+          clearable
+          placeholder="请选择审核状态"
+        >
+          <el-option
+            v-for="dict in getStrDictOptions(DICT_TYPE.LB_AUDIT_STATUS)"
+            :key="dict.value"
+            :label="dict.label"
+            :value="dict.value"
+          />
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -34,7 +54,11 @@
       <el-table-column label="豁免类型" prop="exemptionType" width="160" />
       <el-table-column label="审核状态" prop="auditStatus" width="110">
         <template #default="{ row }">
-          <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+          <dict-tag
+            v-if="row.auditStatus"
+            :type="DICT_TYPE.LB_AUDIT_STATUS"
+            :value="row.auditStatus"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
@@ -47,27 +71,60 @@
       <el-table-column label="操作" width="160" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
-          <el-button v-if="row.auditStatus !== 'APPROVED'" link type="primary" @click="openAuditDialog(row)">审核</el-button>
+          <el-button
+            v-if="row.auditStatus !== 'APPROVED'"
+            link
+            type="primary"
+            @click="openAuditDialog(row)"
+            >审核</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 
   <Dialog v-model="detailVisible" title="证件豁免详情" width="900px">
     <el-descriptions v-loading="detailLoading" :column="2" border>
-      <el-descriptions-item label="用户">{{ [detailData?.user?.nickname, detailData?.user?.mobile, detailData?.user?.userNo].filter(Boolean).join(' / ') || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="服务商">{{ detailData?.merchant?.merchantName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="资质">{{ detailData?.qualification?.qualificationName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="豁免类型">{{ detailData?.exemptionType || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="用户">{{
+        [detailData?.user?.nickname, detailData?.user?.mobile, detailData?.user?.userNo]
+          .filter(Boolean)
+          .join(' / ') || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="服务商">{{
+        detailData?.merchant?.merchantName || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="资质">{{
+        detailData?.qualification?.qualificationName || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="豁免类型">{{
+        detailData?.exemptionType || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="审核状态">
-        <dict-tag v-if="detailData?.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="detailData.auditStatus" />
+        <dict-tag
+          v-if="detailData?.auditStatus"
+          :type="DICT_TYPE.LB_AUDIT_STATUS"
+          :value="detailData.auditStatus"
+        />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="审核时间">{{ formatDate(detailData?.auditTime) }}</el-descriptions-item>
-      <el-descriptions-item label="申请原因" :span="2">{{ detailData?.reason || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="审核备注" :span="2">{{ detailData?.auditRemark || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="驳回原因" :span="2">{{ detailData?.rejectReason || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="审核时间">{{
+        formatDate(detailData?.auditTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="申请原因" :span="2">{{
+        detailData?.reason || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="审核备注" :span="2">{{
+        detailData?.auditRemark || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="驳回原因" :span="2">{{
+        detailData?.rejectReason || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
   </Dialog>
 
@@ -82,7 +139,11 @@
       <el-form-item label="审核备注" prop="auditRemark">
         <el-input v-model="auditFormData.auditRemark" type="textarea" :rows="3" />
       </el-form-item>
-      <el-form-item v-if="auditFormData.auditStatus === 'REJECTED'" label="驳回原因" prop="rejectReason">
+      <el-form-item
+        v-if="auditFormData.auditStatus === 'REJECTED'"
+        label="驳回原因"
+        prop="rejectReason"
+      >
         <el-input v-model="auditFormData.rejectReason" type="textarea" :rows="3" />
       </el-form-item>
     </el-form>
@@ -99,7 +160,13 @@ import { onMounted, reactive, ref } from 'vue'
 import { dateFormatter, formatDate } from '@/utils/formatTime'
 import { DICT_TYPE, getStrDictOptions } from '@/utils/dict'
 import { useMessage } from '@/hooks/web/useMessage'
-import { CertExemptionApi, type CertExemption, type CertExemptionAuditReqVO, type CertExemptionDetail } from '@/api/linbang/certexemption'
+import {
+  CertExemptionApi,
+  type CertExemption,
+  type CertExemptionAuditReqVO,
+  type CertExemptionDetail
+} from '@/api/linbang/certexemption'
+import { requestDynamicKeyToken } from '../shared/dynamic-key'
 
 defineOptions({ name: 'LinbangCertExemption' })
 
@@ -167,12 +234,17 @@ const openAuditDialog = (row: CertExemption) => {
 
 const submitAudit = async () => {
   await auditFormRef.value?.validate()
-  await CertExemptionApi.auditCertExemption({
-    id: auditFormData.id,
-    auditStatus: auditFormData.auditStatus,
-    auditRemark: auditFormData.auditRemark,
-    rejectReason: auditFormData.auditStatus === 'REJECTED' ? auditFormData.rejectReason : ''
-  })
+  await message.confirm('确认提交证件豁免审核结果？')
+  const verifyToken = await requestDynamicKeyToken('证件豁免审核')
+  await CertExemptionApi.auditCertExemption(
+    {
+      id: auditFormData.id,
+      auditStatus: auditFormData.auditStatus,
+      auditRemark: auditFormData.auditRemark,
+      rejectReason: auditFormData.auditStatus === 'REJECTED' ? auditFormData.rejectReason : ''
+    },
+    verifyToken
+  )
   message.success('证件豁免审核成功')
   auditVisible.value = false
   await getList()

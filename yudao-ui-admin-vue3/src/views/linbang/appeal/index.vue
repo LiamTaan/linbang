@@ -8,16 +8,40 @@
       class="-mb-15px"
     >
       <el-form-item label="申诉单号" prop="appealNo">
-        <el-input v-model="queryParams.appealNo" placeholder="请输入申诉单号" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.appealNo"
+          placeholder="请输入申诉单号"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="订单号" prop="orderNo">
-        <el-input v-model="queryParams.orderNo" placeholder="请输入订单号" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.orderNo"
+          placeholder="请输入订单号"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="单元号" prop="unitNo">
-        <el-input v-model="queryParams.unitNo" placeholder="请输入单元号" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.unitNo"
+          placeholder="请输入单元号"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="申诉人" prop="userKeyword">
-        <el-input v-model="queryParams.userKeyword" placeholder="请输入用户编号 / 昵称 / 手机号" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.userKeyword"
+          placeholder="请输入用户编号 / 昵称 / 手机号"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable class="!w-220px">
@@ -30,7 +54,12 @@
         </el-select>
       </el-form-item>
       <el-form-item label="审核状态" prop="auditStatus">
-        <el-select v-model="queryParams.auditStatus" placeholder="请选择审核状态" clearable class="!w-220px">
+        <el-select
+          v-model="queryParams.auditStatus"
+          placeholder="请选择审核状态"
+          clearable
+          class="!w-220px"
+        >
           <el-option
             v-for="dict in getStrDictOptions(DICT_TYPE.LB_AUDIT_STATUS)"
             :key="dict.value"
@@ -90,18 +119,42 @@
       </el-table-column>
       <el-table-column label="审核状态" align="center" prop="auditStatus" width="110">
         <template #default="{ row }">
-          <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+          <dict-tag
+            v-if="row.auditStatus"
+            :type="DICT_TYPE.LB_AUDIT_STATUS"
+            :value="row.auditStatus"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="审核备注" align="center" prop="auditRemark" min-width="160" />
       <el-table-column label="驳回原因" align="center" prop="rejectReason" min-width="160" />
       <el-table-column label="审核人" align="center" prop="auditBy" width="100" />
-      <el-table-column label="审核时间" align="center" prop="auditTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="操作" align="center" fixed="right" :show-overflow-tooltip="false" min-width="160">
+      <el-table-column
+        label="审核时间"
+        align="center"
+        prop="auditTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
+      <el-table-column
+        label="操作"
+        align="center"
+        fixed="right"
+        :show-overflow-tooltip="false"
+        min-width="160"
+      >
         <template #default="{ row }">
-          <div class="flex flex-wrap items-center justify-center gap-x-8px gap-y-4px whitespace-normal">
+          <div
+            class="flex flex-wrap items-center justify-center gap-x-8px gap-y-4px whitespace-normal"
+          >
             <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
             <el-button
               v-if="row.auditStatus !== 'APPROVED' && row.status !== 'REJECTED'"
@@ -126,22 +179,46 @@
 
   <Dialog v-model="detailVisible" title="申诉详情" width="920px">
     <el-descriptions v-loading="detailLoading" :column="2" border>
-      <el-descriptions-item label="申诉单号">{{ detailData?.appealNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="订单号">{{ detailData?.order?.orderNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="单元号">{{ detailData?.unit?.unitNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="申诉类型">{{ formatAppealType(detailData?.appealType) }}</el-descriptions-item>
+      <el-descriptions-item label="申诉单号">{{
+        detailData?.appealNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="订单号">{{
+        detailData?.order?.orderNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="单元号">{{
+        detailData?.unit?.unitNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="申诉类型">{{
+        formatAppealType(detailData?.appealType)
+      }}</el-descriptions-item>
       <el-descriptions-item label="流程状态">
-        <dict-tag v-if="detailData?.status" :type="DICT_TYPE.LB_APPEAL_STATUS" :value="detailData.status" />
+        <dict-tag
+          v-if="detailData?.status"
+          :type="DICT_TYPE.LB_APPEAL_STATUS"
+          :value="detailData.status"
+        />
         <span v-else>-</span>
       </el-descriptions-item>
       <el-descriptions-item label="审核状态">
-        <dict-tag v-if="detailData?.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="detailData.auditStatus" />
+        <dict-tag
+          v-if="detailData?.auditStatus"
+          :type="DICT_TYPE.LB_AUDIT_STATUS"
+          :value="detailData.auditStatus"
+        />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="审核时间">{{ formatDate(detailData?.auditTime) }}</el-descriptions-item>
-      <el-descriptions-item label="申诉内容" :span="2">{{ detailData?.content || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="审核备注" :span="2">{{ detailData?.auditRemark || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="驳回原因" :span="2">{{ detailData?.rejectReason || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="审核时间">{{
+        formatDate(detailData?.auditTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="申诉内容" :span="2">{{
+        detailData?.content || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="审核备注" :span="2">{{
+        detailData?.auditRemark || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="驳回原因" :span="2">{{
+        detailData?.rejectReason || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">订单与对象上下文</el-divider>
@@ -151,7 +228,9 @@
           <div class="text-14px text-[var(--el-text-color-secondary)]">主订单</div>
           <div class="mt-8px text-16px font-600">{{ detailData?.order?.orderNo || '-' }}</div>
           <div class="mt-6px text-13px">{{ detailData?.order?.title || '-' }}</div>
-          <div class="mt-6px text-[var(--el-text-color-secondary)]">状态：{{ formatOrderStatus(detailData?.order?.status) }}</div>
+          <div class="mt-6px text-[var(--el-text-color-secondary)]"
+            >状态：{{ formatOrderStatus(detailData?.order?.status) }}</div
+          >
         </el-card>
       </el-col>
       <el-col :span="8">
@@ -159,15 +238,21 @@
           <div class="text-14px text-[var(--el-text-color-secondary)]">拆分单元</div>
           <div class="mt-8px text-16px font-600">{{ detailData?.unit?.unitNo || '-' }}</div>
           <div class="mt-6px text-13px">{{ detailData?.unit?.unitTitle || '-' }}</div>
-          <div class="mt-6px text-[var(--el-text-color-secondary)]">状态：{{ formatOrderUnitStatus(detailData?.unit?.status) }}</div>
+          <div class="mt-6px text-[var(--el-text-color-secondary)]"
+            >状态：{{ formatOrderUnitStatus(detailData?.unit?.status) }}</div
+          >
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">申诉服务商</div>
-          <div class="mt-8px text-16px font-600">{{ detailData?.merchant?.merchantName || '-' }}</div>
+          <div class="mt-8px text-16px font-600">{{
+            detailData?.merchant?.merchantName || '-'
+          }}</div>
           <div class="mt-6px text-13px">{{ detailData?.merchant?.contactName || '-' }}</div>
-          <div class="mt-6px text-[var(--el-text-color-secondary)]">状态：{{ formatEnableStatus(detailData?.merchant?.status) }}</div>
+          <div class="mt-6px text-[var(--el-text-color-secondary)]"
+            >状态：{{ formatEnableStatus(detailData?.merchant?.status) }}</div
+          >
         </el-card>
       </el-col>
     </el-row>
@@ -177,21 +262,35 @@
         {{ detailData?.user?.nickname || '-' }} / {{ detailData?.user?.mobile || '-' }}
       </el-descriptions-item>
       <el-descriptions-item label="服务商联系人">
-        {{ detailData?.merchant?.contactName || '-' }} / {{ detailData?.merchant?.contactMobile || '-' }}
+        {{ detailData?.merchant?.contactName || '-' }} /
+        {{ detailData?.merchant?.contactMobile || '-' }}
       </el-descriptions-item>
-      <el-descriptions-item label="下单用户">{{ formatOrderUserSummary(detailData?.order) }}</el-descriptions-item>
-      <el-descriptions-item label="订单金额">{{ detailData?.order?.orderAmount ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="单元序号">{{ detailData?.unit?.unitSeq || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="单元金额">{{ detailData?.unit?.unitAmount ?? '-' }}</el-descriptions-item>
+      <el-descriptions-item label="下单用户">{{
+        formatOrderUserSummary(detailData?.order)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="订单金额">{{
+        detailData?.order?.orderAmount ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="单元序号">{{
+        detailData?.unit?.unitSeq || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="单元金额">{{
+        detailData?.unit?.unitAmount ?? '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="锁单状态">
         <span v-if="detailData?.unit">{{ detailData.unit.isLocked ? '已锁定' : '未锁定' }}</span>
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="锁单原因">{{ detailData?.unit?.lockReason || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="锁单原因">{{
+        detailData?.unit?.lockReason || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="信用分 / 等级">
-        {{ detailData?.merchant?.creditScore ?? '-' }} / {{ detailData?.merchant?.creditLevel || '-' }}
+        {{ detailData?.merchant?.creditScore ?? '-' }} /
+        {{ detailData?.merchant?.creditLevel || '-' }}
       </el-descriptions-item>
-      <el-descriptions-item label="服务范围说明">{{ detailData?.merchant?.serviceScopeDesc || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="服务范围说明">{{
+        detailData?.merchant?.serviceScopeDesc || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">统计概览</el-divider>
@@ -200,7 +299,8 @@
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">附件数 / 同单申诉数</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.attachmentCount ?? 0 }} / {{ detailData?.summary?.sameOrderAppealCount ?? 0 }}
+            {{ detailData?.summary?.attachmentCount ?? 0 }} /
+            {{ detailData?.summary?.sameOrderAppealCount ?? 0 }}
           </div>
         </el-card>
       </el-col>
@@ -208,7 +308,8 @@
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">待审核 / 处理中</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.pendingAuditCount ?? 0 }} / {{ detailData?.summary?.processingCount ?? 0 }}
+            {{ detailData?.summary?.pendingAuditCount ?? 0 }} /
+            {{ detailData?.summary?.processingCount ?? 0 }}
           </div>
         </el-card>
       </el-col>
@@ -216,7 +317,8 @@
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">通过 / 驳回 / 完结</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.approvedCount ?? 0 }} / {{ detailData?.summary?.rejectedCount ?? 0 }} /
+            {{ detailData?.summary?.approvedCount ?? 0 }} /
+            {{ detailData?.summary?.rejectedCount ?? 0 }} /
             {{ detailData?.summary?.finishedCount ?? 0 }}
           </div>
         </el-card>
@@ -224,13 +326,20 @@
     </el-row>
 
     <el-divider content-position="left">附件文件</el-divider>
-    <el-table v-if="detailData?.files?.length" :data="detailData.files" size="small" border max-height="220">
+    <el-table
+      v-if="detailData?.files?.length"
+      :data="detailData.files"
+      size="small"
+      border
+      max-height="220"
+    >
       <el-table-column label="附件文件" min-width="320">
         <template #default="{ row }">
           <el-link
-            v-if="row.fileId && fileMap[row.fileId]?.url"
-            :href="fileMap[row.fileId].url"
+            v-if="row.fileId && getOpenableFileUrl(fileMap[row.fileId])"
+            :href="getOpenableFileUrl(fileMap[row.fileId])"
             target="_blank"
+            rel="noopener noreferrer"
             type="primary"
             :underline="false"
           >
@@ -262,7 +371,11 @@
       </el-table-column>
       <el-table-column label="审核状态" prop="auditStatus" width="110">
         <template #default="{ row }">
-          <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+          <dict-tag
+            v-if="row.auditStatus"
+            :type="DICT_TYPE.LB_AUDIT_STATUS"
+            :value="row.auditStatus"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
@@ -351,7 +464,11 @@
           placeholder="请输入审核备注"
         />
       </el-form-item>
-      <el-form-item v-if="auditFormData.auditStatus === 'REJECTED'" label="驳回原因" prop="rejectReason">
+      <el-form-item
+        v-if="auditFormData.auditStatus === 'REJECTED'"
+        label="驳回原因"
+        prop="rejectReason"
+      >
         <el-input
           v-model="auditFormData.rejectReason"
           type="textarea"
@@ -377,7 +494,12 @@ import { dateFormatter, formatDate } from '@/utils/formatTime'
 import download from '@/utils/download'
 import { useMessage } from '@/hooks/web/useMessage'
 import { requestDynamicKeyToken } from '../shared/dynamic-key'
-import { AppealApi, type Appeal, type AppealAuditReqVO, type AppealDetail } from '@/api/linbang/appeal'
+import {
+  AppealApi,
+  type Appeal,
+  type AppealAuditReqVO,
+  type AppealDetail
+} from '@/api/linbang/appeal'
 import {
   formatAppealStatus,
   formatAppealType,
@@ -387,7 +509,12 @@ import {
   formatOrderStatus,
   formatOrderUnitStatus
 } from '../utils/display'
-import { formatFileBrief, loadFilesByIds, type FileLookupMap } from '../shared/file-display'
+import {
+  formatFileBrief,
+  getOpenableFileUrl,
+  loadFilesByIds,
+  type FileLookupMap
+} from '../shared/file-display'
 
 defineOptions({ name: 'Appeal' })
 
@@ -414,7 +541,9 @@ const queryParams = reactive({
 })
 
 const formatOrderUserSummary = (order?: AppealDetail['order']) => {
-  const summary = [order?.userNickname, order?.userMobile, order?.userNo].filter(Boolean).join(' / ')
+  const summary = [order?.userNickname, order?.userMobile, order?.userNo]
+    .filter(Boolean)
+    .join(' / ')
   return summary || (order?.userId ? '用户信息缺失' : '-')
 }
 
@@ -455,7 +584,10 @@ const openDetail = async (id: number) => {
   detailLoading.value = true
   try {
     detailData.value = await AppealApi.getAppeal(id)
-    Object.assign(fileMap, await loadFilesByIds(detailData.value.files?.map((item) => item.fileId) || []))
+    Object.assign(
+      fileMap,
+      await loadFilesByIds(detailData.value.files?.map((item) => item.fileId) || [])
+    )
   } finally {
     detailLoading.value = false
   }
@@ -508,12 +640,15 @@ const submitAudit = async () => {
   try {
     const verifyToken = await requestDynamicKeyToken('申诉审核')
     auditLoading.value = true
-    await AppealApi.auditAppeal({
-      id: auditFormData.id,
-      auditStatus: auditFormData.auditStatus,
-      auditRemark: auditFormData.auditRemark,
-      rejectReason: auditFormData.auditStatus === 'REJECTED' ? auditFormData.rejectReason : ''
-    }, verifyToken)
+    await AppealApi.auditAppeal(
+      {
+        id: auditFormData.id,
+        auditStatus: auditFormData.auditStatus,
+        auditRemark: auditFormData.auditRemark,
+        rejectReason: auditFormData.auditStatus === 'REJECTED' ? auditFormData.rejectReason : ''
+      },
+      verifyToken
+    )
     message.success('申诉审核成功')
     auditDialogVisible.value = false
     await getList()

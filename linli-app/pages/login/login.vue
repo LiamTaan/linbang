@@ -19,6 +19,7 @@
 import register from '@/components/login/register.vue'
 import login from '@/components/login/login.vue'
 import socialBind from '@/components/login/socialBind.vue'
+import { normalizeAppRoute } from '@/utils/navigation'
 export default {
   components: {
     register,
@@ -32,7 +33,7 @@ export default {
     }
   },
   onLoad(options) {
-    this.redirect = options && options.redirect ? decodeURIComponent(options.redirect) : ''
+    this.redirect = normalizeAppRoute(options && options.redirect ? options.redirect : '')
     // #ifdef MP-WEIXIN
     this.mode = 'login'
     return

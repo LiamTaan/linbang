@@ -7,6 +7,7 @@
 </template>
 <script setup lang="tsx">
 import { propTypes } from '@/utils/propTypes'
+import { openSafeUrl } from '@/utils/url'
 
 defineOptions({ name: 'DocAlert' })
 
@@ -17,7 +18,7 @@ const props = defineProps({
 
 /** 跳转 URL 链接 */
 const goToUrl = () => {
-  window.open(props.url)
+  openSafeUrl(props.url)
 }
 
 /** 是否开启 */

@@ -1,6 +1,12 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="业务类型" prop="bizType">
         <el-input
           v-model="queryParams.bizType"
@@ -68,12 +74,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
       </el-form-item>
     </el-form>
   </ContentWrap>
@@ -95,7 +97,11 @@
       <el-table-column label="命中规则" align="center" prop="hitRuleCode" min-width="150" />
       <el-table-column label="状态" align="center" prop="status" width="100">
         <template #default="{ row }">
-          <el-tag :type="row.status === 'HANDLED' ? 'success' : row.status === 'IGNORED' ? 'info' : 'warning'">
+          <el-tag
+            :type="
+              row.status === 'HANDLED' ? 'success' : row.status === 'IGNORED' ? 'info' : 'warning'
+            "
+          >
             {{ formatRiskEventStatus(row.status) }}
           </el-tag>
         </template>
@@ -103,9 +109,21 @@
       <el-table-column label="处置状态" align="center" prop="disposeStatus" width="110" />
       <el-table-column label="处置动作" align="center" prop="disposeAction" min-width="140" />
       <el-table-column label="处理人" align="center" prop="handleBy" width="100" />
-      <el-table-column label="处理时间" align="center" prop="handleTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="处理时间"
+        align="center"
+        prop="handleTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="备注" align="center" prop="remark" min-width="200" />
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="操作" align="center" fixed="right" width="240">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
@@ -123,32 +141,74 @@
 
   <Dialog v-model="detailVisible" title="风险事件详情" width="920px">
     <el-descriptions v-loading="detailLoading" :column="2" border>
-      <el-descriptions-item label="业务类型">{{ formatBizType(detailData?.bizType) }}</el-descriptions-item>
-      <el-descriptions-item label="业务对象">{{ formatBizDisplay(detailData) }}</el-descriptions-item>
-      <el-descriptions-item label="风险类型">{{ detailData?.riskType || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="风险等级">{{ formatRiskLevel(detailData?.riskLevel) }}</el-descriptions-item>
-      <el-descriptions-item label="命中规则编码">{{ detailData?.hitRuleCode || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="处理状态">{{ formatRiskEventStatus(detailData?.status) }}</el-descriptions-item>
-      <el-descriptions-item label="处置状态">{{ detailData?.disposeStatus || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="处置动作">{{ detailData?.disposeAction || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="业务类型">{{
+        formatBizType(detailData?.bizType)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="业务对象">{{
+        formatBizDisplay(detailData)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="风险类型">{{
+        detailData?.riskType || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="风险等级">{{
+        formatRiskLevel(detailData?.riskLevel)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="命中规则编码">{{
+        detailData?.hitRuleCode || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="处理状态">{{
+        formatRiskEventStatus(detailData?.status)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="处置状态">{{
+        detailData?.disposeStatus || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="处置动作">{{
+        detailData?.disposeAction || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="处理人">{{ detailData?.handleBy || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="处理时间">{{ formatDate(detailData?.handleTime) }}</el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData?.createTime) }}</el-descriptions-item>
-      <el-descriptions-item label="备注" :span="2">{{ detailData?.remark || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="处置备注" :span="2">{{ detailData?.disposeRemark || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="关联账号" :span="2">{{ detailData?.relatedUserIds || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="处理时间">{{
+        formatDate(detailData?.handleTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData?.createTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="备注" :span="2">{{
+        detailData?.remark || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="处置备注" :span="2">{{
+        detailData?.disposeRemark || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="关联账号" :span="2">{{
+        detailData?.relatedUserIds || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">命中规则</el-divider>
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="规则">{{ formatRiskRuleDisplay(detailData?.hitRule) }}</el-descriptions-item>
-      <el-descriptions-item label="规则编码">{{ detailData?.hitRule?.ruleCode || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="规则名称">{{ detailData?.hitRule?.ruleName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="规则分组">{{ detailData?.hitRule?.ruleGroup || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="取值类型">{{ detailData?.hitRule?.valueType || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="规则状态">{{ formatEnableStatus(detailData?.hitRule?.status) }}</el-descriptions-item>
-      <el-descriptions-item label="规则值" :span="2">{{ detailData?.hitRule?.ruleValue || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="规则备注" :span="2">{{ detailData?.hitRule?.remark || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="规则">{{
+        formatRiskRuleDisplay(detailData?.hitRule)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="规则编码">{{
+        detailData?.hitRule?.ruleCode || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="规则名称">{{
+        detailData?.hitRule?.ruleName || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="规则分组">{{
+        detailData?.hitRule?.ruleGroup || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="取值类型">{{
+        detailData?.hitRule?.valueType || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="规则状态">{{
+        formatEnableStatus(detailData?.hitRule?.status)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="规则值" :span="2">{{
+        detailData?.hitRule?.ruleValue || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="规则备注" :span="2">{{
+        detailData?.hitRule?.remark || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">订单上下文</el-divider>
@@ -170,7 +230,9 @@
           <div class="mt-6px text-13px">{{ detailData?.unit?.unitTitle || '-' }}</div>
           <div class="mt-6px text-[var(--el-text-color-secondary)]">
             状态：{{ formatOrderUnitStatus(detailData?.unit?.status) }}
-            <span v-if="detailData?.unit"> / 锁定：{{ formatBooleanYesNo(detailData.unit.isLocked) }}</span>
+            <span v-if="detailData?.unit">
+              / 锁定：{{ formatBooleanYesNo(detailData.unit.isLocked) }}</span
+            >
           </div>
         </el-card>
       </el-col>
@@ -187,13 +249,27 @@
     </el-row>
 
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="主订单号">{{ detailData?.order?.orderNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="主订单状态">{{ formatOrderStatus(detailData?.order?.status) }}</el-descriptions-item>
-      <el-descriptions-item label="下单用户">{{ formatOrderUserDisplay(detailData?.order) }}</el-descriptions-item>
-      <el-descriptions-item label="服务商">{{ formatMerchantDisplay(detailData?.order, detailData?.unit) }}</el-descriptions-item>
-      <el-descriptions-item label="单元号">{{ detailData?.unit?.unitNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="单元序号">{{ detailData?.unit?.unitSeq || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="锁单原因" :span="2">{{ detailData?.unit?.lockReason || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="主订单号">{{
+        detailData?.order?.orderNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="主订单状态">{{
+        formatOrderStatus(detailData?.order?.status)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="下单用户">{{
+        formatOrderUserDisplay(detailData?.order)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="服务商">{{
+        formatMerchantDisplay(detailData?.order, detailData?.unit)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="单元号">{{
+        detailData?.unit?.unitNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="单元序号">{{
+        detailData?.unit?.unitSeq || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="锁单原因" :span="2">{{
+        detailData?.unit?.lockReason || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">关联售后与提现</el-divider>
@@ -201,7 +277,9 @@
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">投诉单</div>
-          <div class="mt-8px text-16px font-600">{{ detailData?.complaint?.complaintNo || '-' }}</div>
+          <div class="mt-8px text-16px font-600">{{
+            detailData?.complaint?.complaintNo || '-'
+          }}</div>
           <div class="mt-6px text-[var(--el-text-color-secondary)]">
             状态：{{ formatComplaintStatus(detailData?.complaint?.status) }}
           </div>
@@ -246,7 +324,9 @@
       <el-descriptions-item label="投诉处理时间">
         {{ formatDate(detailData?.complaint?.handleTime) }}
       </el-descriptions-item>
-      <el-descriptions-item label="申诉类型">{{ formatAppealType(detailData?.appeal?.appealType) }}</el-descriptions-item>
+      <el-descriptions-item label="申诉类型">{{
+        formatAppealType(detailData?.appeal?.appealType)
+      }}</el-descriptions-item>
       <el-descriptions-item label="申诉审核时间">
         {{ formatDate(detailData?.appeal?.auditTime) }}
       </el-descriptions-item>
@@ -318,7 +398,12 @@
         </el-select>
       </el-form-item>
       <el-form-item label="处置备注" prop="disposeRemark">
-        <el-input v-model="disposeForm.disposeRemark" type="textarea" :rows="4" placeholder="请输入人工复核结论或处置说明" />
+        <el-input
+          v-model="disposeForm.disposeRemark"
+          type="textarea"
+          :rows="4"
+          placeholder="请输入人工复核结论或处置说明"
+        />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -398,7 +483,9 @@ const formatComplaintStatus = (value?: string) => {
 }
 
 const formatOrderUserDisplay = (order?: RiskEventDetail['order']) => {
-  const summary = [order?.userNickname, order?.userMobile, order?.userNo].filter(Boolean).join(' / ')
+  const summary = [order?.userNickname, order?.userMobile, order?.userNo]
+    .filter(Boolean)
+    .join(' / ')
   return summary || (order?.userId ? '用户信息缺失' : '-')
 }
 
@@ -407,7 +494,10 @@ const formatRiskRuleDisplay = (rule?: RiskEventDetail['hitRule']) => {
   return summary || (rule?.id ? '规则信息缺失' : '-')
 }
 
-const formatMerchantDisplay = (order?: RiskEventDetail['order'], unit?: RiskEventDetail['unit']) => {
+const formatMerchantDisplay = (
+  order?: RiskEventDetail['order'],
+  unit?: RiskEventDetail['unit']
+) => {
   const merchantSummary = [
     order?.merchantName || unit?.merchantName,
     order?.merchantContactMobile || unit?.merchantContactMobile,
@@ -444,7 +534,11 @@ const formatBizDisplay = (record?: RiskEvent | RiskEventDetail) => {
     return record.bizId ? detailData.value?.withdraw?.withdrawNo || '提现单信息缺失' : '-'
   }
   if (record.bizType === 'USER') {
-    const summary = [detailData.value?.order?.userNickname, detailData.value?.order?.userMobile, detailData.value?.order?.userNo]
+    const summary = [
+      detailData.value?.order?.userNickname,
+      detailData.value?.order?.userMobile,
+      detailData.value?.order?.userNo
+    ]
       .filter(Boolean)
       .join(' / ')
     return summary || (record.bizId ? '用户信息缺失' : '-')

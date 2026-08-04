@@ -9,6 +9,7 @@
 
 <script>
 import { finishSocialLogin } from '@/utils/social'
+import { normalizeAppRoute } from '@/utils/navigation'
 
 export default {
   data() {
@@ -38,8 +39,9 @@ export default {
       if (result.bindRequired) {
         this.title = '请绑定手机号'
         this.desc = '授权成功，但还需要完成手机号绑定'
+        const safeRedirect = normalizeAppRoute(redirect)
         uni.redirectTo({
-          url: `/pages/login/login?mode=social-bind&redirect=${encodeURIComponent(redirect || '')}`
+          url: `/pages/login/login?mode=social-bind&redirect=${encodeURIComponent(safeRedirect)}`
         })
       }
     } catch (error) {

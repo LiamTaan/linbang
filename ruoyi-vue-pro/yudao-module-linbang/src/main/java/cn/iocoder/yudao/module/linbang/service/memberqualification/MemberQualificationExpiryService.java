@@ -5,12 +5,11 @@ import cn.iocoder.yudao.module.infra.dal.dataobject.config.ConfigDO;
 import cn.iocoder.yudao.module.infra.service.config.ConfigService;
 import cn.iocoder.yudao.module.linbang.constants.PlatformConfigKeyConstants;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberqualification.MemberUserQualificationDO;
-import cn.iocoder.yudao.module.linbang.dal.dataobject.messagerecord.MessageRecordDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberqualification.MemberUserQualificationMapper;
-import cn.iocoder.yudao.module.linbang.dal.mysql.messagerecord.MessageRecordMapper;
 import cn.iocoder.yudao.module.linbang.service.merchantinfo.MerchantAccessStateService;
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchTarget;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -29,10 +28,10 @@ import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_QU
 @Service
 public class MemberQualificationExpiryService {
 
+    private static final int SCAN_BATCH_SIZE = 500;
+
     @Resource
     private MemberUserQualificationMapper memberUserQualificationMapper;
-    @Resource
-    private MessageRecordMapper messageRecordMapper;
     @Resource
     private MessagePushDispatchService messagePushDispatchService;
     @Resource
@@ -71,63 +70,67 @@ public class MemberQualificationExpiryService {
 
     private void handleReminder(int daysBefore) {
         LocalDate targetDate = LocalDate.now().plusDays(daysBefore);
-        List<MemberUserQualificationDO> qualifications = memberUserQualificationMapper.selectList(
-                new LambdaQueryWrapperX<MemberUserQualificationDO>()
-                        .eq(MemberUserQualificationDO::getAuditStatus, "APPROVED")
-                        .eq(MemberUserQualificationDO::getValidEndDate, targetDate)
-                        .orderByAsc(MemberUserQualificationDO::getId));
-        if (qualifications.isEmpty()) {
-            return;
-        }
-        String bizType = "QUALIFICATION_EXPIRE_REMINDER_D" + daysBefore;
-        List<MessagePushDispatchTarget> targets = new ArrayList<>();
-        for (MemberUserQualificationDO qualification : qualifications) {
-            if (existsMessage(qualification.getUserId(), bizType, qualification.getId())) {
-                continue;
+        long lastId = 0L;
+        while (true) {
+            List<MemberUserQualificationDO> qualifications = memberUserQualificationMapper.selectList(
+                    new LambdaQueryWrapperX<MemberUserQualificationDO>()
+                            .gt(MemberUserQualificationDO::getId, lastId)
+                            .eq(MemberUserQualificationDO::getAuditStatus, "APPROVED")
+                            .eq(MemberUserQualificationDO::getValidEndDate, targetDate)
+                            .orderByAsc(MemberUserQualificationDO::getId)
+                            .last("LIMIT " + SCAN_BATCH_SIZE));
+            if (qualifications.isEmpty()) {
+                return;
             }
-            targets.add(new MessagePushDispatchTarget(qualification.getUserId(), qualification.getId()));
+            lastId = qualifications.get(qualifications.size() - 1).getId();
+            String bizType = "QUALIFICATION_EXPIRE_REMINDER_D" + daysBefore;
+            List<MessagePushDispatchTarget> targets = new ArrayList<>();
+            for (MemberUserQualificationDO qualification : qualifications) {
+                targets.add(new MessagePushDispatchTarget(qualification.getUserId(), qualification.getId(),
+                        "qualification-expiry-reminder:" + daysBefore + ":" + qualification.getId()));
+            }
+            messagePushDispatchService.dispatchBatch("lb_qualification_expire_reminder",
+                    "资质到期提醒 D-" + daysBefore, "QUALIFICATION_EXPIRY", bizType, null,
+                    "系统自动生成的资质到期提醒", targets);
         }
-        messagePushDispatchService.dispatchBatch("lb_qualification_expire_reminder",
-                "资质到期提醒 D-" + daysBefore, "QUALIFICATION_EXPIRY", bizType, null,
-                "系统自动生成的资质到期提醒", targets);
     }
 
     private void handleExpiredQualifications() {
         LocalDate today = LocalDate.now();
-        List<MemberUserQualificationDO> qualifications = memberUserQualificationMapper.selectList(
-                new LambdaQueryWrapperX<MemberUserQualificationDO>()
-                        .eq(MemberUserQualificationDO::getAuditStatus, "APPROVED")
-                        .lt(MemberUserQualificationDO::getValidEndDate, today)
-                        .orderByAsc(MemberUserQualificationDO::getId));
-        if (qualifications.isEmpty()) {
-            return;
-        }
-        List<MessagePushDispatchTarget> targets = new ArrayList<>();
-        java.time.LocalDateTime now = java.time.LocalDateTime.now();
-        for (MemberUserQualificationDO qualification : qualifications) {
-            memberUserQualificationMapper.updateById(MemberUserQualificationDO.builder()
-                    .id(qualification.getId())
-                    .auditStatus("REJECTED")
-                    .auditRemark("系统自动驳回：资质已过期")
-                    .rejectReason("资质已过期，请更新资料后重新提交审核")
-                    .auditTime(now)
-                    .priorityEnabled(Boolean.FALSE)
-                    .build());
-            merchantAccessStateService.refreshMerchantAcceptStatus(qualification.getUserId());
-            if (!existsMessage(qualification.getUserId(), "QUALIFICATION_EXPIRE_DISABLE", qualification.getId())) {
-                targets.add(new MessagePushDispatchTarget(qualification.getUserId(), qualification.getId()));
+        while (true) {
+            List<MemberUserQualificationDO> qualifications = memberUserQualificationMapper.selectList(
+                    new LambdaQueryWrapperX<MemberUserQualificationDO>()
+                            .eq(MemberUserQualificationDO::getAuditStatus, "APPROVED")
+                            .lt(MemberUserQualificationDO::getValidEndDate, today)
+                            .orderByAsc(MemberUserQualificationDO::getId)
+                            .last("LIMIT " + SCAN_BATCH_SIZE));
+            if (qualifications.isEmpty()) {
+                return;
             }
+            List<MessagePushDispatchTarget> targets = new ArrayList<>();
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            for (MemberUserQualificationDO qualification : qualifications) {
+                int updated = memberUserQualificationMapper.update(null,
+                        new LambdaUpdateWrapper<MemberUserQualificationDO>()
+                                .eq(MemberUserQualificationDO::getId, qualification.getId())
+                                .eq(MemberUserQualificationDO::getAuditStatus, "APPROVED")
+                                .lt(MemberUserQualificationDO::getValidEndDate, today)
+                                .set(MemberUserQualificationDO::getAuditStatus, "REJECTED")
+                                .set(MemberUserQualificationDO::getAuditRemark, "系统自动驳回：资质已过期")
+                                .set(MemberUserQualificationDO::getRejectReason, "资质已过期，请更新资料后重新提交审核")
+                                .set(MemberUserQualificationDO::getAuditTime, now)
+                                .set(MemberUserQualificationDO::getPriorityEnabled, Boolean.FALSE));
+                if (updated == 0) {
+                    continue;
+                }
+                merchantAccessStateService.refreshMerchantAcceptStatus(qualification.getUserId());
+                targets.add(new MessagePushDispatchTarget(qualification.getUserId(), qualification.getId(),
+                        "qualification-expire-disable:" + qualification.getId()));
+            }
+            messagePushDispatchService.dispatchBatch("lb_qualification_expire_disable",
+                    "资质到期限制接单", "QUALIFICATION_EXPIRY", "QUALIFICATION_EXPIRE_DISABLE", null,
+                    "系统自动执行到期限制接单", targets);
         }
-        messagePushDispatchService.dispatchBatch("lb_qualification_expire_disable",
-                "资质到期限制接单", "QUALIFICATION_EXPIRY", "QUALIFICATION_EXPIRE_DISABLE", null,
-                "系统自动执行到期限制接单", targets);
-    }
-
-    private boolean existsMessage(Long userId, String bizType, Long bizId) {
-        return messageRecordMapper.selectCount(new LambdaQueryWrapperX<MessageRecordDO>()
-                .eq(MessageRecordDO::getReceiverUserId, userId)
-                .eq(MessageRecordDO::getBizType, bizType)
-                .eq(MessageRecordDO::getBizId, bizId)) > 0;
     }
 
     private List<Integer> loadReminderDays() {

@@ -6,18 +6,33 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import lombok.SneakyThrows;
+import okhttp3.Dns;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.util.UriUtils;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.net.Proxy;
+import java.net.UnknownHostException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * HTTP 工具类
@@ -25,6 +40,18 @@ import java.util.Map;
  * @author 芋道源码
  */
 public class HttpUtils {
+
+    private static final int CONNECT_TIMEOUT_MILLIS = 5_000;
+    private static final int READ_TIMEOUT_MILLIS = 10_000;
+    private static final int MAX_RESPONSE_BODY_BYTES = 2 * 1024 * 1024;
+    private static final MediaType JSON_MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8");
+    private static final OkHttpClient PUBLIC_HTTPS_CLIENT = new OkHttpClient.Builder()
+            .connectTimeout(CONNECT_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+            .readTimeout(READ_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .proxy(Proxy.NO_PROXY)
+            .build();
 
     /**
      * 编码 URL 参数
@@ -230,12 +257,71 @@ public class HttpUtils {
      * @return 请求结果
      */
     public static String post(String url, Map<String, String> headers, String requestBody) {
-        try (HttpResponse response = HttpRequest.post(url)
+        return post(url, headers, requestBody, MAX_RESPONSE_BODY_BYTES);
+    }
+
+    /**
+     * HTTP post request with a caller-specific response size limit.
+     */
+    public static String post(String url, Map<String, String> headers, String requestBody,
+                              int maxResponseBodyBytes) {
+        validateResponseBodyLimit(maxResponseBodyBytes);
+        try (HttpResponse response = secureRequest(HttpRequest.post(url))
                 .addHeaders(headers)
                 .body(requestBody)
                 .execute()) {
-            return response.body();
+            return readLimitedBody(response, maxResponseBodyBytes);
         }
+    }
+
+    /**
+     * Sends JSON to a public HTTPS destination while pinning the validated DNS result for this connection.
+     * This prevents a second DNS lookup from rebinding the host to an internal address.
+     */
+    public static SecureHttpResponse postPublicHttps(String url, Map<String, String> headers, String requestBody,
+                                                     int maxResponseBodyBytes) {
+        return postPublicHttps(HttpUrlSecurityUtils.resolvePublicHttpsUrl(url), headers, requestBody,
+                maxResponseBodyBytes);
+    }
+
+    public static SecureHttpResponse postPublicHttps(HttpUrlSecurityUtils.ResolvedUrl resolvedUrl,
+                                                     Map<String, String> headers, String requestBody,
+                                                     int maxResponseBodyBytes) {
+        if (resolvedUrl == null) {
+            throw new IllegalArgumentException("resolvedUrl must not be null");
+        }
+        validateResponseBodyLimit(maxResponseBodyBytes);
+        Request.Builder requestBuilder = new Request.Builder().url(resolvedUrl.getUrl());
+        if (headers != null) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                requestBuilder.header(entry.getKey(), entry.getValue());
+            }
+        }
+        RequestBody body = RequestBody.create(JSON_MEDIA_TYPE, StrUtil.nullToEmpty(requestBody));
+        Request request = requestBuilder.post(body).build();
+        OkHttpClient client = PUBLIC_HTTPS_CLIENT.newBuilder().dns(createPinnedDns(resolvedUrl)).build();
+        try (Response response = client.newCall(request).execute()) {
+            return new SecureHttpResponse(response.code(), readLimitedBody(response.body(), maxResponseBodyBytes));
+        } catch (IOException ex) {
+            throw new IllegalStateException("Public HTTPS request failed", ex);
+        }
+    }
+
+    static Dns createPinnedDns(HttpUrlSecurityUtils.ResolvedUrl resolvedUrl) {
+        return hostname -> {
+            if (!normalizeDnsHost(hostname).equals(resolvedUrl.getHost())) {
+                throw new UnknownHostException("Unexpected host during pinned HTTPS request");
+            }
+            return resolvedUrl.getAddresses();
+        };
+    }
+
+    private static String normalizeDnsHost(String hostname) {
+        String normalized = hostname == null ? "" : hostname.toLowerCase(Locale.ROOT);
+        while (normalized.endsWith(".")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
     }
 
     /**
@@ -248,11 +334,92 @@ public class HttpUtils {
      * @return 请求结果
      */
     public static String get(String url, Map<String, String> headers) {
-        try (HttpResponse response = HttpRequest.get(url)
+        try (HttpResponse response = secureRequest(HttpRequest.get(url))
                 .addHeaders(headers)
                 .execute()) {
-            return response.body();
+            return readLimitedBody(response);
         }
+    }
+
+    private static HttpRequest secureRequest(HttpRequest request) {
+        return request.setConnectionTimeout(CONNECT_TIMEOUT_MILLIS)
+                .setReadTimeout(READ_TIMEOUT_MILLIS)
+                .setFollowRedirects(false);
+    }
+
+    private static String readLimitedBody(HttpResponse response) {
+        return readLimitedBody(response, MAX_RESPONSE_BODY_BYTES);
+    }
+
+    private static String readLimitedBody(HttpResponse response, int maxResponseBodyBytes) {
+        long contentLength = response.contentLength();
+        if (contentLength > maxResponseBodyBytes) {
+            throw new IllegalStateException("HTTP response body exceeds configured limit");
+        }
+        int initialCapacity = contentLength > 0 ? (int) Math.min(contentLength, 8192L) : 1024;
+        try (InputStream input = response.bodyStream();
+             ByteArrayOutputStream output = new ByteArrayOutputStream(initialCapacity)) {
+            if (input == null) {
+                return StrUtil.EMPTY;
+            }
+            byte[] buffer = new byte[8192];
+            int total = 0;
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                total += read;
+                if (total > maxResponseBodyBytes) {
+                    throw new IllegalStateException("HTTP response body exceeds configured limit");
+                }
+                output.write(buffer, 0, read);
+            }
+            return new String(output.toByteArray(), resolveResponseCharset(response));
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to read HTTP response body", ex);
+        }
+    }
+
+    private static String readLimitedBody(ResponseBody responseBody, int maxResponseBodyBytes) throws IOException {
+        if (responseBody == null) {
+            return StrUtil.EMPTY;
+        }
+        long contentLength = responseBody.contentLength();
+        if (contentLength > maxResponseBodyBytes) {
+            throw new IllegalStateException("HTTP response body exceeds configured limit");
+        }
+        Charset charset = responseBody.contentType() == null ? StandardCharsets.UTF_8
+                : responseBody.contentType().charset(StandardCharsets.UTF_8);
+        int initialCapacity = contentLength > 0 ? (int) Math.min(contentLength, 8192L) : 1024;
+        try (InputStream input = responseBody.byteStream();
+             ByteArrayOutputStream output = new ByteArrayOutputStream(initialCapacity)) {
+            byte[] buffer = new byte[8192];
+            int total = 0;
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                total += read;
+                if (total > maxResponseBodyBytes) {
+                    throw new IllegalStateException("HTTP response body exceeds configured limit");
+                }
+                output.write(buffer, 0, read);
+            }
+            return new String(output.toByteArray(), charset);
+        }
+    }
+
+    private static void validateResponseBodyLimit(int maxResponseBodyBytes) {
+        if (maxResponseBodyBytes <= 0 || maxResponseBodyBytes > MAX_RESPONSE_BODY_BYTES) {
+            throw new IllegalArgumentException("maxResponseBodyBytes must be between 1 and 2 MiB");
+        }
+    }
+
+    private static Charset resolveResponseCharset(HttpResponse response) {
+        if (StrUtil.isNotBlank(response.charset())) {
+            try {
+                return Charset.forName(response.charset());
+            } catch (IllegalArgumentException ignored) {
+                // Fall back to UTF-8 for malformed upstream charset declarations.
+            }
+        }
+        return StandardCharsets.UTF_8;
     }
 
     /**
@@ -263,6 +430,29 @@ public class HttpUtils {
      */
     public static String wsUrlToHttp(String url) {
         return StrUtil.startWithIgnoreCase(url, "ws") ? "http" + url.substring(2) : url;
+    }
+
+    public static final class SecureHttpResponse {
+
+        private final int statusCode;
+        private final String body;
+
+        private SecureHttpResponse(int statusCode, String body) {
+            this.statusCode = statusCode;
+            this.body = body;
+        }
+
+        public int getStatusCode() {
+            return statusCode;
+        }
+
+        public String getBody() {
+            return body;
+        }
+
+        public boolean isSuccessful() {
+            return statusCode >= 200 && statusCode < 300;
+        }
     }
 
 }

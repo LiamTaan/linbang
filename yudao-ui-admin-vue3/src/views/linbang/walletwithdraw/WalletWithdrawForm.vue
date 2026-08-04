@@ -11,7 +11,12 @@
         <el-input v-model="formData.withdrawNo" placeholder="请输入提现单号" />
       </el-form-item>
       <el-form-item label="用户" prop="userId">
-        <el-input :model-value="selectedUserLabel" placeholder="请选择用户" readonly @click="openUserDialog">
+        <el-input
+          :model-value="selectedUserLabel"
+          placeholder="请选择用户"
+          readonly
+          @click="openUserDialog"
+        >
           <template #append>
             <el-button @click="openUserDialog">选择</el-button>
           </template>
@@ -104,7 +109,10 @@
     </template>
   </Dialog>
   <MemberUserSelectDialog ref="userSelectDialogRef" @selected="handleUserSelected" />
-  <WalletAccountSelectDialog ref="walletAccountSelectDialogRef" @selected="handleWalletAccountSelected" />
+  <WalletAccountSelectDialog
+    ref="walletAccountSelectDialogRef"
+    @selected="handleWalletAccountSelected"
+  />
   <WalletBankCardSelectDialog ref="bankCardSelectDialogRef" @selected="handleBankCardSelected" />
 </template>
 <script setup lang="ts">
@@ -334,7 +342,11 @@ const handleWalletAccountSelected = (row: WalletAccount) => {
 const handleBankCardSelected = (row: WalletBankCard) => {
   selectedBankCard.value = row
   formData.value.bankCardId = row.id
-  if (selectedWalletAccount.value && row.userId && selectedWalletAccount.value.userId !== row.userId) {
+  if (
+    selectedWalletAccount.value &&
+    row.userId &&
+    selectedWalletAccount.value.userId !== row.userId
+  ) {
     selectedWalletAccount.value = undefined
     formData.value.walletAccountId = undefined
   }
@@ -360,7 +372,10 @@ const loadSelectedUser = async (userId?: number) => {
   }
 }
 
-const loadSelectedWalletAccount = async (walletAccountId?: number, detail?: WalletWithdrawDetail) => {
+const loadSelectedWalletAccount = async (
+  walletAccountId?: number,
+  detail?: WalletWithdrawDetail
+) => {
   if (!walletAccountId) {
     selectedWalletAccount.value = undefined
     return

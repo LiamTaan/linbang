@@ -15,8 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 
-import static cn.iocoder.yudao.framework.common.util.json.JsonUtils.toJsonString;
-
 /**
  * 支付客户端的抽象类，提供模板方法，减少子类的冗余代码
  *
@@ -92,8 +90,7 @@ public abstract class AbstractPayClient<Config extends PayClientConfig> implemen
             throw ex;
         } catch (Throwable ex) {
             // 系统异常，则包装成 PayException 异常抛出
-            log.error("[unifiedOrder][客户端({}) request({}) 发起支付异常]",
-                    getId(), toJsonString(reqDTO), ex);
+            log.error("[unifiedOrder][客户端({}) 发起支付异常]", getId(), ex);
             throw buildPayException(ex);
         }
         return resp;
@@ -109,8 +106,7 @@ public abstract class AbstractPayClient<Config extends PayClientConfig> implemen
         } catch (ServiceException ex) { // 业务异常，都是实现类已经翻译，所以直接抛出即可
             throw ex;
         } catch (Throwable ex) {
-            log.error("[parseOrderNotify][客户端({}) params({}) body({}) headers({}) 解析失败]",
-                    getId(), params, body, headers, ex);
+            log.error("[parseOrderNotify][客户端({}) 支付回调解析失败]", getId(), ex);
             throw buildPayException(ex);
         }
     }
@@ -147,8 +143,7 @@ public abstract class AbstractPayClient<Config extends PayClientConfig> implemen
             throw ex;
         } catch (Throwable ex) {
             // 系统异常，则包装成 PayException 异常抛出
-            log.error("[unifiedRefund][客户端({}) request({}) 发起退款异常]",
-                    getId(), toJsonString(reqDTO), ex);
+            log.error("[unifiedRefund][客户端({}) 发起退款异常]", getId(), ex);
             throw buildPayException(ex);
         }
         return resp;
@@ -163,8 +158,7 @@ public abstract class AbstractPayClient<Config extends PayClientConfig> implemen
         } catch (ServiceException ex) { // 业务异常，都是实现类已经翻译，所以直接抛出即可
             throw ex;
         } catch (Throwable ex) {
-            log.error("[parseRefundNotify][客户端({}) params({}) body({}) headers({}) 解析失败]",
-                    getId(), params, body, headers, ex);
+            log.error("[parseRefundNotify][客户端({}) 退款回调解析失败]", getId(), ex);
             throw buildPayException(ex);
         }
     }
@@ -197,8 +191,7 @@ public abstract class AbstractPayClient<Config extends PayClientConfig> implemen
             throw ex;
         } catch (Throwable ex) {
             // 系统异常，则包装成 PayException 异常抛出
-            log.error("[unifiedTransfer][客户端({}) request({}) 发起转账异常]",
-                    getId(), toJsonString(reqDTO), ex);
+            log.error("[unifiedTransfer][客户端({}) 发起转账异常]", getId(), ex);
             throw buildPayException(ex);
         }
         return resp;
@@ -211,8 +204,7 @@ public abstract class AbstractPayClient<Config extends PayClientConfig> implemen
         } catch (ServiceException ex) { // 业务异常，都是实现类已经翻译，所以直接抛出即可
             throw ex;
         } catch (Throwable ex) {
-            log.error("[doParseTransferNotify][客户端({}) params({}) body({}) headers({}) 解析失败]",
-                    getId(), params, body, headers, ex);
+            log.error("[doParseTransferNotify][客户端({}) 转账回调解析失败]", getId(), ex);
             throw buildPayException(ex);
         }
     }

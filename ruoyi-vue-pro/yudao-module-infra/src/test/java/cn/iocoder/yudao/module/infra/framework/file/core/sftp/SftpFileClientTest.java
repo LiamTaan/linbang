@@ -4,8 +4,22 @@ import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.iocoder.yudao.module.infra.framework.file.core.client.sftp.SftpFileClient;
 import cn.iocoder.yudao.module.infra.framework.file.core.client.sftp.SftpFileClientConfig;
+import cn.hutool.extra.ssh.Sftp;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.io.InputStream;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * {@link SftpFileClient} 集成测试
@@ -44,6 +58,28 @@ public class SftpFileClientTest {
         if (false) {
             client.delete(path);
         }
+    }
+
+    @Test
+    public void testUploadStreamsContentWithoutTemporaryFile() {
+        SftpFileClientConfig config = new SftpFileClientConfig();
+        config.setDomain("https://cdn.example");
+        config.setBasePath("/upload");
+        SftpFileClient client = new SftpFileClient(10L, config);
+        Sftp sftp = mock(Sftp.class);
+        ReflectionTestUtils.setField(client, "sftp", sftp);
+        byte[] content = new byte[]{1, 2, 3};
+        when(sftp.upload(anyString(), anyString(), any(InputStream.class))).thenAnswer(invocation -> {
+            InputStream input = invocation.getArgument(2);
+            byte[] uploaded = new byte[content.length];
+            assertEquals(content.length, input.read(uploaded));
+            assertArrayEquals(content, uploaded);
+            return true;
+        });
+
+        client.upload(content, "avatar/test.jpg", "image/jpeg");
+
+        verify(sftp).upload(eq("/upload/avatar/"), eq("test.jpg"), any(InputStream.class));
     }
 
 }

@@ -14,7 +14,7 @@ import javax.servlet.http.*;
 import java.util.*;
 import java.io.IOException;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -35,39 +35,6 @@ public class OrderAcceptRecordController {
 
     @Resource
     private OrderAcceptRecordService orderAcceptRecordService;
-
-    @PostMapping("/create")
-    @Operation(summary = "创建抢单记录")
-    @PreAuthorize("@ss.hasPermission('linbang:order:accept-record:create')")
-    public CommonResult<Long> createOrderAcceptRecord(@Valid @RequestBody OrderAcceptRecordSaveReqVO createReqVO) {
-        return success(orderAcceptRecordService.createOrderAcceptRecord(createReqVO));
-    }
-
-    @PutMapping("/update")
-    @Operation(summary = "更新抢单记录")
-    @PreAuthorize("@ss.hasPermission('linbang:order:accept-record:update')")
-    public CommonResult<Boolean> updateOrderAcceptRecord(@Valid @RequestBody OrderAcceptRecordSaveReqVO updateReqVO) {
-        orderAcceptRecordService.updateOrderAcceptRecord(updateReqVO);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete")
-    @Operation(summary = "删除抢单记录")
-    @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('linbang:order:accept-record:delete')")
-    public CommonResult<Boolean> deleteOrderAcceptRecord(@RequestParam("id") Long id) {
-        orderAcceptRecordService.deleteOrderAcceptRecord(id);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete-list")
-    @Parameter(name = "ids", description = "编号", required = true)
-    @Operation(summary = "批量删除抢单记录")
-                @PreAuthorize("@ss.hasPermission('linbang:order:accept-record:delete')")
-    public CommonResult<Boolean> deleteOrderAcceptRecordList(@RequestParam("ids") List<Long> ids) {
-        orderAcceptRecordService.deleteOrderAcceptRecordListByIds(ids);
-        return success(true);
-    }
 
     @GetMapping("/get")
     @Operation(summary = "获得抢单记录")
@@ -90,7 +57,7 @@ public class OrderAcceptRecordController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportOrderAcceptRecordExcel(@Valid OrderAcceptRecordPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<OrderAcceptRecordRespVO> list = orderAcceptRecordService.getOrderAcceptRecordPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "抢单记录.xls", "数据", OrderAcceptRecordRespVO.class, list);

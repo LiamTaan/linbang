@@ -8,14 +8,24 @@
       v-loading="formLoading"
     >
       <el-form-item label="关联订单" prop="orderId">
-        <el-input :model-value="selectedOrderLabel" placeholder="请选择订单" readonly @click="openOrderDialog">
+        <el-input
+          :model-value="selectedOrderLabel"
+          placeholder="请选择订单"
+          readonly
+          @click="openOrderDialog"
+        >
           <template #append>
             <el-button @click="openOrderDialog">选择</el-button>
           </template>
         </el-input>
       </el-form-item>
       <el-form-item label="关联单元" prop="unitId">
-        <el-input :model-value="selectedUnitLabel" placeholder="请选择单元" readonly @click="openUnitDialog">
+        <el-input
+          :model-value="selectedUnitLabel"
+          placeholder="请选择单元"
+          readonly
+          @click="openUnitDialog"
+        >
           <template #append>
             <el-button @click="openUnitDialog">选择</el-button>
           </template>
@@ -115,9 +125,7 @@ const selectedUnitLabel = computed(() => {
   if (!selectedUnit.value) {
     return ''
   }
-  return [selectedUnit.value.unitNo, selectedUnit.value.unitTitle]
-    .filter(Boolean)
-    .join(' / ')
+  return [selectedUnit.value.unitNo, selectedUnit.value.unitTitle].filter(Boolean).join(' / ')
 })
 
 const formData = ref<FormData>({

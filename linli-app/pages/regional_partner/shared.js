@@ -1,5 +1,6 @@
 import { getRoleContext } from '@/api/member'
 import { ensureRoleAccess } from '@/services/role-guard'
+import { openAppRoute } from '@/utils/navigation'
 
 export async function ensurePartnerPageAccess(page, actionLabel) {
   const roleContext = await getRoleContext({ silent: true }).catch(() => ({}))
@@ -124,14 +125,12 @@ export function goBack() {
 }
 
 export function navigateTo(url) {
-  uni.navigateTo({
-    url,
-    fail: () => {
-      uni.showToast({
-        title: '页面暂不可达',
-        icon: 'none'
-      })
-    }
+  if (openAppRoute(url)) {
+    return
+  }
+  uni.showToast({
+    title: '页面暂不可达',
+    icon: 'none'
   })
 }
 

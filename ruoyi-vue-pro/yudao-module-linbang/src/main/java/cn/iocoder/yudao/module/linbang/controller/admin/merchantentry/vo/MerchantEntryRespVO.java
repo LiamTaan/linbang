@@ -85,7 +85,7 @@ public class MerchantEntryRespVO {
     @ExcelProperty("状态")
     private String status;
 
-    @Schema(description = "备注", example = "??")
+    @Schema(description = "备注", example = "资料已核验")
     @ExcelProperty("备注")
     private String remark;
 

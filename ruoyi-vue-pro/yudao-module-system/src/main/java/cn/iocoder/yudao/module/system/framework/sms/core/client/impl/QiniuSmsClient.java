@@ -1,12 +1,11 @@
 package cn.iocoder.yudao.module.system.framework.sms.core.client.impl;
 
 import cn.hutool.core.collection.CollStreamUtil;
+import cn.hutool.core.codec.Base64;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.crypto.SecureUtil;
-import cn.hutool.crypto.digest.HmacAlgorithm;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.iocoder.yudao.framework.common.core.KeyValue;
@@ -102,8 +101,8 @@ public class QiniuSmsClient extends AbstractSmsClient {
         if (ObjectUtil.isNotEmpty(body)) {
             dataToSign.append(body);
         }
-        String signature = SecureUtil.hmac(HmacAlgorithm.HmacSHA1, properties.getApiSecret())
-                .digestBase64(dataToSign.toString(), true);
+        String signature = Base64.encodeUrlSafe(
+                SmsSignatureUtils.hmacSha1(properties.getApiSecret(), dataToSign.toString()));
         return "Qiniu " + properties.getApiKey() + ":" + signature;
     }
 

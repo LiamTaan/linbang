@@ -182,22 +182,10 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     private BigDecimal sumOrderAmount(LocalDateTime start, LocalDateTime end) {
-        return orderInfoMapper.selectList(new LambdaQueryWrapperX<OrderInfoDO>()
-                        .ge(OrderInfoDO::getCreateTime, start)
-                        .lt(OrderInfoDO::getCreateTime, end))
-                .stream()
-                .map(OrderInfoDO::getOrderAmount)
-                .filter(item -> item != null)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return orderInfoMapper.selectSumOrderAmount(start, end);
     }
 
     private BigDecimal sumWithdrawAmount(LocalDateTime start, LocalDateTime end) {
-        return walletWithdrawMapper.selectList(new LambdaQueryWrapperX<WalletWithdrawDO>()
-                        .ge(WalletWithdrawDO::getCreateTime, start)
-                        .lt(WalletWithdrawDO::getCreateTime, end))
-                .stream()
-                .map(WalletWithdrawDO::getApplyAmount)
-                .filter(item -> item != null)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return walletWithdrawMapper.selectSumApplyAmount(start, end);
     }
 }

@@ -20,6 +20,7 @@ public class AppPartnerRegionRespVO {
     private List<RegionItem> regions;
 
     @Data
+    @Schema(description = "用户 App - 负责区域项目 Response VO")
     public static class RegionItem {
 
         @Schema(description = "辖区关联 ID", example = "101")

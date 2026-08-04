@@ -1,4 +1,5 @@
 import request from '@/config/axios'
+import { buildDynamicKeyHeaders } from '@/api/linbang/security'
 
 export interface OrderSplitRule {
   id?: number
@@ -30,15 +31,26 @@ export const OrderSplitRuleApi = {
     return await request.get<OrderSplitRule>({ url: '/order/split-rule/get?id=' + id })
   },
 
-  create: async (data: OrderSplitRule) => {
-    return await request.post({ url: '/order/split-rule/create', data })
+  create: async (data: OrderSplitRule, verifyToken?: string) => {
+    return await request.post({
+      url: '/order/split-rule/create',
+      data,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   },
 
-  update: async (data: OrderSplitRule) => {
-    return await request.put({ url: '/order/split-rule/update', data })
+  update: async (data: OrderSplitRule, verifyToken?: string) => {
+    return await request.put({
+      url: '/order/split-rule/update',
+      data,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   },
 
-  delete: async (id: number) => {
-    return await request.delete({ url: '/order/split-rule/delete?id=' + id })
+  delete: async (id: number, verifyToken?: string) => {
+    return await request.delete({
+      url: '/order/split-rule/delete?id=' + id,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   }
 }

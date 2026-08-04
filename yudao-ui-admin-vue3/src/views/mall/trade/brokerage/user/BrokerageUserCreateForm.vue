@@ -153,7 +153,9 @@ const handleGetUser = async (id: any, userType: string) => {
     return
   }
   const user =
-    userType === '推广员' ? await BrokerageUserApi.getBrokerageUser(id) : await MemberUserApi.getMemberUser(id)
+    userType === '推广员'
+      ? await BrokerageUserApi.getBrokerageUser(id)
+      : await MemberUserApi.getMemberUser(id)
   if (userType === '推广员') {
     userInfo.bindUser = user as BrokerageUserApi.BrokerageUserVO
   } else {

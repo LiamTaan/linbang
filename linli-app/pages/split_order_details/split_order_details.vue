@@ -755,17 +755,6 @@ export default {
         }
       }
     },
-    openExternalUrl(url) {
-      if (!url) {
-        return
-      }
-      // #ifdef APP-PLUS
-      plus.runtime.openURL(url)
-      // #endif
-      // #ifndef APP-PLUS
-      window.location.href = url
-      // #endif
-    },
     async loadPayStatus(sync = false) {
       if (!this.orderId) {
         return null

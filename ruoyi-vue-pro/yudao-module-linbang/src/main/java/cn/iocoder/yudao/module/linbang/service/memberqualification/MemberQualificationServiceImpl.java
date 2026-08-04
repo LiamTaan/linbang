@@ -42,6 +42,7 @@ import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionU
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertMap;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertSet;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_QUALIFICATION_AUDIT_STATUS_INVALID;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_QUALIFICATION_NOT_EXISTS;
 
 @Service
@@ -113,16 +114,24 @@ public class MemberQualificationServiceImpl implements MemberQualificationServic
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void auditQualification(MemberQualificationAuditReqVO reqVO) {
-        MemberUserQualificationDO qualification = memberUserQualificationMapper.selectById(reqVO.getId());
+        MemberUserQualificationDO qualification = memberUserQualificationMapper.selectByIdForUpdate(reqVO.getId());
         if (qualification == null) {
             throw exception(MEMBER_USER_QUALIFICATION_NOT_EXISTS);
         }
-        boolean approved = Objects.equals(reqVO.getAuditStatus(), "APPROVED");
+        String auditStatus = StrUtil.trimToEmpty(reqVO.getAuditStatus()).toUpperCase(java.util.Locale.ROOT);
+        if (!"PENDING".equals(qualification.getAuditStatus())
+                || (!"APPROVED".equals(auditStatus) && !"REJECTED".equals(auditStatus))) {
+            throw exception(MEMBER_USER_QUALIFICATION_AUDIT_STATUS_INVALID);
+        }
+        if ("REJECTED".equals(auditStatus) && StrUtil.isBlank(reqVO.getRejectReason())) {
+            throw exception(MEMBER_USER_QUALIFICATION_AUDIT_STATUS_INVALID);
+        }
+        boolean approved = Objects.equals(auditStatus, "APPROVED");
         MemberUserQualificationDO updateObj = new MemberUserQualificationDO();
         updateObj.setId(reqVO.getId());
-        updateObj.setAuditStatus(reqVO.getAuditStatus());
+        updateObj.setAuditStatus(auditStatus);
         updateObj.setAuditRemark(reqVO.getAuditRemark());
-        updateObj.setRejectReason(reqVO.getRejectReason());
+        updateObj.setRejectReason(approved ? null : reqVO.getRejectReason());
         updateObj.setAuditBy(SecurityFrameworkUtils.getLoginUserId());
         updateObj.setAuditTime(LocalDateTime.now());
         updateObj.setPriorityEnabled(approved
@@ -131,7 +140,7 @@ public class MemberQualificationServiceImpl implements MemberQualificationServic
         merchantAccessStateService.refreshMerchantAcceptStatus(qualification.getUserId());
         messagePushDispatchService.dispatchSingleIdempotent("lb_special_cert_audited", "专项资质审核结果通知",
                 "MEMBER_QUALIFICATION", qualification.getId(), qualification.getUserId(), "专项资质审核通知",
-                "lb_special_cert_audited:" + qualification.getId() + ":" + reqVO.getAuditStatus());
+                "lb_special_cert_audited:" + qualification.getId() + ":" + auditStatus);
     }
 
     @Override

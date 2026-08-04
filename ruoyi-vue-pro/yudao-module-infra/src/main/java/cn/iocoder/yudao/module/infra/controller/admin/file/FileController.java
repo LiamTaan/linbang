@@ -32,8 +32,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
+import java.util.Locale;
 
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants.FILE_IS_EMPTY;
+import static cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants.FILE_SIZE_EXCEED;
 import static cn.iocoder.yudao.module.infra.framework.file.core.utils.FileTypeUtils.getMineType;
 import static cn.iocoder.yudao.module.infra.framework.file.core.utils.FileTypeUtils.isImage;
 
@@ -44,6 +48,8 @@ import static cn.iocoder.yudao.module.infra.framework.file.core.utils.FileTypeUt
 @Slf4j
 public class FileController {
 
+    private static final long MAX_FILE_SIZE_BYTES = FileService.MAX_FILE_SIZE_BYTES;
+
     @Resource
     private FileService fileService;
 
@@ -53,25 +59,30 @@ public class FileController {
             schema = @Schema(type = "string", format = "binary"))
     public CommonResult<String> uploadFile(@Valid FileUploadReqVO uploadReqVO) throws Exception {
         MultipartFile file = uploadReqVO.getFile();
+        validateFileSize(file);
         byte[] content = IoUtil.readBytes(file.getInputStream());
         return success(fileService.createFile(content, file.getOriginalFilename(),
                 uploadReqVO.getDirectory(), file.getContentType()));
     }
 
     @GetMapping("/presigned-url")
-    @Operation(summary = "获取文件预签名地址（上传）", description = "模式二：前端上传文件：用于前端直接上传七牛、阿里云 OSS 等文件存储器")
+    @Operation(summary = "获取文件预签名地址（上传）", description = "模式二第 1 步：前端直传对象存储。"
+            + "上传请求必须使用响应中的 uploadContentType，且请求体字节数必须与 size 一致。")
     @Parameters({
             @Parameter(name = "name", description = "文件名称", required = true),
+            @Parameter(name = "size", description = "文件大小，单位字节；范围 1 至 20 MiB", required = true),
             @Parameter(name = "directory", description = "文件目录")
     })
     public CommonResult<FilePresignedUrlRespVO> getFilePresignedUrl(
             @RequestParam("name") String name,
+            @RequestParam("size") Long size,
             @RequestParam(value = "directory", required = false) String directory) {
-        return success(fileService.presignPutUrl(name, directory));
+        return success(fileService.presignPutUrl(name, size, directory));
     }
 
     @PostMapping("/create")
-    @Operation(summary = "创建文件", description = "模式二：前端上传文件：配合 presigned-url 接口，记录上传了上传的文件")
+    @Operation(summary = "创建文件", description = "模式二第 2 步：完成当前用户自己的上传预约。"
+            + "服务端校验真实大小和 MIME 类型，将文件从隔离暂存路径提升到最终路径并重写不可信元数据。")
     public CommonResult<Long> createFile(@Valid @RequestBody FileCreateReqVO createReqVO) {
         return success(fileService.createFile(createReqVO));
     }
@@ -119,18 +130,23 @@ public class FileController {
         // https://gitee.com/zhijiantianya/ruoyi-vue-pro/pulls/1432/
         path = HttpUtils.decodeUrlPath(path);
 
-        // 读取内容
-        byte[] content = fileService.getFileContent(configId, path);
-        if (content == null) {
+        FileDO file = getReadableFileMetadata(configId, path);
+        if (file == null) {
             log.warn("[getFileContent][configId({}) path({}) 文件不存在]", configId, path);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-        FileDO file = fileService.getFileByConfigIdAndPath(configId, path);
-        String filename = file != null && StrUtil.isNotEmpty(file.getName()) ? file.getName() : FileUtil.getName(path);
-        String mineType = file != null && StrUtil.isNotBlank(file.getType()) ? file.getType() : getMineType(content, filename);
+        byte[] content = getValidatedFileContent(file);
+        if (content == null) {
+            log.warn("[getFileContent][configId({}) path({}) 文件内容不存在]", configId, path);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        String filename = StrUtil.isNotEmpty(file.getName()) ? file.getName() : FileUtil.getName(path);
+        String mineType = StrUtil.isNotBlank(file.getType()) ? file.getType() : getMineType(content, filename);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(parseMediaType(mineType));
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, buildContentDisposition(isImage(mineType) ? "inline" : "attachment", filename));
+        addSecurityHeaders(headers);
+        headers.set(HttpHeaders.CONTENT_DISPOSITION,
+                buildContentDisposition(isSafeInlineType(mineType) ? "inline" : "attachment", filename));
         if (StrUtil.containsIgnoreCase(mineType, "video")) {
             headers.set("Accept-Ranges", "bytes");
             headers.setContentLength(content.length);
@@ -150,17 +166,68 @@ public class FileController {
             throw new IllegalArgumentException("结尾的 path 路径必须传递");
         }
         path = HttpUtils.decodeUrlPath(path);
-        byte[] content = fileService.getFileContent(configId, path);
-        if (content == null) {
+        FileDO file = getReadableFileMetadata(configId, path);
+        if (file == null) {
             log.warn("[previewFileContent][configId({}) path({}) 文件不存在]", configId, path);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-        FileDO file = fileService.getFileByConfigIdAndPath(configId, path);
-        String filename = file != null && StrUtil.isNotEmpty(file.getName()) ? file.getName() : FileUtil.getName(path);
-        String mineType = file != null && StrUtil.isNotBlank(file.getType()) ? file.getType() : getMineType(content, filename);
+        byte[] content = getValidatedFileContent(file);
+        if (content == null) {
+            log.warn("[previewFileContent][configId({}) path({}) 文件内容不存在]", configId, path);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        String filename = StrUtil.isNotEmpty(file.getName()) ? file.getName() : FileUtil.getName(path);
+        String mineType = StrUtil.isNotBlank(file.getType()) ? file.getType() : getMineType(content, filename);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(parseMediaType(mineType));
+        addSecurityHeaders(headers);
+        headers.set(HttpHeaders.CONTENT_DISPOSITION,
+                buildContentDisposition(isSafeInlineType(mineType) ? "inline" : "attachment", filename));
         return new ResponseEntity<>(content, headers, HttpStatus.OK);
+    }
+
+    private FileDO getReadableFileMetadata(Long configId, String path) {
+        FileDO file = fileService.getFileByConfigIdAndPath(configId, path);
+        if (file == null || file.getSize() == null || file.getSize() < 0L) {
+            return null;
+        }
+        if (file.getSize() > MAX_FILE_SIZE_BYTES) {
+            throw exception(FILE_SIZE_EXCEED);
+        }
+        return file;
+    }
+
+    private byte[] getValidatedFileContent(FileDO file) throws Exception {
+        byte[] content = fileService.getFileContent(file.getConfigId(), file.getPath(), MAX_FILE_SIZE_BYTES);
+        if (content != null && content.length > MAX_FILE_SIZE_BYTES) {
+            throw exception(FILE_SIZE_EXCEED);
+        }
+        return content;
+    }
+
+    private static void addSecurityHeaders(HttpHeaders headers) {
+        headers.set("X-Content-Type-Options", "nosniff");
+        headers.set("Content-Security-Policy", "sandbox; default-src 'none'");
+    }
+
+    private static boolean isSafeInlineType(String mineType) {
+        if (StrUtil.isBlank(mineType)) {
+            return false;
+        }
+        String normalizedType = StrUtil.subBefore(mineType, ';', false).trim().toLowerCase(Locale.ROOT);
+        return (isImage(normalizedType) && !"image/svg+xml".equals(normalizedType))
+                || StrUtil.startWith(normalizedType, "audio/")
+                || StrUtil.startWith(normalizedType, "video/")
+                || MediaType.APPLICATION_PDF_VALUE.equals(normalizedType);
+    }
+
+    private static void validateFileSize(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw exception(FILE_IS_EMPTY);
+        }
+        if (file.getSize() > MAX_FILE_SIZE_BYTES) {
+            throw exception(FILE_SIZE_EXCEED);
+        }
     }
 
     private static MediaType parseMediaType(String mineType) {

@@ -47,7 +47,7 @@ public class AppPayRefundController {
 
     @GetMapping("/get")
     @Operation(summary = "获取退款记录详情",
-            description = "查看单笔退款申请详情。退款成功表示聚合支付通道已确认原路退款成功；退款失败时查看 channelErrorMsg 获取第三方失败原因。")
+            description = "查看单笔退款申请详情。退款成功表示支付通道已确认原路退款成功；退款失败时 channelErrorMsg 返回不包含渠道内部信息的稳定业务说明。")
     public CommonResult<AppPayRefundRespVO> getRefund(@RequestParam("id") Long id) {
         return success(appPayRefundService.getRefund(getLoginUserId(), id));
     }

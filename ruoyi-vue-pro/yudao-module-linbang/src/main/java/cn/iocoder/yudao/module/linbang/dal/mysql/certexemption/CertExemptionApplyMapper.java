@@ -13,6 +13,10 @@ import java.util.List;
 @Mapper
 public interface CertExemptionApplyMapper extends BaseMapperX<CertExemptionApplyDO> {
 
+    default CertExemptionApplyDO selectByIdForUpdate(Long id) {
+        return selectOneForUpdate(CertExemptionApplyDO::getId, id);
+    }
+
     default List<CertExemptionApplyDO> selectListByUserId(Long userId) {
         return selectList(new LambdaQueryWrapperX<CertExemptionApplyDO>()
                 .eq(CertExemptionApplyDO::getUserId, userId)

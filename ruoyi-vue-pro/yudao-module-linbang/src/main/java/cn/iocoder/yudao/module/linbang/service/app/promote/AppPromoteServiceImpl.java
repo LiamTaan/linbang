@@ -67,10 +67,11 @@ public class AppPromoteServiceImpl implements AppPromoteService {
     @Override
     public AppPromoteCenterRespVO getPromoteCenter(Long userId) {
         PromoterDO promoter = promoterService.syncPromoterMetrics(getRequiredPromoter(userId).getId());
-        List<CommissionOrderDO> commissionOrders = commissionOrderMapper.selectList(
+        List<CommissionOrderDO> recentCommissionOrders = commissionOrderMapper.selectList(
                 new LambdaQueryWrapperX<CommissionOrderDO>()
                         .eq(CommissionOrderDO::getPromoterId, promoter.getId())
-                        .orderByDesc(CommissionOrderDO::getId));
+                        .orderByDesc(CommissionOrderDO::getId)
+                        .last("LIMIT 5"));
         AppPromoteCenterRespVO respVO = BeanUtils.toBean(promoter, AppPromoteCenterRespVO.class);
         respVO.setPromoterId(promoter.getId());
         respVO.setLevelCode(resolvePromoterLevelCode(promoter));
@@ -79,16 +80,15 @@ public class AppPromoteServiceImpl implements AppPromoteService {
         respVO.setNextLevelNeedMetric(resolveNextLevelNeedMetric(promoter));
         respVO.setPendingConvertCount(Math.max(0,
                 defaultInt(promoter.getBindUserCount()) - defaultInt(promoter.getConvertCount())));
-        respVO.setPendingCommissionCount(countByStatus(commissionOrders, "PENDING"));
-        respVO.setSettledCommissionCount(countByStatus(commissionOrders, "SETTLED"));
-        respVO.setInvalidCommissionCount(countByStatus(commissionOrders, "REFUNDED"));
-        respVO.setPendingCommissionAmount(sumAmountByStatus(commissionOrders, "PENDING"));
-        respVO.setSettledCommissionAmount(sumAmountByStatus(commissionOrders, "SETTLED"));
+        respVO.setPendingCommissionCount(countByStatus(promoter.getId(), "PENDING"));
+        respVO.setSettledCommissionCount(countByStatus(promoter.getId(), "SETTLED"));
+        respVO.setInvalidCommissionCount(countByStatus(promoter.getId(), "REFUNDED"));
+        respVO.setPendingCommissionAmount(sumAmountByStatus(promoter.getId(), "PENDING"));
+        respVO.setSettledCommissionAmount(sumAmountByStatus(promoter.getId(), "SETTLED"));
         respVO.setPendingSettleCommissionAmount(respVO.getPendingCommissionAmount());
         respVO.setInviteShortLink(promoter.getInviteUrl());
         respVO.setInvitePosterUrl(null);
-        respVO.setRecentCommissionOrders(commissionOrders.stream()
-                .limit(5)
+        respVO.setRecentCommissionOrders(recentCommissionOrders.stream()
                 .map(item -> BeanUtils.toBean(item, AppPromoteCenterRespVO.RecentCommissionRespVO.class))
                 .collect(Collectors.toList()));
         return respVO;
@@ -139,7 +139,8 @@ public class AppPromoteServiceImpl implements AppPromoteService {
         PromoterDO promoter = getRequiredPromoter(userId);
         List<PromoterRelationDO> firstLevelRelations = promoterRelationMapper.selectList(new LambdaQueryWrapperX<PromoterRelationDO>()
                 .eq(PromoterRelationDO::getPromoterId, promoter.getId())
-                .orderByDesc(PromoterRelationDO::getBindTime, PromoterRelationDO::getId));
+                .orderByDesc(PromoterRelationDO::getBindTime, PromoterRelationDO::getId)
+                .last("LIMIT 500"));
         List<Long> firstLevelUserIds = firstLevelRelations.stream()
                 .map(PromoterRelationDO::getUserId)
                 .filter(Objects::nonNull)
@@ -156,8 +157,9 @@ public class AppPromoteServiceImpl implements AppPromoteService {
                 .collect(Collectors.toList());
         List<PromoterRelationDO> secondLevelRelations = firstLevelPromoterIds.isEmpty() ? java.util.Collections.emptyList()
                 : promoterRelationMapper.selectList(new LambdaQueryWrapperX<PromoterRelationDO>()
-                .in(PromoterRelationDO::getPromoterId, firstLevelPromoterIds)
-                .orderByDesc(PromoterRelationDO::getBindTime, PromoterRelationDO::getId));
+                        .in(PromoterRelationDO::getPromoterId, firstLevelPromoterIds)
+                        .orderByDesc(PromoterRelationDO::getBindTime, PromoterRelationDO::getId)
+                        .last("LIMIT 500"));
 
         AppPromoteTeamStatsRespVO respVO = new AppPromoteTeamStatsRespVO();
         respVO.setFirstLevelUserCount(firstLevelRelations.size());
@@ -214,43 +216,25 @@ public class AppPromoteServiceImpl implements AppPromoteService {
         return promoter;
     }
 
-    private Integer countByStatus(List<CommissionOrderDO> commissionOrders, String status) {
-        return (int) commissionOrders.stream()
-                .filter(item -> Objects.equals(item.getStatus(), status))
-                .count();
+    private Integer countByStatus(Long promoterId, String status) {
+        return Math.toIntExact(commissionOrderMapper.selectCount(new LambdaQueryWrapperX<CommissionOrderDO>()
+                .eq(CommissionOrderDO::getPromoterId, promoterId)
+                .eq(CommissionOrderDO::getStatus, status)));
     }
 
-    private BigDecimal sumAmountByStatus(List<CommissionOrderDO> commissionOrders, String status) {
-        return commissionOrders.stream()
-                .filter(item -> Objects.equals(item.getStatus(), status))
-                .map(CommissionOrderDO::getCommissionAmount)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    private BigDecimal sumAmountByStatus(Long promoterId, String status) {
+        return defaultAmount(commissionOrderMapper.selectAmountSumByPromoterIdAndStatus(promoterId, status));
     }
 
     private BigDecimal sumCommissionAmount(Long promoterId, List<Long> userIds) {
         if (promoterId == null || userIds == null || userIds.isEmpty()) {
             return BigDecimal.ZERO;
         }
-        return commissionOrderService.getAppCommissionOrderPage(promoterId, new AppCommissionPageReqVO()).getList().stream()
-                .filter(item -> userIds.contains(item.getUserId()))
-                .map(CommissionOrderDO::getCommissionAmount)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return defaultAmount(commissionOrderMapper.selectAmountSumByPromoterIdAndUserIds(promoterId, userIds));
     }
 
-    private BigDecimal sumCommissionAmount(List<Long> promoterIds) {
-        if (promoterIds == null || promoterIds.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-        BigDecimal total = BigDecimal.ZERO;
-        for (Long promoterId : promoterIds) {
-            total = total.add(commissionOrderService.getAppCommissionOrderPage(promoterId, new AppCommissionPageReqVO()).getList().stream()
-                    .map(CommissionOrderDO::getCommissionAmount)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add));
-        }
-        return total;
+    private BigDecimal defaultAmount(BigDecimal amount) {
+        return amount == null ? BigDecimal.ZERO : amount;
     }
 
     private AppPromoteTeamStatsRespVO.RecentConvertRespVO convertRecent(PromoterRelationDO relation, String level) {

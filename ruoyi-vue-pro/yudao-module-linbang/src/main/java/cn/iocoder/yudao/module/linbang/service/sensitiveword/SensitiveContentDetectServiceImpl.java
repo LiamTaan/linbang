@@ -31,13 +31,17 @@ import javax.annotation.Resource;
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageReader;
 import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -53,6 +57,9 @@ public class SensitiveContentDetectServiceImpl implements SensitiveContentDetect
     private static final Pattern URL_PATTERN = Pattern.compile("(https?://|www\\.|[a-z0-9-]+\\.(com|cn|net|top|cc|vip|shop))",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern QR_DESC_PATTERN = Pattern.compile("(二维码|扫码|扫一扫)", Pattern.CASE_INSENSITIVE);
+    private static final int MAX_IMAGE_WIDTH = 10_000;
+    private static final int MAX_IMAGE_HEIGHT = 10_000;
+    private static final long MAX_IMAGE_PIXELS = 25_000_000L;
 
     @Resource
     private SensitiveWordMapper sensitiveWordMapper;
@@ -79,12 +86,14 @@ public class SensitiveContentDetectServiceImpl implements SensitiveContentDetect
         boolean ocrFailed = false;
         boolean reviewRequired = false;
         boolean blockRequired = false;
+        boolean ocrEnabled = CollUtil.isNotEmpty(fileIds) && isOcrEnabled();
+        boolean needsWords = StrUtil.isNotBlank(content) || ocrEnabled;
+        List<SensitiveWordDO> platformWords = needsWords
+                ? sensitiveWordMapper.selectEnabledList() : new ArrayList<>();
+        List<UserSensitiveCustomWordDO> customWords = !needsWords || userId == null
+                ? new ArrayList<>() : userSensitiveCustomWordMapper.selectActiveList(userId);
 
         if (StrUtil.isNotBlank(content)) {
-            List<SensitiveWordDO> platformWords = sensitiveWordMapper.selectList();
-            List<UserSensitiveCustomWordDO> customWords = userId == null
-                    ? new ArrayList<>()
-                    : userSensitiveCustomWordMapper.selectActiveList(userId);
             TextDetectOutcome textOutcome = detectText(sceneType, userId, bizType, bizId, content, strategy,
                     platformWords, customWords);
             processed = textOutcome.getProcessedContent();
@@ -94,11 +103,7 @@ public class SensitiveContentDetectServiceImpl implements SensitiveContentDetect
             blockRequired = blockRequired || textOutcome.isBlockRequired();
         }
 
-        if (CollUtil.isNotEmpty(fileIds) && isOcrEnabled()) {
-            List<SensitiveWordDO> platformWords = sensitiveWordMapper.selectList();
-            List<UserSensitiveCustomWordDO> customWords = userId == null
-                    ? new ArrayList<>()
-                    : userSensitiveCustomWordMapper.selectActiveList(userId);
+        if (ocrEnabled) {
             for (Long fileId : fileIds) {
                 if (fileId == null) {
                     continue;
@@ -226,8 +231,21 @@ public class SensitiveContentDetectServiceImpl implements SensitiveContentDetect
             return new ImageDetectOutcome(0, new ArrayList<>(), true, false, false);
         }
         try {
-            byte[] content = fileService.getFileContent(file.getConfigId(), file.getPath());
-            BufferedImage image = ImageIO.read(new ByteArrayInputStream(content));
+            byte[] content = fileService.getFileContent(file.getConfigId(), file.getPath(),
+                    FileService.MAX_FILE_SIZE_BYTES);
+            if (content.length > FileService.MAX_FILE_SIZE_BYTES) {
+                saveImageScanResult(sceneType, userId, bizType, bizId, fileId, file.getUrl(), null,
+                        null, null, null, "FAILED", "IMAGE_FILE_TOO_LARGE");
+                return new ImageDetectOutcome(0, new ArrayList<>(), true, false, false);
+            }
+            BufferedImage image;
+            try {
+                image = readBoundedImage(content);
+            } catch (ImageValidationException ex) {
+                saveImageScanResult(sceneType, userId, bizType, bizId, fileId, file.getUrl(), null,
+                        null, null, null, "FAILED", ex.getReason());
+                return new ImageDetectOutcome(0, new ArrayList<>(), true, false, false);
+            }
             if (image == null) {
                 saveImageScanResult(sceneType, userId, bizType, bizId, fileId, file.getUrl(), null,
                         null, null, null, "FAILED", "UNSUPPORTED_IMAGE");
@@ -273,8 +291,33 @@ public class SensitiveContentDetectServiceImpl implements SensitiveContentDetect
             return new ImageDetectOutcome(hitCount, new ArrayList<>(hitWords), false, reviewRequired, blockRequired);
         } catch (Exception ex) {
             saveImageScanResult(sceneType, userId, bizType, bizId, fileId, file.getUrl(), null,
-                    null, null, null, "FAILED", ex.getMessage());
+                    null, null, null, "FAILED", "IMAGE_SCAN_EXCEPTION");
             return new ImageDetectOutcome(0, new ArrayList<>(), true, false, false);
+        }
+    }
+
+    BufferedImage readBoundedImage(byte[] content) throws IOException, ImageValidationException {
+        try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(content))) {
+            if (input == null) {
+                return null;
+            }
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+            if (!readers.hasNext()) {
+                return null;
+            }
+            ImageReader reader = readers.next();
+            try {
+                reader.setInput(input, true, true);
+                int width = reader.getWidth(0);
+                int height = reader.getHeight(0);
+                if (width <= 0 || height <= 0 || width > MAX_IMAGE_WIDTH || height > MAX_IMAGE_HEIGHT
+                        || (long) width * height > MAX_IMAGE_PIXELS) {
+                    throw new ImageValidationException("IMAGE_DIMENSIONS_EXCEEDED");
+                }
+                return reader.read(0);
+            } finally {
+                reader.dispose();
+            }
         }
     }
 
@@ -380,8 +423,9 @@ public class SensitiveContentDetectServiceImpl implements SensitiveContentDetect
     }
 
     private boolean shouldFailOnOcr(String sceneType) {
-        String fallbackMode = configService.getConfigByKey(PlatformConfigKeyConstants.OCR_FALLBACK_MODE) == null
-                ? null : configService.getConfigByKey(PlatformConfigKeyConstants.OCR_FALLBACK_MODE).getValue();
+        cn.iocoder.yudao.module.infra.dal.dataobject.config.ConfigDO config =
+                configService.getConfigByKey(PlatformConfigKeyConstants.OCR_FALLBACK_MODE);
+        String fallbackMode = config == null ? null : config.getValue();
         if ("ALLOW".equalsIgnoreCase(fallbackMode)) {
             return false;
         }
@@ -389,8 +433,9 @@ public class SensitiveContentDetectServiceImpl implements SensitiveContentDetect
     }
 
     private boolean isOcrEnabled() {
-        String enabled = configService.getConfigByKey(PlatformConfigKeyConstants.OCR_ENABLED) == null
-                ? null : configService.getConfigByKey(PlatformConfigKeyConstants.OCR_ENABLED).getValue();
+        cn.iocoder.yudao.module.infra.dal.dataobject.config.ConfigDO config =
+                configService.getConfigByKey(PlatformConfigKeyConstants.OCR_ENABLED);
+        String enabled = config == null ? null : config.getValue();
         return Boolean.parseBoolean(StrUtil.blankToDefault(enabled, "false"));
     }
 
@@ -496,7 +541,8 @@ public class SensitiveContentDetectServiceImpl implements SensitiveContentDetect
                 key = PlatformConfigKeyConstants.MESSAGE_SENSITIVE_STRATEGY;
                 break;
         }
-        String value = configService.getConfigByKey(key) == null ? null : configService.getConfigByKey(key).getValue();
+        cn.iocoder.yudao.module.infra.dal.dataobject.config.ConfigDO config = configService.getConfigByKey(key);
+        String value = config == null ? null : config.getValue();
         if (StrUtil.isBlank(value)) {
             if (LinbangRiskConstants.SCENE_COMMENT.equals(sceneType)) {
                 return LinbangRiskConstants.SENSITIVE_STRATEGY_REPLACE;
@@ -643,6 +689,20 @@ public class SensitiveContentDetectServiceImpl implements SensitiveContentDetect
 
         private boolean isBlockRequired() {
             return blockRequired;
+        }
+    }
+
+    static final class ImageValidationException extends Exception {
+
+        private final String reason;
+
+        private ImageValidationException(String reason) {
+            super(reason);
+            this.reason = reason;
+        }
+
+        private String getReason() {
+            return reason;
         }
     }
 }

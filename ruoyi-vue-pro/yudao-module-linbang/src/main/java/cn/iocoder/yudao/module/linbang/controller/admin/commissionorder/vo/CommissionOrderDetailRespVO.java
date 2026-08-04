@@ -45,6 +45,7 @@ public class CommissionOrderDetailRespVO {
     private UnitRespVO sourceUnit;
 
     @Data
+    @Schema(description = "管理后台 - 推广员摘要 Response VO")
     public static class PromoterRespVO {
         @Schema(description = "推广员 ID", example = "1001")
         private Long id;
@@ -69,6 +70,7 @@ public class CommissionOrderDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 用户摘要 Response VO")
     public static class UserRespVO {
         @Schema(description = "用户 ID", example = "5002")
         private Long id;
@@ -85,6 +87,7 @@ public class CommissionOrderDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 主订单摘要 Response VO")
     public static class OrderRespVO {
         @Schema(description = "主订单 ID", example = "2001")
         private Long id;
@@ -109,6 +112,7 @@ public class CommissionOrderDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 订单单元摘要 Response VO")
     public static class UnitRespVO {
         @Schema(description = "单元订单 ID", example = "3001")
         private Long id;

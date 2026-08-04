@@ -1,22 +1,30 @@
 package cn.iocoder.yudao.module.infra.service.file;
 
 import cn.hutool.core.io.resource.ResourceUtil;
+import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.ObjectUtils;
+import cn.iocoder.yudao.framework.security.core.LoginUser;
 import cn.iocoder.yudao.framework.test.core.ut.BaseDbUnitTest;
 import cn.iocoder.yudao.framework.test.core.util.AssertUtils;
 import cn.iocoder.yudao.module.infra.controller.admin.file.vo.file.FileCreateReqVO;
 import cn.iocoder.yudao.module.infra.controller.admin.file.vo.file.FilePageReqVO;
+import cn.iocoder.yudao.module.infra.controller.admin.file.vo.file.FilePresignedUrlRespVO;
 import cn.iocoder.yudao.module.infra.dal.dataobject.file.FileDO;
 import cn.iocoder.yudao.module.infra.dal.mysql.file.FileMapper;
 import cn.iocoder.yudao.module.infra.framework.file.core.client.FileClient;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import javax.annotation.Resource;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static cn.iocoder.yudao.framework.common.util.date.LocalDateTimeUtils.buildTime;
@@ -24,12 +32,18 @@ import static cn.iocoder.yudao.framework.test.core.util.AssertUtils.assertServic
 import static cn.iocoder.yudao.framework.test.core.util.RandomUtils.*;
 import static cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants.FILE_NOT_EXISTS;
 import static cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants.FILE_PATH_INVALID;
+import static cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants.FILE_TYPE_INVALID;
+import static cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants.FILE_UPLOAD_RESERVATION_INVALID;
+import static cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants.FILE_UPLOAD_SIZE_MISMATCH;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.*;
 
 @Import({FileServiceImpl.class})
 public class FileServiceImplTest extends BaseDbUnitTest {
+
+    private static final Long LOGIN_USER_ID = 100L;
+    private static final String LOGIN_OWNER_KEY = UserTypeEnum.ADMIN.getValue() + ":" + LOGIN_USER_ID;
 
     @Resource
     private FileServiceImpl fileService;
@@ -45,6 +59,16 @@ public class FileServiceImplTest extends BaseDbUnitTest {
         FileServiceImpl.PATH_PREFIX_DATE_ENABLE = true;
         FileServiceImpl.PATH_SUFFIX_TIMESTAMP_ENABLE = true;
         FileServiceImpl.PATH_SUFFIX_AS_DIRECTORY = true;
+        LoginUser loginUser = new LoginUser();
+        loginUser.setId(LOGIN_USER_ID);
+        loginUser.setUserType(UserTypeEnum.ADMIN.getValue());
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(loginUser, null, Collections.emptyList()));
+    }
+
+    @AfterEach
+    public void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -96,7 +120,7 @@ public class FileServiceImplTest extends BaseDbUnitTest {
         String url = randomString();
         AtomicReference<String> pathRef = new AtomicReference<>();
         when(client.upload(same(content), argThat(path -> {
-            assertTrue(path.matches(directory + "/\\d{8}/\\d+/" + name + ".jpg"));
+            assertTrue(path.matches(directory + "/\\d{8}/[0-9a-f]{32}/" + name + "\\.jpg"));
             pathRef.set(path);
             return true;
         }), eq(type))).thenReturn(url);
@@ -128,7 +152,7 @@ public class FileServiceImplTest extends BaseDbUnitTest {
         String url = randomString();
         AtomicReference<String> pathRef = new AtomicReference<>();
         when(client.upload(same(content), argThat(path -> {
-            assertTrue(path.matches("\\d{8}/\\d+/6318848e882d8a7e7e82789d87608f684ee52d41966bfc8cad3ce15aad2b970e\\.jpg"));
+            assertTrue(path.matches("\\d{8}/[0-9a-f]{32}/6318848e882d8a7e7e82789d87608f684ee52d41966bfc8cad3ce15aad2b970e\\.jpg"));
             pathRef.set(path);
             return true;
         }), eq(type))).thenReturn(url);
@@ -212,6 +236,22 @@ public class FileServiceImplTest extends BaseDbUnitTest {
     }
 
     @Test
+    public void testGetFileContentWithLimit() throws Exception {
+        Long configId = 10L;
+        String path = "tudou.jpg";
+        long maxBytes = 1024L;
+        FileClient client = mock(FileClient.class);
+        when(fileConfigService.getFileClient(configId)).thenReturn(client);
+        byte[] content = new byte[]{1, 2, 3};
+        when(client.getContent(path, maxBytes)).thenReturn(content);
+
+        byte[] result = fileService.getFileContent(configId, path, maxBytes);
+
+        assertSame(content, result);
+        verify(client).getContent(path, maxBytes);
+    }
+
+    @Test
     public void testGetFileByConfigIdAndPath() {
         // mock 数据
         FileDO dbFile = randomPojo(FileDO.class, o -> o.setConfigId(10L).setPath("avatar/中文 100%+文件.jpg"));
@@ -229,34 +269,120 @@ public class FileServiceImplTest extends BaseDbUnitTest {
     }
 
     @Test
-    public void testCreateFileByPresignedPath_success() {
-        // 准备参数
+    public void testPresignPutUrl_reservesIsolatedPathAndHeaders() throws Exception {
+        FileClient client = mock(FileClient.class);
+        when(client.getId()).thenReturn(10L);
+        when(fileConfigService.getMasterFileClient()).thenReturn(client);
+        AtomicReference<String> pendingPathRef = new AtomicReference<>();
+        when(client.presignPutUrl(anyString(), eq(FileService.PRESIGNED_UPLOAD_CONTENT_TYPE), eq(2048L)))
+                .thenAnswer(invocation -> {
+                    pendingPathRef.set(invocation.getArgument(0));
+                    return "https://storage.example/upload";
+                });
+        when(client.presignGetUrl(anyString(), isNull()))
+                .thenAnswer(invocation -> "https://cdn.example/" + invocation.getArgument(0));
+
+        FilePresignedUrlRespVO result = fileService.presignPutUrl("test.jpg", 2048L, "avatar");
+
+        assertEquals(".pending/" + result.getPath(), pendingPathRef.get());
+        assertEquals(FileService.PRESIGNED_UPLOAD_CONTENT_TYPE, result.getUploadContentType());
+        assertTrue(result.getPath().matches("avatar/\\d{8}/[0-9a-f]{32}/test\\.jpg"));
+        FileDO reservation = fileMapper.selectLatestByConfigIdAndPath(10L, result.getPath());
+        assertNotNull(reservation);
+        assertEquals(-2048L, reservation.getSize());
+        assertEquals(LOGIN_OWNER_KEY, reservation.getUpdater());
+        assertEquals(String.valueOf(LOGIN_USER_ID), reservation.getCreator());
+    }
+
+    @Test
+    public void testCreateFileByPresignedPath_success() throws Exception {
+        byte[] content = ResourceUtil.readBytes("file/erweima.jpg");
+        FileDO reservation = insertPendingUpload("avatar/test.jpg", "test.jpg", content.length, LOGIN_OWNER_KEY);
+        FileClient client = mock(FileClient.class);
+        when(fileConfigService.getFileClient(10L)).thenReturn(client);
+        when(client.getContent(".pending/avatar/test.jpg", FileService.MAX_FILE_SIZE_BYTES)).thenReturn(content);
+        when(client.upload(same(content), eq("avatar/test.jpg"), eq("image/jpeg")))
+                .thenReturn("https://www.iocoder.cn/test.jpg?token=server");
         FileCreateReqVO reqVO = randomPojo(FileCreateReqVO.class, o -> {
+            o.setConfigId(10L);
             o.setPath("avatar/test.jpg");
-            o.setName("test.jpg");
-            o.setUrl("https://www.iocoder.cn/test.jpg?token=123");
+            o.setName("attacker.html");
+            o.setUrl("https://attacker.invalid/file");
+            o.setType("text/html");
+            o.setSize(1L);
         });
 
-        // 调用
         Long fileId = fileService.createFile(reqVO);
 
-        // 断言
+        assertEquals(reservation.getId(), fileId);
         FileDO file = fileMapper.selectById(fileId);
         assertEquals("avatar/test.jpg", file.getPath());
         assertEquals("test.jpg", file.getName());
         assertEquals("https://www.iocoder.cn/test.jpg", file.getUrl());
+        assertEquals("image/jpeg", file.getType());
+        assertEquals(content.length, file.getSize());
+        assertEquals(LOGIN_OWNER_KEY, file.getUpdater());
+        verify(client).delete(".pending/avatar/test.jpg");
     }
 
     @Test
-    public void testCreateFileByPresignedPath_nameInvalid() {
-        // 准备参数
-        FileCreateReqVO reqVO = randomPojo(FileCreateReqVO.class, o -> {
-            o.setPath("avatar/test.jpg");
-            o.setName("../test.jpg");
-        });
+    public void testCreateFileByPresignedPath_rejectsDangerousContentAndCleansUp() throws Exception {
+        byte[] content = "<html><script>alert(1)</script></html>".getBytes(StandardCharsets.UTF_8);
+        FileDO reservation = insertPendingUpload("avatar/test.txt", "test.txt", content.length, LOGIN_OWNER_KEY);
+        FileClient client = mock(FileClient.class);
+        when(fileConfigService.getFileClient(10L)).thenReturn(client);
+        when(client.getContent(".pending/avatar/test.txt", FileService.MAX_FILE_SIZE_BYTES)).thenReturn(content);
+        FileCreateReqVO reqVO = randomPojo(FileCreateReqVO.class,
+                o -> o.setConfigId(10L).setPath("avatar/test.txt"));
 
-        // 调用，并断言异常
+        assertServiceException(() -> fileService.createFile(reqVO), FILE_TYPE_INVALID);
+
+        assertNull(fileMapper.selectById(reservation.getId()));
+        verify(client).delete(".pending/avatar/test.txt");
+        verify(client, never()).upload(any(), anyString(), anyString());
+    }
+
+    @Test
+    public void testCreateFileByPresignedPath_rejectsSizeMismatchAndCleansUp() throws Exception {
+        byte[] content = new byte[]{1, 2, 3};
+        FileDO reservation = insertPendingUpload("avatar/test.bin", "test.bin", content.length + 1L, LOGIN_OWNER_KEY);
+        FileClient client = mock(FileClient.class);
+        when(fileConfigService.getFileClient(10L)).thenReturn(client);
+        when(client.getContent(".pending/avatar/test.bin", FileService.MAX_FILE_SIZE_BYTES)).thenReturn(content);
+        FileCreateReqVO reqVO = randomPojo(FileCreateReqVO.class,
+                o -> o.setConfigId(10L).setPath("avatar/test.bin"));
+
+        assertServiceException(() -> fileService.createFile(reqVO), FILE_UPLOAD_SIZE_MISMATCH);
+
+        assertNull(fileMapper.selectById(reservation.getId()));
+        verify(client).delete(".pending/avatar/test.bin");
+    }
+
+    @Test
+    public void testCreateFileByPresignedPath_rejectsDifferentOwner() {
+        insertPendingUpload("avatar/test.jpg", "test.jpg", 10L,
+                UserTypeEnum.MEMBER.getValue() + ":" + LOGIN_USER_ID);
+        FileCreateReqVO reqVO = randomPojo(FileCreateReqVO.class,
+                o -> o.setConfigId(10L).setPath("avatar/test.jpg"));
+
+        assertServiceException(() -> fileService.createFile(reqVO), FILE_UPLOAD_RESERVATION_INVALID);
+
+        verify(fileConfigService, never()).getFileClient(anyLong());
+    }
+
+    @Test
+    public void testCreateFileByPresignedPath_nameInvalid() throws Exception {
+        byte[] content = ResourceUtil.readBytes("file/erweima.jpg");
+        FileDO reservation = insertPendingUpload("avatar/test.jpg", "../test.jpg", content.length, LOGIN_OWNER_KEY);
+        FileClient client = mock(FileClient.class);
+        when(fileConfigService.getFileClient(10L)).thenReturn(client);
+        when(client.getContent(".pending/avatar/test.jpg", FileService.MAX_FILE_SIZE_BYTES)).thenReturn(content);
+        FileCreateReqVO reqVO = randomPojo(FileCreateReqVO.class,
+                o -> o.setConfigId(10L).setPath("avatar/test.jpg"));
+
         assertServiceException(() -> fileService.createFile(reqVO), FILE_PATH_INVALID);
+        assertNull(fileMapper.selectById(reservation.getId()));
+        verify(client).delete(".pending/avatar/test.jpg");
     }
 
     @Test
@@ -283,10 +409,10 @@ public class FileServiceImplTest extends BaseDbUnitTest {
         String path = fileService.generateUploadPath(name, directory);
 
         // 断言
-        // 格式为：avatar/yyyyMMdd/{时间戳+随机数}/test.jpg
+        // 格式为：avatar/yyyyMMdd/{32 位 UUID}/test.jpg
         assertTrue(path.startsWith(directory + "/"));
         // 包含日期格式：8 位数字，如 20240517
-        assertTrue(path.matches(directory + "/\\d{8}/\\d+/test\\.jpg"));
+        assertTrue(path.matches(directory + "/\\d{8}/[0-9a-f]{32}/test\\.jpg"));
     }
 
     @Test
@@ -319,9 +445,9 @@ public class FileServiceImplTest extends BaseDbUnitTest {
         String path = fileService.generateUploadPath(name, directory);
 
         // 断言
-        // 格式为：avatar/{时间戳+随机数}/test.jpg
+        // 格式为：avatar/{32 位 UUID}/test.jpg
         assertTrue(path.startsWith(directory + "/"));
-        assertTrue(path.matches(directory + "/\\d+/test\\.jpg"));
+        assertTrue(path.matches(directory + "/[0-9a-f]{32}/test\\.jpg"));
     }
 
     @Test
@@ -352,9 +478,9 @@ public class FileServiceImplTest extends BaseDbUnitTest {
         String path = fileService.generateUploadPath(name, directory);
 
         // 断言
-        // 格式为：avatar/yyyyMMdd/{时间戳+随机数}/test
+        // 格式为：avatar/yyyyMMdd/{32 位 UUID}/test
         assertTrue(path.startsWith(directory + "/"));
-        assertTrue(path.matches(directory + "/\\d{8}/\\d+/test"));
+        assertTrue(path.matches(directory + "/\\d{8}/[0-9a-f]{32}/test"));
     }
 
     @Test
@@ -369,8 +495,8 @@ public class FileServiceImplTest extends BaseDbUnitTest {
         String path = fileService.generateUploadPath(name, directory);
 
         // 断言
-        // 格式为：yyyyMMdd/{时间戳+随机数}/test.jpg
-        assertTrue(path.matches("\\d{8}/\\d+/test\\.jpg"));
+        // 格式为：yyyyMMdd/{32 位 UUID}/test.jpg
+        assertTrue(path.matches("\\d{8}/[0-9a-f]{32}/test\\.jpg"));
     }
 
     @Test
@@ -386,8 +512,8 @@ public class FileServiceImplTest extends BaseDbUnitTest {
         String path = fileService.generateUploadPath(name, directory);
 
         // 断言
-        // 格式为：avatar/yyyyMMdd/test_{时间戳+随机数}.jpg
-        assertTrue(path.matches(directory + "/\\d{8}/test_\\d+\\.jpg"));
+        // 格式为：avatar/yyyyMMdd/test_{32 位 UUID}.jpg
+        assertTrue(path.matches(directory + "/\\d{8}/test_[0-9a-f]{32}\\.jpg"));
     }
 
     @Test
@@ -403,8 +529,8 @@ public class FileServiceImplTest extends BaseDbUnitTest {
         String path = fileService.generateUploadPath(name, directory);
 
         // 断言
-        // 格式为：avatar/test_{时间戳+随机数}.jpg
-        assertTrue(path.matches(directory + "/test_\\d+\\.jpg"));
+        // 格式为：avatar/test_{32 位 UUID}.jpg
+        assertTrue(path.matches(directory + "/test_[0-9a-f]{32}\\.jpg"));
     }
 
     @Test
@@ -420,8 +546,8 @@ public class FileServiceImplTest extends BaseDbUnitTest {
         String path = fileService.generateUploadPath(name, directory);
 
         // 断言
-        // 格式为：avatar/yyyyMMdd/test_{时间戳+随机数}
-        assertTrue(path.matches(directory + "/\\d{8}/test_\\d+"));
+        // 格式为：avatar/yyyyMMdd/test_{32 位 UUID}
+        assertTrue(path.matches(directory + "/\\d{8}/test_[0-9a-f]{32}"));
     }
 
     @Test
@@ -458,8 +584,16 @@ public class FileServiceImplTest extends BaseDbUnitTest {
         String path = fileService.generateUploadPath(name, directory);
 
         // 断言
-        // 格式为：yyyyMMdd/{时间戳+随机数}/test.jpg
-        assertTrue(path.matches("\\d{8}/\\d+/test\\.jpg"));
+        // 格式为：yyyyMMdd/{32 位 UUID}/test.jpg
+        assertTrue(path.matches("\\d{8}/[0-9a-f]{32}/test\\.jpg"));
+    }
+
+    private FileDO insertPendingUpload(String path, String name, long expectedSize, String ownerKey) {
+        FileDO reservation = new FileDO().setConfigId(10L).setPath(path).setName(name)
+                .setUrl("https://cdn.example/" + path).setSize(-expectedSize);
+        reservation.setUpdater(ownerKey);
+        fileMapper.insert(reservation);
+        return reservation;
     }
 
 }

@@ -2,10 +2,20 @@
   <ContentWrap>
     <el-form :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
       <el-form-item label="场景编码">
-        <el-input v-model="queryParams.sceneCode" placeholder="请输入场景编码" clearable class="!w-220px" />
+        <el-input
+          v-model="queryParams.sceneCode"
+          placeholder="请输入场景编码"
+          clearable
+          class="!w-220px"
+        />
       </el-form-item>
       <el-form-item label="场景名称">
-        <el-input v-model="queryParams.sceneName" placeholder="请输入场景名称" clearable class="!w-220px" />
+        <el-input
+          v-model="queryParams.sceneName"
+          placeholder="请输入场景名称"
+          clearable
+          class="!w-220px"
+        />
       </el-form-item>
       <el-form-item label="消息分类">
         <el-select v-model="queryParams.messageCategory" clearable class="!w-220px">
@@ -19,7 +29,9 @@
       </el-form-item>
       <el-form-item>
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" />搜索</el-button>
-        <el-button type="primary" @click="openCreateDialog"><Icon icon="ep:plus" class="mr-5px" />新增场景</el-button>
+        <el-button type="primary" @click="openCreateDialog"
+          ><Icon icon="ep:plus" class="mr-5px" />新增场景</el-button
+        >
       </el-form-item>
     </el-form>
   </ContentWrap>
@@ -40,7 +52,9 @@
       </el-table-column>
       <el-table-column label="状态" width="90">
         <template #default="{ row }">
-          <el-tag :type="row.status === 'ENABLE' ? 'success' : 'info'">{{ formatEnableStatus(row.status) }}</el-tag>
+          <el-tag :type="row.status === 'ENABLE' ? 'success' : 'info'">{{
+            formatEnableStatus(row.status)
+          }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="业务类型" prop="bizType" min-width="120" />
@@ -54,13 +68,26 @@
         </template>
       </el-table-column>
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 
-  <Dialog v-model="formVisible" :title="formMode === 'create' ? '新增消息场景' : '编辑消息场景'" width="680px">
+  <Dialog
+    v-model="formVisible"
+    :title="formMode === 'create' ? '新增消息场景' : '编辑消息场景'"
+    width="680px"
+  >
     <el-form :model="sceneForm" label-width="110px">
       <el-form-item label="场景编码" required>
-        <el-input v-model="sceneForm.sceneCode" :disabled="formMode === 'edit'" placeholder="如 ORDER_STATUS_CHANGED" />
+        <el-input
+          v-model="sceneForm.sceneCode"
+          :disabled="formMode === 'edit'"
+          placeholder="如 ORDER_STATUS_CHANGED"
+        />
       </el-form-item>
       <el-form-item label="场景名称" required>
         <el-input v-model="sceneForm.sceneName" placeholder="请输入场景名称" />
@@ -145,7 +172,8 @@ const sceneForm = reactive<MessageScene>({
 })
 
 const channelValue = computed({
-  get: () => (sceneForm.defaultChannels ? sceneForm.defaultChannels.split(',').filter(Boolean) : []),
+  get: () =>
+    sceneForm.defaultChannels ? sceneForm.defaultChannels.split(',').filter(Boolean) : [],
   set: (value: string[]) => {
     sceneForm.defaultChannels = value.join(',')
   }

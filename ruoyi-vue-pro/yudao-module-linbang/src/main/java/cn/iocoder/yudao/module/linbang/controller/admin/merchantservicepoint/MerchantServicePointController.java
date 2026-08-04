@@ -2,7 +2,7 @@ package cn.iocoder.yudao.module.linbang.controller.admin.merchantservicepoint;
 
 import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.excel.core.util.ExcelUtils;
 import cn.iocoder.yudao.module.linbang.controller.admin.merchantservicepoint.vo.MerchantServicePointDetailRespVO;
@@ -96,7 +96,7 @@ public class MerchantServicePointController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportMerchantServicePointExcel(@Valid MerchantServicePointPageReqVO pageReqVO,
                                                 HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<MerchantServicePointRespVO> list = merchantServicePointService.getMerchantServicePointPage(pageReqVO).getList();
         ExcelUtils.write(response, "服务点.xls", "数据", MerchantServicePointRespVO.class, list);
     }

@@ -7,7 +7,8 @@
       type="success"
       :underline="false"
       target="_blank"
-      :href="hqMusicUrl ? hqMusicUrl : musicUrl"
+      rel="noopener noreferrer"
+      :href="toOpenableUrl(hqMusicUrl ? hqMusicUrl : musicUrl)"
     >
       <div
         class="avue-card__body"
@@ -26,6 +27,8 @@
 </template>
 
 <script lang="ts" setup>
+import { toOpenableUrl } from '@/utils/url'
+
 defineOptions({ name: 'WxMusic' })
 
 const props = defineProps({

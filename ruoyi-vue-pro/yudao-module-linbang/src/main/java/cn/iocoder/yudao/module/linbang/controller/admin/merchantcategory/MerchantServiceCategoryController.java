@@ -4,7 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
@@ -110,7 +110,7 @@ public class MerchantServiceCategoryController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportMerchantServiceCategoryExcel(@Valid MerchantServiceCategoryPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<MerchantServiceCategoryDO> list = merchantServiceCategoryService.getMerchantServiceCategoryPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "服务类目表.xls", "数据", MerchantServiceCategoryRespVO.class,

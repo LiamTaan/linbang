@@ -14,7 +14,7 @@ import javax.servlet.http.*;
 import java.util.*;
 import java.io.IOException;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -35,39 +35,6 @@ public class ComplaintController {
 
     @Resource
     private ComplaintService complaintService;
-
-    @PostMapping("/create")
-    @Operation(summary = "创建投诉")
-    @PreAuthorize("@ss.hasPermission('linbang:review:complaint:create')")
-    public CommonResult<Long> createComplaint(@Valid @RequestBody ComplaintSaveReqVO createReqVO) {
-        return success(complaintService.createComplaint(createReqVO));
-    }
-
-    @PutMapping("/update")
-    @Operation(summary = "更新投诉")
-    @PreAuthorize("@ss.hasPermission('linbang:review:complaint:update')")
-    public CommonResult<Boolean> updateComplaint(@Valid @RequestBody ComplaintSaveReqVO updateReqVO) {
-        complaintService.updateComplaint(updateReqVO);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete")
-    @Operation(summary = "删除投诉")
-    @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('linbang:review:complaint:delete')")
-    public CommonResult<Boolean> deleteComplaint(@RequestParam("id") Long id) {
-        complaintService.deleteComplaint(id);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete-list")
-    @Parameter(name = "ids", description = "编号", required = true)
-    @Operation(summary = "批量删除投诉")
-                @PreAuthorize("@ss.hasPermission('linbang:review:complaint:delete')")
-    public CommonResult<Boolean> deleteComplaintList(@RequestParam("ids") List<Long> ids) {
-        complaintService.deleteComplaintListByIds(ids);
-        return success(true);
-    }
 
     @GetMapping("/get")
     @Operation(summary = "获得投诉")
@@ -98,7 +65,7 @@ public class ComplaintController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportComplaintExcel(@Valid ComplaintPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<ComplaintRespVO> list = complaintService.getComplaintPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "投诉.xls", "数据", ComplaintRespVO.class, list);

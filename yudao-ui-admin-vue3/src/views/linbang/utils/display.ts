@@ -515,7 +515,8 @@ export const formatTriggerType = (value?: string) => formatValueByMap(value, TRI
 
 export const formatGender = (value?: number) => formatValueByMap(value, GENDER_LABELS)
 
-export const formatComplaintType = (value?: string) => formatValueByMap(value, COMPLAINT_TYPE_LABELS)
+export const formatComplaintType = (value?: string) =>
+  formatValueByMap(value, COMPLAINT_TYPE_LABELS)
 
 export const formatAppealType = (value?: string) => formatValueByMap(value, APPEAL_TYPE_LABELS)
 
@@ -543,7 +544,8 @@ export const formatCreditLevel = (value?: string) => formatValueByMap(value, CRE
 
 export const formatTemplateType = (value?: string) => formatValueByMap(value, TEMPLATE_TYPE_LABELS)
 
-export const formatMessageCategory = (value?: string) => formatValueByMap(value, MESSAGE_CATEGORY_LABELS)
+export const formatMessageCategory = (value?: string) =>
+  formatValueByMap(value, MESSAGE_CATEGORY_LABELS)
 
 export const formatCampaignSourceType = (value?: string) =>
   formatValueByMap(value, CAMPAIGN_SOURCE_LABELS)
@@ -560,7 +562,8 @@ export const formatExecuteStatus = (value?: string) =>
 export const formatOptimizationRefType = (value?: string) =>
   formatValueByMap(value, OPTIMIZATION_REF_TYPE_LABELS)
 
-export const formatRiskRuleGroup = (value?: string) => formatValueByMap(value, RISK_RULE_GROUP_LABELS)
+export const formatRiskRuleGroup = (value?: string) =>
+  formatValueByMap(value, RISK_RULE_GROUP_LABELS)
 
 export const formatRiskRuleValueType = (value?: string) =>
   formatValueByMap(value, RISK_RULE_VALUE_TYPE_LABELS)
@@ -584,16 +587,19 @@ export const formatHelpFeedbackStatus = (value?: string) =>
 export const formatHelpFaqCategory = (value?: string) =>
   formatValueByMap(value, HELP_FAQ_CATEGORY_LABELS)
 
-export const formatRiskEventStatus = (value?: string) => formatValueByMap(value, RISK_EVENT_STATUS_LABELS)
+export const formatRiskEventStatus = (value?: string) =>
+  formatValueByMap(value, RISK_EVENT_STATUS_LABELS)
 
-export const formatComplaintStatus = (value?: string) => formatValueByMap(value, COMPLAINT_STATUS_LABELS)
+export const formatComplaintStatus = (value?: string) =>
+  formatValueByMap(value, COMPLAINT_STATUS_LABELS)
 
 export const formatAppealStatus = (value?: string) => formatValueByMap(value, APPEAL_STATUS_LABELS)
 
 export const formatCommissionStatus = (value?: string) =>
   formatValueByMap(value, COMMISSION_STATUS_LABELS)
 
-export const formatConvertStatus = (value?: string) => formatValueByMap(value, CONVERT_STATUS_LABELS)
+export const formatConvertStatus = (value?: string) =>
+  formatValueByMap(value, CONVERT_STATUS_LABELS)
 
 export const formatMatchStatus = (value?: string) => formatValueByMap(value, MATCH_STATUS_LABELS)
 
@@ -660,7 +666,8 @@ export const formatAutoReviewLabel = (value?: boolean) => {
   return '-'
 }
 
-export const formatOperateStatus = (value?: string) => formatValueByMap(value, OPERATE_STATUS_LABELS)
+export const formatOperateStatus = (value?: string) =>
+  formatValueByMap(value, OPERATE_STATUS_LABELS)
 
 export const formatOperateType = (value?: string) => formatValueByMap(value, OPERATE_TYPE_LABELS)
 

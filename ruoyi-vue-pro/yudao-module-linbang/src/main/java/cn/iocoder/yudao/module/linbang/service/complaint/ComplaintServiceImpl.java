@@ -149,19 +149,30 @@ public class ComplaintServiceImpl implements ComplaintService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void processComplaint(ComplaintProcessReqVO reqVO) {
-        ComplaintDO complaint = complaintMapper.selectById(reqVO.getId());
+        ComplaintDO complaint = complaintMapper.selectByIdForUpdate(reqVO.getId());
         if (complaint == null) {
             throw exception(COMPLAINT_NOT_EXISTS);
         }
+        String targetStatus = StrUtil.trimToEmpty(reqVO.getStatus()).toUpperCase(Locale.ROOT);
+        if (!Arrays.asList("PROCESSING", "FINISHED", "REJECTED").contains(targetStatus)
+                || Arrays.asList("FINISHED", "REJECTED").contains(complaint.getStatus())
+                || (!"PENDING".equals(complaint.getStatus()) && !"PROCESSING".equals(complaint.getStatus()))) {
+            throw exception(COMPLAINT_STATUS_INVALID);
+        }
+        if (Objects.equals(complaint.getStatus(), targetStatus)) {
+            return;
+        }
+        Long operatorId = SecurityFrameworkUtils.getLoginUserId();
         ComplaintDO updateObj = new ComplaintDO();
         updateObj.setId(reqVO.getId());
-        updateObj.setStatus(reqVO.getStatus());
+        updateObj.setStatus(targetStatus);
         updateObj.setResultDesc(reqVO.getResultDesc());
-        updateObj.setHandleBy(SecurityFrameworkUtils.getLoginUserId());
+        updateObj.setHandleBy(operatorId);
         updateObj.setHandleTime(LocalDateTime.now());
         complaintMapper.updateById(updateObj);
-        if ("FINISHED".equals(reqVO.getStatus())) {
+        if ("FINISHED".equals(targetStatus)) {
             MerchantInfoDO merchant = merchantInfoMapper.selectOne(new LambdaQueryWrapperX<MerchantInfoDO>()
                     .eq(MerchantInfoDO::getUserId, complaint.getRespondentUserId())
                     .last("LIMIT 1"));

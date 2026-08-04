@@ -48,12 +48,13 @@ public class WalletAccountDetailRespVO {
     private WithdrawStatRespVO withdrawStats;
 
     @Data
+    @Schema(description = "管理后台 - 用户摘要 Response VO")
     public static class MemberUserSimpleRespVO {
         @Schema(description = "用户 ID", example = "1001")
         private Long id;
         @Schema(description = "用户编号", example = "LBU123456")
         private String userNo;
-        @Schema(description = "手机号", example = "13800138000")
+        @Schema(description = "脱敏手机号", example = "138****8000")
         private String mobile;
         @Schema(description = "昵称", example = "邻里用户")
         private String nickname;
@@ -64,6 +65,7 @@ public class WalletAccountDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 银行卡摘要 Response VO")
     public static class WalletBankCardSimpleRespVO {
         @Schema(description = "银行卡 ID", example = "3001")
         private Long id;
@@ -77,7 +79,7 @@ public class WalletAccountDetailRespVO {
         private String cardNoMask;
         @Schema(description = "开户名", example = "张三")
         private String accountName;
-        @Schema(description = "预留手机号", example = "13800138000")
+        @Schema(description = "脱敏预留手机号", example = "138****8000")
         private String reservedMobile;
         @Schema(description = OpenApiSchemaConstants.BANK_CARD_STATUS, example = "ENABLE")
         private String status;
@@ -88,6 +90,7 @@ public class WalletAccountDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 钱包流水摘要 Response VO")
     public static class WalletFlowSimpleRespVO {
         @Schema(description = "流水 ID", example = "1")
         private Long id;
@@ -122,6 +125,7 @@ public class WalletAccountDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 提现记录摘要 Response VO")
     public static class WalletWithdrawSimpleRespVO {
         @Schema(description = "提现申请 ID", example = "1")
         private Long id;
@@ -150,6 +154,7 @@ public class WalletAccountDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 钱包账单摘要 Response VO")
     public static class WalletBillSimpleRespVO {
         @Schema(description = "账单主键 ID", example = "1")
         private Long id;
@@ -174,6 +179,7 @@ public class WalletAccountDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 提现统计摘要 Response VO")
     public static class WithdrawStatRespVO {
         @Schema(description = "提现总次数")
         private Integer totalCount;

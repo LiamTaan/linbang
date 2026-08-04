@@ -1,4 +1,5 @@
 import request from '@/config/axios'
+import { buildDynamicKeyHeaders } from '@/api/linbang/security'
 import type { Dayjs } from 'dayjs'
 
 export interface MemberUserRealName {
@@ -133,8 +134,12 @@ export const MemberUserRealNameApi = {
     return await request.put({ url: `/member/real-name/update`, data })
   },
 
-  auditMemberUserRealName: async (data: MemberUserRealNameAuditReqVO) => {
-    return await request.post({ url: `/member/real-name/audit`, data })
+  auditMemberUserRealName: async (data: MemberUserRealNameAuditReqVO, verifyToken?: string) => {
+    return await request.post({
+      url: `/member/real-name/audit`,
+      data,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   },
 
   exportMemberUserRealName: async (params: any) => {

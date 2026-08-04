@@ -2,7 +2,7 @@ package cn.iocoder.yudao.module.linbang.controller.admin.creditrecord;
 
 import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.excel.core.util.ExcelUtils;
 import cn.iocoder.yudao.module.linbang.controller.admin.creditrecord.vo.CreditRecordDetailRespVO;
@@ -58,7 +58,7 @@ public class CreditRecordController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportCreditRecordExcel(@Valid CreditRecordPageReqVO pageReqVO,
                                         HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<CreditRecordRespVO> list = creditRecordService.getCreditRecordPage(pageReqVO).getList();
         ExcelUtils.write(response, "信用记录.xls", "数据", CreditRecordRespVO.class, list);
     }

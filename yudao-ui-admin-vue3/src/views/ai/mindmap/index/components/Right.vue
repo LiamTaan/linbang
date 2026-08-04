@@ -16,7 +16,7 @@
     <div ref="contentRef" class="hide-scroll-bar h-full box-border">
       <!--展示 markdown 的容器，最终生成的是 html 字符串，直接用 v-html 嵌入-->
       <div v-if="isGenerating" ref="mdContainerRef" class="wh-full overflow-y-auto">
-        <div class="flex flex-col items-center justify-center" v-html="html"></div>
+        <div class="flex flex-col items-center justify-center" v-dompurify-html="html"></div>
       </div>
 
       <div ref="mindMapRef" class="wh-full">

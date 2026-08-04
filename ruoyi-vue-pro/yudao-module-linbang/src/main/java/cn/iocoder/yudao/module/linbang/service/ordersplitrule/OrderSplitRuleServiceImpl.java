@@ -9,8 +9,10 @@ import cn.iocoder.yudao.module.linbang.controller.admin.ordersplitrule.vo.OrderS
 import cn.iocoder.yudao.module.linbang.controller.admin.ordersplitrule.vo.OrderSplitRuleRespVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.ordersplitrule.vo.OrderSplitRuleSaveReqVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantcategory.MerchantServiceCategoryDO;
+import cn.iocoder.yudao.module.linbang.dal.dataobject.orderinfo.OrderInfoDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.ordersplitrule.OrderSplitRuleDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantcategory.MerchantServiceCategoryMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.orderinfo.OrderInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.ordersplitrule.OrderSplitRuleMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -20,6 +22,7 @@ import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -27,11 +30,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_SPLIT_PLAN_GENERATE_FAILED;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_SPLIT_RULE_NOT_EXISTS;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_SPLIT_RULE_INVALID;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_SPLIT_RULE_IN_USE;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_UNIT_AMOUNT_EXCEED_LIMIT;
 
 @Service
@@ -39,17 +45,29 @@ import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_UNI
 public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
 
     private static final BigDecimal DEFAULT_LIMIT = new BigDecimal("200.00");
+    private static final int MAX_GENERATED_UNIT_COUNT = 100;
     private static final String GLOBAL_AMOUNT_RULE_CODE = "GLOBAL_AMOUNT_GE_200";
     private static final String GLOBAL_AMOUNT_RULE_NAME = "平台金额满 200 自动拆单";
     private static final String GLOBAL_AMOUNT_RULE_SUMMARY = "平台硬性规则：订单金额满 200 元后自动拆分";
+    private static final Set<String> MATCH_MODES = new LinkedHashSet<>(Arrays.asList("ANY", "ALL"));
+    private static final Set<String> SPLIT_MODES = new LinkedHashSet<>(
+            Arrays.asList("DIRECT", "BY_PROGRESS", "BY_PROCESS", "BY_CONTENT", "BY_PERSON"));
+    private static final Set<String> RULE_STATUSES = new LinkedHashSet<>(Arrays.asList("ENABLE", "DISABLE"));
+    private static final Set<String> PRICING_MODES = new LinkedHashSet<>(
+            Arrays.asList("FIXED_PRICE", "CONTRACT", "OUTSOURCING", "HOURLY", "BY_UNIT"));
+    private static final Set<String> UNIT_TEMPLATE_KEYS = new LinkedHashSet<>(
+            Arrays.asList("titlePrefix", "contentTemplate", "lockReasonTemplate"));
 
     @Resource
     private OrderSplitRuleMapper orderSplitRuleMapper;
     @Resource
     private MerchantServiceCategoryMapper merchantServiceCategoryMapper;
+    @Resource
+    private OrderInfoMapper orderInfoMapper;
 
     @Override
     public Long createOrderSplitRule(@Valid OrderSplitRuleSaveReqVO createReqVO) {
+        validateRuleReq(createReqVO);
         OrderSplitRuleDO rule = buildRule(createReqVO);
         orderSplitRuleMapper.insert(rule);
         return rule.getId();
@@ -58,12 +76,16 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
     @Override
     public void updateOrderSplitRule(@Valid OrderSplitRuleSaveReqVO updateReqVO) {
         validateOrderSplitRuleExists(updateReqVO.getId());
+        validateRuleReq(updateReqVO);
         orderSplitRuleMapper.updateById(buildRule(updateReqVO));
     }
 
     @Override
     public void deleteOrderSplitRule(Long id) {
         validateOrderSplitRuleExists(id);
+        if (orderInfoMapper.selectCount(OrderInfoDO::getSplitRuleId, id) > 0) {
+            throw exception(ORDER_SPLIT_RULE_IN_USE);
+        }
         orderSplitRuleMapper.deleteById(id);
     }
 
@@ -91,8 +113,9 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
         List<OrderSplitRuleDO> rules = orderSplitRuleMapper.selectList(new LambdaQueryWrapperX<OrderSplitRuleDO>()
                 .eq(OrderSplitRuleDO::getStatus, "ENABLE")
                 .orderByAsc(OrderSplitRuleDO::getSortNo, OrderSplitRuleDO::getId));
+        Map<Long, List<MerchantServiceCategoryDO>> categoryChildrenMap = buildCategoryChildrenMap(rules);
         for (OrderSplitRuleDO rule : rules) {
-            if (!matchesRule(rule, context, safeWorkerCount)) {
+            if (!matchesRule(rule, context, safeWorkerCount, categoryChildrenMap)) {
                 continue;
             }
             return buildRulePlan(rule, context, orderAmount, safeWorkerCount, mandatoryAmountUnitCount);
@@ -116,6 +139,7 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
             suggestedUnitCount = Math.max(OptionalValue.of(rule.getDefaultUnitCount(), 2), 2);
         }
         suggestedUnitCount = Math.max(suggestedUnitCount, mandatoryAmountUnitCount);
+        suggestedUnitCount = validateGeneratedUnitCount(suggestedUnitCount);
         String ruleSummary = buildRuleSummary(triggerReasons, effectiveSplitMode, suggestedUnitCount);
         if (!Boolean.TRUE.equals(context.getAutoSplitEnabled()) && mandatoryAmountUnitCount <= 1) {
             List<OrderSplitPlan.OrderSplitUnitPlan> units = buildUnits(context,
@@ -303,7 +327,7 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
     }
 
     private List<BigDecimal> splitAmounts(BigDecimal orderAmount, int unitCount, BigDecimal limit) {
-        if (unitCount <= 0) {
+        if (unitCount <= 0 || unitCount > MAX_GENERATED_UNIT_COUNT) {
             throw exception(ORDER_SPLIT_PLAN_GENERATE_FAILED);
         }
         if (unitCount == 1) {
@@ -336,13 +360,14 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
                                  BigDecimal orderAmount, int safeWorkerCount) {
         BigDecimal limit = OptionalValue.of(rule.getUnitAmountLimit(), DEFAULT_LIMIT);
         int amountCount = limit.compareTo(BigDecimal.ZERO) > 0
-                ? orderAmount.divide(limit, 0, RoundingMode.UP).intValue()
+                ? toGeneratedUnitCount(orderAmount.divide(limit, 0, RoundingMode.UP))
                 : 1;
         int quantityCount = 1;
         if (Boolean.TRUE.equals(context.getQuantitySplitEnabled())
                 && rule.getMinQuantity() != null && rule.getMinQuantity().compareTo(BigDecimal.ZERO) > 0
                 && context.getQuantity() != null && context.getQuantity().compareTo(rule.getMinQuantity()) >= 0) {
-            quantityCount = context.getQuantity().divide(rule.getMinQuantity(), 0, RoundingMode.UP).intValue();
+            quantityCount = toGeneratedUnitCount(
+                    context.getQuantity().divide(rule.getMinQuantity(), 0, RoundingMode.UP));
         }
         int workerCount = "BY_PERSON".equalsIgnoreCase(rule.getSplitMode())
                 ? safeWorkerCount : 1;
@@ -350,18 +375,39 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
         if (!Boolean.TRUE.equals(context.getEngineeringCategoryFlag())) {
             defaultUnitCount = Math.min(defaultUnitCount, 1);
         }
-        return Math.max(Math.max(amountCount, quantityCount), Math.max(workerCount, defaultUnitCount));
+        return validateGeneratedUnitCount(
+                Math.max(Math.max(amountCount, quantityCount), Math.max(workerCount, defaultUnitCount)));
     }
 
     private int resolveMandatoryAmountSplitUnitCount(BigDecimal orderAmount) {
         if (orderAmount == null || orderAmount.compareTo(DEFAULT_LIMIT) < 0) {
             return 1;
         }
-        int amountCount = orderAmount.divide(DEFAULT_LIMIT, 0, RoundingMode.UP).intValue();
+        int amountCount = toGeneratedUnitCount(orderAmount.divide(DEFAULT_LIMIT, 0, RoundingMode.UP));
         return Math.max(amountCount, 2);
     }
 
-    private boolean matchesRule(OrderSplitRuleDO rule, OrderSplitPreviewContext context, int safeWorkerCount) {
+    private int toGeneratedUnitCount(BigDecimal calculatedCount) {
+        if (calculatedCount == null || calculatedCount.compareTo(BigDecimal.ONE) < 0
+                || calculatedCount.compareTo(BigDecimal.valueOf(MAX_GENERATED_UNIT_COUNT)) > 0) {
+            throw exception(ORDER_SPLIT_PLAN_GENERATE_FAILED);
+        }
+        try {
+            return calculatedCount.intValueExact();
+        } catch (ArithmeticException ex) {
+            throw exception(ORDER_SPLIT_PLAN_GENERATE_FAILED);
+        }
+    }
+
+    private int validateGeneratedUnitCount(int unitCount) {
+        if (unitCount <= 0 || unitCount > MAX_GENERATED_UNIT_COUNT) {
+            throw exception(ORDER_SPLIT_PLAN_GENERATE_FAILED);
+        }
+        return unitCount;
+    }
+
+    private boolean matchesRule(OrderSplitRuleDO rule, OrderSplitPreviewContext context, int safeWorkerCount,
+                                Map<Long, List<MerchantServiceCategoryDO>> categoryChildrenMap) {
         if (!matchesPricingMode(rule.getApplicablePricingModes(), context.getPricingMode())) {
             return false;
         }
@@ -376,7 +422,7 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
             conditions.add(safeWorkerCount >= rule.getMinWorkerCount());
         }
         if (rule.getCategoryId() != null) {
-            conditions.add(matchesCategory(rule.getCategoryId(), context.getCategoryId()));
+            conditions.add(matchesCategory(rule.getCategoryId(), context.getCategoryId(), categoryChildrenMap));
         }
         if (conditions.isEmpty()) {
             return false;
@@ -445,30 +491,30 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
         return "BY_CONTENT";
     }
 
-    private boolean matchesCategory(Long ruleCategoryId, Long orderCategoryId) {
+    private boolean matchesCategory(Long ruleCategoryId, Long orderCategoryId,
+                                    Map<Long, List<MerchantServiceCategoryDO>> categoryChildrenMap) {
         if (ruleCategoryId == null || orderCategoryId == null) {
             return false;
         }
         if (Objects.equals(ruleCategoryId, orderCategoryId)) {
             return true;
         }
-        return resolveCategoryAndDescendantIds(ruleCategoryId).contains(orderCategoryId);
+        Set<Long> categoryIds = new LinkedHashSet<>();
+        collectCategoryIds(ruleCategoryId, categoryChildrenMap, categoryIds);
+        return categoryIds.contains(orderCategoryId);
     }
 
-    private Set<Long> resolveCategoryAndDescendantIds(Long categoryId) {
-        if (categoryId == null) {
-            return Collections.emptySet();
+    private Map<Long, List<MerchantServiceCategoryDO>> buildCategoryChildrenMap(List<OrderSplitRuleDO> rules) {
+        if (rules.stream().noneMatch(rule -> rule.getCategoryId() != null)) {
+            return Collections.emptyMap();
         }
         List<MerchantServiceCategoryDO> categories = merchantServiceCategoryMapper.selectList();
         if (CollUtil.isEmpty(categories)) {
-            return Collections.singleton(categoryId);
+            return Collections.emptyMap();
         }
-        Map<Long, List<MerchantServiceCategoryDO>> childrenMap = categories.stream()
+        return categories.stream()
                 .filter(item -> item.getParentId() != null)
                 .collect(Collectors.groupingBy(MerchantServiceCategoryDO::getParentId));
-        Set<Long> results = new LinkedHashSet<>();
-        collectCategoryIds(categoryId, childrenMap, results);
-        return results;
     }
 
     private void collectCategoryIds(Long categoryId, Map<Long, List<MerchantServiceCategoryDO>> childrenMap, Set<Long> results) {
@@ -534,21 +580,95 @@ public class OrderSplitRuleServiceImpl implements OrderSplitRuleService {
         OrderSplitRuleDO rule = new OrderSplitRuleDO();
         rule.setId(reqVO.getId());
         rule.setRuleName(reqVO.getRuleName());
-        rule.setRuleCode(reqVO.getRuleCode());
-        rule.setMatchMode(reqVO.getMatchMode());
+        rule.setRuleCode(normalize(reqVO.getRuleCode()));
+        rule.setMatchMode(normalize(reqVO.getMatchMode()));
         rule.setCategoryId(reqVO.getCategoryId());
         rule.setMinOrderAmount(reqVO.getMinOrderAmount());
         rule.setMinQuantity(reqVO.getMinQuantity());
         rule.setMinWorkerCount(reqVO.getMinWorkerCount());
-        rule.setSplitMode(reqVO.getSplitMode());
+        rule.setSplitMode(normalize(reqVO.getSplitMode()));
         rule.setDefaultUnitCount(reqVO.getDefaultUnitCount());
         rule.setUnitAmountLimit(reqVO.getUnitAmountLimit());
         rule.setSortNo(reqVO.getSortNo());
-        rule.setStatus(reqVO.getStatus());
+        rule.setStatus(normalize(reqVO.getStatus()));
         rule.setRemark(reqVO.getRemark());
-        rule.setApplicablePricingModes(JsonUtils.toJsonString(reqVO.getApplicablePricingModes()));
+        List<String> pricingModes = reqVO.getApplicablePricingModes() == null ? null
+                : reqVO.getApplicablePricingModes().stream().map(this::normalize).distinct().collect(Collectors.toList());
+        rule.setApplicablePricingModes(JsonUtils.toJsonString(pricingModes));
         rule.setUnitTemplate(JsonUtils.toJsonString(reqVO.getUnitTemplate()));
         return rule;
+    }
+
+    private void validateRuleReq(OrderSplitRuleSaveReqVO reqVO) {
+        String ruleCode = normalize(reqVO.getRuleCode());
+        LambdaQueryWrapperX<OrderSplitRuleDO> duplicateQuery = new LambdaQueryWrapperX<OrderSplitRuleDO>()
+                .eq(OrderSplitRuleDO::getRuleCode, ruleCode);
+        if (reqVO.getId() != null) {
+            duplicateQuery.ne(OrderSplitRuleDO::getId, reqVO.getId());
+        }
+        if (orderSplitRuleMapper.selectCount(duplicateQuery) > 0) {
+            throw exception(ORDER_SPLIT_RULE_INVALID, "规则编码已存在");
+        }
+        if (!MATCH_MODES.contains(normalize(reqVO.getMatchMode()))) {
+            throw exception(ORDER_SPLIT_RULE_INVALID, "命中模式仅支持 ANY 或 ALL");
+        }
+        if (!SPLIT_MODES.contains(normalize(reqVO.getSplitMode()))) {
+            throw exception(ORDER_SPLIT_RULE_INVALID, "拆分方式不受支持");
+        }
+        if (!RULE_STATUSES.contains(normalize(reqVO.getStatus()))) {
+            throw exception(ORDER_SPLIT_RULE_INVALID, "状态仅支持 ENABLE 或 DISABLE");
+        }
+        if (reqVO.getMinOrderAmount() != null && reqVO.getMinOrderAmount().compareTo(new BigDecimal("100000000")) > 0) {
+            throw exception(ORDER_SPLIT_RULE_INVALID, "触发金额超过允许上限");
+        }
+        if (reqVO.getMinQuantity() != null && reqVO.getMinQuantity().compareTo(new BigDecimal("1000000")) > 0) {
+            throw exception(ORDER_SPLIT_RULE_INVALID, "触发数量超过允许上限");
+        }
+        if (reqVO.getUnitAmountLimit() == null || reqVO.getUnitAmountLimit().compareTo(BigDecimal.ZERO) <= 0
+                || reqVO.getUnitAmountLimit().compareTo(new BigDecimal("100000000")) > 0) {
+            throw exception(ORDER_SPLIT_RULE_INVALID, "单元金额上限必须在 0 到 100000000 元之间");
+        }
+        if (reqVO.getCategoryId() != null) {
+            MerchantServiceCategoryDO category = merchantServiceCategoryMapper.selectById(reqVO.getCategoryId());
+            if (category == null || !"ENABLE".equalsIgnoreCase(category.getStatus())) {
+                throw exception(ORDER_SPLIT_RULE_INVALID, "服务类目不存在或未启用");
+            }
+        }
+        if (reqVO.getMinOrderAmount() == null && reqVO.getMinQuantity() == null
+                && reqVO.getMinWorkerCount() == null && reqVO.getCategoryId() == null) {
+            throw exception(ORDER_SPLIT_RULE_INVALID, "至少配置一个金额、数量、人数或类目触发条件");
+        }
+        if (reqVO.getApplicablePricingModes() != null) {
+            for (String pricingMode : reqVO.getApplicablePricingModes()) {
+                if (!PRICING_MODES.contains(normalize(pricingMode))) {
+                    throw exception(ORDER_SPLIT_RULE_INVALID, "存在不受支持的计价方式");
+                }
+            }
+        }
+        validateUnitTemplate(reqVO.getUnitTemplate());
+    }
+
+    private void validateUnitTemplate(Map<String, String> template) {
+        if (template == null) {
+            return;
+        }
+        if (template.size() > UNIT_TEMPLATE_KEYS.size() || !UNIT_TEMPLATE_KEYS.containsAll(template.keySet())) {
+            throw exception(ORDER_SPLIT_RULE_INVALID, "单元模板包含不受支持的键");
+        }
+        int totalLength = 0;
+        for (String value : template.values()) {
+            if (value == null || value.length() > 500) {
+                throw exception(ORDER_SPLIT_RULE_INVALID, "单元模板值不能为空且不能超过 500 个字符");
+            }
+            totalLength += value.length();
+        }
+        if (totalLength > 1000) {
+            throw exception(ORDER_SPLIT_RULE_INVALID, "单元模板总长度不能超过 1000 个字符");
+        }
+    }
+
+    private String normalize(String value) {
+        return value == null ? null : value.trim().toUpperCase(Locale.ROOT);
     }
 
     private List<String> parsePricingModes(String json) {

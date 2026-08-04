@@ -10,19 +10,39 @@
         </el-tag>
       </el-descriptions-item>
       <el-descriptions-item label="邀请码">{{ detailData.inviteCode || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="邀请链接">{{ detailData.inviteUrl || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="绑定人数">{{ detailData.bindUserCount ?? 0 }}</el-descriptions-item>
-      <el-descriptions-item label="转化人数">{{ detailData.convertCount ?? 0 }}</el-descriptions-item>
-      <el-descriptions-item label="累计佣金">{{ detailData.totalCommissionAmount ?? 0 }}</el-descriptions-item>
-      <el-descriptions-item label="可提现佣金">{{ detailData.availableCommissionAmount ?? 0 }}</el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData.createTime) }}</el-descriptions-item>
-      <el-descriptions-item label="更新时间">{{ formatDate(detailData.updateTime) }}</el-descriptions-item>
+      <el-descriptions-item label="邀请链接">{{
+        detailData.inviteUrl || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="绑定人数">{{
+        detailData.bindUserCount ?? 0
+      }}</el-descriptions-item>
+      <el-descriptions-item label="转化人数">{{
+        detailData.convertCount ?? 0
+      }}</el-descriptions-item>
+      <el-descriptions-item label="累计佣金">{{
+        detailData.totalCommissionAmount ?? 0
+      }}</el-descriptions-item>
+      <el-descriptions-item label="可提现佣金">{{
+        detailData.availableCommissionAmount ?? 0
+      }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData.createTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="更新时间">{{
+        formatDate(detailData.updateTime)
+      }}</el-descriptions-item>
     </el-descriptions>
     <el-divider content-position="left">用户摘要</el-divider>
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="用户编号">{{ detailData.user?.userNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="手机号">{{ detailData.user?.mobile || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="昵称">{{ detailData.user?.nickname || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="用户编号">{{
+        detailData.user?.userNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="手机号">{{
+        detailData.user?.mobile || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="昵称">{{
+        detailData.user?.nickname || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="当前角色">
         <dict-tag
           v-if="detailData.user?.currentRoleCode"
@@ -31,16 +51,30 @@
         />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="账号状态">{{ formatEnableStatus(detailData.user?.status) }}</el-descriptions-item>
-      <el-descriptions-item label="最后登录">{{ formatDate(detailData.user?.lastLoginTime) }}</el-descriptions-item>
+      <el-descriptions-item label="账号状态">{{
+        formatEnableStatus(detailData.user?.status)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="最后登录">{{
+        formatDate(detailData.user?.lastLoginTime)
+      }}</el-descriptions-item>
     </el-descriptions>
     <el-divider content-position="left">推广摘要</el-divider>
     <el-descriptions :column="4" border>
-      <el-descriptions-item label="关系数">{{ detailData.summary?.relationCount ?? 0 }}</el-descriptions-item>
-      <el-descriptions-item label="已转化关系">{{ detailData.summary?.convertedRelationCount ?? 0 }}</el-descriptions-item>
-      <el-descriptions-item label="待结算佣金单">{{ detailData.summary?.pendingCommissionCount ?? 0 }}</el-descriptions-item>
-      <el-descriptions-item label="已结算佣金单">{{ detailData.summary?.settledCommissionCount ?? 0 }}</el-descriptions-item>
-      <el-descriptions-item label="退款佣金单">{{ detailData.summary?.invalidCommissionCount ?? 0 }}</el-descriptions-item>
+      <el-descriptions-item label="关系数">{{
+        detailData.summary?.relationCount ?? 0
+      }}</el-descriptions-item>
+      <el-descriptions-item label="已转化关系">{{
+        detailData.summary?.convertedRelationCount ?? 0
+      }}</el-descriptions-item>
+      <el-descriptions-item label="待结算佣金单">{{
+        detailData.summary?.pendingCommissionCount ?? 0
+      }}</el-descriptions-item>
+      <el-descriptions-item label="已结算佣金单">{{
+        detailData.summary?.settledCommissionCount ?? 0
+      }}</el-descriptions-item>
+      <el-descriptions-item label="退款佣金单">{{
+        detailData.summary?.invalidCommissionCount ?? 0
+      }}</el-descriptions-item>
       <el-descriptions-item label="待结算佣金额">
         {{ detailData.summary?.pendingCommissionAmount ?? 0 }}
       </el-descriptions-item>
@@ -55,7 +89,9 @@
           <div class="leading-20px">
             <div class="font-600">{{ row.userNickname || '-' }}</div>
             <div class="text-[var(--el-text-color-secondary)]">{{ row.userMobile || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.userNo || formatIdFallback(row.userId) }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.userNo || formatIdFallback(row.userId)
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -76,7 +112,9 @@
           <div class="leading-20px">
             <div class="font-600">{{ row.userNickname || '-' }}</div>
             <div class="text-[var(--el-text-color-secondary)]">{{ row.userMobile || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.userNo || formatIdFallback(row.userId) }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.userNo || formatIdFallback(row.userId)
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -98,7 +136,9 @@
         <template #default="{ row }">{{ row.bizType || '-' }} / {{ row.bizId || '-' }}</template>
       </el-table-column>
       <el-table-column label="状态变化" min-width="160">
-        <template #default="{ row }">{{ row.beforeStatus || '-' }} → {{ row.afterStatus || '-' }}</template>
+        <template #default="{ row }"
+          >{{ row.beforeStatus || '-' }} → {{ row.afterStatus || '-' }}</template
+        >
       </el-table-column>
       <el-table-column label="说明" prop="remark" min-width="240" />
       <el-table-column label="时间" prop="createTime" :formatter="dateFormatter" width="180" />
@@ -124,7 +164,11 @@ const formatIdFallback = (userId?: number) => {
 }
 
 const formatDetailUserDisplay = () => {
-  const summary = [detailData.value.user?.nickname, detailData.value.user?.mobile, detailData.value.user?.userNo]
+  const summary = [
+    detailData.value.user?.nickname,
+    detailData.value.user?.mobile,
+    detailData.value.user?.userNo
+  ]
     .filter(Boolean)
     .join(' / ')
   return summary || formatIdFallback(detailData.value.userId)

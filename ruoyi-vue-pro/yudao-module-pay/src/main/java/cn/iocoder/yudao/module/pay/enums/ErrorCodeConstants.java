@@ -15,6 +15,8 @@ public interface ErrorCodeConstants {
     ErrorCode APP_EXIST_ORDER_CANT_DELETE =  new ErrorCode(1_007_000_003, "支付应用存在支付订单，无法删除");
     ErrorCode APP_EXIST_REFUND_CANT_DELETE =  new ErrorCode(1_007_000_004, "支付应用存在退款订单，无法删除");
     ErrorCode APP_KEY_EXISTS = new ErrorCode(1_007_000_005, "支付应用标识已经存在");
+    ErrorCode APP_NOTIFY_URL_INVALID = new ErrorCode(1_007_000_006,
+            "{}回调地址不安全：外部地址必须使用 HTTPS 且仅解析到公网 IP");
 
     // ========== CHANNEL 模块 1-007-001-000 ==========
     ErrorCode CHANNEL_NOT_FOUND = new ErrorCode(1_007_001_000, "支付渠道的配置不存在");

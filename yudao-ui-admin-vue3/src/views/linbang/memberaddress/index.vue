@@ -1,6 +1,12 @@
 <template>
   <ContentWrap>
-    <el-form class="-mb-15px" :model="queryParams" ref="queryFormRef" :inline="true" label-width="76px">
+    <el-form
+      class="-mb-15px"
+      :model="queryParams"
+      ref="queryFormRef"
+      :inline="true"
+      label-width="76px"
+    >
       <el-form-item label="用户" prop="userKeyword">
         <el-input
           v-model="queryParams.userKeyword"
@@ -42,7 +48,12 @@
         />
       </el-form-item>
       <el-form-item label="是否默认" prop="isDefault">
-        <el-select v-model="queryParams.isDefault" placeholder="请选择是否默认" clearable class="!w-180px">
+        <el-select
+          v-model="queryParams.isDefault"
+          placeholder="请选择是否默认"
+          clearable
+          class="!w-180px"
+        >
           <el-option
             v-for="item in BOOLEAN_YES_NO_OPTIONS"
             :key="String(item.value)"
@@ -66,14 +77,6 @@
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
         <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
         <el-button
-          type="primary"
-          plain
-          @click="openForm('create')"
-          v-hasPermi="['linbang:member-user-address:create']"
-        >
-          <Icon icon="ep:plus" class="mr-5px" /> 新增
-        </el-button>
-        <el-button
           type="success"
           plain
           @click="handleExport"
@@ -81,15 +84,6 @@
           v-hasPermi="['linbang:member-user-address:export']"
         >
           <Icon icon="ep:download" class="mr-5px" /> 导出
-        </el-button>
-        <el-button
-          type="danger"
-          plain
-          :disabled="isEmpty(checkedIds)"
-          @click="handleDeleteBatch"
-          v-hasPermi="['linbang:member-user-address:delete']"
-        >
-          <Icon icon="ep:delete" class="mr-5px" /> 批量删除
         </el-button>
       </el-form-item>
     </el-form>
@@ -102,15 +96,15 @@
       :data="list"
       :stripe="true"
       :show-overflow-tooltip="true"
-      @selection-change="handleRowCheckboxChange"
     >
-      <el-table-column type="selection" width="55" />
       <el-table-column label="用户" align="center" min-width="220">
         <template #default="{ row }">
           <div class="leading-20px">
             <div class="font-600">{{ row.userNickname || '-' }}</div>
             <div class="text-[var(--el-text-color-secondary)]">{{ row.userMobile || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.userNo || formatIdFallback(row.userId) }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.userNo || formatIdFallback(row.userId)
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -126,27 +120,13 @@
           {{ formatBooleanYesNo(row.isDefault) }}
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="操作" align="center" min-width="120">
-        <template #default="{ row }">
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', row.id)"
-            v-hasPermi="['linbang:member-user-address:update']"
-          >
-            编辑
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(row.id)"
-            v-hasPermi="['linbang:member-user-address:delete']"
-          >
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
     </el-table>
     <Pagination
       :total="total"
@@ -155,26 +135,20 @@
       @pagination="getList"
     />
   </ContentWrap>
-
-  <MemberUserAddressForm ref="formRef" @success="getList" />
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { isEmpty } from '@/utils/is'
 import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
 import { getAreaTree } from '@/api/system/area'
-import { useI18n } from '@/hooks/web/useI18n'
 import { useMessage } from '@/hooks/web/useMessage'
 import { MemberUserAddressApi, type MemberUserAddress } from '@/api/linbang/memberaddress'
 import { BOOLEAN_YES_NO_OPTIONS, formatBooleanYesNo } from '../utils/display'
-import MemberUserAddressForm from './MemberUserAddressForm.vue'
 
 defineOptions({ name: 'MemberUserAddress' })
 
 const message = useMessage()
-const { t } = useI18n()
 
 const loading = ref(true)
 const list = ref<MemberUserAddress[]>([])
@@ -211,7 +185,11 @@ const formatIdFallback = (userId?: number) => {
 }
 
 const formatAddress = (row: MemberUserAddress) => {
-  return [row.province, row.city, row.district, row.street, row.detailAddress].filter(Boolean).join(' / ') || '-'
+  return (
+    [row.province, row.city, row.district, row.street, row.detailAddress]
+      .filter(Boolean)
+      .join(' / ') || '-'
+  )
 }
 
 const getList = async () => {
@@ -249,35 +227,6 @@ const resetQuery = () => {
   queryFormRef.value.resetFields()
   handleAreaChange()
   handleQuery()
-}
-
-const formRef = ref()
-const openForm = (type: string, id?: number) => {
-  formRef.value.open(type, id)
-}
-
-const handleDelete = async (id: number) => {
-  try {
-    await message.delConfirm()
-    await MemberUserAddressApi.deleteMemberUserAddress(id)
-    message.success(t('common.delSuccess'))
-    await getList()
-  } catch {}
-}
-
-const handleDeleteBatch = async () => {
-  try {
-    await message.delConfirm()
-    await MemberUserAddressApi.deleteMemberUserAddressList(checkedIds.value)
-    checkedIds.value = []
-    message.success(t('common.delSuccess'))
-    await getList()
-  } catch {}
-}
-
-const checkedIds = ref<number[]>([])
-const handleRowCheckboxChange = (records: MemberUserAddress[]) => {
-  checkedIds.value = records.map((item) => item.id)
 }
 
 const handleExport = async () => {

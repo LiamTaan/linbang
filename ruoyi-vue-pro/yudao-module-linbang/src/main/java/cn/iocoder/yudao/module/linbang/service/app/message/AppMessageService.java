@@ -32,9 +32,7 @@ public interface AppMessageService {
 
     void submitVoicePlayedFeedback(Long userId, AppMessageFeedbackReqVO reqVO);
 
-    void recordExternalClick(Long recordId);
-
-    String resolveRedirectTarget(Long recordId, String targetUrl);
+    String recordExternalClickAndResolveTarget(Long recordId, String clickToken);
 
     AppMessageSettingRespVO getMessageSetting(Long userId);
 

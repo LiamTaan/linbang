@@ -27,7 +27,12 @@
         <el-input :model-value="`${formData.categoryLevel || 1} 级`" disabled />
       </el-form-item>
       <el-form-item label="排序" prop="sortNo">
-        <el-input-number v-model="formData.sortNo" :min="0" class="!w-220px" placeholder="请输入排序" />
+        <el-input-number
+          v-model="formData.sortNo"
+          :min="0"
+          class="!w-220px"
+          placeholder="请输入排序"
+        />
       </el-form-item>
       <el-form-item label="图标" prop="icon">
         <el-input v-model="formData.icon" placeholder="请输入图标" />
@@ -69,7 +74,10 @@
         </el-radio-group>
       </el-form-item>
       <el-form-item label="数量口径" prop="quantityUnitLabel">
-        <el-input v-model="formData.quantityUnitLabel" placeholder="如 小时 / 次 / 台 / 扇 / 平方米 / 单" />
+        <el-input
+          v-model="formData.quantityUnitLabel"
+          placeholder="如 小时 / 次 / 台 / 扇 / 平方米 / 单"
+        />
       </el-form-item>
       <el-form-item label="按数量拆单" prop="quantitySplitEnabled">
         <el-radio-group v-model="formData.quantitySplitEnabled">
@@ -392,7 +400,10 @@ const collectDisabledIds = (categories: MerchantServiceCategory[], currentId: nu
   return disabledIds
 }
 
-const markDisabledNodes = (nodes: MerchantServiceCategory[], disabledIds: Set<number>): CategoryTreeNode[] => {
+const markDisabledNodes = (
+  nodes: MerchantServiceCategory[],
+  disabledIds: Set<number>
+): CategoryTreeNode[] => {
   return nodes.map((node) => ({
     ...node,
     disabled: !!node.id && disabledIds.has(node.id),

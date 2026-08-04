@@ -14,7 +14,7 @@ import javax.servlet.http.*;
 import java.util.*;
 import java.io.IOException;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
@@ -37,39 +37,6 @@ public class MemberUserController {
 
     @Resource
     private MemberUserService memberUserService;
-
-    @PostMapping("/create")
-    @Operation(summary = "创建用户主表")
-    @PreAuthorize("@ss.hasPermission('linbang:member-user:create')")
-    public CommonResult<Long> createMemberUser(@Valid @RequestBody MemberUserSaveReqVO createReqVO) {
-        return success(memberUserService.createMemberUser(createReqVO));
-    }
-
-    @PutMapping("/update")
-    @Operation(summary = "更新用户主表")
-    @PreAuthorize("@ss.hasPermission('linbang:member-user:update')")
-    public CommonResult<Boolean> updateMemberUser(@Valid @RequestBody MemberUserSaveReqVO updateReqVO) {
-        memberUserService.updateMemberUser(updateReqVO);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete")
-    @Operation(summary = "删除用户主表")
-    @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('linbang:member-user:delete')")
-    public CommonResult<Boolean> deleteMemberUser(@RequestParam("id") Long id) {
-        memberUserService.deleteMemberUser(id);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete-list")
-    @Parameter(name = "ids", description = "编号", required = true)
-    @Operation(summary = "批量删除用户主表")
-                @PreAuthorize("@ss.hasPermission('linbang:member-user:delete')")
-    public CommonResult<Boolean> deleteMemberUserList(@RequestParam("ids") List<Long> ids) {
-        memberUserService.deleteMemberUserListByIds(ids);
-        return success(true);
-    }
 
     @GetMapping("/get")
     @Operation(summary = "获得用户主表")
@@ -111,7 +78,7 @@ public class MemberUserController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportMemberUserExcel(@Valid MemberUserPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<MemberUserDO> list = memberUserService.getMemberUserPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "用户主表.xls", "数据", MemberUserRespVO.class,

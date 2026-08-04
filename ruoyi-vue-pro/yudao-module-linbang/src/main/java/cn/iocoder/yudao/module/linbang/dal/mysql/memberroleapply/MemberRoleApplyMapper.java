@@ -9,9 +9,22 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.memberroleapply.MemberRole
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.Collection;
+import java.util.Arrays;
 
 @Mapper
 public interface MemberRoleApplyMapper extends BaseMapperX<MemberRoleApplyDO> {
+
+    default MemberRoleApplyDO selectByIdForUpdate(Long id) {
+        return selectOneForUpdate(MemberRoleApplyDO::getId, id);
+    }
+
+    default MemberRoleApplyDO selectActiveByUserIdAndRoleCodeForUpdate(Long userId, String roleCode) {
+        return selectOne(new LambdaQueryWrapperX<MemberRoleApplyDO>()
+                .eq(MemberRoleApplyDO::getUserId, userId)
+                .eq(MemberRoleApplyDO::getApplyRoleCode, roleCode)
+                .in(MemberRoleApplyDO::getAuditStatus, Arrays.asList("PENDING", "APPROVED"))
+                .last("LIMIT 1 FOR UPDATE"));
+    }
 
     default PageResult<MemberRoleApplyDO> selectPage(MemberRoleApplyPageReqVO reqVO, Collection<Long> matchedUserIds) {
         return selectPage(reqVO, new LambdaQueryWrapperX<MemberRoleApplyDO>()

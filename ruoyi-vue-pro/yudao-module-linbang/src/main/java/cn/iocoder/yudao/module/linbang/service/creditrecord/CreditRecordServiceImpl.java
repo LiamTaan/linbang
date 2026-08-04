@@ -34,6 +34,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.orderinfo.OrderInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderunit.OrderUnitMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.reviewcomment.ReviewCommentMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.walletwithdraw.WalletWithdrawMapper;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -51,6 +52,8 @@ import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertMap;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertSet;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.CREDIT_RECORD_NOT_EXISTS;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_NOT_EXISTS;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MERCHANT_INFO_NOT_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.REVIEW_ACCESS_DENIED;
 
 @Service
@@ -86,6 +89,9 @@ public class CreditRecordServiceImpl implements CreditRecordService {
         if (userId == null || ruleCode == null || ruleCode.isEmpty()) {
             return null;
         }
+        if (memberUserMapper.selectByIdForUpdate(userId) == null) {
+            throw exception(MEMBER_USER_NOT_EXISTS);
+        }
         CreditRuleDO rule = creditRuleMapper.selectOne(new LambdaQueryWrapperX<CreditRuleDO>()
                 .eq(CreditRuleDO::getRuleCode, ruleCode)
                 .eq(CreditRuleDO::getStatus, "ENABLE")
@@ -94,19 +100,19 @@ public class CreditRecordServiceImpl implements CreditRecordService {
             return null;
         }
 
-        MerchantInfoDO merchant = resolveMerchant(userId, merchantId);
+        boolean hasBizKey = StrUtil.isNotBlank(bizType) && bizId != null;
+        if (hasBizKey) {
+            CreditRecordDO existing = creditRecordMapper.selectByBizKeyForUpdate(userId, ruleCode, bizType, bizId);
+            if (existing != null) {
+                return existing.getId();
+            }
+        }
+
+        MerchantInfoDO merchant = resolveMerchantForUpdate(userId, merchantId);
         Integer beforeScore = merchant != null && merchant.getCreditScore() != null ? merchant.getCreditScore() : 100;
         Integer afterScore = Math.max(0, beforeScore + rule.getScoreChange());
         String creditLevel = CreditLevelResolver.resolve(afterScore);
-
-        if (merchant != null) {
-            merchantInfoMapper.updateById(MerchantInfoDO.builder()
-                    .id(merchant.getId())
-                    .creditScore(afterScore)
-                    .creditLevel(creditLevel)
-                    .build());
-            merchantId = merchant.getId();
-        }
+        merchantId = merchant != null ? merchant.getId() : merchantId;
 
         CreditRecordDO record = CreditRecordDO.builder()
                 .userId(userId)
@@ -122,7 +128,23 @@ public class CreditRecordServiceImpl implements CreditRecordService {
                 .bizId(bizId)
                 .remark(remark)
                 .build();
-        creditRecordMapper.insert(record);
+        try {
+            creditRecordMapper.insert(record);
+        } catch (DuplicateKeyException ex) {
+            CreditRecordDO existing = hasBizKey
+                    ? creditRecordMapper.selectByBizKeyForUpdate(userId, ruleCode, bizType, bizId) : null;
+            if (existing != null) {
+                return existing.getId();
+            }
+            throw ex;
+        }
+        if (merchant != null) {
+            merchantInfoMapper.updateById(MerchantInfoDO.builder()
+                    .id(merchant.getId())
+                    .creditScore(afterScore)
+                    .creditLevel(creditLevel)
+                    .build());
+        }
         return record.getId();
     }
 
@@ -132,11 +154,15 @@ public class CreditRecordServiceImpl implements CreditRecordService {
         if (userId == null || StrUtil.isBlank(bizType) || bizId == null) {
             return;
         }
+        if (memberUserMapper.selectByIdForUpdate(userId) == null) {
+            throw exception(MEMBER_USER_NOT_EXISTS);
+        }
+        MerchantInfoDO merchant = resolveMerchantForUpdate(userId, null);
         creditRecordMapper.delete(new LambdaQueryWrapperX<CreditRecordDO>()
                 .eq(CreditRecordDO::getUserId, userId)
                 .eq(CreditRecordDO::getBizType, bizType)
                 .eq(CreditRecordDO::getBizId, bizId));
-        rebuildUserCreditRecords(userId);
+        rebuildUserCreditRecords(userId, merchant);
     }
 
     @Override
@@ -321,21 +347,22 @@ public class CreditRecordServiceImpl implements CreditRecordService {
         return parts;
     }
 
-    private MerchantInfoDO resolveMerchant(Long userId, Long merchantId) {
+    private MerchantInfoDO resolveMerchantForUpdate(Long userId, Long merchantId) {
         if (merchantId != null) {
-            return merchantInfoMapper.selectById(merchantId);
+            MerchantInfoDO merchant = merchantInfoMapper.selectByIdForUpdate(merchantId);
+            if (merchant == null || !Objects.equals(merchant.getUserId(), userId)) {
+                throw exception(MERCHANT_INFO_NOT_EXISTS);
+            }
+            return merchant;
         }
-        return merchantInfoMapper.selectOne(new LambdaQueryWrapperX<MerchantInfoDO>()
-                .eq(MerchantInfoDO::getUserId, userId)
-                .last("LIMIT 1"));
+        return merchantInfoMapper.selectByUserIdForUpdate(userId);
     }
 
-    private void rebuildUserCreditRecords(Long userId) {
+    private void rebuildUserCreditRecords(Long userId, MerchantInfoDO merchant) {
         List<CreditRecordDO> records = creditRecordMapper.selectList(new LambdaQueryWrapperX<CreditRecordDO>()
                 .eq(CreditRecordDO::getUserId, userId)
                 .orderByAsc(CreditRecordDO::getCreateTime, CreditRecordDO::getId));
         if (records.isEmpty()) {
-            MerchantInfoDO merchant = resolveMerchant(userId, null);
             if (merchant != null) {
                 merchantInfoMapper.updateById(MerchantInfoDO.builder()
                         .id(merchant.getId())
@@ -358,7 +385,6 @@ public class CreditRecordServiceImpl implements CreditRecordService {
                     .build());
         }
         creditRecordMapper.updateBatch(updates);
-        MerchantInfoDO merchant = resolveMerchant(userId, records.get(records.size() - 1).getMerchantId());
         if (merchant != null) {
             merchantInfoMapper.updateById(MerchantInfoDO.builder()
                     .id(merchant.getId())

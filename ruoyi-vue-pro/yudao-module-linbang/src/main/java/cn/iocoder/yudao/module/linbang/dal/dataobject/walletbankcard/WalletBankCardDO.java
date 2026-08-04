@@ -6,13 +6,14 @@ import java.time.LocalDateTime;
 import java.time.LocalDateTime;
 import com.baomidou.mybatisplus.annotation.*;
 import cn.iocoder.yudao.framework.mybatis.core.dataobject.BaseDO;
+import cn.iocoder.yudao.framework.mybatis.core.type.EncryptTypeHandler;
 
 /**
  * 用户银行卡 DO
  *
  * @author dawn
  */
-@TableName("lb_user_bank_card")
+@TableName(value = "lb_user_bank_card", autoResultMap = true)
 @KeySequence("lb_user_bank_card_seq") // 用于 Oracle、PostgreSQL、Kingbase、DB2、H2 数据库的主键自增。如果是 MySQL 等数据库，可不写。
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -42,10 +43,13 @@ public class WalletBankCardDO extends BaseDO {
     /**
      * 加密卡号
      */
+    @ToString.Exclude
     private String cardNoEncrypt;
     /**
      * 出款收款账号
      */
+    @TableField(typeHandler = EncryptTypeHandler.class)
+    @ToString.Exclude
     private String transferAccount;
     /**
      * 脱敏卡号
@@ -66,6 +70,8 @@ public class WalletBankCardDO extends BaseDO {
     /**
      * 预留手机号
      */
+    @TableField(typeHandler = EncryptTypeHandler.class)
+    @ToString.Exclude
     private String reservedMobile;
     /**
      * 状态

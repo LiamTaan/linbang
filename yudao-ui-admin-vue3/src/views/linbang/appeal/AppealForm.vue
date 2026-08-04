@@ -11,21 +11,36 @@
         <el-input v-model="formData.appealNo" placeholder="请输入申诉单号" />
       </el-form-item>
       <el-form-item label="关联订单" prop="orderId">
-        <el-input :model-value="selectedOrderLabel" placeholder="请选择关联订单" readonly @click="openOrderDialog">
+        <el-input
+          :model-value="selectedOrderLabel"
+          placeholder="请选择关联订单"
+          readonly
+          @click="openOrderDialog"
+        >
           <template #append>
             <el-button @click="openOrderDialog">选择</el-button>
           </template>
         </el-input>
       </el-form-item>
       <el-form-item label="关联单元" prop="unitId">
-        <el-input :model-value="selectedUnitLabel" placeholder="请选择关联单元" readonly @click="openUnitDialog">
+        <el-input
+          :model-value="selectedUnitLabel"
+          placeholder="请选择关联单元"
+          readonly
+          @click="openUnitDialog"
+        >
           <template #append>
             <el-button @click="openUnitDialog">选择</el-button>
           </template>
         </el-input>
       </el-form-item>
       <el-form-item label="申诉人" prop="userId">
-        <el-input :model-value="selectedUserLabel" placeholder="请选择申诉人" readonly @click="openUserDialog">
+        <el-input
+          :model-value="selectedUserLabel"
+          placeholder="请选择申诉人"
+          readonly
+          @click="openUserDialog"
+        >
           <template #append>
             <el-button @click="openUserDialog">选择</el-button>
           </template>

@@ -1,6 +1,12 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="任务名称" prop="taskName">
         <el-input
           v-model="queryParams.taskName"
@@ -11,12 +17,27 @@
         />
       </el-form-item>
       <el-form-item label="发送渠道" prop="channelType">
-        <el-select v-model="queryParams.channelType" placeholder="请选择发送渠道" clearable class="!w-220px">
-          <el-option v-for="item in CHANNEL_TYPE_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+        <el-select
+          v-model="queryParams.channelType"
+          placeholder="请选择发送渠道"
+          clearable
+          class="!w-220px"
+        >
+          <el-option
+            v-for="item in CHANNEL_TYPE_OPTIONS"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
         </el-select>
       </el-form-item>
       <el-form-item label="任务状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择任务状态" clearable class="!w-220px">
+        <el-select
+          v-model="queryParams.status"
+          placeholder="请选择任务状态"
+          clearable
+          class="!w-220px"
+        >
           <el-option
             v-for="dict in getStrDictOptions(DICT_TYPE.LB_MESSAGE_PUSH_TASK_STATUS)"
             :key="dict.value"
@@ -46,15 +67,15 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" v-hasPermi="['linbang:message:push-task:query']" @click="openManualSendDialog">
+        <el-button
+          type="primary"
+          v-hasPermi="['linbang:message:push-task:manual-send']"
+          @click="openManualSendDialog"
+        >
           <Icon icon="ep:plus" class="mr-5px" /> 手动发送通知
         </el-button>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
       </el-form-item>
     </el-form>
   </ContentWrap>
@@ -90,15 +111,39 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="计划时间" align="center" prop="plannedSendTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="执行时间" align="center" prop="executeTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="计划时间"
+        align="center"
+        prop="plannedSendTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
+      <el-table-column
+        label="执行时间"
+        align="center"
+        prop="executeTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="成功数" align="center" prop="successCount" width="100" />
       <el-table-column label="失败数" align="center" prop="failCount" width="100" />
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="操作" align="center" fixed="right" width="140">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
-          <el-button v-if="row.failCount && row.failCount > 0" link type="danger" @click="retryTask(row.id)">
+          <el-button
+            v-if="row.failCount && row.failCount > 0"
+            v-hasPermi="['linbang:message:push-task:retry']"
+            link
+            type="danger"
+            @click="retryTask(row.id)"
+          >
             重试
           </el-button>
         </template>
@@ -121,7 +166,12 @@
   </ContentWrap>
 
   <Dialog v-model="manualSendVisible" title="手动发送通知" width="720px">
-    <el-form ref="manualSendFormRef" :model="manualSendForm" :rules="manualSendRules" label-width="100px">
+    <el-form
+      ref="manualSendFormRef"
+      :model="manualSendForm"
+      :rules="manualSendRules"
+      label-width="100px"
+    >
       <el-form-item label="发送范围" prop="receiverScope">
         <el-radio-group v-model="manualSendForm.receiverScope">
           <el-radio
@@ -133,7 +183,11 @@
           </el-radio>
         </el-radio-group>
       </el-form-item>
-      <el-form-item v-if="manualSendForm.receiverScope === 'SINGLE_USER'" label="接收用户" prop="receiverUserId">
+      <el-form-item
+        v-if="manualSendForm.receiverScope === 'SINGLE_USER'"
+        label="接收用户"
+        prop="receiverUserId"
+      >
         <div class="flex w-full gap-10px">
           <el-input :value="selectedUserDisplay" readonly placeholder="请选择接收用户" />
           <el-button @click="openUserSelectDialog">选择用户</el-button>
@@ -147,7 +201,12 @@
         class="mb-16px"
       />
       <el-form-item label="消息标题" prop="title">
-        <el-input v-model="manualSendForm.title" maxlength="255" show-word-limit placeholder="请输入消息标题" />
+        <el-input
+          v-model="manualSendForm.title"
+          maxlength="255"
+          show-word-limit
+          placeholder="请输入消息标题"
+        />
       </el-form-item>
       <el-form-item label="消息内容" prop="content">
         <el-input
@@ -160,7 +219,12 @@
         />
       </el-form-item>
       <el-form-item label="业务类型" prop="bizType">
-        <el-select v-model="manualSendForm.bizType" placeholder="请选择业务类型" class="!w-full" filterable>
+        <el-select
+          v-model="manualSendForm.bizType"
+          placeholder="请选择业务类型"
+          class="!w-full"
+          filterable
+        >
           <el-option
             v-for="item in MANUAL_MESSAGE_BIZ_TYPE_OPTIONS"
             :key="item.value"
@@ -197,11 +261,21 @@
 
   <Dialog v-model="detailVisible" title="推送任务详情" width="920px">
     <el-descriptions v-loading="detailLoading" :column="2" border>
-      <el-descriptions-item label="任务名称">{{ detailData?.taskName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="目标范围">{{ detailData?.targetScope || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="发送渠道">{{ formatChannelType(detailData?.channelType) }}</el-descriptions-item>
-      <el-descriptions-item label="模板名称">{{ detailData?.templateName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="业务类型">{{ formatBizType(detailData?.bizType) }}</el-descriptions-item>
+      <el-descriptions-item label="任务名称">{{
+        detailData?.taskName || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="目标范围">{{
+        detailData?.targetScope || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="发送渠道">{{
+        formatChannelType(detailData?.channelType)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="模板名称">{{
+        detailData?.templateName || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="业务类型">{{
+        formatBizType(detailData?.bizType)
+      }}</el-descriptions-item>
       <el-descriptions-item label="业务ID">{{ detailData?.bizId || '-' }}</el-descriptions-item>
       <el-descriptions-item label="任务状态">
         <dict-tag
@@ -211,21 +285,35 @@
         />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="计划时间">{{ formatDate(detailData?.plannedSendTime) }}</el-descriptions-item>
-      <el-descriptions-item label="执行时间">{{ formatDate(detailData?.executeTime) }}</el-descriptions-item>
+      <el-descriptions-item label="计划时间">{{
+        formatDate(detailData?.plannedSendTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="执行时间">{{
+        formatDate(detailData?.executeTime)
+      }}</el-descriptions-item>
       <el-descriptions-item label="成功数 / 失败数">
         {{ detailData?.successCount ?? 0 }} / {{ detailData?.failCount ?? 0 }}
       </el-descriptions-item>
-      <el-descriptions-item label="任务备注" :span="2">{{ detailData?.creatorRemark || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="任务备注" :span="2">{{
+        detailData?.creatorRemark || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">最近消息记录</el-divider>
-    <el-table v-if="detailData?.recentRecords?.length" :data="detailData.recentRecords" size="small" border max-height="320">
+    <el-table
+      v-if="detailData?.recentRecords?.length"
+      :data="detailData.recentRecords"
+      size="small"
+      border
+      max-height="320"
+    >
       <el-table-column label="接收用户" min-width="220">
         <template #default="{ row }">
           <div class="leading-20px">
             <div class="font-600">{{ row.receiverUserNickname || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.receiverUserMobile || '-' }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.receiverUserMobile || '-'
+            }}</div>
             <div class="text-[var(--el-text-color-secondary)]">{{ row.receiverUserNo || '-' }}</div>
           </div>
         </template>
@@ -238,7 +326,13 @@
         </template>
       </el-table-column>
       <el-table-column label="失败原因" align="center" prop="failReason" min-width="180" />
-      <el-table-column label="发送时间" align="center" prop="sendTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="发送时间"
+        align="center"
+        prop="sendTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
     </el-table>
     <el-empty v-else description="暂无关联消息记录" :image-size="80" />
   </Dialog>
@@ -250,7 +344,11 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useMessage } from '@/hooks/web/useMessage'
 import { DICT_TYPE, getStrDictOptions } from '@/utils/dict'
 import { dateFormatter, formatDate } from '@/utils/formatTime'
-import { MessagePushTaskApi, type MessagePushTask, type MessagePushTaskDetail } from '@/api/linbang/messagepushtask'
+import {
+  MessagePushTaskApi,
+  type MessagePushTask,
+  type MessagePushTaskDetail
+} from '@/api/linbang/messagepushtask'
 import type { MemberUser } from '@/api/linbang/memberuser'
 import {
   CHANNEL_TYPE_OPTIONS,
@@ -263,6 +361,7 @@ import {
   getSendStatusTagType
 } from '../utils/display'
 import MemberUserSelectDialog from '../memberaddress/MemberUserSelectDialog.vue'
+import { requestDynamicKeyToken } from '../shared/dynamic-key'
 
 defineOptions({ name: 'MessagePushTask' })
 
@@ -298,16 +397,18 @@ const manualSendForm = reactive({
 })
 const manualSendRules: FormRules = {
   receiverScope: [{ required: true, message: '请选择发送范围', trigger: 'change' }],
-  receiverUserId: [{
-    validator: (_rule, value, callback) => {
-      if (manualSendForm.receiverScope === 'SINGLE_USER' && !value) {
-        callback(new Error('请选择接收用户'))
-        return
-      }
-      callback()
-    },
-    trigger: 'change'
-  }],
+  receiverUserId: [
+    {
+      validator: (_rule, value, callback) => {
+        if (manualSendForm.receiverScope === 'SINGLE_USER' && !value) {
+          callback(new Error('请选择接收用户'))
+          return
+        }
+        callback()
+      },
+      trigger: 'change'
+    }
+  ],
   title: [{ required: true, message: '请输入消息标题', trigger: 'blur' }],
   content: [{ required: true, message: '请输入消息内容', trigger: 'blur' }]
 }
@@ -315,7 +416,9 @@ const selectedUserDisplay = computed(() => {
   if (!selectedUser.value) {
     return ''
   }
-  return [selectedUser.value.userNo, selectedUser.value.nickname, selectedUser.value.mobile].filter(Boolean).join(' / ')
+  return [selectedUser.value.userNo, selectedUser.value.nickname, selectedUser.value.mobile]
+    .filter(Boolean)
+    .join(' / ')
 })
 
 const getList = async () => {
@@ -366,15 +469,22 @@ const handleUserSelected = (row: MemberUser) => {
 
 const submitManualSend = async () => {
   await manualSendFormRef.value?.validate()
-  await MessagePushTaskApi.manualSendMessagePushTask({
-    receiverScope: manualSendForm.receiverScope,
-    receiverUserId: manualSendForm.receiverUserId!,
-    title: manualSendForm.title,
-    content: manualSendForm.content,
-    bizType: manualSendForm.bizType || undefined,
-    routeType: manualSendForm.routeType === 'NONE' ? undefined : manualSendForm.routeType || undefined,
-    routeValue: manualSendForm.routeType === 'NONE' ? undefined : manualSendForm.routeValue || undefined
-  })
+  await message.confirm('确认发送该通知？')
+  const verifyToken = await requestDynamicKeyToken('手动发送消息通知')
+  await MessagePushTaskApi.manualSendMessagePushTask(
+    {
+      receiverScope: manualSendForm.receiverScope,
+      receiverUserId: manualSendForm.receiverUserId!,
+      title: manualSendForm.title,
+      content: manualSendForm.content,
+      bizType: manualSendForm.bizType || undefined,
+      routeType:
+        manualSendForm.routeType === 'NONE' ? undefined : manualSendForm.routeType || undefined,
+      routeValue:
+        manualSendForm.routeType === 'NONE' ? undefined : manualSendForm.routeValue || undefined
+    },
+    verifyToken
+  )
   message.success('通知已发送，推送任务记录已生成')
   manualSendVisible.value = false
   await getList()
@@ -391,7 +501,9 @@ const openDetail = async (id: number) => {
 }
 
 const retryTask = async (id: number) => {
-  await MessagePushTaskApi.retryMessagePushTask(id)
+  await message.confirm('确认重试该推送任务中的失败记录？')
+  const verifyToken = await requestDynamicKeyToken('重试失败的消息推送')
+  await MessagePushTaskApi.retryMessagePushTask(id, verifyToken)
   message.success('失败记录已触发重试')
   await getList()
   if (detailVisible.value && detailData.value?.id === id) {

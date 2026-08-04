@@ -2,6 +2,7 @@ import { getMessageRecordPage, getMessageSetting, submitVoicePlayedFeedback } fr
 import { getMerchantAcceptStatus, getMerchantDispatchSetting } from '@/api/merchant'
 import { syncMessageUnreadCount } from '@/services/message-unread'
 import { hasLogin } from '@/utils/auth'
+import { normalizeAppRoute, openAppRoute } from '@/utils/navigation'
 
 const REMINDER_POLL_INTERVAL_MS = 15000
 const REMINDER_CONTEXT_TTL_MS = 60000
@@ -65,8 +66,9 @@ function buildReminderContent(record) {
 
 function resolveReminderRoute(payload) {
   const routeValue = payload && payload.routeValue ? String(payload.routeValue).trim() : ''
-  if (routeValue && routeValue.startsWith('/')) {
-    return routeValue
+  const safeRoute = normalizeAppRoute(routeValue)
+  if (safeRoute) {
+    return safeRoute
   }
   if (payload && payload.messageCategory === 'ORDER' && payload.bizId) {
     return `/pages/split_order_details/split_order_details?orderId=${payload.bizId}`
@@ -80,13 +82,7 @@ function openReminderRoute(payload) {
   if (!route) {
     return
   }
-  const pagePath = route.split('?')[0]
-  const tabBarPages = ['/pages/index/index', '/pages/order/order', '/pages/news/news', '/pages/my/my']
-  if (tabBarPages.includes(pagePath)) {
-    uni.switchTab({ url: pagePath })
-    return
-  }
-  uni.navigateTo({ url: route })
+  openAppRoute(route)
 }
 
 function parseReminderPayload(rawPayload) {

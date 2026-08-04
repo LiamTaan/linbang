@@ -19,6 +19,7 @@ public class AppCreditBenefitsRespVO {
     private List<BenefitItem> benefits;
 
     @Data
+    @Schema(description = "用户 App - 权益项目 Response VO")
     public static class BenefitItem {
 
         @Schema(description = "等级编码", example = "NORMAL")

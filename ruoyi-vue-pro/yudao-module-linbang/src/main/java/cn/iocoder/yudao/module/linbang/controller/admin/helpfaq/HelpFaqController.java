@@ -2,7 +2,7 @@ package cn.iocoder.yudao.module.linbang.controller.admin.helpfaq;
 
 import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.excel.core.util.ExcelUtils;
 import cn.iocoder.yudao.module.linbang.controller.admin.helpfaq.vo.HelpFaqPageReqVO;
@@ -94,7 +94,7 @@ public class HelpFaqController {
     @PreAuthorize("@ss.hasPermission('linbang:help:faq:export')")
     @ApiAccessLog(operateType = EXPORT)
     public void exportHelpFaqExcel(@Valid HelpFaqPageReqVO reqVO, HttpServletResponse response) throws IOException {
-        reqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        reqVO.setPageSize(MAX_EXPORT_ROWS);
         List<HelpFaqRespVO> list = helpFaqService.getHelpFaqPage(reqVO).getList();
         ExcelUtils.write(response, "常见问题.xls", "数据", HelpFaqRespVO.class, list);
     }

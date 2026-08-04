@@ -2,6 +2,7 @@ package cn.iocoder.yudao.module.linbang.service.orderunit;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.infra.dal.dataobject.file.FileDO;
 import cn.iocoder.yudao.module.infra.service.file.FileService;
@@ -253,10 +254,14 @@ public class OrderUnitServiceImpl implements OrderUnitService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void unlockOrderUnit(OrderUnitUnlockReqVO reqVO) {
-        OrderUnitDO orderUnit = orderUnitMapper.selectById(reqVO.getUnitId());
+        OrderUnitDO orderUnit = orderUnitMapper.selectByIdForUpdate(reqVO.getUnitId());
         if (orderUnit == null) {
             throw exception(ORDER_UNIT_NOT_EXISTS);
+        }
+        if (!Boolean.TRUE.equals(orderUnit.getIsLocked())) {
+            return;
         }
         OrderUnitDO updateObj = new OrderUnitDO();
         updateObj.setId(orderUnit.getId());
@@ -268,7 +273,7 @@ public class OrderUnitServiceImpl implements OrderUnitService {
                 .unitId(orderUnit.getId())
                 .operateType("ADMIN_UNLOCK_UNIT")
                 .operateRole("ADMIN")
-                .operateBy(null)
+                .operateBy(SecurityFrameworkUtils.getLoginUserId())
                 .beforeStatus(orderUnit.getStatus())
                 .afterStatus(orderUnit.getStatus())
                 .remark(StrUtil.blankToDefault(reqVO.getUnlockRemark(), "管理端人工解锁"))

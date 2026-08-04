@@ -3,12 +3,12 @@ package cn.iocoder.yudao.module.pay.service.notify;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.spring.SpringUtil;
-import cn.hutool.http.HttpResponse;
-import cn.hutool.http.HttpUtil;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.date.DateUtils;
+import cn.iocoder.yudao.framework.common.util.http.HttpUtils;
 import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
 import cn.iocoder.yudao.framework.tenant.core.util.TenantUtils;
 import cn.iocoder.yudao.module.pay.api.notify.dto.PayOrderNotifyReqDTO;
@@ -71,6 +71,8 @@ public class PayNotifyServiceImpl implements PayNotifyService {
      * {@link #NOTIFY_TIMEOUT} 的毫秒
      */
     public static final long NOTIFY_TIMEOUT_MILLIS = 120 * DateUtils.SECOND_MILLIS;
+    private static final int MAX_NOTIFY_RESPONSE_BODY_BYTES = 64 * 1024;
+    private static final int MAX_NOTIFY_LOG_RESPONSE_CHARS = 1024;
 
     @Resource
     @Lazy // 循环依赖，避免报错
@@ -220,10 +222,11 @@ public class PayNotifyServiceImpl implements PayNotifyService {
         Integer newStatus = processNotifyResult(task, invokeResult, invokeException);
 
         // 记录 PayNotifyLog 日志
-        String response = invokeException != null ? ExceptionUtil.getRootCauseMessage(invokeException) :
+        String response = invokeException != null ? summarizeNotifyException(invokeException) :
                 JsonUtils.toJsonString(invokeResult);
         notifyLogMapper.insert(PayNotifyLogDO.builder().taskId(task.getId())
-                .notifyTimes(task.getNotifyTimes() + 1).status(newStatus).response(response).build());
+                .notifyTimes(task.getNotifyTimes() + 1).status(newStatus)
+                .response(sanitizeNotifyLogResponse(response)).build());
     }
 
     /**
@@ -255,14 +258,28 @@ public class PayNotifyServiceImpl implements PayNotifyService {
         // 拼接 header 参数
         Map<String, String> headers = new HashMap<>();
         TenantUtils.addTenantHeader(headers, task.getTenantId());
+        headers.put("Content-Type", "application/json; charset=utf-8");
 
         // 发起请求
-        try (HttpResponse response = HttpUtil.createPost(task.getNotifyUrl())
-                .body(JsonUtils.toJsonString(request)).addHeaders(headers)
-                .timeout((int) NOTIFY_TIMEOUT_MILLIS).execute()) {
-            // 解析结果
-            return JsonUtils.parseObject(response.body(), CommonResult.class);
+        String responseBody = HttpUtils.postPublicHttps(task.getNotifyUrl(), headers, JsonUtils.toJsonString(request),
+                MAX_NOTIFY_RESPONSE_BODY_BYTES).getBody();
+        return JsonUtils.parseObject(responseBody, CommonResult.class);
+    }
+
+    @VisibleForTesting
+    static String sanitizeNotifyLogResponse(String response) {
+        String value = StrUtil.nullToEmpty(response);
+        if (value.codePointCount(0, value.length()) <= MAX_NOTIFY_LOG_RESPONSE_CHARS) {
+            return value;
         }
+        int endIndex = value.offsetByCodePoints(0, MAX_NOTIFY_LOG_RESPONSE_CHARS - 3);
+        return value.substring(0, endIndex) + "...";
+    }
+
+    @VisibleForTesting
+    static String summarizeNotifyException(Throwable exception) {
+        Throwable rootCause = ExceptionUtil.getRootCause(exception);
+        return "Notify invocation failed: " + rootCause.getClass().getSimpleName();
     }
 
     private CommonResult<?> executeInternalNotify(PayNotifyTaskDO task, Object request) {

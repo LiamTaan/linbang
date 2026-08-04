@@ -97,8 +97,12 @@
       <el-table-column label="服务商" align="center" min-width="220">
         <template #default="{ row }">
           <div class="font-600">{{ row.merchantName || '-' }}</div>
-          <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactMobile || '-' }}</div>
-          <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactName || '-' }}</div>
+          <div class="text-[var(--el-text-color-secondary)]">{{
+            row.merchantContactMobile || '-'
+          }}</div>
+          <div class="text-[var(--el-text-color-secondary)]">{{
+            row.merchantContactName || '-'
+          }}</div>
         </template>
       </el-table-column>
       <el-table-column label="规则编码" align="center" prop="ruleCode" min-width="140" />

@@ -7,7 +7,6 @@ import cn.hutool.extra.spring.SpringUtil;
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
-import cn.iocoder.yudao.framework.common.util.string.StrUtils;
 import cn.iocoder.yudao.module.system.controller.admin.oauth2.vo.client.OAuth2ClientPageReqVO;
 import cn.iocoder.yudao.module.system.controller.admin.oauth2.vo.client.OAuth2ClientSaveReqVO;
 import cn.iocoder.yudao.module.system.dal.dataobject.oauth2.OAuth2ClientDO;
@@ -143,7 +142,7 @@ public class OAuth2ClientServiceImpl implements OAuth2ClientService {
             throw exception(OAUTH2_CLIENT_SCOPE_OVER);
         }
         // 校验回调地址
-        if (StrUtil.isNotEmpty(redirectUri) && !StrUtils.startWithAny(redirectUri, client.getRedirectUris())) {
+        if (StrUtil.isNotEmpty(redirectUri) && !CollUtil.contains(client.getRedirectUris(), redirectUri)) {
             throw exception(OAUTH2_CLIENT_REDIRECT_URI_NOT_MATCH, redirectUri);
         }
         return client;

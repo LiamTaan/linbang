@@ -14,7 +14,7 @@ import javax.servlet.http.*;
 import java.util.*;
 import java.io.IOException;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -35,39 +35,6 @@ public class WalletBankCardController {
 
     @Resource
     private WalletBankCardService walletBankCardService;
-
-    @PostMapping("/create")
-    @Operation(summary = "创建用户银行卡")
-    @PreAuthorize("@ss.hasPermission('linbang:wallet:bank-card:create')")
-    public CommonResult<Long> createWalletBankCard(@Valid @RequestBody WalletBankCardSaveReqVO createReqVO) {
-        return success(walletBankCardService.createWalletBankCard(createReqVO));
-    }
-
-    @PutMapping("/update")
-    @Operation(summary = "更新用户银行卡")
-    @PreAuthorize("@ss.hasPermission('linbang:wallet:bank-card:update')")
-    public CommonResult<Boolean> updateWalletBankCard(@Valid @RequestBody WalletBankCardSaveReqVO updateReqVO) {
-        walletBankCardService.updateWalletBankCard(updateReqVO);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete")
-    @Operation(summary = "删除用户银行卡")
-    @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('linbang:wallet:bank-card:delete')")
-    public CommonResult<Boolean> deleteWalletBankCard(@RequestParam("id") Long id) {
-        walletBankCardService.deleteWalletBankCard(id);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete-list")
-    @Parameter(name = "ids", description = "编号", required = true)
-    @Operation(summary = "批量删除用户银行卡")
-                @PreAuthorize("@ss.hasPermission('linbang:wallet:bank-card:delete')")
-    public CommonResult<Boolean> deleteWalletBankCardList(@RequestParam("ids") List<Long> ids) {
-        walletBankCardService.deleteWalletBankCardListByIds(ids);
-        return success(true);
-    }
 
     @GetMapping("/get")
     @Operation(summary = "获得用户银行卡")
@@ -90,7 +57,7 @@ public class WalletBankCardController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportWalletBankCardExcel(@Valid WalletBankCardPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<WalletBankCardRespVO> list = walletBankCardService.getWalletBankCardPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "用户银行卡.xls", "数据", WalletBankCardRespVO.class, list);

@@ -19,7 +19,7 @@ public class MemberUserRealNameSaveReqVO {
     @NotNull(message = "用户ID不能为空")
     private Long userId;
 
-    @Schema(description = "真实姓名", requiredMode = Schema.RequiredMode.REQUIRED, example = "??")
+    @Schema(description = "真实姓名", requiredMode = Schema.RequiredMode.REQUIRED, example = "张三")
     @NotEmpty(message = "真实姓名不能为空")
     private String realName;
 
@@ -46,7 +46,7 @@ public class MemberUserRealNameSaveReqVO {
     @NotEmpty(message = "审核状态不能为空")
     private String auditStatus;
 
-    @Schema(description = "审核备注", example = "??")
+    @Schema(description = "审核备注", example = "材料清晰，信息一致")
     private String auditRemark;
 
     @Schema(description = "审核人")
@@ -55,7 +55,7 @@ public class MemberUserRealNameSaveReqVO {
     @Schema(description = "审核时间")
     private LocalDateTime auditTime;
 
-    @Schema(description = "驳回原因", example = "??")
+    @Schema(description = "驳回原因", example = "身份证照片不清晰")
     private String rejectReason;
 
 }

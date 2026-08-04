@@ -33,7 +33,7 @@ public class MemberUserAddressRespVO {
     @ExcelProperty("用户手机号")
     private String userMobile;
 
-    @Schema(description = "联系人", requiredMode = Schema.RequiredMode.REQUIRED, example = "??")
+    @Schema(description = "联系人", requiredMode = Schema.RequiredMode.REQUIRED, example = "张女士")
     @ExcelProperty("联系人")
     private String receiverName;
 

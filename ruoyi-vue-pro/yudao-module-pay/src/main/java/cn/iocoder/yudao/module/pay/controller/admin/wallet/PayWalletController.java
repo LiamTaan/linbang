@@ -58,7 +58,7 @@ public class PayWalletController {
         // 获得用户钱包
         PayWalletDO wallet = payWalletService.getOrCreateWallet(updateReqVO.getUserId(), MEMBER.getValue());
         if (wallet == null) {
-            log.error("[updateWalletBalance]，updateReqVO({}) 用户钱包不存在.", updateReqVO);
+            log.error("[updateWalletBalance][userId({}) 用户钱包不存在]", updateReqVO.getUserId());
             throw exception(WALLET_NOT_FOUND);
         }
 

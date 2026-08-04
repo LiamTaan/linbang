@@ -5,6 +5,7 @@ import cn.hutool.core.util.NumberUtil;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Objects;
 
 /**
  * 金额工具类
@@ -19,6 +20,13 @@ public class MoneyUtils {
     private static final int PRICE_SCALE = 2;
 
     /**
+     * Integer 分金额能够表示的最大元金额
+     */
+    public static final String MAX_YUAN_AMOUNT_STR = "21474836.47";
+
+    public static final BigDecimal MAX_YUAN_AMOUNT = new BigDecimal(MAX_YUAN_AMOUNT_STR);
+
+    /**
      * 百分比对应的 BigDecimal 对象
      */
     public static final BigDecimal PERCENT_100 = BigDecimal.valueOf(100);
@@ -31,7 +39,7 @@ public class MoneyUtils {
      * @return 百分比金额
      */
     public static Integer calculateRatePrice(Integer price, Double rate) {
-        return calculateRatePrice(price, rate, 0, RoundingMode.HALF_UP).intValue();
+        return calculateRatePrice(price, rate, 0, RoundingMode.HALF_UP).intValueExact();
     }
 
     /**
@@ -42,7 +50,7 @@ public class MoneyUtils {
      * @return 百分比金额
      */
     public static Integer calculateRatePriceFloor(Integer price, Double rate) {
-        return calculateRatePrice(price, rate, 0, RoundingMode.FLOOR).intValue();
+        return calculateRatePrice(price, rate, 0, RoundingMode.FLOOR).intValueExact();
     }
 
     /**
@@ -54,7 +62,7 @@ public class MoneyUtils {
      * @return 商品总价
      */
     public static Integer calculator(Integer price, Integer count, Integer percent) {
-        price = price * count;
+        price = Math.multiplyExact(price, count);
         if (percent == null) {
             return price;
         }
@@ -82,6 +90,18 @@ public class MoneyUtils {
      */
     public static BigDecimal fenToYuan(int fen) {
         return new Money(0, fen).getAmount();
+    }
+
+    /**
+     * 元转分，按人民币最小单位四舍五入，并在超出 Integer 分金额范围时失败。
+     *
+     * @param yuan 元
+     * @return 分
+     * @throws ArithmeticException 金额超出 Integer 分金额范围
+     */
+    public static Integer yuanToFen(BigDecimal yuan) {
+        Objects.requireNonNull(yuan, "yuan must not be null");
+        return yuan.multiply(PERCENT_100).setScale(0, RoundingMode.HALF_UP).intValueExact();
     }
 
     /**

@@ -21,6 +21,8 @@ import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSc
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSocialBindMobileReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSocialLoginReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberWechatMiniProgramLoginReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberRegistrationLicenseUploadReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberRegistrationLicenseUploadRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.platformconfig.vo.AppAgreementRespVO;
 import cn.iocoder.yudao.module.linbang.service.app.auth.AppMemberAuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,11 +31,13 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.MediaType;
 
 import javax.annotation.Resource;
 import javax.annotation.security.PermitAll;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import javax.validation.constraints.Size;
 
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
 
@@ -71,6 +75,15 @@ public class AppMemberAuthController {
         return success(appMemberAuthService.accountRegister(reqVO));
     }
 
+    @PostMapping(value = "/account-register/license-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "企业注册预上传营业执照",
+            description = "匿名注册阶段使用手机号和未消费的注册短信验证码校验文件归属；返回的 fileId 仅能由同一手机号在 15 分钟内完成企业注册。")
+    @PermitAll
+    public CommonResult<AppMemberRegistrationLicenseUploadRespVO> uploadRegistrationLicense(
+            @Valid AppMemberRegistrationLicenseUploadReqVO reqVO) throws Exception {
+        return success(appMemberAuthService.uploadRegistrationLicense(reqVO));
+    }
+
     @GetMapping("/register-agreement/get")
     @Operation(summary = "获取注册协议")
     @PermitAll
@@ -79,10 +92,17 @@ public class AppMemberAuthController {
     }
 
     @GetMapping("/register-reminder/get")
-    @Operation(summary = "获取未注册提醒")
+    @Operation(summary = "获取未注册提醒", description = "社交平台类型与第三方用户标识必须同时传入；未传社交身份时，设备标识必填。")
+    @Parameters({
+            @Parameter(name = "socialType", description = "社交平台类型；与 socialOpenid 成对传入"),
+            @Parameter(name = "socialOpenid", description = "第三方用户标识；与 socialType 成对传入，服务端仅保存摘要"),
+            @Parameter(name = "deviceId", description = "设备标识；未传社交身份时必填，服务端仅保存摘要")
+    })
     @PermitAll
     public CommonResult<AppRegisterReminderRespVO> getRegisterReminder(@RequestParam(value = "socialType", required = false) Integer socialType,
+                                                                       @Size(max = 128, message = "第三方用户标识不能超过 128 个字符")
                                                                        @RequestParam(value = "socialOpenid", required = false) String socialOpenid,
+                                                                       @Size(max = 128, message = "设备标识不能超过 128 个字符")
                                                                        @RequestParam(value = "deviceId", required = false) String deviceId) {
         return success(appMemberAuthService.getRegisterReminder(socialType, socialOpenid, deviceId));
     }

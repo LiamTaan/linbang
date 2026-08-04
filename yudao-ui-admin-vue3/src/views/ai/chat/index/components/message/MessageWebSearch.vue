@@ -137,6 +137,7 @@
 </template>
 
 <script setup lang="ts">
+import { openSafeUrl } from '@/utils/url'
 defineProps<{
   webSearchPages: {
     name: string // 名称
@@ -178,7 +179,7 @@ const handleImageError = (event: Event) => {
 
 /** 打开URL */
 const openUrl = (url: string) => {
-  window.open(url, '_blank')
+  openSafeUrl(url)
 }
 </script>
 

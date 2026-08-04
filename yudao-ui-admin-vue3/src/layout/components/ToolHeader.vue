@@ -16,6 +16,7 @@ import { useDesign } from '@/hooks/web/useDesign'
 import { Icon } from '@/components/Icon'
 import { checkPermi } from '@/utils/permission'
 import { isHorizontalMenuLayout, isMixedNavLayout, isTwoColumnLayout } from '@/utils/layout'
+import { openSafeUrl } from '@/utils/url'
 
 const { getPrefixCls, variables } = useDesign()
 
@@ -60,7 +61,7 @@ const hasTenantVisitPermission = computed(
 const goToChat = () => {
   // 用路由 name resolve 出完整 URL，在新标签页打开 IM 主页
   const { href } = router.resolve({ name: 'ImHome' })
-  window.open(href, '_blank')
+  openSafeUrl(href)
 }
 
 export default defineComponent({

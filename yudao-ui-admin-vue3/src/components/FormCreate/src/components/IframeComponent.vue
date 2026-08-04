@@ -11,6 +11,7 @@
         :allowfullscreen="allowfullscreen"
         :loading="loading"
         :sandbox="sandbox || undefined"
+        referrerpolicy="strict-origin-when-cross-origin"
         class="iframe-content"
       ></iframe>
     </div>
@@ -24,7 +25,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { isUrl } from '@/utils/is'
+import { toEmbeddableUrl } from '@/utils/url'
 
 defineOptions({ name: 'IframeComponent' })
 
@@ -48,12 +49,12 @@ const props = withDefaults(defineProps<Props>(), {
   frameborder: '0',
   allowfullscreen: true,
   loading: 'lazy',
-  sandbox: ''
+  sandbox: 'allow-forms allow-scripts allow-popups'
 })
 
-const displayUrl = computed(() => props.url || props.modelValue || '') // 显示的 URL（优先使用 url prop，其次使用 modelValue）
+const displayUrl = computed(() => toEmbeddableUrl(props.url || props.modelValue || '')) // 显示的 URL（优先使用 url prop，其次使用 modelValue）
 const showPreview = computed(() => {
-  return displayUrl.value && isUrl(displayUrl.value)
+  return Boolean(displayUrl.value)
 }) // 是否显示预览
 </script>
 

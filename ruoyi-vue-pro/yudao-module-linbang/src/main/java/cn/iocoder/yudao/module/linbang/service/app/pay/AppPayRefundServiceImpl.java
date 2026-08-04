@@ -2,6 +2,7 @@ package cn.iocoder.yudao.module.linbang.service.app.pay;
 
 import cn.hutool.core.util.IdUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
 import cn.iocoder.yudao.framework.common.util.number.MoneyUtils;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
@@ -37,14 +38,15 @@ import cn.iocoder.yudao.module.pay.enums.refund.PayRefundStatusEnum;
 import cn.iocoder.yudao.module.pay.service.app.PayAppService;
 import cn.iocoder.yudao.module.pay.service.order.PayOrderService;
 import cn.iocoder.yudao.module.pay.dal.mysql.refund.PayRefundMapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +54,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.iocoder.yudao.module.linbang.constants.FinanceDisplayConstants.REFUND_CHANNEL_FAILURE_REASON;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_ACCESS_DENIED;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_INFO_NOT_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_PAY_ORDER_NOT_EXISTS;
@@ -118,6 +121,14 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
             throw exception(ORDER_PAY_ORDER_NOT_EXISTS);
         }
 
+        int orderUpdated = orderInfoMapper.update(null, new LambdaUpdateWrapper<OrderInfoDO>()
+                .eq(OrderInfoDO::getId, order.getId())
+                .eq(OrderInfoDO::getStatus, order.getStatus())
+                .set(OrderInfoDO::getStatus, "AFTER_SALE"));
+        if (orderUpdated == 0) {
+            throw exception(ORDER_REFUND_STATUS_NOT_ALLOWED);
+        }
+
         String merchantRefundId = buildMerchantRefundId(order.getId(), unit != null ? unit.getId() : null);
         Long payRefundId = payRefundApi.createRefund(new PayRefundCreateReqDTO()
                 .setAppKey(payApp.getAppKey())
@@ -127,13 +138,9 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
                 .setMerchantOrderId(payOrder.getMerchantOrderId())
                 .setMerchantRefundId(merchantRefundId)
                 .setReason(reqVO.getReason())
-                .setPrice(reqVO.getApplyAmount().multiply(new BigDecimal("100"))
-                        .setScale(0, RoundingMode.HALF_UP).intValue())
+                .setPrice(toFen(reqVO.getApplyAmount()))
                 .setNeedAudit(Boolean.TRUE));
 
-        if (!Objects.equals(order.getStatus(), "AFTER_SALE")) {
-            orderInfoMapper.updateById(OrderInfoDO.builder().id(order.getId()).status("AFTER_SALE").build());
-        }
         saveOperateLog(order.getId(), unit != null ? unit.getId() : null, "REFUND_APPLY", "USER",
                 loginUser.getId(), order.getStatus(), "AFTER_SALE", "用户提交退款申请");
         saveRefundTraceFlow(loginUser, order, unit, payRefundId, "REFUND_APPLY", "IN", reqVO.getReason());
@@ -143,9 +150,23 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
     @Override
     public PageResult<AppPayRefundRespVO> getRefundPage(Long authUserId, AppPayRefundPageReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
+        String merchantOrderId = null;
+        if (reqVO.getOrderId() != null) {
+            OrderInfoDO order = orderInfoMapper.selectOne(new LambdaQueryWrapperX<OrderInfoDO>()
+                    .eq(OrderInfoDO::getId, reqVO.getOrderId())
+                    .eq(OrderInfoDO::getUserId, loginUser.getId()));
+            if (order == null || order.getPayOrderId() == null) {
+                return PageResult.empty();
+            }
+            PayOrderDO payOrder = payOrderService.getOrder(order.getPayOrderId());
+            if (payOrder == null) {
+                return PageResult.empty();
+            }
+            merchantOrderId = payOrder.getMerchantOrderId();
+        }
         PageResult<PayRefundDO> pageResult = payRefundMapper.selectPage(reqVO, new LambdaQueryWrapperX<PayRefundDO>()
                 .eq(PayRefundDO::getUserId, loginUser.getId())
-                .eqIfPresent(PayRefundDO::getMerchantOrderId, reqVO.getOrderId() != null ? String.valueOf(reqVO.getOrderId()) : null)
+                .eqIfPresent(PayRefundDO::getMerchantOrderId, merchantOrderId)
                 .eqIfPresent(PayRefundDO::getAuditStatus, reqVO.getAuditStatus())
                 .betweenIfPresent(PayRefundDO::getCreateTime, reqVO.getCreateTime())
                 .orderByDesc(PayRefundDO::getId));
@@ -171,33 +192,66 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateRefunded(@Valid PayRefundNotifyReqDTO notifyReqDTO) {
+        if (notifyReqDTO == null || notifyReqDTO.getPayRefundId() == null
+                || notifyReqDTO.getMerchantRefundId() == null || notifyReqDTO.getMerchantOrderId() == null) {
+            throw exception(ORDER_REFUND_NOTIFY_INVALID);
+        }
         RefundBizRef bizRef = parseRefundBizRef(notifyReqDTO.getMerchantRefundId());
-        OrderInfoDO order = orderInfoMapper.selectById(bizRef.orderId);
+        OrderInfoDO order = orderInfoMapper.selectOneForUpdate(OrderInfoDO::getId, bizRef.orderId);
         if (order == null) {
             throw exception(ORDER_INFO_NOT_EXISTS);
         }
         OrderUnitDO unit = bizRef.unitId != null ? getRefundUnit(bizRef.unitId, order.getId()) : null;
         PayRefundRespDTO payRefund = payRefundApi.getRefund(notifyReqDTO.getPayRefundId());
-        if (payRefund == null
+        PayRefundDO storedRefund = payRefund == null ? null : payRefundMapper.selectById(payRefund.getId());
+        PayOrderDO payOrder = order.getPayOrderId() == null ? null : payOrderService.getOrder(order.getPayOrderId());
+        if (payRefund == null || storedRefund == null
                 || !Objects.equals(payRefund.getMerchantRefundId(), notifyReqDTO.getMerchantRefundId())
-                || !Objects.equals(payRefund.getMerchantOrderId(), notifyReqDTO.getMerchantOrderId())) {
+                || !Objects.equals(payRefund.getMerchantOrderId(), notifyReqDTO.getMerchantOrderId())
+                || !Objects.equals(storedRefund.getMerchantRefundId(), notifyReqDTO.getMerchantRefundId())
+                || !Objects.equals(storedRefund.getMerchantOrderId(), notifyReqDTO.getMerchantOrderId())
+                || payOrder == null || !Objects.equals(payOrder.getMerchantOrderId(), notifyReqDTO.getMerchantOrderId())) {
             throw exception(ORDER_REFUND_NOTIFY_INVALID);
         }
 
         if (PayRefundStatusEnum.isSuccess(payRefund.getStatus())) {
+            if (payRefund.getRefundPrice() == null || payRefund.getRefundPrice() <= 0
+                    || (storedRefund.getRefundPrice() != null
+                    && !Objects.equals(storedRefund.getRefundPrice(), payRefund.getRefundPrice()))
+                    || payOrder.getPrice() == null || payRefund.getRefundPrice() > payOrder.getPrice()) {
+                throw exception(ORDER_REFUND_NOTIFY_INVALID);
+            }
+            if (unit != null && (unit.getUnitAmount() == null
+                    || payRefund.getRefundPrice() != toFen(unit.getUnitAmount()))) {
+                throw exception(ORDER_REFUND_NOTIFY_INVALID);
+            }
+            if (unit == null && (order.getOrderAmount() == null
+                    || payRefund.getRefundPrice() != toFen(order.getOrderAmount()))) {
+                throw exception(ORDER_REFUND_NOTIFY_INVALID);
+            }
+            if (Objects.equals(bizRef.prefix, AUTO_FLOW_REFUND_PREFIX)
+                    && (unit == null || !Objects.equals(unit.getAutoRefundId(), payRefund.getId())
+                    || unit.getUnitAmount() == null
+                    || payRefund.getRefundPrice() != toFen(unit.getUnitAmount()))) {
+                throw exception(ORDER_REFUND_NOTIFY_INVALID);
+            }
             autoFlowRefundService.handleRefundCallback(payRefund.getId(), payRefund.getMerchantRefundId(),
-                    payRefund.getStatus(), payRefund.getChannelErrorMsg());
+                    payRefund.getStatus(), REFUND_CHANNEL_FAILURE_REASON);
             handleRefundSuccess(order, unit, payRefund);
             return;
         }
         if (PayRefundStatusEnum.isFailure(payRefund.getStatus())) {
             autoFlowRefundService.handleRefundCallback(payRefund.getId(), payRefund.getMerchantRefundId(),
-                    payRefund.getStatus(), payRefund.getChannelErrorMsg());
+                    payRefund.getStatus(), REFUND_CHANNEL_FAILURE_REASON);
             handleRefundFailure(order, unit, payRefund);
         }
     }
 
     private void handleRefundSuccess(OrderInfoDO order, OrderUnitDO unit, PayRefundRespDTO payRefund) {
+        order = orderInfoMapper.selectOneForUpdate(OrderInfoDO::getId, order.getId());
+        if (order == null) {
+            throw exception(ORDER_INFO_NOT_EXISTS);
+        }
         if (existsRefundFlow(payRefund.getId(), "REFUND_SUCCESS")) {
             orderFlowOrchestratorService.onRefundSuccess(order.getId());
             return;
@@ -231,11 +285,29 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
             orderFlowOrchestratorService.onRefundFailed(order.getId());
             return;
         }
+        LambdaQueryWrapperX<OrderOperateLogDO> applyLogQuery = new LambdaQueryWrapperX<OrderOperateLogDO>()
+                .eq(OrderOperateLogDO::getOrderId, order.getId())
+                .eq(OrderOperateLogDO::getOperateType, "REFUND_APPLY")
+                .orderByDesc(OrderOperateLogDO::getId)
+                .last("LIMIT 1");
+        if (unit == null) {
+            applyLogQuery.isNull(OrderOperateLogDO::getUnitId);
+        } else {
+            applyLogQuery.eq(OrderOperateLogDO::getUnitId, unit.getId());
+        }
+        OrderOperateLogDO applyLog = orderOperateLogMapper.selectOne(applyLogQuery);
+        if (applyLog != null && StrUtil.equals(order.getStatus(), "AFTER_SALE")
+                && StrUtil.isNotBlank(applyLog.getBeforeStatus())) {
+            orderInfoMapper.update(null, new LambdaUpdateWrapper<OrderInfoDO>()
+                    .eq(OrderInfoDO::getId, order.getId())
+                    .eq(OrderInfoDO::getStatus, "AFTER_SALE")
+                    .set(OrderInfoDO::getStatus, applyLog.getBeforeStatus()));
+        }
         orderFlowOrchestratorService.onRefundFailed(order.getId());
         saveOperateLog(order.getId(), unit != null ? unit.getId() : null, "REFUND_FAILED", "SYSTEM", 0L,
-                order.getStatus(), order.getStatus(), "退款失败：" + payRefund.getChannelErrorMsg());
+                order.getStatus(), order.getStatus(), "退款失败，渠道返回失败状态");
         saveRefundTraceFlow(resolveRefundUser(order), order, unit, payRefund.getId(), "REFUND_FAILED", "OUT",
-                "退款失败：" + payRefund.getChannelErrorMsg());
+                "退款失败，渠道返回失败状态");
     }
 
     private String resolveOrderStatus(Long orderId, BigDecimal newOrderAmount) {
@@ -295,17 +367,22 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
     }
 
     private void validateRefundAmount(BigDecimal applyAmount, OrderInfoDO order, OrderUnitDO unit) {
-        if (applyAmount == null || applyAmount.compareTo(BigDecimal.ZERO) <= 0) {
+        if (applyAmount == null || applyAmount.compareTo(BigDecimal.ZERO) <= 0
+                || applyAmount.compareTo(MoneyUtils.MAX_YUAN_AMOUNT) > 0) {
             throw exception(ORDER_REFUND_AMOUNT_INVALID);
         }
         BigDecimal limitAmount = unit != null ? unit.getUnitAmount() : order.getOrderAmount();
         if (limitAmount == null || applyAmount.compareTo(limitAmount) > 0) {
             throw exception(ORDER_REFUND_AMOUNT_EXCEED);
         }
+        if (applyAmount.compareTo(limitAmount) < 0) {
+            throw exception(ORDER_REFUND_AMOUNT_INVALID);
+        }
     }
 
     private String buildMerchantRefundId(Long orderId, Long unitId) {
-        return MERCHANT_REFUND_PREFIX + "-" + orderId + "-" + (unitId == null ? 0L : unitId) + "-" + IdUtil.getSnowflakeNextIdStr();
+        return MERCHANT_REFUND_PREFIX + "-" + orderId + "-" + (unitId == null ? 0L : unitId)
+                + "-" + IdUtil.getSnowflakeNextIdStr();
     }
 
     private RefundBizRef parseRefundBizRef(String merchantRefundId) {
@@ -317,12 +394,12 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
             if (Objects.equals(segments[0], MERCHANT_REFUND_PREFIX)) {
                 Long orderId = Long.valueOf(segments[1]);
                 Long unitId = Long.valueOf(segments[2]);
-                return new RefundBizRef(orderId, Objects.equals(unitId, 0L) ? null : unitId);
+                return new RefundBizRef(MERCHANT_REFUND_PREFIX, orderId, Objects.equals(unitId, 0L) ? null : unitId);
             }
             if (Objects.equals(segments[0], AUTO_FLOW_REFUND_PREFIX)) {
                 Long orderId = Long.valueOf(segments[1]);
                 Long unitId = Long.valueOf(segments[2]);
-                return new RefundBizRef(orderId, unitId);
+                return new RefundBizRef(AUTO_FLOW_REFUND_PREFIX, orderId, unitId);
             }
             throw exception(ORDER_REFUND_NOTIFY_INVALID);
         } catch (NumberFormatException ex) {
@@ -370,9 +447,7 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
 
     private WalletAccountDO getOrCreateWalletAccount(MemberUserDO loginUser) {
         String roleCode = loginUser.getCurrentRoleCode() != null ? loginUser.getCurrentRoleCode() : "USER";
-        WalletAccountDO walletAccount = walletAccountMapper.selectOne(new LambdaQueryWrapperX<WalletAccountDO>()
-                .eq(WalletAccountDO::getUserId, loginUser.getId())
-                .eq(WalletAccountDO::getRoleCode, roleCode));
+        WalletAccountDO walletAccount = walletAccountMapper.selectByUserIdAndRoleCode(loginUser.getId(), roleCode);
         if (walletAccount != null) {
             return walletAccount;
         }
@@ -386,8 +461,17 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
                 .commissionAmount(BigDecimal.ZERO)
                 .status("ENABLE")
                 .build();
-        walletAccountMapper.insert(walletAccount);
-        return walletAccount;
+        try {
+            walletAccountMapper.insert(walletAccount);
+            return walletAccount;
+        } catch (DuplicateKeyException ex) {
+            WalletAccountDO concurrent = walletAccountMapper.selectByUserIdAndRoleCodeForUpdate(
+                    loginUser.getId(), roleCode);
+            if (concurrent == null) {
+                throw ex;
+            }
+            return concurrent;
+        }
     }
 
     private MemberUserDO resolveRefundUser(OrderInfoDO order) {
@@ -420,12 +504,22 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
         return amount.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : amount;
     }
 
+    private int toFen(BigDecimal amount) {
+        try {
+            return MoneyUtils.yuanToFen(amount);
+        } catch (ArithmeticException | NullPointerException ex) {
+            throw exception(ORDER_REFUND_AMOUNT_INVALID);
+        }
+    }
+
     private static final class RefundBizRef {
 
+        private final String prefix;
         private final Long orderId;
         private final Long unitId;
 
-        private RefundBizRef(Long orderId, Long unitId) {
+        private RefundBizRef(String prefix, Long orderId, Long unitId) {
+            this.prefix = prefix;
             this.orderId = orderId;
             this.unitId = unitId;
         }
@@ -434,11 +528,21 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
 
     private AppPayRefundRespVO convertRefund(PayRefundDO refund) {
         AppPayRefundRespVO respVO = BeanUtils.toBean(refund, AppPayRefundRespVO.class);
-        respVO.setOrderId(parseLongQuietly(refund.getMerchantOrderId()));
+        respVO.setOrderId(parseRefundOrderId(refund.getMerchantRefundId()));
         respVO.setUnitId(parseRefundUnitId(refund.getMerchantRefundId()));
         respVO.setPayOrderId(refund.getOrderId());
         respVO.setStatusName(resolveRefundStatusName(refund.getStatus()));
+        respVO.setChannelErrorMsg(PayRefundStatusEnum.isFailure(refund.getStatus())
+                ? REFUND_CHANNEL_FAILURE_REASON : null);
         return respVO;
+    }
+
+    private Long parseRefundOrderId(String merchantRefundId) {
+        try {
+            return parseRefundBizRef(merchantRefundId).orderId;
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     private Long parseRefundUnitId(String merchantRefundId) {
@@ -446,14 +550,6 @@ public class AppPayRefundServiceImpl implements AppPayRefundService {
             RefundBizRef bizRef = parseRefundBizRef(merchantRefundId);
             return bizRef.unitId;
         } catch (Exception ignored) {
-            return null;
-        }
-    }
-
-    private Long parseLongQuietly(String value) {
-        try {
-            return value == null ? null : Long.valueOf(value);
-        } catch (NumberFormatException ex) {
             return null;
         }
     }

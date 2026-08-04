@@ -70,11 +70,16 @@ export const MerchantServiceCategoryApi = {
 
   /** 批量删除服务类目表 */
   deleteMerchantServiceCategoryList: async (ids: number[]) => {
-    return await request.delete({ url: `/linbang/merchant-service-category/delete-list?ids=${ids.join(',')}` })
+    return await request.delete({
+      url: `/linbang/merchant-service-category/delete-list?ids=${ids.join(',')}`
+    })
   },
 
   // 导出服务类目表 Excel
   exportMerchantServiceCategory: async (params: any) => {
-    return await request.download({ url: `/linbang/merchant-service-category/export-excel`, params })
+    return await request.download({
+      url: `/linbang/merchant-service-category/export-excel`,
+      params
+    })
   }
 }

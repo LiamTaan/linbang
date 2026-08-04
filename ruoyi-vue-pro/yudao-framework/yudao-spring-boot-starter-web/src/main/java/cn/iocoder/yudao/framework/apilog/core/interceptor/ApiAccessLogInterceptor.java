@@ -48,8 +48,7 @@ public class ApiAccessLogInterceptor implements HandlerInterceptor {
             if (CollUtil.isEmpty(queryString) && StrUtil.isEmpty(requestBody)) {
                 log.info("[preHandle][开始请求 URL({}) 无参数]", request.getRequestURI());
             } else {
-                log.info("[preHandle][开始请求 URL({}) 参数({})]", request.getRequestURI(),
-                        StrUtil.blankToDefault(requestBody, queryString.toString()));
+                log.info("[preHandle][开始请求 URL({}) 有参数，内容已省略]", request.getRequestURI());
             }
             // 计时
             StopWatch stopWatch = new StopWatch();

@@ -1,6 +1,7 @@
 import { bootstrapSession } from '@/services/app-bootstrap'
 import { clearPendingSocialAuth, clearSession, setTokenInfo } from '@/utils/auth'
 import { consumePendingInviteContext } from '@/services/invite-context'
+import { normalizeAppRoute } from '@/utils/navigation'
 
 export async function applyLoginSession(loginResp) {
   if (!loginResp || !loginResp.accessToken) {
@@ -29,9 +30,7 @@ export function getDefaultAfterLoginPage() {
 }
 
 export function redirectAfterLogin(redirect) {
-  const targetUrl = redirect && redirect !== '/pages/login/login'
-    ? decodeURIComponent(redirect)
-    : getDefaultAfterLoginPage()
+  const targetUrl = normalizeAppRoute(redirect) || getDefaultAfterLoginPage()
   uni.reLaunch({
     url: targetUrl
   })

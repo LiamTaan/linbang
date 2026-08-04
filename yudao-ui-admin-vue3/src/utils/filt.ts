@@ -1,3 +1,5 @@
+import { isOpenableUrl } from './url'
+
 export const openWindow = (
   url: string,
   opt?: {
@@ -6,7 +8,10 @@ export const openWindow = (
     noreferrer?: boolean
   }
 ) => {
-  const { target = '__blank', noopener = true, noreferrer = true } = opt || {}
+  if (!isOpenableUrl(url)) {
+    return
+  }
+  const { target = '_blank', noopener = true, noreferrer = true } = opt || {}
   const feature: string[] = []
 
   noopener && feature.push('noopener=yes')
@@ -125,6 +130,9 @@ export const downloadByUrl = ({
   target?: '_self' | '_blank'
   fileName?: string
 }): boolean => {
+  if (!isOpenableUrl(url)) {
+    return false
+  }
   const isChrome = window.navigator.userAgent.toLowerCase().indexOf('chrome') > -1
   const isSafari = window.navigator.userAgent.toLowerCase().indexOf('safari') > -1
 
@@ -136,6 +144,9 @@ export const downloadByUrl = ({
     const link = document.createElement('a')
     link.href = url
     link.target = target
+    if (target === '_blank') {
+      link.rel = 'noopener noreferrer'
+    }
 
     if (link.download !== undefined) {
       link.download = fileName || url.substring(url.lastIndexOf('/') + 1, url.length)

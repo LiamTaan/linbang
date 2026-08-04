@@ -14,7 +14,7 @@ import javax.servlet.http.*;
 import java.util.*;
 import java.io.IOException;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -35,39 +35,6 @@ public class MemberUserRealNameController {
 
     @Resource
     private MemberUserRealNameService memberUserRealNameService;
-
-    @PostMapping("/create")
-    @Operation(summary = "创建实名认证表")
-    @PreAuthorize("@ss.hasPermission('linbang:member-user-real-name:create')")
-    public CommonResult<Long> createMemberUserRealName(@Valid @RequestBody MemberUserRealNameSaveReqVO createReqVO) {
-        return success(memberUserRealNameService.createMemberUserRealName(createReqVO));
-    }
-
-    @PutMapping("/update")
-    @Operation(summary = "更新实名认证表")
-    @PreAuthorize("@ss.hasPermission('linbang:member-user-real-name:update')")
-    public CommonResult<Boolean> updateMemberUserRealName(@Valid @RequestBody MemberUserRealNameSaveReqVO updateReqVO) {
-        memberUserRealNameService.updateMemberUserRealName(updateReqVO);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete")
-    @Operation(summary = "删除实名认证表")
-    @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('linbang:member-user-real-name:delete')")
-    public CommonResult<Boolean> deleteMemberUserRealName(@RequestParam("id") Long id) {
-        memberUserRealNameService.deleteMemberUserRealName(id);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete-list")
-    @Parameter(name = "ids", description = "编号", required = true)
-    @Operation(summary = "批量删除实名认证表")
-                @PreAuthorize("@ss.hasPermission('linbang:member-user-real-name:delete')")
-    public CommonResult<Boolean> deleteMemberUserRealNameList(@RequestParam("ids") List<Long> ids) {
-        memberUserRealNameService.deleteMemberUserRealNameListByIds(ids);
-        return success(true);
-    }
 
     @GetMapping("/get")
     @Operation(summary = "获得实名认证表")
@@ -98,7 +65,7 @@ public class MemberUserRealNameController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportMemberUserRealNameExcel(@Valid MemberUserRealNamePageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<MemberUserRealNameRespVO> list = memberUserRealNameService.getMemberUserRealNamePage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "实名认证表.xls", "数据", MemberUserRealNameRespVO.class, list);

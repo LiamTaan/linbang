@@ -53,7 +53,7 @@ public class MerchantEntrySaveReqVO {
     @NotEmpty(message = "状态不能为空")
     private String status;
 
-    @Schema(description = "备注", example = "??")
+    @Schema(description = "备注", example = "资料已核验")
     private String remark;
 
 }

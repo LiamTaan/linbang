@@ -94,52 +94,51 @@ const activeTab = ref('pay-order')
 
 .wallet-hero__eyebrow {
   margin: 0 0 8px;
-  color: #b45309;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.12em;
+  color: #b45309;
   text-transform: uppercase;
 }
 
 .wallet-hero__title {
   margin: 0;
-  color: #111827;
   font-size: 28px;
   font-weight: 700;
   line-height: 1.2;
+  color: #111827;
 }
 
 .wallet-hero__desc {
   max-width: 840px;
   margin: 12px 0 0;
-  color: #4b5563;
   line-height: 1.7;
+  color: #4b5563;
 }
 
 .wallet-hero__chips {
   display: flex;
   flex-wrap: wrap;
-  align-content: flex-start;
-  justify-content: flex-end;
+  place-content: flex-start flex-end;
   gap: 10px;
   min-width: 260px;
 }
 
 .wallet-hero__chips span {
   padding: 8px 12px;
-  border: 1px solid #f3d6a4;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
-  color: #9a3412;
   font-size: 12px;
   font-weight: 600;
+  color: #9a3412;
+  background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+  border: 1px solid #f3d6a4;
+  border-radius: 999px;
 }
 
 .linbang-tabs :deep(.el-tabs__content) {
   padding-top: 4px;
 }
 
-@media (max-width: 900px) {
+@media (width <= 900px) {
   .wallet-hero {
     flex-direction: column;
   }

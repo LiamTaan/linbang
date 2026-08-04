@@ -25,6 +25,7 @@ public class AppMemberRoleContextRespVO {
     private List<RoleSummaryItem> roleSummaries;
 
     @Data
+    @Schema(description = "用户 App - 角色摘要 Response VO")
     public static class RoleSummaryItem {
 
         @Schema(description = "角色编码", example = "PARTNER")

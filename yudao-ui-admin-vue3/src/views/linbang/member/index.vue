@@ -71,12 +71,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
       </el-form-item>
     </el-form>
   </ContentWrap>
@@ -87,9 +83,7 @@
         <template #header>
           <div class="flex items-center justify-between">
             <span class="text-15px font-600">用户选择</span>
-            <span class="text-12px text-[var(--el-text-color-secondary)]">
-              共 {{ total }} 人
-            </span>
+            <span class="text-12px text-[var(--el-text-color-secondary)]"> 共 {{ total }} 人 </span>
           </div>
         </template>
 
@@ -148,24 +142,11 @@
                 当前查看：{{ detailTitle }}
               </div>
             </div>
-            <el-button
-              v-if="detailData?.id"
-              type="primary"
-              plain
-              v-hasPermi="['linbang:member-user:update']"
-              @click="openForm('update', detailData.id)"
-            >
-              <Icon icon="ep:edit" class="mr-5px" /> 编辑用户
-            </el-button>
           </div>
         </template>
 
         <div v-loading="detailLoading" class="min-h-520px">
-          <el-empty
-            v-if="!detailData"
-            description="请先从左侧选择一位用户"
-            :image-size="96"
-          />
+          <el-empty v-if="!detailData" description="请先从左侧选择一位用户" :image-size="96" />
 
           <template v-else>
             <div class="overview-hero">
@@ -186,8 +167,12 @@
                     />
                     <el-tag type="success" v-if="detailData.status === 'ENABLE'">启用中</el-tag>
                     <el-tag type="info" v-else>已停用</el-tag>
-                    <el-tag type="warning" v-if="detailData.summary?.realNameApproved">实名已通过</el-tag>
-                    <el-tag type="primary" v-if="detailData.summary?.merchantBound">已绑定服务商</el-tag>
+                    <el-tag type="warning" v-if="detailData.summary?.realNameApproved"
+                      >实名已通过</el-tag
+                    >
+                    <el-tag type="primary" v-if="detailData.summary?.merchantBound"
+                      >已绑定服务商</el-tag
+                    >
                   </div>
                 </div>
               </div>
@@ -212,7 +197,8 @@
                 <el-card shadow="never" class="stat-card">
                   <div class="stat-card__label">资质总数 / 已通过</div>
                   <div class="stat-card__value">
-                    {{ detailData.summary?.qualificationCount ?? 0 }} / {{ detailData.summary?.approvedQualificationCount ?? 0 }}
+                    {{ detailData.summary?.qualificationCount ?? 0 }} /
+                    {{ detailData.summary?.approvedQualificationCount ?? 0 }}
                   </div>
                 </el-card>
               </el-col>
@@ -220,7 +206,8 @@
                 <el-card shadow="never" class="stat-card">
                   <div class="stat-card__label">地址数 / 默认地址</div>
                   <div class="stat-card__value">
-                    {{ detailData.summary?.addressCount ?? 0 }} / {{ detailData.summary?.defaultAddressCount ?? 0 }}
+                    {{ detailData.summary?.addressCount ?? 0 }} /
+                    {{ detailData.summary?.defaultAddressCount ?? 0 }}
                   </div>
                 </el-card>
               </el-col>
@@ -228,7 +215,8 @@
                 <el-card shadow="never" class="stat-card">
                   <div class="stat-card__label">信用记录 / 最新分值</div>
                   <div class="stat-card__value">
-                    {{ detailData.summary?.creditRecordCount ?? 0 }} / {{ detailData.summary?.latestCreditScore ?? 0 }}
+                    {{ detailData.summary?.creditRecordCount ?? 0 }} /
+                    {{ detailData.summary?.latestCreditScore ?? 0 }}
                   </div>
                 </el-card>
               </el-col>
@@ -236,17 +224,26 @@
                 <el-card shadow="never" class="stat-card">
                   <div class="stat-card__label">驳回资质 / 信用等级</div>
                   <div class="stat-card__value">
-                    {{ detailData.summary?.rejectedQualificationCount ?? 0 }} / {{ detailData.summary?.latestCreditLevel || '-' }}
+                    {{ detailData.summary?.rejectedQualificationCount ?? 0 }} /
+                    {{ detailData.summary?.latestCreditLevel || '-' }}
                   </div>
                 </el-card>
               </el-col>
             </el-row>
 
             <el-descriptions :column="2" border class="mb-16px">
-              <el-descriptions-item label="生日">{{ detailData.birthday || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="性别">{{ formatGender(detailData.gender) }}</el-descriptions-item>
-              <el-descriptions-item label="创建时间">{{ formatDate(detailData.createTime) }}</el-descriptions-item>
-              <el-descriptions-item label="更新时间">{{ formatDate(detailData.updateTime) }}</el-descriptions-item>
+              <el-descriptions-item label="生日">{{
+                detailData.birthday || '-'
+              }}</el-descriptions-item>
+              <el-descriptions-item label="性别">{{
+                formatGender(detailData.gender)
+              }}</el-descriptions-item>
+              <el-descriptions-item label="创建时间">{{
+                formatDate(detailData.createTime)
+              }}</el-descriptions-item>
+              <el-descriptions-item label="更新时间">{{
+                formatDate(detailData.updateTime)
+              }}</el-descriptions-item>
               <el-descriptions-item label="备注" :span="2">
                 {{ detailData.remark || '-' }}
               </el-descriptions-item>
@@ -275,9 +272,12 @@
               <el-col :xs="24" :xl="8">
                 <el-card shadow="never" class="context-card">
                   <div class="context-card__title">服务商信息</div>
-                  <div class="context-card__name">{{ detailData.merchant?.merchantName || '-' }}</div>
+                  <div class="context-card__name">{{
+                    detailData.merchant?.merchantName || '-'
+                  }}</div>
                   <div class="context-card__meta">
-                    {{ detailData.merchant?.contactName || '-' }} / {{ detailData.merchant?.contactMobile || '-' }}
+                    {{ detailData.merchant?.contactName || '-' }} /
+                    {{ detailData.merchant?.contactMobile || '-' }}
                   </div>
                   <div class="mt-10px text-13px">
                     状态：{{ formatEnableStatus(detailData.merchant?.status) }}
@@ -286,7 +286,8 @@
                     接单：{{ formatAcceptStatus(detailData.merchant?.acceptStatus) }}
                   </div>
                   <div class="mt-6px text-12px text-[var(--el-text-color-secondary)]">
-                    信用：{{ detailData.merchant?.creditScore ?? '-' }} / {{ detailData.merchant?.creditLevel || '-' }}
+                    信用：{{ detailData.merchant?.creditScore ?? '-' }} /
+                    {{ detailData.merchant?.creditLevel || '-' }}
                   </div>
                 </el-card>
               </el-col>
@@ -294,7 +295,9 @@
                 <el-card shadow="never" class="context-card">
                   <div class="context-card__title">最近入驻申请</div>
                   <div class="context-card__name">{{ detailData.latestEntry?.entryNo || '-' }}</div>
-                  <div class="context-card__meta">{{ detailData.latestEntry?.regionCode || '-' }}</div>
+                  <div class="context-card__meta">{{
+                    detailData.latestEntry?.regionCode || '-'
+                  }}</div>
                   <div class="mt-10px">
                     <dict-tag
                       v-if="detailData.latestEntry?.status"
@@ -346,7 +349,11 @@
               <el-table-column label="资质编号" prop="qualificationNo" width="160" />
               <el-table-column label="审核状态" prop="auditStatus" width="110">
                 <template #default="{ row }">
-                  <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+                  <dict-tag
+                    v-if="row.auditStatus"
+                    :type="DICT_TYPE.LB_AUDIT_STATUS"
+                    :value="row.auditStatus"
+                  />
                   <span v-else>-</span>
                 </template>
               </el-table-column>
@@ -421,8 +428,6 @@
       </ContentWrap>
     </el-col>
   </el-row>
-
-  <MemberUserForm ref="formRef" @success="handleFormSuccess" />
 </template>
 
 <script setup lang="ts">
@@ -440,7 +445,6 @@ import {
   formatGender,
   formatTriggerType
 } from '../utils/display'
-import MemberUserForm from '../memberuser/MemberUserForm.vue'
 
 defineOptions({ name: 'LinbangMember' })
 
@@ -451,7 +455,6 @@ const list = ref<MemberUser[]>([])
 const detailData = ref<MemberUserDetail>()
 const selectedUserId = ref<number>()
 const queryFormRef = ref<FormInstance>()
-const formRef = ref()
 const tableRef = ref()
 
 const queryParams = reactive({
@@ -473,7 +476,9 @@ function computedTitle() {
 
 const syncDetailTitle = () => {
   detailTitle.value = detailData.value
-    ? [detailData.value.nickname, detailData.value.mobile, detailData.value.userNo].filter(Boolean).join(' / ') || '当前用户'
+    ? [detailData.value.nickname, detailData.value.mobile, detailData.value.userNo]
+        .filter(Boolean)
+        .join(' / ') || '当前用户'
     : '请先选择左侧用户'
 }
 
@@ -540,14 +545,6 @@ const handleRowClick = async (row: MemberUser) => {
   await setCurrentRow(row.id)
 }
 
-const openForm = (type: string, id?: number) => {
-  formRef.value?.open(type, id)
-}
-
-const handleFormSuccess = async () => {
-  await getList()
-}
-
 onMounted(() => {
   getList()
 })
@@ -560,15 +557,15 @@ onMounted(() => {
 
 .overview-hero {
   display: flex;
-  justify-content: space-between;
-  gap: 20px;
   padding: 22px 24px;
   margin-bottom: 16px;
-  border-radius: 16px;
   background:
-    radial-gradient(circle at top left, rgba(231, 244, 234, 0.95), transparent 38%),
+    radial-gradient(circle at top left, rgb(231 244 234 / 95%), transparent 38%),
     linear-gradient(135deg, #f8fbf5 0%, #eef7f0 48%, #f8fafc 100%);
-  border: 1px solid rgba(152, 196, 159, 0.35);
+  border: 1px solid rgb(152 196 159 / 35%);
+  border-radius: 16px;
+  justify-content: space-between;
+  gap: 20px;
 }
 
 .overview-user {
@@ -589,11 +586,11 @@ onMounted(() => {
 
 .overview-side__item {
   display: flex;
+  padding: 10px 12px;
+  background: rgb(255 255 255 / 72%);
+  border-radius: 12px;
   flex-direction: column;
   gap: 4px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.72);
 }
 
 .overview-side__item span {
@@ -646,7 +643,7 @@ onMounted(() => {
   word-break: break-all;
 }
 
-@media (max-width: 1200px) {
+@media (width <= 1200px) {
   .overview-hero {
     flex-direction: column;
   }

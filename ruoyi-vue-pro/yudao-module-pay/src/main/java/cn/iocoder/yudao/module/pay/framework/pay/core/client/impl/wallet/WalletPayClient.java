@@ -77,7 +77,7 @@ public class WalletPayClient extends AbstractPayClient<NonePayClientConfig> {
                     transaction.getCreateTime(),
                     reqDTO.getOutTradeNo(), transaction);
         } catch (Throwable ex) {
-            log.error("[doUnifiedOrder][reqDTO({}) 异常]", reqDTO, ex);
+            log.error("[doUnifiedOrder][客户端({}) 钱包支付异常]", getId(), ex);
             Integer errorCode = INTERNAL_SERVER_ERROR.getCode();
             String errorMsg = INTERNAL_SERVER_ERROR.getMsg();
             if (ex instanceof ServiceException) {
@@ -133,7 +133,7 @@ public class WalletPayClient extends AbstractPayClient<NonePayClientConfig> {
             return PayRefundRespDTO.successOf(payWalletTransaction.getNo(), payWalletTransaction.getCreateTime(),
                     reqDTO.getOutRefundNo(), payWalletTransaction);
         } catch (Throwable ex) {
-            log.error("[doUnifiedRefund][reqDOT({}) 异常]", reqDTO, ex);
+            log.error("[doUnifiedRefund][客户端({}) 钱包退款异常]", getId(), ex);
             Integer errorCode = INTERNAL_SERVER_ERROR.getCode();
             String errorMsg = INTERNAL_SERVER_ERROR.getMsg();
             if (ex instanceof ServiceException) {
@@ -190,7 +190,7 @@ public class WalletPayClient extends AbstractPayClient<NonePayClientConfig> {
             return PayTransferRespDTO.successOf(transaction.getNo(), transaction.getCreateTime(),
                     reqDTO.getOutTransferNo(), transaction);
         } catch (Throwable ex) {
-            log.error("[doUnifiedTransfer][reqDTO({}) 异常]", reqDTO, ex);
+            log.error("[doUnifiedTransfer][客户端({}) 钱包转账异常]", getId(), ex);
             Integer errorCode = INTERNAL_SERVER_ERROR.getCode();
             String errorMsg = INTERNAL_SERVER_ERROR.getMsg();
             if (ex instanceof ServiceException) {

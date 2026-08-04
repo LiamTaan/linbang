@@ -1,18 +1,47 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="100px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="100px"
+      class="-mb-15px"
+    >
       <el-form-item label="用户关键词" prop="userKeyword">
-        <el-input v-model="queryParams.userKeyword" placeholder="用户编号/昵称/手机号" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.userKeyword"
+          placeholder="用户编号/昵称/手机号"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="脱敏词" prop="word">
-        <el-input v-model="queryParams.word" placeholder="请输入脱敏词" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.word"
+          placeholder="请输入脱敏词"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="适用场景" prop="sceneType">
-        <el-input v-model="queryParams.sceneType" placeholder="如 ORDER_CREATE" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.sceneType"
+          placeholder="如 ORDER_CREATE"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" clearable class="!w-220px" placeholder="请选择状态">
-          <el-option v-for="item in ENABLE_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+          <el-option
+            v-for="item in ENABLE_STATUS_OPTIONS"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
         </el-select>
       </el-form-item>
       <el-form-item>
@@ -39,13 +68,21 @@
       <el-table-column label="备注" prop="remark" min-width="180" />
       <el-table-column label="创建时间" prop="createTime" width="180" />
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { UserSensitiveCustomWordApi, type UserSensitiveCustomWord } from '@/api/linbang/usersensitivecustomword'
+import {
+  UserSensitiveCustomWordApi,
+  type UserSensitiveCustomWord
+} from '@/api/linbang/usersensitivecustomword'
 import { ENABLE_STATUS_OPTIONS } from '../utils/display'
 
 defineOptions({ name: 'UserSensitiveCustomWord' })

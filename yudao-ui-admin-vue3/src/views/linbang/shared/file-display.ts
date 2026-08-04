@@ -1,4 +1,5 @@
 import { getFile, type FileVO } from '@/api/infra/file'
+import { isOpenableUrl } from '@/utils/url'
 
 export type FileLookupMap = Record<number, FileVO>
 
@@ -28,3 +29,6 @@ export const formatFileBrief = (file?: FileVO, missingText = '附件信息缺失
   }
   return [file.name, file.type].filter(Boolean).join(' / ')
 }
+
+export const getOpenableFileUrl = (file?: FileVO): string | undefined =>
+  file?.url && isOpenableUrl(file.url) ? file.url : undefined

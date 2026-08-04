@@ -15,7 +15,7 @@
     >
     <a
       v-else-if="segment.type === 'link'"
-      :href="segment.href"
+      :href="toOpenableUrl(segment.href)"
       target="_blank"
       rel="noopener noreferrer"
       class="text-[#576b95] hover:underline break-all"
@@ -30,6 +30,7 @@
 import { IM_AT_ALL_USER_ID } from '@/views/im/utils/constants'
 import type { TipSegment } from '@/views/im/utils/message'
 import { openMentionUserInfoCardAtEvent } from '@/views/im/utils/user'
+import { toOpenableUrl } from '@/utils/url'
 
 defineOptions({ name: 'ImTipSegments' })
 

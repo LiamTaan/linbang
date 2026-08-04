@@ -35,7 +35,9 @@ CREATE TABLE `infra_file`  (
   `updater` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '更新者',
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_infra_file_config_path` (`config_id` ASC, `path` ASC) USING BTREE,
+  INDEX `idx_infra_file_pending_owner` (`updater` ASC, `size` ASC, `create_time` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 2260 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文件表';
 
 DROP TABLE IF EXISTS `infra_file_config`;
@@ -884,6 +886,7 @@ CREATE TABLE `pay_notify_task` (
   PRIMARY KEY (`id`),
   KEY `idx_pay_notify_task_type_data_id` (`type`,`data_id`),
   KEY `idx_pay_notify_task_status` (`status`),
+  KEY `idx_pay_notify_task_status_time_id` (`status`,`next_notify_time`,`id`),
   KEY `idx_pay_notify_task_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='支付通知任务表';
 
@@ -1134,6 +1137,7 @@ CREATE TABLE IF NOT EXISTS `lb_user` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_lb_user_no` (`user_no`),
   UNIQUE KEY `uk_lb_user_mobile` (`mobile`),
+  UNIQUE KEY `uk_lb_user_username` (`username`),
   KEY `idx_lb_user_tenant_id` (`tenant_id`),
   KEY `idx_lb_user_status` (`status`),
   KEY `idx_lb_user_role` (`current_role_code`)
@@ -1277,7 +1281,9 @@ CREATE TABLE IF NOT EXISTS `lb_user_address` (
   PRIMARY KEY (`id`),
   KEY `idx_lb_user_address_user_id` (`user_id`),
   KEY `idx_lb_user_address_tenant_id` (`tenant_id`),
-  KEY `idx_lb_user_address_adcode` (`adcode`)
+  KEY `idx_lb_user_address_adcode` (`adcode`),
+  KEY `idx_lb_user_address_scope_user` (`tenant_id`, `user_id`, `deleted`, `is_default`, `id`),
+  KEY `idx_lb_user_address_scope_region` (`tenant_id`, `adcode`, `deleted`, `user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户地址表';
 
 DROP TABLE IF EXISTS `lb_merchant_info`;
@@ -1340,12 +1346,19 @@ CREATE TABLE IF NOT EXISTS `lb_merchant_entry` (
   `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `active_entry_key` VARCHAR(64) GENERATED ALWAYS AS (
+    CASE WHEN `status` <> 'REJECTED' AND `deleted` = b'0'
+      THEN CONCAT(`tenant_id`, ':', `user_id`) ELSE NULL END
+  ) STORED COMMENT '生效入驻申请并发幂等键',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_lb_merchant_entry_no` (`entry_no`),
+  UNIQUE KEY `uk_lb_merchant_entry_active` (`active_entry_key`),
   KEY `idx_lb_merchant_entry_tenant_id` (`tenant_id`),
   KEY `idx_lb_merchant_entry_user_id` (`user_id`),
   KEY `idx_lb_merchant_entry_status` (`status`),
-  KEY `idx_lb_merchant_entry_region_code` (`region_code`)
+  KEY `idx_lb_merchant_entry_region_code` (`region_code`),
+  KEY `idx_lb_merchant_entry_current` (`tenant_id`, `merchant_id`, `status`, `deleted`, `id`, `region_code`),
+  KEY `idx_lb_merchant_entry_region_status` (`tenant_id`, `region_code`, `status`, `deleted`, `merchant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='服务商入驻申请表';
 
 DROP TABLE IF EXISTS `lb_service_category`;
@@ -1508,9 +1521,11 @@ CREATE TABLE IF NOT EXISTS `lb_order_info` (
   KEY `idx_lb_order_info_user_id` (`user_id`),
   KEY `idx_lb_order_info_merchant_id` (`merchant_id`),
   KEY `idx_lb_order_info_status` (`status`),
+  KEY `idx_lb_order_info_status_id` (`status`, `id`),
   KEY `idx_lb_order_info_category_id` (`category_id`),
   KEY `idx_lb_order_info_tenant_id` (`tenant_id`),
-  KEY `idx_lb_order_info_create_time` (`create_time`)
+  KEY `idx_lb_order_info_create_time` (`create_time`),
+  KEY `idx_lb_order_info_merchant_scope` (`tenant_id`, `merchant_id`, `deleted`, `id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单主表';
 
 DROP TABLE IF EXISTS `lb_order_price_item`;
@@ -1704,7 +1719,12 @@ CREATE TABLE IF NOT EXISTS `lb_priority_pool_record` (
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
   `tenant_id` BIGINT NOT NULL DEFAULT 0 COMMENT '租户编号',
+  `active_current_key` VARCHAR(64) GENERATED ALWAYS AS (
+    CASE WHEN `current_flag` = b'1' AND `deleted` = b'0'
+      THEN CONCAT(`tenant_id`, ':', `merchant_id`) ELSE NULL END
+  ) STORED COMMENT '当前生效记录并发幂等键',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_lb_priority_pool_active_current` (`active_current_key`),
   KEY `idx_lb_priority_pool_record_merchant_id` (`merchant_id`),
   KEY `idx_lb_priority_pool_record_current_flag` (`current_flag`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='优先池记录表';
@@ -1754,6 +1774,7 @@ CREATE TABLE IF NOT EXISTS `lb_reward_order_participation` (
   `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
   `tenant_id` BIGINT NOT NULL DEFAULT 0 COMMENT '租户编号',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_lb_reward_participation_user` (`tenant_id`, `reward_order_id`, `participant_user_id`),
   KEY `idx_lb_reward_order_participation_reward_order_id` (`reward_order_id`),
   KEY `idx_lb_reward_order_participation_participant_user_id` (`participant_user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='悬赏参与记录表';
@@ -1809,6 +1830,10 @@ CREATE TABLE IF NOT EXISTS `lb_order_abnormal` (
   `handle_status` VARCHAR(32) NOT NULL DEFAULT 'PENDING' COMMENT '处理状态',
   `handle_by` BIGINT DEFAULT NULL COMMENT '处理人',
   `handle_time` DATETIME DEFAULT NULL COMMENT '处理时间',
+  `final_audit_status` VARCHAR(32) NOT NULL DEFAULT 'PENDING' COMMENT '终审状态：PENDING 待终审、APPROVED 通过、REJECTED 驳回',
+  `final_audit_by` BIGINT DEFAULT NULL COMMENT '终审人',
+  `final_audit_time` DATETIME DEFAULT NULL COMMENT '终审时间',
+  `final_audit_remark` VARCHAR(255) DEFAULT NULL COMMENT '终审意见',
   `remark` VARCHAR(255) DEFAULT NULL COMMENT '备注',
   `tenant_id` BIGINT NOT NULL DEFAULT 1 COMMENT '租户编号',
   `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
@@ -1842,7 +1867,7 @@ CREATE TABLE IF NOT EXISTS `lb_order_operate_log` (
   KEY `idx_lb_order_operate_log_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单操作日志表';
 
-DROP TABLE IF EXISTS `lb_wallet_account`;
+DROP TABLE IF EXISTS `lb_commission_order`;
 CREATE TABLE IF NOT EXISTS `lb_commission_order` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
   `commission_no` VARCHAR(32) NOT NULL COMMENT '佣金单号',
@@ -1866,7 +1891,8 @@ CREATE TABLE IF NOT EXISTS `lb_commission_order` (
   KEY `idx_lb_commission_order_promoter_id` (`promoter_id`),
   KEY `idx_lb_commission_order_user_id` (`user_id`),
   KEY `idx_lb_commission_order_status` (`status`),
-  KEY `idx_lb_commission_order_tenant_id` (`tenant_id`)
+  KEY `idx_lb_commission_order_tenant_id` (`tenant_id`),
+  KEY `idx_lb_commission_order_partner_stat` (`tenant_id`, `user_id`, `promoter_id`, `deleted`, `status`, `source_order_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='推广佣金单表';
 
 DROP TABLE IF EXISTS `lb_wallet_account`;
@@ -1906,15 +1932,19 @@ CREATE TABLE IF NOT EXISTS `lb_wallet_flow` (
   `related_unit_id` BIGINT DEFAULT NULL COMMENT '关联单元ID',
   `related_pay_order_id` BIGINT DEFAULT NULL COMMENT '关联支付订单ID',
   `related_refund_id` BIGINT DEFAULT NULL COMMENT '关联退款ID',
+  `related_withdraw_id` BIGINT DEFAULT NULL COMMENT '关联提现申请ID',
   `remark` VARCHAR(255) DEFAULT NULL COMMENT '备注',
   `tenant_id` BIGINT NOT NULL DEFAULT 1 COMMENT '租户编号',
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_lb_wallet_flow_no` (`flow_no`),
+  UNIQUE KEY `uk_lb_wallet_flow_refund_biz` (`related_refund_id`, `biz_type`, `flow_type`),
+  KEY `idx_lb_wallet_flow_order_biz_unit` (`related_order_id`, `related_unit_id`, `biz_type`, `flow_type`),
   KEY `idx_lb_wallet_flow_user_id` (`user_id`),
   KEY `idx_lb_wallet_flow_biz_type` (`biz_type`),
   KEY `idx_lb_wallet_flow_tenant_id` (`tenant_id`),
-  KEY `idx_lb_wallet_flow_related_order_id` (`related_order_id`)
+  KEY `idx_lb_wallet_flow_related_order_id` (`related_order_id`),
+  KEY `idx_lb_wallet_flow_related_withdraw_id` (`related_withdraw_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='钱包流水表';
 
 DROP TABLE IF EXISTS `lb_wallet_withdraw`;
@@ -1946,6 +1976,8 @@ CREATE TABLE IF NOT EXISTS `lb_wallet_withdraw` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_lb_wallet_withdraw_no` (`withdraw_no`),
   KEY `idx_lb_wallet_withdraw_user_id` (`user_id`),
+  KEY `idx_lb_wallet_withdraw_account_time` (`tenant_id`, `wallet_account_id`, `create_time`, `id`),
+  KEY `idx_lb_wallet_withdraw_card_time` (`tenant_id`, `bank_card_id`, `create_time`, `id`),
   KEY `idx_lb_wallet_withdraw_tenant_id` (`tenant_id`),
   KEY `idx_lb_wallet_withdraw_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='提现申请表';
@@ -1999,7 +2031,8 @@ CREATE TABLE IF NOT EXISTS `lb_divide_rule` (
   PRIMARY KEY (`id`),
   KEY `idx_lb_divide_rule_status` (`status`),
   KEY `idx_lb_divide_rule_tenant_id` (`tenant_id`),
-  KEY `idx_lb_divide_rule_category_id` (`category_id`)
+  KEY `idx_lb_divide_rule_category_id` (`category_id`),
+  KEY `idx_lb_divide_rule_match` (`category_id`, `status`, `effective_time`, `city_level`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='分账规则表';
 
 DROP TABLE IF EXISTS `lb_escrow_proof`;
@@ -2023,6 +2056,7 @@ CREATE TABLE IF NOT EXISTS `lb_escrow_proof` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_lb_escrow_proof_no` (`proof_no`),
   KEY `idx_lb_escrow_proof_order` (`order_id`),
+  KEY `idx_lb_escrow_proof_order_unit_status` (`order_id`, `unit_id`, `proof_status`),
   KEY `idx_lb_escrow_proof_unit` (`unit_id`),
   KEY `idx_lb_escrow_proof_user` (`user_id`),
   KEY `idx_lb_escrow_proof_tenant_id` (`tenant_id`)
@@ -2168,11 +2202,18 @@ CREATE TABLE IF NOT EXISTS `lb_complaint` (
   `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `active_complaint_key` VARCHAR(255) GENERATED ALWAYS AS (
+    CASE WHEN `status` IN ('PENDING', 'PROCESSING') AND `deleted` = b'0'
+      THEN CONCAT(`tenant_id`, ':', `order_id`, ':', COALESCE(`unit_id`, 0), ':',
+        `complainant_user_id`, ':', `respondent_user_id`, ':', `complaint_type`) ELSE NULL END
+  ) STORED COMMENT '生效投诉并发幂等键',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_lb_complaint_no` (`complaint_no`),
+  UNIQUE KEY `uk_lb_complaint_active` (`active_complaint_key`),
   KEY `idx_lb_complaint_order_id` (`order_id`),
   KEY `idx_lb_complaint_tenant_id` (`tenant_id`),
-  KEY `idx_lb_complaint_status` (`status`)
+  KEY `idx_lb_complaint_status` (`status`),
+  KEY `idx_lb_complaint_partner_page` (`tenant_id`, `order_id`, `status`, `deleted`, `create_time`, `id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='投诉表';
 
 DROP TABLE IF EXISTS `lb_complaint_file_rel`;
@@ -2208,12 +2249,19 @@ CREATE TABLE IF NOT EXISTS `lb_appeal` (
   `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `active_appeal_key` VARCHAR(192) GENERATED ALWAYS AS (
+    CASE WHEN `status` IN ('PENDING', 'PROCESSING') AND `deleted` = b'0'
+      THEN CONCAT(`tenant_id`, ':', `order_id`, ':', COALESCE(`unit_id`, 0), ':',
+        `user_id`, ':', `appeal_type`) ELSE NULL END
+  ) STORED COMMENT '生效申诉并发幂等键',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_lb_appeal_no` (`appeal_no`),
+  UNIQUE KEY `uk_lb_appeal_active` (`active_appeal_key`),
   KEY `idx_lb_appeal_order_id` (`order_id`),
   KEY `idx_lb_appeal_tenant_id` (`tenant_id`),
   KEY `idx_lb_appeal_status` (`status`),
-  KEY `idx_lb_appeal_audit_status` (`audit_status`)
+  KEY `idx_lb_appeal_audit_status` (`audit_status`),
+  KEY `idx_lb_appeal_partner_page` (`tenant_id`, `order_id`, `status`, `deleted`, `create_time`, `id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='申诉表';
 
 DROP TABLE IF EXISTS `lb_appeal_file_rel`;
@@ -2248,7 +2296,12 @@ CREATE TABLE IF NOT EXISTS `lb_review` (
   `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `active_review_key` VARCHAR(160) GENERATED ALWAYS AS (
+    CASE WHEN `status` = 'ENABLE' AND `deleted` = b'0'
+      THEN CONCAT(`tenant_id`, ':', `unit_id`, ':', `from_user_id`) ELSE NULL END
+  ) STORED COMMENT '生效评价并发幂等键',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_lb_review_active_key` (`active_review_key`),
   KEY `idx_lb_review_order_id` (`order_id`),
   KEY `idx_lb_review_unit_id` (`unit_id`),
   KEY `idx_lb_review_from_unit` (`from_user_id`, `unit_id`),
@@ -2318,7 +2371,14 @@ CREATE TABLE IF NOT EXISTS `lb_credit_record` (
   `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `active_biz_key` VARCHAR(255) GENERATED ALWAYS AS (
+    CASE WHEN `biz_type` IS NOT NULL AND `biz_id` IS NOT NULL AND `rule_code` IS NOT NULL
+        AND `deleted` = b'0'
+      THEN CONCAT(`tenant_id`, ':', `user_id`, ':', `rule_code`, ':', `biz_type`, ':', `biz_id`)
+      ELSE NULL END
+  ) STORED COMMENT '信用业务记录并发幂等键',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_lb_credit_record_active_biz` (`active_biz_key`),
   KEY `idx_lb_credit_record_user_id` (`user_id`),
   KEY `idx_lb_credit_record_merchant_id` (`merchant_id`),
   KEY `idx_lb_credit_record_rule_id` (`rule_id`),
@@ -2373,7 +2433,8 @@ CREATE TABLE IF NOT EXISTS `lb_promoter_relation` (
   UNIQUE KEY `uk_lb_promoter_relation_promoter_user` (`promoter_id`, `user_id`),
   UNIQUE KEY `uk_lb_promoter_relation_user_id` (`user_id`),
   KEY `idx_lb_promoter_relation_bind_time` (`bind_time`),
-  KEY `idx_lb_promoter_relation_tenant_id` (`tenant_id`)
+  KEY `idx_lb_promoter_relation_tenant_id` (`tenant_id`),
+  KEY `idx_lb_promoter_relation_partner_stat` (`tenant_id`, `user_id`, `deleted`, `promoter_id`, `convert_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='推广员绑定关系表';
 
 DROP TABLE IF EXISTS `lb_promoter_operation_log`;
@@ -2437,8 +2498,36 @@ CREATE TABLE IF NOT EXISTS `lb_partner_region_rel` (
   PRIMARY KEY (`id`),
   KEY `idx_lb_partner_region_rel_partner_id` (`partner_id`),
   KEY `idx_lb_partner_region_rel_adcode` (`adcode`),
-  KEY `idx_lb_partner_region_rel_tenant_id` (`tenant_id`)
+  KEY `idx_lb_partner_region_rel_tenant_id` (`tenant_id`),
+  KEY `idx_lb_partner_region_rel_scope` (`tenant_id`, `partner_id`, `status`, `adcode`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='合作商辖区关系表';
+
+DROP TABLE IF EXISTS `lb_partner_coordination`;
+CREATE TABLE IF NOT EXISTS `lb_partner_coordination` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `partner_id` BIGINT NOT NULL COMMENT '区域合作商ID',
+  `dispute_type` VARCHAR(32) NOT NULL COMMENT '纠纷类型：COMPLAINT 投诉、APPEAL 申诉',
+  `dispute_id` BIGINT NOT NULL COMMENT '投诉或申诉主键ID',
+  `order_id` BIGINT NOT NULL COMMENT '主订单ID',
+  `unit_id` BIGINT DEFAULT NULL COMMENT '订单单元ID',
+  `status` VARCHAR(32) NOT NULL DEFAULT 'PROCESSING' COMMENT '协调状态：PROCESSING 协调中、ESCALATED 已升级平台终审、FINISHED 已结束',
+  `coordination_remark` VARCHAR(1000) NOT NULL COMMENT '协调意见',
+  `escalate_remark` VARCHAR(1000) DEFAULT NULL COMMENT '升级平台终审备注',
+  `initiated_by` BIGINT NOT NULL COMMENT '发起人用户ID',
+  `initiated_time` DATETIME NOT NULL COMMENT '发起时间',
+  `finished_by` BIGINT DEFAULT NULL COMMENT '结束或升级操作人用户ID',
+  `finished_time` DATETIME DEFAULT NULL COMMENT '结束或升级时间',
+  `tenant_id` BIGINT NOT NULL DEFAULT 1 COMMENT '租户编号',
+  `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  PRIMARY KEY (`id`),
+  KEY `idx_lb_partner_coord_dispute` (`tenant_id`, `dispute_type`, `dispute_id`, `id`),
+  KEY `idx_lb_partner_coord_partner` (`tenant_id`, `partner_id`, `id`),
+  KEY `idx_lb_partner_coord_order_unit` (`tenant_id`, `order_id`, `unit_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='区域合作商纠纷协调记录表';
 
 DROP TABLE IF EXISTS `lb_user_role_apply`;
 CREATE TABLE IF NOT EXISTS `lb_user_role_apply` (
@@ -2461,7 +2550,12 @@ CREATE TABLE IF NOT EXISTS `lb_user_role_apply` (
   `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `active_apply_key` VARCHAR(160) GENERATED ALWAYS AS (
+    CASE WHEN `audit_status` IN ('PENDING', 'APPROVED') AND `deleted` = b'0'
+      THEN CONCAT(`tenant_id`, ':', `user_id`, ':', `apply_role_code`) ELSE NULL END
+  ) STORED COMMENT '生效身份申请并发幂等键',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_lb_user_role_apply_active` (`active_apply_key`),
   KEY `idx_lb_user_role_apply_user_id` (`user_id`),
   KEY `idx_lb_user_role_apply_role_code` (`apply_role_code`),
   KEY `idx_lb_user_role_apply_audit_status` (`audit_status`),
@@ -2496,7 +2590,8 @@ CREATE TABLE IF NOT EXISTS `lb_merchant_price_report` (
   KEY `idx_lb_merchant_price_report_region_code` (`region_code`),
   KEY `idx_lb_merchant_price_report_status` (`status`),
   KEY `idx_lb_merchant_price_report_audit_status` (`audit_status`),
-  KEY `idx_lb_merchant_price_report_tenant_id` (`tenant_id`)
+  KEY `idx_lb_merchant_price_report_tenant_id` (`tenant_id`),
+  KEY `idx_lb_merchant_price_report_partner_stat` (`tenant_id`, `partner_id`, `region_code`, `status`, `deleted`, `id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='服务商价格申报表';
 
 DROP TABLE IF EXISTS `lb_merchant_reference_price`;
@@ -2572,7 +2667,7 @@ CREATE TABLE IF NOT EXISTS `lb_register_reminder_record` (
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
   PRIMARY KEY (`id`),
-  KEY `idx_lb_register_reminder_key` (`reminder_key`),
+  UNIQUE KEY `uk_lb_register_reminder_tenant_key` (`tenant_id`, `reminder_key`),
   KEY `idx_lb_register_reminder_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='注册提醒记录表';
 
@@ -2794,6 +2889,7 @@ CREATE TABLE IF NOT EXISTS `lb_message_record` (
   `voice_played_time` DATETIME DEFAULT NULL COMMENT '语音播放时间',
   `voice_text` TEXT DEFAULT NULL COMMENT '语音朗读文本',
   `provider_message_id` VARCHAR(128) DEFAULT NULL COMMENT '渠道消息ID',
+  `external_click_token` CHAR(32) DEFAULT NULL COMMENT '外部消息点击随机凭证',
   `tenant_id` BIGINT NOT NULL DEFAULT 1 COMMENT '租户编号',
   `creator` VARCHAR(64) DEFAULT '' COMMENT '创建者',
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -2809,7 +2905,9 @@ CREATE TABLE IF NOT EXISTS `lb_message_record` (
   KEY `idx_lb_message_record_read_status` (`read_status`),
   KEY `idx_lb_message_record_send_status` (`send_status`),
   UNIQUE KEY `uk_lb_message_record_dedupe_key` (`dedupe_key`),
-  KEY `idx_lb_message_record_tenant_id` (`tenant_id`)
+  UNIQUE KEY `uk_lb_message_record_external_click_token` (`external_click_token`),
+  KEY `idx_lb_message_record_tenant_id` (`tenant_id`),
+  KEY `idx_lb_message_record_partner_instruction` (`tenant_id`, `receiver_user_id`, `send_status`, `message_category`, `id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='消息发送记录表';
 
 DROP TABLE IF EXISTS `lb_user_device`;
@@ -3004,6 +3102,7 @@ CREATE TABLE IF NOT EXISTS `lb_punish_log` (
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_lb_punish_log_source_record` (`tenant_id`, `source_record_type`, `source_record_id`),
   KEY `idx_lb_punish_log_user_id` (`user_id`),
   KEY `idx_lb_punish_log_type_status` (`punish_type`, `status`),
   KEY `idx_lb_punish_log_source_record` (`source_record_type`, `source_record_id`)
@@ -3096,7 +3195,12 @@ CREATE TABLE IF NOT EXISTS `lb_promote_appeal` (
   `updater` VARCHAR(64) DEFAULT '' COMMENT '更新者',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
+  `active_appeal_key` VARCHAR(128) GENERATED ALWAYS AS (
+    CASE WHEN `status` = 'PENDING' AND `deleted` = b'0'
+      THEN CONCAT(`tenant_id`, ':', `content_id`, ':', `promoter_id`) ELSE NULL END
+  ) STORED COMMENT '待审核推广申诉并发幂等键',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_lb_promote_appeal_active` (`active_appeal_key`),
   KEY `idx_lb_promote_appeal_content_id` (`content_id`),
   KEY `idx_lb_promote_appeal_promoter_id` (`promoter_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='推广内容申诉表';
@@ -3169,6 +3273,7 @@ DROP TABLE IF EXISTS `lb_message_feedback_stat`;
 CREATE TABLE IF NOT EXISTS `lb_message_feedback_stat` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
   `stat_date` DATE NOT NULL COMMENT '统计日期',
+  `stat_key` CHAR(64) NOT NULL COMMENT '统计维度唯一键（SHA-256）',
   `scene_code` VARCHAR(64) NOT NULL COMMENT '场景编码',
   `message_category` VARCHAR(32) NOT NULL COMMENT '消息分类',
   `template_id` BIGINT DEFAULT NULL COMMENT '模板ID',
@@ -3190,6 +3295,7 @@ CREATE TABLE IF NOT EXISTS `lb_message_feedback_stat` (
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_lb_message_feedback_stat_key` (`tenant_id`, `stat_key`),
   KEY `idx_lb_message_feedback_scene_channel` (`scene_code`, `channel_type`),
   KEY `idx_lb_message_feedback_template` (`template_id`),
   KEY `idx_lb_message_feedback_campaign` (`campaign_id`),
@@ -3201,6 +3307,7 @@ DROP TABLE IF EXISTS `lb_message_optimization`;
 CREATE TABLE IF NOT EXISTS `lb_message_optimization` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
   `ref_type` VARCHAR(32) NOT NULL COMMENT '关联类型 TEMPLATE/CAMPAIGN',
+  `optimization_key` CHAR(64) NOT NULL COMMENT '优化任务维度唯一键（SHA-256）',
   `template_id` BIGINT DEFAULT NULL COMMENT '模板ID',
   `campaign_id` BIGINT DEFAULT NULL COMMENT '投放活动ID',
   `scene_code` VARCHAR(64) DEFAULT NULL COMMENT '场景编码',
@@ -3221,6 +3328,7 @@ CREATE TABLE IF NOT EXISTS `lb_message_optimization` (
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_lb_message_optimization_key` (`tenant_id`, `optimization_key`),
   KEY `idx_lb_message_optimization_ref` (`ref_type`, `template_id`, `campaign_id`),
   KEY `idx_lb_message_optimization_scene` (`scene_code`, `channel_type`),
   KEY `idx_lb_message_optimization_tenant_id` (`tenant_id`)

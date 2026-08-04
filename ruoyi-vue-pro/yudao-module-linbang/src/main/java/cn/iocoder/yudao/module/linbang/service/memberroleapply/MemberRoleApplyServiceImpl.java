@@ -34,6 +34,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
@@ -41,6 +42,7 @@ import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertSet;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_ROLE_APPLY_AUDIT_STATUS_INVALID;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_ROLE_APPLY_NOT_EXISTS;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_NOT_EXISTS;
 
 @Service
 @Validated
@@ -104,7 +106,7 @@ public class MemberRoleApplyServiceImpl implements MemberRoleApplyService {
             MemberRoleApplyDetailRespVO.RealNameSummary summary = new MemberRoleApplyDetailRespVO.RealNameSummary();
             summary.setId(realName.getId());
             summary.setRealName(realName.getRealName());
-            summary.setIdCardNo(realName.getIdCardNo());
+            summary.setIdCardNo(maskIdCardNo(realName.getIdCardNo()));
             summary.setAuditStatus(realName.getAuditStatus());
             respVO.setRealName(summary);
         }
@@ -128,11 +130,27 @@ public class MemberRoleApplyServiceImpl implements MemberRoleApplyService {
         return respVO;
     }
 
+    private String maskIdCardNo(String idCardNo) {
+        if (StrUtil.isBlank(idCardNo)) {
+            return idCardNo;
+        }
+        if (idCardNo.length() <= 4) {
+            return "****";
+        }
+        return idCardNo.substring(0, 2) + "********" + idCardNo.substring(idCardNo.length() - 2);
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void auditRoleApply(MemberRoleApplyAuditReqVO reqVO) {
-        MemberRoleApplyDO apply = getRequiredApply(reqVO.getId());
-        String beforeStatus = apply.getAuditStatus();
+        MemberRoleApplyDO apply = getRequiredApplyForUpdate(reqVO.getId());
+        if (!Arrays.asList("APPROVED", "REJECTED").contains(reqVO.getAuditStatus())
+                || !"PENDING".equals(apply.getAuditStatus())) {
+            throw exception(MEMBER_ROLE_APPLY_AUDIT_STATUS_INVALID);
+        }
+        if (memberUserMapper.selectByIdForUpdate(apply.getUserId()) == null) {
+            throw exception(MEMBER_USER_NOT_EXISTS);
+        }
         boolean approving = "APPROVED".equals(reqVO.getAuditStatus());
         memberRoleApplyMapper.updateById(MemberRoleApplyDO.builder()
                 .id(reqVO.getId())
@@ -159,10 +177,8 @@ public class MemberRoleApplyServiceImpl implements MemberRoleApplyService {
         } else if ("PLATFORM_OPERATOR".equals(apply.getApplyRoleCode())) {
             // 当前轮次平台管理员身份仅切换角色并保留审核材料，不额外生成独立档案。
         }
-        if (!"APPROVED".equals(beforeStatus)) {
-            messagePushDispatchService.dispatchSingle("", "身份申请已通过，角色已开通", "ROLE_APPLY",
-                    apply.getId(), apply.getUserId(), "身份申请审核通过后自动开通角色");
-        }
+        messagePushDispatchService.dispatchSingle("", "身份申请已通过，角色已开通", "ROLE_APPLY",
+                apply.getId(), apply.getUserId(), "身份申请审核通过后自动开通角色");
     }
 
     private void revokeRoleAbility(MemberRoleApplyDO apply) {
@@ -197,6 +213,14 @@ public class MemberRoleApplyServiceImpl implements MemberRoleApplyService {
 
     private MemberRoleApplyDO getRequiredApply(Long id) {
         MemberRoleApplyDO apply = memberRoleApplyMapper.selectById(id);
+        if (apply == null) {
+            throw exception(MEMBER_ROLE_APPLY_NOT_EXISTS);
+        }
+        return apply;
+    }
+
+    private MemberRoleApplyDO getRequiredApplyForUpdate(Long id) {
+        MemberRoleApplyDO apply = memberRoleApplyMapper.selectByIdForUpdate(id);
         if (apply == null) {
             throw exception(MEMBER_ROLE_APPLY_NOT_EXISTS);
         }

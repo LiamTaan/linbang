@@ -1,13 +1,33 @@
 package cn.iocoder.yudao.framework.common.util.http;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * {@link HttpUtils} 的单元测试
  */
 public class HttpUtilsTest {
+
+    private HttpServer server;
+
+    @AfterEach
+    public void tearDown() {
+        if (server != null) {
+            server.stop(0);
+        }
+    }
 
     @Test
     public void testEncodeUrlPath() {
@@ -77,6 +97,85 @@ public class HttpUtilsTest {
         String result = HttpUtils.replaceUrlQuery(url, "a", "");
         // 断言：保留 key，value 为空
         assertEquals("https://www.iocoder.cn/path?a=", result);
+    }
+
+    @Test
+    public void testGet_doesNotFollowRedirects() throws IOException {
+        AtomicInteger finalRequestCount = new AtomicInteger();
+        server = createServer();
+        server.createContext("/redirect", exchange -> {
+            exchange.getResponseHeaders().add("Location", "/final");
+            writeResponse(exchange, 302, "redirect");
+        });
+        server.createContext("/final", exchange -> {
+            finalRequestCount.incrementAndGet();
+            writeResponse(exchange, 200, "final");
+        });
+        server.start();
+
+        String body = HttpUtils.get(serverUrl("/redirect"), Collections.emptyMap());
+
+        assertEquals("redirect", body);
+        assertEquals(0, finalRequestCount.get());
+    }
+
+    @Test
+    public void testGet_rejectsOversizedResponse() throws IOException {
+        server = createServer();
+        server.createContext("/large", exchange -> {
+            byte[] body = new byte[2 * 1024 * 1024 + 1];
+            exchange.sendResponseHeaders(200, body.length);
+            try {
+                exchange.getResponseBody().write(body);
+            } catch (IOException ignored) {
+                // The client can close as soon as it validates Content-Length.
+            } finally {
+                exchange.close();
+            }
+        });
+        server.start();
+
+        assertThrows(IllegalStateException.class,
+                () -> HttpUtils.get(serverUrl("/large"), Collections.emptyMap()));
+    }
+
+    @Test
+    public void testPost_rejectsCallerSpecificOversizedResponse() throws IOException {
+        server = createServer();
+        server.createContext("/large-post", exchange -> writeResponse(exchange, 200, "12345"));
+        server.start();
+
+        assertThrows(IllegalStateException.class, () -> HttpUtils.post(serverUrl("/large-post"),
+                Collections.emptyMap(), "{}", 4));
+        assertThrows(IllegalArgumentException.class, () -> HttpUtils.post(serverUrl("/large-post"),
+                Collections.emptyMap(), "{}", 0));
+    }
+
+    @Test
+    public void testCreatePinnedDns_onlyResolvesValidatedHost() throws Exception {
+        HttpUrlSecurityUtils.ResolvedUrl resolved =
+                HttpUrlSecurityUtils.resolvePublicHttpsUrl("https://8.8.8.8/callback");
+
+        assertEquals(resolved.getAddresses(), HttpUtils.createPinnedDns(resolved).lookup("8.8.8.8"));
+        assertEquals(resolved.getAddresses(), HttpUtils.createPinnedDns(resolved).lookup("8.8.8.8."));
+        assertThrows(IOException.class,
+                () -> HttpUtils.createPinnedDns(resolved).lookup("localhost"));
+    }
+
+    private HttpServer createServer() throws IOException {
+        return HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+    }
+
+    private String serverUrl(String path) {
+        return "http://127.0.0.1:" + server.getAddress().getPort() + path;
+    }
+
+    private static void writeResponse(HttpExchange exchange, int status, String body) throws IOException {
+        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+        exchange.sendResponseHeaders(status, bytes.length);
+        exchange.getResponseBody().write(bytes);
+        exchange.close();
     }
 
 }

@@ -1,22 +1,22 @@
 import request from '@/config/axios'
-import type { Dayjs } from 'dayjs';
+import type { Dayjs } from 'dayjs'
 
 /** 抢单记录信息 */
 export interface OrderAcceptRecord {
-          id: number; // 主键
-          orderId?: number; // 订单ID
-          orderNo?: string
-          unitId?: number; // 单元ID
-          unitNo?: string
-          merchantId?: number; // 服务商ID
-          merchantName?: string
-          merchantContactName?: string
-          merchantContactMobile?: string
-          acceptTime?: string | Dayjs; // 接单时间
-          distanceKm: number; // 距离公里
-          acceptResult?: string; // 接单结果
-          remark: string; // 备注
-  }
+  id: number // 主键
+  orderId?: number // 订单ID
+  orderNo?: string
+  unitId?: number // 单元ID
+  unitNo?: string
+  merchantId?: number // 服务商ID
+  merchantName?: string
+  merchantContactName?: string
+  merchantContactMobile?: string
+  acceptTime?: string | Dayjs // 接单时间
+  distanceKm: number // 距离公里
+  acceptResult?: string // 接单结果
+  remark: string // 备注
+}
 
 export interface OrderAcceptRecordDetail extends OrderAcceptRecord {
   order?: {

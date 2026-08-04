@@ -1,6 +1,12 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="用户" prop="userKeyword">
         <el-input
           v-model="queryParams.userKeyword"
@@ -11,7 +17,12 @@
         />
       </el-form-item>
       <el-form-item label="申请角色" prop="applyRoleCode">
-        <el-select v-model="queryParams.applyRoleCode" placeholder="请选择申请角色" clearable class="!w-220px">
+        <el-select
+          v-model="queryParams.applyRoleCode"
+          placeholder="请选择申请角色"
+          clearable
+          class="!w-220px"
+        >
           <el-option
             v-for="dict in getStrDictOptions(DICT_TYPE.LB_ROLE_CODE)"
             :key="dict.value"
@@ -21,7 +32,12 @@
         </el-select>
       </el-form-item>
       <el-form-item label="审核状态" prop="auditStatus">
-        <el-select v-model="queryParams.auditStatus" placeholder="请选择审核状态" clearable class="!w-220px">
+        <el-select
+          v-model="queryParams.auditStatus"
+          placeholder="请选择审核状态"
+          clearable
+          class="!w-220px"
+        >
           <el-option
             v-for="dict in getStrDictOptions(DICT_TYPE.LB_ROLE_APPLY_STATUS)"
             :key="dict.value"
@@ -42,12 +58,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
       </el-form-item>
     </el-form>
   </ContentWrap>
@@ -65,28 +77,61 @@
       </el-table-column>
       <el-table-column label="申请角色" align="center" prop="applyRoleCode" width="120">
         <template #default="{ row }">
-          <dict-tag v-if="row.applyRoleCode" :type="DICT_TYPE.LB_ROLE_CODE" :value="row.applyRoleCode" />
+          <dict-tag
+            v-if="row.applyRoleCode"
+            :type="DICT_TYPE.LB_ROLE_CODE"
+            :value="row.applyRoleCode"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="申请说明" align="center" prop="applyReason" min-width="200" />
       <el-table-column label="资源说明" align="center" prop="resourceDesc" min-width="200" />
-      <el-table-column label="预期转化" align="center" prop="expectedConversionDesc" min-width="180" />
+      <el-table-column
+        label="预期转化"
+        align="center"
+        prop="expectedConversionDesc"
+        min-width="180"
+      />
       <el-table-column label="能力说明" align="center" prop="abilityDesc" min-width="180" />
       <el-table-column label="可投入时间" align="center" prop="availableTimeDesc" min-width="160" />
       <el-table-column label="审核状态" align="center" prop="auditStatus" width="110">
         <template #default="{ row }">
-          <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_ROLE_APPLY_STATUS" :value="row.auditStatus" />
+          <dict-tag
+            v-if="row.auditStatus"
+            :type="DICT_TYPE.LB_ROLE_APPLY_STATUS"
+            :value="row.auditStatus"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="审核备注" align="center" prop="auditRemark" min-width="160" />
       <el-table-column label="驳回原因" align="center" prop="rejectReason" min-width="160" />
-      <el-table-column label="审核时间" align="center" prop="auditTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="操作" align="center" fixed="right" :show-overflow-tooltip="false" min-width="160">
+      <el-table-column
+        label="审核时间"
+        align="center"
+        prop="auditTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
+      <el-table-column
+        label="操作"
+        align="center"
+        fixed="right"
+        :show-overflow-tooltip="false"
+        min-width="160"
+      >
         <template #default="{ row }">
-          <div class="flex flex-wrap items-center justify-center gap-x-8px gap-y-4px whitespace-normal">
+          <div
+            class="flex flex-wrap items-center justify-center gap-x-8px gap-y-4px whitespace-normal"
+          >
             <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
             <el-button
               link
@@ -126,22 +171,46 @@
         />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="申请说明" :span="2">{{ detailData?.applyReason || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="资源说明" :span="2">{{ detailData?.resourceDesc || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="预期转化说明" :span="2">{{ detailData?.expectedConversionDesc || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="能力说明" :span="2">{{ detailData?.abilityDesc || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="可投入时间说明" :span="2">{{ detailData?.availableTimeDesc || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="审核备注" :span="2">{{ detailData?.auditRemark || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="驳回原因" :span="2">{{ detailData?.rejectReason || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="审核时间">{{ formatDate(detailData?.auditTime) }}</el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData?.createTime) }}</el-descriptions-item>
+      <el-descriptions-item label="申请说明" :span="2">{{
+        detailData?.applyReason || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="资源说明" :span="2">{{
+        detailData?.resourceDesc || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="预期转化说明" :span="2">{{
+        detailData?.expectedConversionDesc || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="能力说明" :span="2">{{
+        detailData?.abilityDesc || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="可投入时间说明" :span="2">{{
+        detailData?.availableTimeDesc || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="审核备注" :span="2">{{
+        detailData?.auditRemark || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="驳回原因" :span="2">{{
+        detailData?.rejectReason || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="审核时间">{{
+        formatDate(detailData?.auditTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData?.createTime)
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">用户信息</el-divider>
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="用户编号">{{ detailData?.user?.userNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="昵称">{{ detailData?.user?.nickname || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="手机号">{{ detailData?.user?.mobile || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="用户编号">{{
+        detailData?.user?.userNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="昵称">{{
+        detailData?.user?.nickname || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="手机号">{{
+        detailData?.user?.mobile || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="当前角色">
         <dict-tag
           v-if="detailData?.user?.currentRoleCode"
@@ -150,12 +219,16 @@
         />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="用户状态">{{ formatEnableStatus(detailData?.user?.status) }}</el-descriptions-item>
+      <el-descriptions-item label="用户状态">{{
+        formatEnableStatus(detailData?.user?.status)
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">实名与资质</el-divider>
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="实名姓名">{{ detailData?.realName?.realName || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="实名姓名">{{
+        detailData?.realName?.realName || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="实名状态">
         <dict-tag
           v-if="detailData?.realName?.auditStatus"
@@ -164,7 +237,9 @@
         />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="身份证号">{{ detailData?.realName?.idCardNo || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="身份证号">{{
+        detailData?.realName?.idCardNo || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="最新资质">
         {{ detailData?.latestQualification?.qualificationName || '-' }}
       </el-descriptions-item>
@@ -183,10 +258,18 @@
 
     <el-divider content-position="left">推广员上下文</el-divider>
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="推广员档案">{{ detailData?.promoter?.id || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="邀请码">{{ detailData?.promoter?.inviteCode || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="等级">{{ detailData?.promoter?.levelCode || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="状态">{{ formatEnableStatus(detailData?.promoter?.status) }}</el-descriptions-item>
+      <el-descriptions-item label="推广员档案">{{
+        detailData?.promoter?.id || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="邀请码">{{
+        detailData?.promoter?.inviteCode || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="等级">{{
+        detailData?.promoter?.levelCode || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="状态">{{
+        formatEnableStatus(detailData?.promoter?.status)
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">角色申请重点</el-divider>
@@ -198,7 +281,13 @@
   </Dialog>
 
   <Dialog v-model="auditDialogVisible" title="身份申请审核" width="520px">
-    <el-form ref="auditFormRef" :model="auditFormData" :rules="auditFormRules" label-width="88px" v-loading="auditLoading">
+    <el-form
+      ref="auditFormRef"
+      :model="auditFormData"
+      :rules="auditFormRules"
+      label-width="88px"
+      v-loading="auditLoading"
+    >
       <el-form-item label="申请用户">
         <el-input :model-value="formatUserDisplay(currentRow)" disabled />
       </el-form-item>
@@ -221,7 +310,11 @@
           placeholder="请输入审核备注"
         />
       </el-form-item>
-      <el-form-item v-if="auditFormData.auditStatus === 'REJECTED'" label="驳回原因" prop="rejectReason">
+      <el-form-item
+        v-if="auditFormData.auditStatus === 'REJECTED'"
+        label="驳回原因"
+        prop="rejectReason"
+      >
         <el-input
           v-model="auditFormData.rejectReason"
           type="textarea"
@@ -337,11 +430,21 @@ const formatRoleApplyFocus = (detail?: MemberRoleApplyDetail) => {
     return detail.resourceDesc || '重点核对代理资质与本地资源覆盖情况'
   }
   if (detail.applyRoleCode === 'PLATFORM_OPERATOR') {
-    return [detail.abilityDesc, detail.availableTimeDesc].filter(Boolean).join(' / ') || '重点核对平台运营能力与可投入时间'
+    return (
+      [detail.abilityDesc, detail.availableTimeDesc].filter(Boolean).join(' / ') ||
+      '重点核对平台运营能力与可投入时间'
+    )
   }
-  return [detail.resourceDesc, detail.expectedConversionDesc, detail.abilityDesc, detail.availableTimeDesc]
-    .filter(Boolean)
-    .join(' / ') || '-'
+  return (
+    [
+      detail.resourceDesc,
+      detail.expectedConversionDesc,
+      detail.abilityDesc,
+      detail.availableTimeDesc
+    ]
+      .filter(Boolean)
+      .join(' / ') || '-'
+  )
 }
 
 const auditDialogVisible = ref(false)

@@ -45,6 +45,7 @@ public class AmapLocationService {
         if (request == null) {
             throw exception(MAP_LOCATION_INVALID);
         }
+        validateCoordinateInput(request.getLongitude(), request.getLatitude());
         requireConfigured();
         ResolvedAddress resolved = ResolvedAddress.builder()
                 .province(trimToNull(request.getProvince()))
@@ -92,7 +93,7 @@ public class AmapLocationService {
                     return amapDistance;
                 }
             } catch (Exception ex) {
-                log.warn("高德距离计算失败，回退本地距离算法: {}", ex.getMessage());
+                log.warn("高德距离计算失败，回退本地距离算法，异常类型: {}", ex.getClass().getSimpleName());
             }
         }
         double distance = NumberUtils.getDistance(originLatitude.doubleValue(), originLongitude.doubleValue(),
@@ -277,7 +278,20 @@ public class AmapLocationService {
     }
 
     private boolean hasCoordinates(BigDecimal longitude, BigDecimal latitude) {
-        return longitude != null && latitude != null;
+        return longitude != null && latitude != null
+                && longitude.compareTo(new BigDecimal("-180")) >= 0
+                && longitude.compareTo(new BigDecimal("180")) <= 0
+                && latitude.compareTo(new BigDecimal("-90")) >= 0
+                && latitude.compareTo(new BigDecimal("90")) <= 0;
+    }
+
+    private void validateCoordinateInput(BigDecimal longitude, BigDecimal latitude) {
+        if (longitude == null && latitude == null) {
+            return;
+        }
+        if (!hasCoordinates(longitude, latitude)) {
+            throw exception(MAP_LOCATION_INVALID);
+        }
     }
 
     private String buildFullAddress(ResolvedAddress address) {

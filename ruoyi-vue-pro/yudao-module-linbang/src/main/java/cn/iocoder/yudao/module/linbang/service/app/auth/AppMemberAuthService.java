@@ -10,6 +10,8 @@ import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSe
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSocialBindMobileReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberSocialLoginReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberWechatMiniProgramLoginReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberRegistrationLicenseUploadReqVO;
+import cn.iocoder.yudao.module.linbang.controller.app.member.auth.vo.AppMemberRegistrationLicenseUploadRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.platformconfig.vo.AppAgreementRespVO;
 
 import javax.validation.Valid;
@@ -21,6 +23,9 @@ public interface AppMemberAuthService {
     AppMemberLoginRespVO accountLogin(@Valid AppMemberAccountLoginReqVO reqVO);
 
     AppMemberLoginRespVO accountRegister(@Valid AppMemberAccountRegisterReqVO reqVO);
+
+    AppMemberRegistrationLicenseUploadRespVO uploadRegistrationLicense(
+            @Valid AppMemberRegistrationLicenseUploadReqVO reqVO) throws Exception;
 
     String getSocialAuthorizeUrl(Integer type, String redirectUri);
 

@@ -1,17 +1,47 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="用户 ID" prop="userId">
-        <el-input v-model="queryParams.userId" placeholder="请输入用户 ID" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.userId"
+          placeholder="请输入用户 ID"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="设备指纹" prop="deviceFingerprint">
-        <el-input v-model="queryParams.deviceFingerprint" placeholder="请输入设备指纹" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.deviceFingerprint"
+          placeholder="请输入设备指纹"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="最近 IP" prop="lastIp">
-        <el-input v-model="queryParams.lastIp" placeholder="请输入最近登录 IP" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.lastIp"
+          placeholder="请输入最近登录 IP"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="状态" prop="status">
-        <el-input v-model="queryParams.status" placeholder="如 ENABLE/DISABLE" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.status"
+          placeholder="如 ENABLE/DISABLE"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="创建时间" prop="createTime">
         <el-date-picker
@@ -45,11 +75,21 @@
       <el-table-column label="设备指纹" prop="deviceFingerprint" min-width="220" />
       <el-table-column label="设备名称" prop="deviceName" min-width="160" />
       <el-table-column label="最近 IP" prop="lastIp" width="160" />
-      <el-table-column label="最近登录" prop="lastLoginTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="最近登录"
+        prop="lastLoginTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="状态" prop="status" width="120" />
       <el-table-column label="创建时间" prop="createTime" :formatter="dateFormatter" width="180" />
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 </template>
 

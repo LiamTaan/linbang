@@ -46,9 +46,10 @@
             <el-link
               v-for="(url, index) in scope.row.fileUrls"
               :key="index"
-              :href="url"
+              :href="toOpenableUrl(url)"
               type="primary"
               target="_blank"
+              rel="noopener noreferrer"
               download
             >
               {{ getFileName(url) }}
@@ -126,6 +127,7 @@ import { DICT_TYPE } from '@/utils/dict'
 import { FollowUpRecordApi, FollowUpRecordVO } from '@/api/crm/followup'
 import FollowUpRecordForm from './FollowUpRecordForm.vue'
 import { BizTypeEnum } from '@/api/crm/permission'
+import { toOpenableUrl } from '@/utils/url'
 
 /** 跟进记录列表 */
 defineOptions({ name: 'FollowUpRecord' })

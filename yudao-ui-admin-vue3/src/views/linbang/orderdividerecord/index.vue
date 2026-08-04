@@ -1,20 +1,56 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="订单 ID" prop="orderId">
-        <el-input v-model="queryParams.orderId" placeholder="请输入订单 ID" clearable class="!w-200px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.orderId"
+          placeholder="请输入订单 ID"
+          clearable
+          class="!w-200px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="单元 ID" prop="unitId">
-        <el-input v-model="queryParams.unitId" placeholder="请输入单元 ID" clearable class="!w-200px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.unitId"
+          placeholder="请输入单元 ID"
+          clearable
+          class="!w-200px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="去向类型" prop="targetType">
-        <el-input v-model="queryParams.targetType" placeholder="如 MERCHANT / PLATFORM" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.targetType"
+          placeholder="如 MERCHANT / PLATFORM"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="结算状态" prop="settleStatus">
-        <el-input v-model="queryParams.settleStatus" placeholder="如 PENDING / REFUNDED" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.settleStatus"
+          placeholder="如 PENDING / REFUNDED"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="城市等级" prop="cityLevel">
-        <el-input v-model="queryParams.cityLevel" placeholder="请输入城市等级" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.cityLevel"
+          placeholder="请输入城市等级"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item>
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
@@ -42,7 +78,13 @@
       <el-table-column label="结算状态" align="center" prop="settleStatus" width="120" />
       <el-table-column label="城市等级" align="center" prop="cityLevel" width="120" />
       <el-table-column label="备注" align="center" prop="remark" min-width="180" />
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="操作" align="center" width="100" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
@@ -59,20 +101,44 @@
 
   <Dialog v-model="detailVisible" title="分账明细详情" width="720px" :loading="detailLoading">
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="分账编号">{{ detailData?.divideNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="分账规则 ID">{{ detailData?.divideRuleId || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="分账编号">{{
+        detailData?.divideNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="分账规则 ID">{{
+        detailData?.divideRuleId || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="订单 ID">{{ detailData?.orderId || '-' }}</el-descriptions-item>
       <el-descriptions-item label="单元 ID">{{ detailData?.unitId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="去向类型">{{ detailData?.targetType || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="目标业务 ID">{{ detailData?.targetBizId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="分账比例">{{ detailData?.divideRate ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="分账金额">{{ detailData?.divideAmount ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="税务扣减">{{ detailData?.taxAmount ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="结算状态">{{ detailData?.settleStatus || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="城市等级">{{ detailData?.cityLevel || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="类目 ID">{{ detailData?.categoryId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="创建时间" :span="2">{{ formatDate(detailData?.createTime) }}</el-descriptions-item>
-      <el-descriptions-item label="备注" :span="2">{{ detailData?.remark || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="去向类型">{{
+        detailData?.targetType || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="目标业务 ID">{{
+        detailData?.targetBizId || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="分账比例">{{
+        detailData?.divideRate ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="分账金额">{{
+        detailData?.divideAmount ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="税务扣减">{{
+        detailData?.taxAmount ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="结算状态">{{
+        detailData?.settleStatus || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="城市等级">{{
+        detailData?.cityLevel || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="类目 ID">{{
+        detailData?.categoryId || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间" :span="2">{{
+        formatDate(detailData?.createTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="备注" :span="2">{{
+        detailData?.remark || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
   </Dialog>
 </template>

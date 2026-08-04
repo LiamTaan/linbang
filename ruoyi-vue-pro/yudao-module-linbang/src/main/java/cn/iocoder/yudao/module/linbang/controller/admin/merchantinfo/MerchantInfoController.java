@@ -14,7 +14,7 @@ import javax.servlet.http.*;
 import java.util.*;
 import java.io.IOException;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -35,39 +35,6 @@ public class MerchantInfoController {
 
     @Resource
     private MerchantInfoService merchantInfoService;
-
-    @PostMapping("/create")
-    @Operation(summary = "创建服务商信息表")
-    @PreAuthorize("@ss.hasPermission('linbang:merchant-info:create')")
-    public CommonResult<Long> createMerchantInfo(@Valid @RequestBody MerchantInfoSaveReqVO createReqVO) {
-        return success(merchantInfoService.createMerchantInfo(createReqVO));
-    }
-
-    @PutMapping("/update")
-    @Operation(summary = "更新服务商信息表")
-    @PreAuthorize("@ss.hasPermission('linbang:merchant-info:update')")
-    public CommonResult<Boolean> updateMerchantInfo(@Valid @RequestBody MerchantInfoSaveReqVO updateReqVO) {
-        merchantInfoService.updateMerchantInfo(updateReqVO);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete")
-    @Operation(summary = "删除服务商信息表")
-    @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('linbang:merchant-info:delete')")
-    public CommonResult<Boolean> deleteMerchantInfo(@RequestParam("id") Long id) {
-        merchantInfoService.deleteMerchantInfo(id);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete-list")
-    @Parameter(name = "ids", description = "编号", required = true)
-    @Operation(summary = "批量删除服务商信息表")
-                @PreAuthorize("@ss.hasPermission('linbang:merchant-info:delete')")
-    public CommonResult<Boolean> deleteMerchantInfoList(@RequestParam("ids") List<Long> ids) {
-        merchantInfoService.deleteMerchantInfoListByIds(ids);
-        return success(true);
-    }
 
     @GetMapping("/get")
     @Operation(summary = "获得服务商信息表")
@@ -90,7 +57,7 @@ public class MerchantInfoController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportMerchantInfoExcel(@Valid MerchantInfoPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<MerchantInfoRespVO> list = merchantInfoService.getMerchantInfoPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "服务商信息表.xls", "数据", MerchantInfoRespVO.class, list);

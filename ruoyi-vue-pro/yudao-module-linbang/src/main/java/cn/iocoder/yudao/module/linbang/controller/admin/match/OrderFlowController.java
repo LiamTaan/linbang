@@ -25,6 +25,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
+import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_REFUND_STATUS_NOT_ALLOWED;
 
 @Tag(name = "管理后台 - 邻里流单退款看板")
 @RestController
@@ -60,9 +62,13 @@ public class OrderFlowController {
     @PreAuthorize("@ss.hasPermission('linbang:order:flow:update')")
     public CommonResult<Boolean> retryRefund(@Valid @RequestBody OrderFlowRetryRefundReqVO reqVO) {
         OrderUnitDO unit = orderUnitMapper.selectById(reqVO.getUnitId());
-        if (unit != null && unit.getFlowTime() != null && Objects.equals(unit.getDispatchStatus(), "FLOWED")) {
-            autoFlowRefundService.createAutoRefund(unit.getOrderId(), unit.getId(), unit.getFlowTime());
+        boolean recoverableProcessing = unit != null && Objects.equals(unit.getAutoRefundStatus(), "PROCESSING")
+                && unit.getAutoRefundId() == null;
+        if (unit == null || unit.getFlowTime() == null || !Objects.equals(unit.getDispatchStatus(), "FLOWED")
+                || (!Objects.equals(unit.getAutoRefundStatus(), "FAILED") && !recoverableProcessing)) {
+            throw exception(ORDER_REFUND_STATUS_NOT_ALLOWED);
         }
+        autoFlowRefundService.createAutoRefund(unit.getOrderId(), unit.getId(), unit.getFlowTime());
         return success(Boolean.TRUE);
     }
 

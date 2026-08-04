@@ -90,11 +90,14 @@ public class OrderFlowOrchestratorServiceImpl implements OrderFlowOrchestratorSe
     @Transactional(rollbackFor = Exception.class)
     public void repairAbnormalOrders() {
         List<OrderInfoDO> orders = orderInfoMapper.selectList(new LambdaQueryWrapperX<OrderInfoDO>()
-                .notIn(OrderInfoDO::getStatus, Arrays.asList("PENDING_PAY", "CLOSED", "FINISHED")));
+                .notIn(OrderInfoDO::getStatus, Arrays.asList("PENDING_PAY", "CLOSED", "FINISHED"))
+                .orderByAsc(OrderInfoDO::getId)
+                .last("LIMIT 200"));
         for (OrderInfoDO order : orders) {
             refreshOrder(order.getId());
-            repairRefundConsistency(order.getId());
-            refreshOrder(order.getId());
+            if (repairRefundConsistency(order.getId())) {
+                refreshOrder(order.getId());
+            }
         }
     }
 
@@ -115,12 +118,13 @@ public class OrderFlowOrchestratorServiceImpl implements OrderFlowOrchestratorSe
         }
     }
 
-    private void repairRefundConsistency(Long orderId) {
+    private boolean repairRefundConsistency(Long orderId) {
         OrderInfoDO order = orderInfoMapper.selectById(orderId);
         if (order == null) {
-            return;
+            return false;
         }
         List<OrderUnitDO> units = listUnits(orderId);
+        boolean repaired = false;
         for (OrderUnitDO unit : units) {
             if (!isRefundCompletedUnit(unit)) {
                 continue;
@@ -130,12 +134,15 @@ public class OrderFlowOrchestratorServiceImpl implements OrderFlowOrchestratorSe
                         .id(unit.getId())
                         .status("REFUNDED")
                         .build());
+                repaired = true;
             }
             if (!needsRefundFinanceRepair(order, unit)) {
                 continue;
             }
             linbangFinanceService.handleRefundSuccess(order, unit, defaultAmount(unit.getUnitAmount()), unit.getAutoRefundId());
+            repaired = true;
         }
+        return repaired;
     }
 
     private void repairSplitUnitAssignmentConsistency(OrderInfoDO order, List<OrderUnitDO> units) {

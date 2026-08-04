@@ -12,6 +12,7 @@ import { createRouteLocation, resolveDynamicPath } from '@/utils/routeParams'
 import { isHeaderNavLayout, isHorizontalMenuLayout, isTwoColumnLayout } from '@/utils/layout'
 import { cloneDeep } from 'lodash-es'
 import { pathResolve } from '@/utils/routerHelper'
+import { openSafeUrl } from '@/utils/url'
 import {
   findRouteByPath,
   getRootMenuActivePath,
@@ -380,14 +381,14 @@ export default defineComponent({
       }
       // 自定义事件
       if (isUrl(index)) {
-        window.open(index)
+        openSafeUrl(index)
       } else {
         const routeInfo = props.rootOnly
           ? getRootMenuRoute(permissionStore.getRouters, index)
           : findRouteByPath(permissionStore.getRouters, index)
         const link = routeInfo?.route.meta?.link
         if (typeof link === 'string') {
-          window.open(link)
+          openSafeUrl(link)
           return
         }
         const targetPath =

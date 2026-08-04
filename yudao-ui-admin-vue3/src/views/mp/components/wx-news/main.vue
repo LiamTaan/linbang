@@ -9,7 +9,12 @@
   <div class="news-home">
     <div v-for="(article, index) in articles" :key="index" class="news-div">
       <!-- 头条 -->
-      <a v-if="index === 0" :href="article.url" target="_blank">
+      <a
+        v-if="index === 0"
+        :href="toOpenableUrl(article.url)"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         <div class="news-main">
           <div class="news-content">
             <el-image
@@ -24,7 +29,7 @@
         </div>
       </a>
       <!-- 二条/三条等等 -->
-      <a v-else :href="article.url" target="_blank">
+      <a v-else :href="toOpenableUrl(article.url)" target="_blank" rel="noopener noreferrer">
         <div class="news-main-item">
           <div class="news-content-item">
             <div class="news-content-item-title">{{ article.title }}</div>
@@ -39,6 +44,8 @@
 </template>
 
 <script lang="ts" setup>
+import { toOpenableUrl } from '@/utils/url'
+
 defineOptions({ name: 'WxNews' })
 
 const props = withDefaults(

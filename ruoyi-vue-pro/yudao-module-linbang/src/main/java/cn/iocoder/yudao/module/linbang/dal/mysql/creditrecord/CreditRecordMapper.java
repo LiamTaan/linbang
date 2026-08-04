@@ -12,6 +12,15 @@ import java.util.List;
 @Mapper
 public interface CreditRecordMapper extends BaseMapperX<CreditRecordDO> {
 
+    default CreditRecordDO selectByBizKeyForUpdate(Long userId, String ruleCode, String bizType, Long bizId) {
+        return selectOne(new LambdaQueryWrapperX<CreditRecordDO>()
+                .eq(CreditRecordDO::getUserId, userId)
+                .eq(CreditRecordDO::getRuleCode, ruleCode)
+                .eq(CreditRecordDO::getBizType, bizType)
+                .eq(CreditRecordDO::getBizId, bizId)
+                .last("LIMIT 1 FOR UPDATE"));
+    }
+
     default PageResult<CreditRecordDO> selectPage(CreditRecordPageReqVO reqVO, List<Long> matchedUserIds) {
         return selectPage(reqVO, new LambdaQueryWrapperX<CreditRecordDO>()
                 .inIfPresent(CreditRecordDO::getUserId, matchedUserIds)

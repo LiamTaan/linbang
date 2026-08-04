@@ -73,13 +73,19 @@ export const DivideRuleApi = {
   },
 
   // 删除分账规则
-  deleteDivideRule: async (id: number) => {
-    return await request.delete({ url: `/wallet/divide-rule/delete?id=` + id })
+  deleteDivideRule: async (id: number, verifyToken?: string) => {
+    return await request.delete({
+      url: `/wallet/divide-rule/delete?id=` + id,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   },
 
   /** 批量删除分账规则 */
-  deleteDivideRuleList: async (ids: number[]) => {
-    return await request.delete({ url: `/wallet/divide-rule/delete-list?ids=${ids.join(',')}` })
+  deleteDivideRuleList: async (ids: number[], verifyToken?: string) => {
+    return await request.delete({
+      url: `/wallet/divide-rule/delete-list?ids=${ids.join(',')}`,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   },
 
   // 导出分账规则 Excel

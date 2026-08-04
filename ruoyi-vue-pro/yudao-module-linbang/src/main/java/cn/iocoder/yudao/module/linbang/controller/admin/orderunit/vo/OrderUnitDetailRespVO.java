@@ -100,6 +100,7 @@ public class OrderUnitDetailRespVO {
     private List<OrderTimelineRespVO> timeline;
 
     @Data
+    @Schema(description = "管理后台 - 订单单元取证摘要 Response VO")
     public static class OrderUnitProofRespVO {
         @Schema(description = "凭证 ID", example = "1")
         private Long id;
@@ -134,6 +135,7 @@ public class OrderUnitDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 抢单记录摘要 Response VO")
     public static class OrderAcceptRecordRespVO {
         @Schema(description = "接单记录 ID", example = "1")
         private Long id;
@@ -210,6 +212,7 @@ public class OrderUnitDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 订单操作日志摘要 Response VO")
     public static class OrderOperateLogRespVO {
         @Schema(description = "日志 ID", example = "1")
         private Long id;

@@ -1,4 +1,5 @@
 import request from '@/config/axios'
+import { buildDynamicKeyHeaders } from '@/api/linbang/security'
 
 export interface MatchStrategy {
   id?: number
@@ -18,7 +19,11 @@ export const MatchStrategyApi = {
   getMatchStrategy: async () => {
     return await request.get<MatchStrategy>({ url: '/linbang/match/strategy/get' })
   },
-  updateMatchStrategy: async (data: MatchStrategy) => {
-    return await request.put({ url: '/linbang/match/strategy/update', data })
+  updateMatchStrategy: async (data: MatchStrategy, verifyToken?: string) => {
+    return await request.put({
+      url: '/linbang/match/strategy/update',
+      data,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   }
 }

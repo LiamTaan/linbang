@@ -41,6 +41,7 @@
 <script lang="ts" setup>
 import WxVideoPlayer from '@/views/mp/components/wx-video-play'
 import { dateFormatter } from '@/utils/formatTime'
+import { openSafeUrl } from '@/utils/url'
 
 const props = defineProps<{
   list: any[]
@@ -54,6 +55,6 @@ const emit = defineEmits<{
 
 // 下载文件
 const handleDownload = (url: string) => {
-  window.open(url, '_blank')
+  openSafeUrl(url)
 }
 </script>

@@ -17,6 +17,7 @@ import cn.iocoder.yudao.module.linbang.controller.app.partner.vo.AppPartnerPrice
 import cn.iocoder.yudao.module.linbang.controller.app.partner.vo.AppPartnerPromoteStatRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.partner.vo.AppPartnerRegionRespVO;
 import cn.iocoder.yudao.module.linbang.controller.app.partner.vo.AppPartnerWorkbenchRespVO;
+import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import cn.iocoder.yudao.module.linbang.service.app.partner.AppPartnerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import javax.validation.Valid;
+import javax.validation.constraints.Pattern;
 
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
 import static cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
@@ -86,7 +88,10 @@ public class AppPartnerController {
     @GetMapping("/dispute/{disputeType}/{disputeId}")
     @Operation(summary = "获取合作商辖区纠纷详情", description = "区域合作商当前角色专属接口，仅允许查看当前合作商辖区内的纠纷详情。")
     public CommonResult<AppPartnerDisputeRespVO> getDispute(
-            @Parameter(name = "disputeType", required = true, example = "COMPLAINT") @PathVariable("disputeType") String disputeType,
+            @Parameter(name = "disputeType", description = OpenApiSchemaConstants.PARTNER_DISPUTE_TYPE,
+                    required = true, example = "COMPLAINT")
+            @Pattern(regexp = "(?i)^(COMPLAINT|APPEAL)$", message = "纠纷类型仅支持 COMPLAINT 或 APPEAL")
+            @PathVariable("disputeType") String disputeType,
             @Parameter(name = "disputeId", required = true, example = "1") @PathVariable("disputeId") Long disputeId) {
         return success(appPartnerService.getDispute(getLoginUserId(), disputeType, disputeId));
     }

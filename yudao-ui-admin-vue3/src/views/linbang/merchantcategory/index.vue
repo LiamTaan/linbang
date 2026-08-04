@@ -106,12 +106,7 @@
         />
       </el-form-item>
       <el-form-item label="状态" prop="status">
-        <el-select
-          v-model="queryParams.status"
-          placeholder="请选择状态"
-          clearable
-          class="!w-240px"
-        >
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable class="!w-240px">
           <el-option
             v-for="item in ENABLE_STATUS_OPTIONS"
             :key="item.value"
@@ -390,7 +385,10 @@ const handleExport = async () => {
   }
 }
 
-const handleStatusChanged = async (row: MerchantServiceCategory, value: string | number | boolean) => {
+const handleStatusChanged = async (
+  row: MerchantServiceCategory,
+  value: string | number | boolean
+) => {
   const id = row.id
   if (!id) {
     return

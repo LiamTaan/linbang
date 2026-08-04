@@ -26,6 +26,8 @@ import cn.iocoder.yudao.module.linbang.service.messagecampaign.MessageCampaignSe
 import cn.iocoder.yudao.module.linbang.service.messagefeedback.MessageFeedbackStatService;
 import cn.iocoder.yudao.module.linbang.service.sensitiveword.SensitiveContentDetectService;
 import cn.iocoder.yudao.module.linbang.service.sensitiveword.SensitiveDetectResult;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -130,7 +132,9 @@ public class AppMessageServiceImpl implements AppMessageService {
                 .eq(MessageRecordDO::getReceiverUserId, userId)
                 .eq(MessageRecordDO::getSendStatus, "SUCCESS")
                 .eqIfPresent(MessageRecordDO::getMessageCategory, messageCategory)
-                .eq(MessageRecordDO::getReadStatus, MessageCenterConstants.READ_STATUS_UNREAD))) {
+                .eq(MessageRecordDO::getReadStatus, MessageCenterConstants.READ_STATUS_UNREAD)
+                .orderByAsc(MessageRecordDO::getId)
+                .last("LIMIT 500"))) {
             markRead(userId, record.getId());
         }
     }
@@ -141,71 +145,85 @@ public class AppMessageServiceImpl implements AppMessageService {
         if (record.getExposedTime() != null) {
             return;
         }
-        messageRecordMapper.updateById(MessageRecordDO.builder()
-                .id(record.getId())
-                .exposedTime(LocalDateTime.now())
-                .build());
-        messageFeedbackStatService.refreshByRecord(getOwnedRecord(userId, record.getId()));
+        LocalDateTime exposedTime = LocalDateTime.now();
+        int updated = messageRecordMapper.update(null, new LambdaUpdateWrapper<MessageRecordDO>()
+                .eq(MessageRecordDO::getId, record.getId())
+                .isNull(MessageRecordDO::getExposedTime)
+                .set(MessageRecordDO::getExposedTime, exposedTime));
+        if (updated > 0) {
+            record.setExposedTime(exposedTime);
+            messageFeedbackStatService.refreshByRecord(record);
+        }
     }
 
     @Override
     public void submitClickFeedback(Long userId, AppMessageFeedbackReqVO reqVO) {
         MessageRecordDO record = getOwnedRecord(userId, reqVO.getRecordId());
-        messageRecordMapper.updateById(MessageRecordDO.builder()
-                .id(record.getId())
-                .clickTime(LocalDateTime.now())
-                .build());
-        messageFeedbackStatService.refreshByRecord(getOwnedRecord(userId, record.getId()));
+        if (record.getClickTime() != null) {
+            return;
+        }
+        LocalDateTime clickTime = LocalDateTime.now();
+        int updated = messageRecordMapper.update(null, new LambdaUpdateWrapper<MessageRecordDO>()
+                .eq(MessageRecordDO::getId, record.getId())
+                .isNull(MessageRecordDO::getClickTime)
+                .set(MessageRecordDO::getClickTime, clickTime));
+        if (updated > 0) {
+            record.setClickTime(clickTime);
+            messageFeedbackStatService.refreshByRecord(record);
+        }
     }
 
     @Override
     public void submitVoicePlayedFeedback(Long userId, AppMessageFeedbackReqVO reqVO) {
         MessageRecordDO record = getOwnedRecord(userId, reqVO.getRecordId());
-        messageRecordMapper.updateById(MessageRecordDO.builder()
-                .id(record.getId())
-                .voicePlayedTime(LocalDateTime.now())
-                .build());
-        messageFeedbackStatService.refreshByRecord(getOwnedRecord(userId, record.getId()));
+        if (record.getVoicePlayedTime() != null) {
+            return;
+        }
+        LocalDateTime voicePlayedTime = LocalDateTime.now();
+        int updated = messageRecordMapper.update(null, new LambdaUpdateWrapper<MessageRecordDO>()
+                .eq(MessageRecordDO::getId, record.getId())
+                .isNull(MessageRecordDO::getVoicePlayedTime)
+                .set(MessageRecordDO::getVoicePlayedTime, voicePlayedTime));
+        if (updated > 0) {
+            record.setVoicePlayedTime(voicePlayedTime);
+            messageFeedbackStatService.refreshByRecord(record);
+        }
     }
 
     @Override
-    public void recordExternalClick(Long recordId) {
-        if (recordId == null) {
-            return;
+    public String recordExternalClickAndResolveTarget(Long recordId, String clickToken) {
+        if (recordId == null || StrUtil.isBlank(clickToken)) {
+            return "/";
         }
-        MessageRecordDO record = messageRecordMapper.selectById(recordId);
+        MessageRecordDO record = messageRecordMapper.selectOne(new LambdaQueryWrapperX<MessageRecordDO>()
+                .eq(MessageRecordDO::getId, recordId)
+                .eq(MessageRecordDO::getExternalClickToken, clickToken));
         if (record == null) {
-            return;
+            return "/";
         }
         if (record.getClickTime() == null) {
-            messageRecordMapper.updateById(MessageRecordDO.builder()
-                    .id(record.getId())
-                    .clickTime(LocalDateTime.now())
-                    .build());
-            record = messageRecordMapper.selectById(recordId);
+            LocalDateTime clickTime = LocalDateTime.now();
+            int updated = messageRecordMapper.update(null, new LambdaUpdateWrapper<MessageRecordDO>()
+                    .eq(MessageRecordDO::getId, record.getId())
+                    .isNull(MessageRecordDO::getClickTime)
+                    .set(MessageRecordDO::getClickTime, clickTime));
+            if (updated > 0) {
+                record.setClickTime(clickTime);
+                messageFeedbackStatService.refreshByRecord(record);
+            }
         }
-        messageFeedbackStatService.refreshByRecord(record);
-    }
-
-    @Override
-    public String resolveRedirectTarget(Long recordId, String targetUrl) {
-        MessageRecordDO record = recordId == null ? null : messageRecordMapper.selectById(recordId);
-        String candidate = targetUrl;
-        if (record != null && candidate == null) {
-            candidate = record.getRouteValue();
-        }
+        String candidate = record.getRouteValue();
         if (candidate == null) {
             return "/";
         }
         candidate = candidate.trim();
-        if (candidate.startsWith("http://") || candidate.startsWith("https://")) {
-            return candidate;
+        if (candidate.isEmpty() || candidate.indexOf('\r') >= 0 || candidate.indexOf('\n') >= 0
+                || candidate.indexOf('\\') >= 0 || candidate.startsWith("//")
+                || candidate.matches("(?i)^[a-z][a-z0-9+.-]*:.*")) {
+            return "/";
         }
         if (candidate.startsWith("/")) {
             return candidate;
-        }
-        if (Objects.equals(candidate, "")) {
-            return "/";
         }
         return "/" + candidate;
     }
@@ -261,7 +279,7 @@ public class AppMessageServiceImpl implements AppMessageService {
     }
 
     private AppMessageSettingDO getOrCreateSetting(Long userId) {
-        AppMessageSettingDO setting = appMessageSettingMapper.selectOne(AppMessageSettingDO::getUserId, userId);
+        AppMessageSettingDO setting = appMessageSettingMapper.selectByUserId(userId);
         if (setting != null) {
             return setting;
         }
@@ -271,7 +289,15 @@ public class AppMessageServiceImpl implements AppMessageService {
                 .popupEnabled(Boolean.TRUE)
                 .marketingEnabled(Boolean.TRUE)
                 .build();
-        appMessageSettingMapper.insert(setting);
-        return setting;
+        try {
+            appMessageSettingMapper.insert(setting);
+            return setting;
+        } catch (DuplicateKeyException ex) {
+            AppMessageSettingDO concurrent = appMessageSettingMapper.selectByUserIdForUpdate(userId);
+            if (concurrent == null) {
+                throw ex;
+            }
+            return concurrent;
+        }
     }
 }

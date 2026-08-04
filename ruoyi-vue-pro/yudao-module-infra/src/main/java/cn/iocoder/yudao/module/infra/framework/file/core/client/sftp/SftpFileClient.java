@@ -6,11 +6,12 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.ftp.FtpConfig;
 import cn.hutool.extra.ssh.JschRuntimeException;
 import cn.hutool.extra.ssh.Sftp;
-import cn.iocoder.yudao.framework.common.util.io.FileUtils;
 import cn.iocoder.yudao.module.infra.framework.file.core.client.AbstractFileClient;
-import com.jcraft.jsch.JSch;
+import com.google.common.io.ByteStreams;
 
-import java.io.File;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 
 /**
  * Sftp 文件客户端
@@ -27,11 +28,6 @@ public class SftpFileClient extends AbstractFileClient<SftpFileClientConfig> {
      * 读写超时时间，单位：毫秒
      */
     private static final Long SO_TIMEOUT = 10000L;
-
-    static {
-        // 某些旧的 sftp 服务器仅支持 ssh-dss 协议，该协议并不安全，默认不支持该协议，按需添加
-        JSch.setConfig("server_host_key", JSch.getConfig("server_host_key") + ",ssh-dss");
-    }
 
     private Sftp sftp;
 
@@ -55,12 +51,15 @@ public class SftpFileClient extends AbstractFileClient<SftpFileClientConfig> {
         String filePath = getFilePath(path);
         String fileName = FileUtil.getName(filePath);
         String dir = StrUtil.removeSuffix(filePath, fileName);
-        File file = FileUtils.createTempFile(content);
         reconnectIfTimeout();
         sftp.mkDirs(dir); // 需要创建父目录，不然会报错
-        boolean success = sftp.upload(filePath, file);
-        if (!success) {
-            throw new JschRuntimeException(StrUtil.format("上传文件到目标目录 ({}) 失败", filePath));
+        try (InputStream input = new ByteArrayInputStream(content)) {
+            boolean success = sftp.upload(dir, fileName, input);
+            if (!success) {
+                throw new JschRuntimeException(StrUtil.format("上传文件到目标目录 ({}) 失败", filePath));
+            }
+        } catch (Exception ex) {
+            throw new JschRuntimeException(ex);
         }
         // 拼接返回路径
         return super.formatFileUrl(config.getDomain(), path);
@@ -76,14 +75,33 @@ public class SftpFileClient extends AbstractFileClient<SftpFileClientConfig> {
     @Override
     public byte[] getContent(String path) {
         String filePath = getFilePath(path);
-        File destFile = FileUtils.createTempFile();
         reconnectIfTimeout();
-        sftp.download(filePath, destFile);
-        return FileUtil.readBytes(destFile);
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            sftp.download(filePath, output);
+            return output.toByteArray();
+        } catch (Exception ex) {
+            throw new JschRuntimeException(ex);
+        }
+    }
+
+    @Override
+    public byte[] getContent(String path, long maxBytes) throws Exception {
+        if (maxBytes < 0 || maxBytes >= Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("maxBytes must be between 0 and Integer.MAX_VALUE - 1");
+        }
+        String filePath = getFilePath(path);
+        try {
+            reconnectIfTimeout();
+            try (InputStream input = sftp.getClient().get(filePath)) {
+                return ByteStreams.toByteArray(ByteStreams.limit(input, maxBytes + 1));
+            }
+        } catch (JschRuntimeException ex) {
+            throw ex;
+        }
     }
 
     private String getFilePath(String path) {
-        return config.getBasePath() + File.separator + path;
+        return config.getBasePath() + "/" + path;
     }
 
     private synchronized void reconnectIfTimeout() {

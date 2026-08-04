@@ -14,7 +14,7 @@ import javax.servlet.http.*;
 import java.util.*;
 import java.io.IOException;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -35,39 +35,6 @@ public class WalletWithdrawController {
 
     @Resource
     private WalletWithdrawService walletWithdrawService;
-
-    @PostMapping("/create")
-    @Operation(summary = "创建提现申请")
-    @PreAuthorize("@ss.hasPermission('linbang:wallet:withdraw:create')")
-    public CommonResult<Long> createWalletWithdraw(@Valid @RequestBody WalletWithdrawSaveReqVO createReqVO) {
-        return success(walletWithdrawService.createWalletWithdraw(createReqVO));
-    }
-
-    @PutMapping("/update")
-    @Operation(summary = "更新提现申请")
-    @PreAuthorize("@ss.hasPermission('linbang:wallet:withdraw:update')")
-    public CommonResult<Boolean> updateWalletWithdraw(@Valid @RequestBody WalletWithdrawSaveReqVO updateReqVO) {
-        walletWithdrawService.updateWalletWithdraw(updateReqVO);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete")
-    @Operation(summary = "删除提现申请")
-    @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('linbang:wallet:withdraw:delete')")
-    public CommonResult<Boolean> deleteWalletWithdraw(@RequestParam("id") Long id) {
-        walletWithdrawService.deleteWalletWithdraw(id);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete-list")
-    @Parameter(name = "ids", description = "编号", required = true)
-    @Operation(summary = "批量删除提现申请")
-                @PreAuthorize("@ss.hasPermission('linbang:wallet:withdraw:delete')")
-    public CommonResult<Boolean> deleteWalletWithdrawList(@RequestParam("ids") List<Long> ids) {
-        walletWithdrawService.deleteWalletWithdrawListByIds(ids);
-        return success(true);
-    }
 
     @GetMapping("/get")
     @Operation(summary = "获得提现申请")
@@ -105,7 +72,7 @@ public class WalletWithdrawController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportWalletWithdrawExcel(@Valid WalletWithdrawPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<WalletWithdrawRespVO> list = walletWithdrawService.getWalletWithdrawPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "提现申请.xls", "数据", WalletWithdrawRespVO.class, list);

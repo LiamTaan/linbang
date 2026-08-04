@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.linbang.service.messagefeedback;
 
+import cn.hutool.crypto.digest.DigestUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
@@ -15,13 +16,14 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.messagefeedbackstat.MessageFeed
 import cn.iocoder.yudao.module.linbang.dal.mysql.messagerecord.MessageRecordMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.messagepushtask.MessagePushTaskMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.List;
+import java.util.function.Consumer;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MESSAGE_FEEDBACK_STAT_NOT_EXISTS;
@@ -73,13 +75,11 @@ public class MessageFeedbackStatServiceImpl implements MessageFeedbackStatServic
         if (pushTaskId == null) {
             return;
         }
-        List<MessageRecordDO> records = messageRecordMapper.selectList(new LambdaQueryWrapperX<MessageRecordDO>()
-                .eq(MessageRecordDO::getPushTaskId, pushTaskId));
         MessagePushTaskDO task = messagePushTaskMapper.selectById(pushTaskId);
         if (task == null) {
             return;
         }
-        Metrics metrics = calculateMetrics(records);
+        Metrics metrics = calculateMetrics(query -> query.eq(MessageRecordDO::getPushTaskId, pushTaskId));
         messagePushTaskMapper.updateById(MessagePushTaskDO.builder()
                 .id(pushTaskId)
                 .plannedAudienceCount(metrics.plannedAudienceCount)
@@ -99,13 +99,11 @@ public class MessageFeedbackStatServiceImpl implements MessageFeedbackStatServic
         if (campaignId == null) {
             return;
         }
-        List<MessageRecordDO> records = messageRecordMapper.selectList(new LambdaQueryWrapperX<MessageRecordDO>()
-                .eq(MessageRecordDO::getCampaignId, campaignId));
         MessageCampaignDO campaign = messageCampaignMapper.selectById(campaignId);
         if (campaign == null) {
             return;
         }
-        Metrics metrics = calculateMetrics(records);
+        Metrics metrics = calculateMetrics(query -> query.eq(MessageRecordDO::getCampaignId, campaignId));
         messageCampaignMapper.updateById(MessageCampaignDO.builder()
                 .id(campaignId)
                 .plannedAudienceCount(metrics.plannedAudienceCount)
@@ -119,27 +117,19 @@ public class MessageFeedbackStatServiceImpl implements MessageFeedbackStatServic
 
     private void refreshDailyStat(MessageRecordDO record) {
         LocalDate statDate = resolveStatDate(record);
-        MessageFeedbackStatDO stat = messageFeedbackStatMapper.selectOne(new LambdaQueryWrapperX<MessageFeedbackStatDO>()
-                .eq(MessageFeedbackStatDO::getStatDate, statDate)
-                .eq(MessageFeedbackStatDO::getSceneCode, record.getSceneCode())
-                .eq(MessageFeedbackStatDO::getMessageCategory, record.getMessageCategory())
-                .eqIfPresent(MessageFeedbackStatDO::getTemplateId, record.getTemplateId())
-                .eqIfPresent(MessageFeedbackStatDO::getCampaignId, record.getCampaignId())
-                .eqIfPresent(MessageFeedbackStatDO::getPushTaskId, record.getPushTaskId())
-                .eq(MessageFeedbackStatDO::getChannelType, record.getChannelType())
-                .last("LIMIT 1"));
-        List<MessageRecordDO> records = messageRecordMapper.selectList(new LambdaQueryWrapperX<MessageRecordDO>()
-                .eq(MessageRecordDO::getSceneCode, record.getSceneCode())
-                .eq(MessageRecordDO::getMessageCategory, record.getMessageCategory())
-                .eqIfPresent(MessageRecordDO::getTemplateId, record.getTemplateId())
-                .eqIfPresent(MessageRecordDO::getCampaignId, record.getCampaignId())
-                .eqIfPresent(MessageRecordDO::getPushTaskId, record.getPushTaskId())
-                .eq(MessageRecordDO::getChannelType, record.getChannelType())
-                .between(MessageRecordDO::getCreateTime, statDate.atStartOfDay(), statDate.plusDays(1).atStartOfDay()));
-        Metrics metrics = calculateMetrics(records);
+        String statKey = buildStatKey(statDate, record);
+        MessageFeedbackStatDO stat = messageFeedbackStatMapper.selectByStatKey(statKey);
+        Metrics metrics = calculateMetrics(query -> {
+            query.eq(MessageRecordDO::getSceneCode, record.getSceneCode())
+                    .eq(MessageRecordDO::getMessageCategory, record.getMessageCategory())
+                    .eq(MessageRecordDO::getChannelType, record.getChannelType())
+                    .between(MessageRecordDO::getCreateTime, statDate.atStartOfDay(), statDate.plusDays(1).atStartOfDay());
+            applyRecordDimension(query, record);
+        });
         MessageFeedbackStatDO saveDO = MessageFeedbackStatDO.builder()
                 .id(stat == null ? null : stat.getId())
                 .statDate(statDate)
+                .statKey(statKey)
                 .sceneCode(record.getSceneCode())
                 .messageCategory(record.getMessageCategory())
                 .templateId(record.getTemplateId())
@@ -156,10 +146,53 @@ public class MessageFeedbackStatServiceImpl implements MessageFeedbackStatServic
                 .readRate(calculateRate(metrics.readCount, metrics.reachedCount))
                 .build();
         if (stat == null) {
-            messageFeedbackStatMapper.insert(saveDO);
+            try {
+                messageFeedbackStatMapper.insert(saveDO);
+            } catch (DuplicateKeyException ex) {
+                MessageFeedbackStatDO concurrent = messageFeedbackStatMapper.selectByStatKeyForUpdate(statKey);
+                if (concurrent == null) {
+                    throw ex;
+                }
+                saveDO.setId(concurrent.getId());
+                messageFeedbackStatMapper.updateById(saveDO);
+            }
         } else {
             messageFeedbackStatMapper.updateById(saveDO);
         }
+    }
+
+    private void applyRecordDimension(LambdaQueryWrapperX<MessageRecordDO> query, MessageRecordDO record) {
+        if (record.getTemplateId() == null) {
+            query.isNull(MessageRecordDO::getTemplateId);
+        } else {
+            query.eq(MessageRecordDO::getTemplateId, record.getTemplateId());
+        }
+        if (record.getCampaignId() == null) {
+            query.isNull(MessageRecordDO::getCampaignId);
+        } else {
+            query.eq(MessageRecordDO::getCampaignId, record.getCampaignId());
+        }
+        if (record.getPushTaskId() == null) {
+            query.isNull(MessageRecordDO::getPushTaskId);
+        } else {
+            query.eq(MessageRecordDO::getPushTaskId, record.getPushTaskId());
+        }
+    }
+
+    private String buildStatKey(LocalDate statDate, MessageRecordDO record) {
+        String rawKey = String.join("|",
+                statDate.toString(),
+                valueOrEmpty(record.getSceneCode()),
+                valueOrEmpty(record.getMessageCategory()),
+                valueOrEmpty(record.getTemplateId()),
+                valueOrEmpty(record.getCampaignId()),
+                valueOrEmpty(record.getPushTaskId()),
+                valueOrEmpty(record.getChannelType()));
+        return DigestUtil.sha256Hex(rawKey);
+    }
+
+    private String valueOrEmpty(Object value) {
+        return value == null ? "" : String.valueOf(value);
     }
 
     private LocalDate resolveStatDate(MessageRecordDO record) {
@@ -172,39 +205,31 @@ public class MessageFeedbackStatServiceImpl implements MessageFeedbackStatServic
         return LocalDate.now();
     }
 
-    private Metrics calculateMetrics(List<MessageRecordDO> records) {
+    private Metrics calculateMetrics(Consumer<LambdaQueryWrapperX<MessageRecordDO>> filter) {
         Metrics metrics = new Metrics();
-        metrics.plannedAudienceCount = records.size();
-        for (MessageRecordDO record : records) {
-            if ("SUCCESS".equalsIgnoreCase(record.getSendStatus())) {
-                metrics.successCount++;
-            } else if ("FAILED".equalsIgnoreCase(record.getSendStatus())) {
-                metrics.failCount++;
-            }
-            if (isReached(record)) {
-                metrics.reachedCount++;
-            }
-            if (record.getClickTime() != null) {
-                metrics.clickedCount++;
-            }
-            if (MessageCenterConstants.READ_STATUS_READ.equals(record.getReadStatus()) || record.getReadTime() != null) {
-                metrics.readCount++;
-            }
-            if (record.getVoicePlayedTime() != null) {
-                metrics.voicePlayedCount++;
-            }
-        }
+        metrics.plannedAudienceCount = count(filter, query -> { });
+        metrics.successCount = count(filter, query -> query.eq(MessageRecordDO::getSendStatus, "SUCCESS"));
+        metrics.failCount = count(filter, query -> query.eq(MessageRecordDO::getSendStatus, "FAILED"));
+        metrics.reachedCount = count(filter, query -> query.and(wrapper -> wrapper
+                .and(app -> app.eq(MessageRecordDO::getChannelType, MessageCenterConstants.CHANNEL_APP_POPUP)
+                        .isNotNull(MessageRecordDO::getExposedTime))
+                .or(other -> other.ne(MessageRecordDO::getChannelType, MessageCenterConstants.CHANNEL_APP_POPUP)
+                        .eq(MessageRecordDO::getSendStatus, "SUCCESS"))));
+        metrics.clickedCount = count(filter, query -> query.isNotNull(MessageRecordDO::getClickTime));
+        metrics.readCount = count(filter, query -> query.and(wrapper -> wrapper
+                .eq(MessageRecordDO::getReadStatus, MessageCenterConstants.READ_STATUS_READ)
+                .or()
+                .isNotNull(MessageRecordDO::getReadTime)));
+        metrics.voicePlayedCount = count(filter, query -> query.isNotNull(MessageRecordDO::getVoicePlayedTime));
         return metrics;
     }
 
-    private boolean isReached(MessageRecordDO record) {
-        if (MessageCenterConstants.CHANNEL_APP_POPUP.equals(record.getChannelType())) {
-            return record.getExposedTime() != null;
-        }
-        if (MessageCenterConstants.CHANNEL_APP_VOICE.equals(record.getChannelType())) {
-            return "SUCCESS".equalsIgnoreCase(record.getSendStatus());
-        }
-        return "SUCCESS".equalsIgnoreCase(record.getSendStatus());
+    private int count(Consumer<LambdaQueryWrapperX<MessageRecordDO>> filter,
+                      Consumer<LambdaQueryWrapperX<MessageRecordDO>> metricCondition) {
+        LambdaQueryWrapperX<MessageRecordDO> query = new LambdaQueryWrapperX<>();
+        filter.accept(query);
+        metricCondition.accept(query);
+        return (int) Math.min(messageRecordMapper.selectCount(query), Integer.MAX_VALUE);
     }
 
     private String resolveTaskStatus(Metrics metrics) {

@@ -53,8 +53,9 @@
         <el-form-item label="固件文件">
           <el-link
             type="primary"
-            :href="formData.fileUrl"
+            :href="toOpenableUrl(formData.fileUrl)"
             target="_blank"
+            rel="noopener noreferrer"
             download
             v-if="formData.fileUrl"
           >
@@ -75,6 +76,7 @@
 import { IoTOtaFirmwareApi, IoTOtaFirmware } from '@/api/iot/ota/firmware'
 import { ProductApi, ProductVO } from '@/api/iot/product/product'
 import { UploadFile } from '@/components/UploadFile'
+import { toOpenableUrl } from '@/utils/url'
 
 /** IoT OTA 固件表单 */
 defineOptions({ name: 'IoTOtaFirmwareForm' })

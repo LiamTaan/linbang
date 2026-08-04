@@ -4,6 +4,7 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.iocoder.yudao.framework.common.util.number.MoneyUtils;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppBankCardCreateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.wallet.vo.AppBankCardDefaultReqVO;
@@ -32,6 +33,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.merchantentry.MerchantEntryMapp
 import cn.iocoder.yudao.module.linbang.dal.mysql.promoter.PromoterMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberrealname.MemberUserRealNameMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.walletaccount.WalletAccountMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.walletbankcard.WalletBankCardMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.walletflow.WalletFlowMapper;
@@ -43,6 +45,7 @@ import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
@@ -66,6 +69,8 @@ public class AppWalletServiceImpl implements AppWalletService {
 
     @Resource
     private MemberUserService memberUserService;
+    @Resource
+    private MemberUserMapper memberUserMapper;
     @Resource
     private MerchantInfoMapper merchantInfoMapper;
     @Resource
@@ -159,10 +164,16 @@ public class AppWalletServiceImpl implements AppWalletService {
     public Long createWithdraw(Long authUserId, @Valid AppWalletWithdrawCreateReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
         WalletAccountDO walletAccount = getOrCreateWalletAccount(authUserId, loginUser);
+        walletAccount = walletAccountMapper.selectOneForUpdate(WalletAccountDO::getId, walletAccount.getId());
+        if (walletAccount == null || !"ENABLE".equals(walletAccount.getStatus())) {
+            throw exception(WALLET_AVAILABLE_AMOUNT_NOT_ENOUGH);
+        }
         if (!isRealNameVerified(loginUser.getId())) {
             throw exception(ORDER_REAL_NAME_REQUIRED);
         }
-        if (reqVO.getApplyAmount() == null || reqVO.getApplyAmount().compareTo(MIN_WITHDRAW_AMOUNT) < 0) {
+        if (reqVO.getApplyAmount() == null || reqVO.getApplyAmount().compareTo(MIN_WITHDRAW_AMOUNT) < 0
+                || reqVO.getApplyAmount().compareTo(MoneyUtils.MAX_YUAN_AMOUNT) > 0
+                || reqVO.getApplyAmount().stripTrailingZeros().scale() > 2) {
             throw exception(WALLET_WITHDRAW_AMOUNT_INVALID);
         }
         if (walletAccount.getAvailableAmount().compareTo(reqVO.getApplyAmount()) < 0) {
@@ -194,11 +205,15 @@ public class AppWalletServiceImpl implements AppWalletService {
         BigDecimal beforeFrozen = walletAccount.getFrozenAmount();
         BigDecimal afterAvailable = beforeAvailable.subtract(reqVO.getApplyAmount());
         BigDecimal afterFrozen = beforeFrozen.add(reqVO.getApplyAmount());
-        walletAccountMapper.updateById(WalletAccountDO.builder()
-                .id(walletAccount.getId())
-                .availableAmount(afterAvailable)
-                .frozenAmount(afterFrozen)
-                .build());
+        int updated = walletAccountMapper.update(null, new LambdaUpdateWrapper<WalletAccountDO>()
+                .eq(WalletAccountDO::getId, walletAccount.getId())
+                .eq(WalletAccountDO::getStatus, "ENABLE")
+                .ge(WalletAccountDO::getAvailableAmount, reqVO.getApplyAmount())
+                .set(WalletAccountDO::getAvailableAmount, afterAvailable)
+                .set(WalletAccountDO::getFrozenAmount, afterFrozen));
+        if (updated == 0) {
+            throw exception(WALLET_AVAILABLE_AMOUNT_NOT_ENOUGH);
+        }
 
         walletFlowMapper.insert(WalletFlowDO.builder()
                 .flowNo("LBF" + IdUtil.getSnowflakeNextIdStr())
@@ -209,6 +224,7 @@ public class AppWalletServiceImpl implements AppWalletService {
                 .changeAmount(reqVO.getApplyAmount().negate())
                 .beforeAmount(beforeAvailable)
                 .afterAmount(afterAvailable)
+                .relatedWithdrawId(withdraw.getId())
                 .remark("用户提交提现申请")
                 .createTime(LocalDateTime.now())
                 .build());
@@ -248,6 +264,7 @@ public class AppWalletServiceImpl implements AppWalletService {
     @Transactional(rollbackFor = Exception.class)
     public Long createBankCard(Long authUserId, @Valid AppBankCardCreateReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
+        lockBankCardOwner(loginUser.getId());
         resetDefaultBankCardIfNeeded(loginUser.getId(), reqVO.getIsDefault());
         WalletBankCardDO bankCard = WalletBankCardDO.builder()
                 .userId(loginUser.getId())
@@ -272,6 +289,7 @@ public class AppWalletServiceImpl implements AppWalletService {
     @Transactional(rollbackFor = Exception.class)
     public void updateBankCard(Long authUserId, @Valid AppBankCardUpdateReqVO reqVO) {
         WalletBankCardDO bankCard = getValidatedBankCard(authUserId, reqVO.getId());
+        lockBankCardOwner(bankCard.getUserId());
         resetDefaultBankCardIfNeeded(bankCard.getUserId(), reqVO.getIsDefault());
         walletBankCardMapper.updateById(WalletBankCardDO.builder()
                 .id(bankCard.getId())
@@ -290,6 +308,7 @@ public class AppWalletServiceImpl implements AppWalletService {
     @Transactional(rollbackFor = Exception.class)
     public void setDefaultBankCard(Long authUserId, @Valid AppBankCardDefaultReqVO reqVO) {
         WalletBankCardDO bankCard = getValidatedBankCard(authUserId, reqVO.getId());
+        lockBankCardOwner(bankCard.getUserId());
         resetDefaultBankCardIfNeeded(bankCard.getUserId(), Boolean.TRUE);
         walletBankCardMapper.updateById(WalletBankCardDO.builder()
                 .id(bankCard.getId())
@@ -302,10 +321,11 @@ public class AppWalletServiceImpl implements AppWalletService {
     @Transactional(rollbackFor = Exception.class)
     public void deleteBankCard(Long authUserId, Long id) {
         WalletBankCardDO bankCard = getValidatedBankCard(authUserId, id);
+        lockBankCardOwner(bankCard.getUserId());
         long pendingWithdrawCount = walletWithdrawMapper.selectCount(new LambdaQueryWrapperX<WalletWithdrawDO>()
                 .eq(WalletWithdrawDO::getBankCardId, bankCard.getId())
                 .in(WalletWithdrawDO::getAuditStatus, "PENDING", "APPROVED")
-                .in(WalletWithdrawDO::getStatus, "PENDING", "APPROVED"));
+                .in(WalletWithdrawDO::getStatus, "PENDING", "PROCESSING"));
         if (pendingWithdrawCount > 0) {
             throw exception(WALLET_BANK_CARD_INVALID);
         }
@@ -344,16 +364,17 @@ public class AppWalletServiceImpl implements AppWalletService {
     @Override
     public PageResult<AppWalletBillRespVO> getWalletBillPage(Long authUserId, AppWalletBillPageReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
-        List<AppWalletBillRespVO> list = walletFlowMapper.selectList(
-                        new LambdaQueryWrapperX<WalletFlowDO>()
-                                .eq(WalletFlowDO::getUserId, loginUser.getId())
-                                .betweenIfPresent(WalletFlowDO::getCreateTime, reqVO.getCreateTime())
-                                .orderByDesc(WalletFlowDO::getCreateTime, WalletFlowDO::getId)).stream()
+        LambdaQueryWrapperX<WalletFlowDO> queryWrapper = new LambdaQueryWrapperX<WalletFlowDO>()
+                .eq(WalletFlowDO::getUserId, loginUser.getId())
+                .betweenIfPresent(WalletFlowDO::getCreateTime, reqVO.getCreateTime());
+        applyBillTypeFilter(queryWrapper, reqVO.getBillType());
+        applyBillStatusFilter(queryWrapper, reqVO.getBizStatus());
+        queryWrapper.orderByDesc(WalletFlowDO::getCreateTime, WalletFlowDO::getId);
+        PageResult<WalletFlowDO> pageResult = walletFlowMapper.selectPage(reqVO, queryWrapper);
+        List<AppWalletBillRespVO> list = pageResult.getList().stream()
                 .map(this::convertWalletBill)
-                .filter(item -> reqVO.getBillType() == null || reqVO.getBillType().equalsIgnoreCase(item.getBillType()))
-                .filter(item -> reqVO.getBizStatus() == null || reqVO.getBizStatus().equalsIgnoreCase(item.getBizStatus()))
                 .collect(Collectors.toList());
-        return manualPage(list, reqVO.getPageNo(), reqVO.getPageSize());
+        return new PageResult<>(list, pageResult.getTotal());
     }
 
     @Override
@@ -370,9 +391,7 @@ public class AppWalletServiceImpl implements AppWalletService {
 
     private WalletAccountDO getOrCreateWalletAccount(Long authUserId, MemberUserDO loginUser) {
         String roleCode = resolveRoleCode(authUserId, loginUser);
-        WalletAccountDO walletAccount = walletAccountMapper.selectOne(new LambdaQueryWrapperX<WalletAccountDO>()
-                .eq(WalletAccountDO::getUserId, loginUser.getId())
-                .eq(WalletAccountDO::getRoleCode, roleCode));
+        WalletAccountDO walletAccount = walletAccountMapper.selectByUserIdAndRoleCode(loginUser.getId(), roleCode);
         if (walletAccount != null) {
             return walletAccount;
         }
@@ -386,8 +405,17 @@ public class AppWalletServiceImpl implements AppWalletService {
                 .commissionAmount(BigDecimal.ZERO)
                 .status("ENABLE")
                 .build();
-        walletAccountMapper.insert(walletAccount);
-        return walletAccount;
+        try {
+            walletAccountMapper.insert(walletAccount);
+            return walletAccount;
+        } catch (DuplicateKeyException ex) {
+            WalletAccountDO concurrent = walletAccountMapper.selectByUserIdAndRoleCodeForUpdate(
+                    loginUser.getId(), roleCode);
+            if (concurrent == null) {
+                throw ex;
+            }
+            return concurrent;
+        }
     }
 
     private String resolveRoleCode(Long authUserId, MemberUserDO loginUser) {
@@ -416,6 +444,13 @@ public class AppWalletServiceImpl implements AppWalletService {
         walletBankCardMapper.update(null, new LambdaUpdateWrapper<WalletBankCardDO>()
                 .eq(WalletBankCardDO::getUserId, userId)
                 .set(WalletBankCardDO::getIsDefault, Boolean.FALSE));
+    }
+
+    private void lockBankCardOwner(Long userId) {
+        MemberUserDO owner = memberUserMapper.selectOneForUpdate(MemberUserDO::getId, userId);
+        if (owner == null) {
+            throw exception(MEMBER_USER_NOT_EXISTS);
+        }
     }
 
     private void enableMerchantAcceptIfReady(Long userId) {
@@ -470,7 +505,15 @@ public class AppWalletServiceImpl implements AppWalletService {
         AppBankCardRespVO respVO = BeanUtils.toBean(bankCard, AppBankCardRespVO.class);
         respVO.setTransferEnabled(StrUtil.isNotBlank(bankCard.getTransferAccount())
                 && "ENABLE".equalsIgnoreCase(bankCard.getStatus()));
+        respVO.setReservedMobile(maskMobile(bankCard.getReservedMobile()));
         return respVO;
+    }
+
+    private String maskMobile(String mobile) {
+        if (StrUtil.isBlank(mobile) || mobile.length() < 7) {
+            return mobile == null ? null : "******";
+        }
+        return mobile.substring(0, 3) + "****" + mobile.substring(mobile.length() - 4);
     }
 
     private AppWalletWithdrawRespVO convertWithdraw(WalletWithdrawDO withdraw) {
@@ -524,6 +567,9 @@ public class AppWalletServiceImpl implements AppWalletService {
         if ("WITHDRAW_FAILED".equalsIgnoreCase(bizType)) {
             return "提现退回";
         }
+        if ("WITHDRAW_RETRY_FREEZE".equalsIgnoreCase(bizType)) {
+            return "提现重试冻结";
+        }
         if ("REFUND_SUCCESS".equalsIgnoreCase(bizType)) {
             return "退款冲减";
         }
@@ -539,7 +585,8 @@ public class AppWalletServiceImpl implements AppWalletService {
         }
         if ("WITHDRAW_APPLY".equalsIgnoreCase(bizType)
                 || "WITHDRAW_SUCCESS".equalsIgnoreCase(bizType)
-                || "WITHDRAW_FAILED".equalsIgnoreCase(bizType)) {
+                || "WITHDRAW_FAILED".equalsIgnoreCase(bizType)
+                || "WITHDRAW_RETRY_FREEZE".equalsIgnoreCase(bizType)) {
             return "WITHDRAW";
         }
         if ("REFUND_SUCCESS".equalsIgnoreCase(bizType)) {
@@ -561,28 +608,42 @@ public class AppWalletServiceImpl implements AppWalletService {
     private Long resolveRelatedWithdrawId(WalletFlowDO walletFlow) {
         if (!"WITHDRAW_APPLY".equalsIgnoreCase(walletFlow.getBizType())
                 && !"WITHDRAW_SUCCESS".equalsIgnoreCase(walletFlow.getBizType())
-                && !"WITHDRAW_FAILED".equalsIgnoreCase(walletFlow.getBizType())) {
+                && !"WITHDRAW_FAILED".equalsIgnoreCase(walletFlow.getBizType())
+                && !"WITHDRAW_RETRY_FREEZE".equalsIgnoreCase(walletFlow.getBizType())) {
             return null;
         }
-        WalletWithdrawDO withdraw = walletWithdrawMapper.selectOne(new LambdaQueryWrapperX<WalletWithdrawDO>()
-                .eq(WalletWithdrawDO::getUserId, walletFlow.getUserId())
-                .eqIfPresent(WalletWithdrawDO::getWalletAccountId, walletFlow.getWalletAccountId())
-                .orderByDesc(WalletWithdrawDO::getId)
-                .last("LIMIT 1"));
-        return withdraw == null ? null : withdraw.getId();
+        return walletFlow.getRelatedWithdrawId();
     }
 
-    private PageResult<AppWalletBillRespVO> manualPage(List<AppWalletBillRespVO> list, Integer pageNo, Integer pageSize) {
-        if (list.isEmpty()) {
-            return new PageResult<>(new ArrayList<>(), 0L);
+    private void applyBillTypeFilter(LambdaQueryWrapperX<WalletFlowDO> queryWrapper, String billType) {
+        if (StrUtil.isBlank(billType)) {
+            return;
         }
-        int safePageNo = pageNo == null || pageNo < 1 ? 1 : pageNo;
-        int safePageSize = pageSize == null || pageSize < 1 ? 10 : pageSize;
-        int fromIndex = (safePageNo - 1) * safePageSize;
-        if (fromIndex >= list.size()) {
-            return new PageResult<>(new ArrayList<>(), (long) list.size());
+        if ("ORDER".equalsIgnoreCase(billType)) {
+            queryWrapper.eq(WalletFlowDO::getBizType, "ORDER_PAY");
+        } else if ("SETTLEMENT".equalsIgnoreCase(billType)) {
+            queryWrapper.eq(WalletFlowDO::getBizType, "SETTLEMENT_UNLOCK");
+        } else if ("WITHDRAW".equalsIgnoreCase(billType)) {
+            queryWrapper.in(WalletFlowDO::getBizType, "WITHDRAW_APPLY", "WITHDRAW_SUCCESS", "WITHDRAW_FAILED",
+                    "WITHDRAW_RETRY_FREEZE");
+        } else if ("REFUND".equalsIgnoreCase(billType)) {
+            queryWrapper.eq(WalletFlowDO::getBizType, "REFUND_SUCCESS");
+        } else {
+            queryWrapper.notIn(WalletFlowDO::getBizType, "ORDER_PAY", "SETTLEMENT_UNLOCK", "WITHDRAW_APPLY",
+                    "WITHDRAW_SUCCESS", "WITHDRAW_FAILED", "WITHDRAW_RETRY_FREEZE", "REFUND_SUCCESS");
         }
-        int toIndex = Math.min(fromIndex + safePageSize, list.size());
-        return new PageResult<>(list.subList(fromIndex, toIndex), (long) list.size());
+    }
+
+    private void applyBillStatusFilter(LambdaQueryWrapperX<WalletFlowDO> queryWrapper, String bizStatus) {
+        if (StrUtil.isBlank(bizStatus)) {
+            return;
+        }
+        if ("PENDING".equalsIgnoreCase(bizStatus)) {
+            queryWrapper.eq(WalletFlowDO::getBizType, "WITHDRAW_APPLY");
+        } else if ("FAILED".equalsIgnoreCase(bizStatus)) {
+            queryWrapper.eq(WalletFlowDO::getBizType, "WITHDRAW_FAILED");
+        } else if ("SUCCESS".equalsIgnoreCase(bizStatus)) {
+            queryWrapper.notIn(WalletFlowDO::getBizType, "WITHDRAW_APPLY", "WITHDRAW_FAILED");
+        }
     }
 }

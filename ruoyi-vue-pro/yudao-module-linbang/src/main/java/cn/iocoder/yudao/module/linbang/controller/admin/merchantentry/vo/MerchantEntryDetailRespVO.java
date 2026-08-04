@@ -2,6 +2,7 @@ package cn.iocoder.yudao.module.linbang.controller.admin.merchantentry.vo;
 
 import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
+import cn.iocoder.yudao.framework.desensitize.core.slider.annotation.IdCardDesensitize;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -72,6 +73,7 @@ public class MerchantEntryDetailRespVO {
     private List<HistoryEntryRespVO> historyEntries;
 
     @Data
+    @Schema(description = "管理后台 - 申请人摘要 Response VO")
     public static class ApplicantRespVO {
         @Schema(description = "用户 ID", example = "1001")
         private Long id;
@@ -92,6 +94,7 @@ public class MerchantEntryDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 服务商摘要 Response VO")
     public static class MerchantRespVO {
         @Schema(description = "服务商 ID", example = "2001")
         private Long id;
@@ -114,12 +117,14 @@ public class MerchantEntryDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 实名认证摘要 Response VO")
     public static class RealNameRespVO {
         @Schema(description = "实名认证 ID", example = "1")
         private Long id;
         @Schema(description = "真实姓名", example = "张三")
         private String realName;
         @Schema(description = "身份证号")
+        @IdCardDesensitize
         private String idCardNo;
         @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, example = "APPROVED")
         private String auditStatus;
@@ -134,6 +139,7 @@ public class MerchantEntryDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 统计摘要 Response VO")
     public static class SummaryRespVO {
         @Schema(description = "历史入驻次数")
         private Integer historyEntryCount;
@@ -154,6 +160,7 @@ public class MerchantEntryDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 服务分类摘要 Response VO")
     public static class CategoryRespVO {
         @Schema(description = "类目 ID", example = "340201")
         private Long categoryId;
@@ -172,6 +179,7 @@ public class MerchantEntryDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 资质摘要 Response VO")
     public static class QualificationRespVO {
         @Schema(description = "资质 ID", example = "1")
         private Long id;
@@ -202,6 +210,7 @@ public class MerchantEntryDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 历史入驻申请摘要 Response VO")
     public static class HistoryEntryRespVO {
         @Schema(description = "历史入驻记录 ID", example = "1")
         private Long id;

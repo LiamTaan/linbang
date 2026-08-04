@@ -117,8 +117,7 @@ export default {
                 evidenceFileIdsJson: '[]',
                 videoFileId: null,
                 validStartDate: '',
-                validEndDate: '',
-                priorityEnabled: false
+                validEndDate: ''
             },
             evidenceFileIds: [],
             submitting: false,
@@ -201,8 +200,7 @@ export default {
                     evidenceFileIdsJson: detail.evidenceFileIdsJson || '[]',
                     videoFileId: detail.videoFileId || null,
                     validStartDate: detail.validStartDate || '',
-                    validEndDate: detail.validEndDate || '',
-                    priorityEnabled: !!detail.priorityEnabled
+                    validEndDate: detail.validEndDate || ''
                 }
                 try {
                     this.evidenceFileIds = JSON.parse(detail.evidenceFileIdsJson || '[]')

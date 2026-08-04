@@ -73,6 +73,7 @@ public class AppMemberQualificationSummaryRespVO {
     private List<QualificationReminderRespVO> reminders;
 
     @Data
+    @Schema(description = "用户 App - 资质提醒摘要 Response VO")
     public static class QualificationReminderRespVO {
         @Schema(description = "资质 ID", example = "1")
         private Long qualificationId;

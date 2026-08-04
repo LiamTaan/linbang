@@ -1,6 +1,7 @@
 package cn.iocoder.yudao.module.pay.controller.admin.notify;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
@@ -64,11 +65,12 @@ public class PayNotifyController {
     @Operation(summary = "支付渠道的统一【支付】回调")
     @PermitAll
     @TenantIgnore
+    @ApiAccessLog(enable = false)
     public String notifyOrder(@PathVariable("channelId") Long channelId,
                               @RequestParam(required = false) Map<String, String> params,
                               @RequestBody(required = false) String body,
                               @RequestHeader Map<String, String> headers) {
-        log.info("[notifyOrder][channelId({}) 回调数据({}/{})]", channelId, params, body);
+        log.info("[notifyOrder][channelId({}) 收到支付回调]", channelId);
         // 1. 校验支付渠道是否存在
         PayClient payClient = channelService.getPayClient(channelId);
         if (payClient == null) {
@@ -86,11 +88,12 @@ public class PayNotifyController {
     @Operation(summary = "支付渠道的统一【退款】回调")
     @PermitAll
     @TenantIgnore
+    @ApiAccessLog(enable = false)
     public String notifyRefund(@PathVariable("channelId") Long channelId,
                                @RequestParam(required = false) Map<String, String> params,
                                @RequestBody(required = false) String body,
                                @RequestHeader Map<String, String> headers) {
-        log.info("[notifyRefund][channelId({}) 回调数据({}/{})]", channelId, params, body);
+        log.info("[notifyRefund][channelId({}) 收到退款回调]", channelId);
         // 1. 校验支付渠道是否存在
         PayClient payClient = channelService.getPayClient(channelId);
         if (payClient == null) {
@@ -108,11 +111,12 @@ public class PayNotifyController {
     @Operation(summary = "支付渠道的统一【转账】回调")
     @PermitAll
     @TenantIgnore
+    @ApiAccessLog(enable = false)
     public String notifyTransfer(@PathVariable("channelId") Long channelId,
                                  @RequestParam(required = false) Map<String, String> params,
                                  @RequestBody(required = false) String body,
                                  @RequestHeader Map<String, String> headers) {
-        log.info("[notifyTransfer][channelId({}) 回调数据({}/{})]", channelId, params, body);
+        log.info("[notifyTransfer][channelId({}) 收到转账回调]", channelId);
         // 1. 校验支付渠道是否存在
         PayClient payClient = channelService.getPayClient(channelId);
         if (payClient == null) {

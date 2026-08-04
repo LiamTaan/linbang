@@ -18,6 +18,10 @@ import cn.iocoder.yudao.module.linbang.controller.admin.orderunit.vo.*;
 @Mapper
 public interface OrderUnitMapper extends BaseMapperX<OrderUnitDO> {
 
+    default OrderUnitDO selectByIdForUpdate(Long id) {
+        return selectOneForUpdate(OrderUnitDO::getId, id);
+    }
+
     default List<OrderUnitDO> selectListByUnitNo(String unitNo) {
         if (StrUtil.isBlank(unitNo)) {
             return Collections.emptyList();

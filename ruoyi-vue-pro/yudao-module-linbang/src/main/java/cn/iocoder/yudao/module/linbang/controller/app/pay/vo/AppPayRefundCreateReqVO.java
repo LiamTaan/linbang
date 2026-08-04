@@ -3,11 +3,15 @@ package cn.iocoder.yudao.module.linbang.controller.app.pay.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import javax.validation.constraints.DecimalMax;
 import javax.validation.constraints.DecimalMin;
+import javax.validation.constraints.Digits;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
+
+import static cn.iocoder.yudao.framework.common.util.number.MoneyUtils.MAX_YUAN_AMOUNT_STR;
 
 @Schema(description = "用户 App - 邻里退款申请 Request VO")
 @Data
@@ -21,10 +25,12 @@ public class AppPayRefundCreateReqVO {
     @Schema(description = "单元 ID；为空表示整单退款，传值表示仅申请该订单单元退款", example = "11")
     private Long unitId;
 
-    @Schema(description = "申请退款金额，单位元；整单退款不能超过订单剩余可退金额，单元退款不能超过该单元金额",
+    @Schema(description = "申请退款金额，单位元，最高 21474836.47 元且最多 2 位小数；整单退款必须等于订单剩余可退金额，单元退款必须等于该单元金额，不支持改变状态语义的部分退款",
             requiredMode = Schema.RequiredMode.REQUIRED, example = "88.00")
     @NotNull(message = "申请退款金额不能为空")
     @DecimalMin(value = "0.01", message = "申请退款金额必须大于 0")
+    @DecimalMax(value = MAX_YUAN_AMOUNT_STR, message = "申请退款金额超过支付渠道支持上限")
+    @Digits(integer = 8, fraction = 2, message = "申请退款金额最多 8 位整数和 2 位小数")
     private BigDecimal applyAmount;
 
     @Schema(description = "退款原因；审核通过后支付模块按原支付单发起原路退款", requiredMode = Schema.RequiredMode.REQUIRED, example = "服务未按约履行")

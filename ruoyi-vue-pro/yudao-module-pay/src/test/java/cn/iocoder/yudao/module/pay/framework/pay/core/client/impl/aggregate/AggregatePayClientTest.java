@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -126,7 +126,7 @@ class AggregatePayClientTest extends BaseMockitoUnitTest {
                 .setOutTradeNo("202607020001")
                 .setPrice(1234)
                 .setNotifyUrl("https://linbang.local/pay/notify/order")
-                .setChannelExtras(Map.of("payWay", AggregatePayClient.BIZ_PAY_WAY_WECHAT_H5));
+                .setChannelExtras(Collections.singletonMap("payWay", AggregatePayClient.BIZ_PAY_WAY_WECHAT_H5));
 
         Object result = ReflectionTestUtils.invokeMethod(client, "buildCreateOrderRequest", reqDTO);
 

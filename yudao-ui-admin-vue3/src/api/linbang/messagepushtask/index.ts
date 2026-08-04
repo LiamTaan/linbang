@@ -1,4 +1,5 @@
 import request from '@/config/axios'
+import { buildDynamicKeyHeaders } from '@/api/linbang/security'
 import type { Dayjs } from 'dayjs'
 
 export interface MessagePushTask {
@@ -52,11 +53,19 @@ export const MessagePushTaskApi = {
     return await request.get<MessagePushTaskDetail>({ url: `/message/push-task/get?id=${id}` })
   },
 
-  manualSendMessagePushTask: async (data: MessagePushTaskManualSendReqVO) => {
-    return await request.post<number>({ url: '/message/push-task/manual-send', data })
+  manualSendMessagePushTask: async (data: MessagePushTaskManualSendReqVO, verifyToken?: string) => {
+    return await request.post<number>({
+      url: '/message/push-task/manual-send',
+      data,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   },
 
-  retryMessagePushTask: async (id: number) => {
-    return await request.post({ url: '/message/push-task/retry', data: { id } })
+  retryMessagePushTask: async (id: number, verifyToken?: string) => {
+    return await request.post({
+      url: '/message/push-task/retry',
+      data: { id },
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   }
 }

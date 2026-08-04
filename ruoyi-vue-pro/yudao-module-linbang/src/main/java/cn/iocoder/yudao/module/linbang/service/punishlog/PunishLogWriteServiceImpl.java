@@ -12,6 +12,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.punishlog.PunishLogMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.userfrozenfundrecord.UserFrozenFundRecordMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.userrestrictrecord.UserRestrictRecordMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,8 +75,19 @@ public class PunishLogWriteServiceImpl implements PunishLogWriteService {
                 .endTime(endTime)
                 .extJson(extJson)
                 .build();
-        punishLogMapper.insert(record);
-        return record.getId();
+        try {
+            punishLogMapper.insert(record);
+            return record.getId();
+        } catch (DuplicateKeyException ex) {
+            if (sourceRecordType == null || sourceRecordId == null) {
+                throw ex;
+            }
+            PunishLogDO concurrent = punishLogMapper.selectBySourceRecordForUpdate(sourceRecordType, sourceRecordId);
+            if (concurrent == null) {
+                throw ex;
+            }
+            return concurrent.getId();
+        }
     }
 
     @Override
@@ -240,8 +252,16 @@ public class PunishLogWriteServiceImpl implements PunishLogWriteService {
     private void upsertPunishLog(PunishLogDO target) {
         PunishLogDO existing = punishLogMapper.selectBySourceRecord(target.getSourceRecordType(), target.getSourceRecordId());
         if (existing == null) {
-            punishLogMapper.insert(target);
-            return;
+            try {
+                punishLogMapper.insert(target);
+                return;
+            } catch (DuplicateKeyException ex) {
+                existing = punishLogMapper.selectBySourceRecordForUpdate(
+                        target.getSourceRecordType(), target.getSourceRecordId());
+                if (existing == null) {
+                    throw ex;
+                }
+            }
         }
         target.setId(existing.getId());
         punishLogMapper.updateById(target);

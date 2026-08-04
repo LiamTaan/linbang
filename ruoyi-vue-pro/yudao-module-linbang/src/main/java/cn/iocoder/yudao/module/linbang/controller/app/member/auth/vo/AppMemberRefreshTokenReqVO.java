@@ -6,6 +6,7 @@ import lombok.Data;
 import javax.validation.constraints.NotBlank;
 
 @Data
+@Schema(description = "用户 App - 刷新访问令牌 Request VO")
 public class AppMemberRefreshTokenReqVO {
 
     @Schema(description = "刷新令牌", requiredMode = Schema.RequiredMode.REQUIRED)

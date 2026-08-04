@@ -20,7 +20,12 @@
         </el-input>
       </el-form-item>
       <el-form-item label="用户" prop="userId">
-        <el-input :model-value="selectedUserLabel" placeholder="请选择用户" readonly @click="openUserDialog">
+        <el-input
+          :model-value="selectedUserLabel"
+          placeholder="请选择用户"
+          readonly
+          @click="openUserDialog"
+        >
           <template #append>
             <el-button @click="openUserDialog">选择</el-button>
           </template>
@@ -105,7 +110,11 @@ import { computed, reactive, ref } from 'vue'
 import { useI18n } from '@/hooks/web/useI18n'
 import { useMessage } from '@/hooks/web/useMessage'
 import { MerchantEntryApi, MerchantEntry } from '@/api/linbang/merchantentry'
-import { MerchantInfoApi, type MerchantInfo, type MerchantInfoDetail } from '@/api/linbang/merchantinfo'
+import {
+  MerchantInfoApi,
+  type MerchantInfo,
+  type MerchantInfoDetail
+} from '@/api/linbang/merchantinfo'
 import { MemberUserApi, type MemberUser, type MemberUserDetail } from '@/api/linbang/memberuser'
 import MemberUserSelectDialog from '../memberaddress/MemberUserSelectDialog.vue'
 import MerchantInfoSelectDialog from '../shared/MerchantInfoSelectDialog.vue'

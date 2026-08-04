@@ -102,7 +102,7 @@ public class PayTransferServiceImpl implements PayTransferService {
             // 注意这里仅打印异常，不进行抛出。
             // 原因是：虽然调用支付渠道进行转账发生异常（网络请求超时），实际转账成功。这个结果，后续转账轮询可以拿到。
             //       或者，使用相同 no 再次发起转账请求
-            log.error("[createTransfer][转账编号({}) requestDTO({}) 发生异常]", transfer.getId(), reqDTO, e);
+            log.error("[createTransfer][转账编号({}) 调用支付渠道发生异常]", transfer.getId(), e);
         }
         return new PayTransferCreateRespDTO().setId(transfer.getId())
                 .setChannelPackageInfo(unifiedTransferResp != null ? unifiedTransferResp.getChannelPackageInfo() : null);
@@ -269,6 +269,12 @@ public class PayTransferServiceImpl implements PayTransferService {
     @Override
     public PayTransferDO getTransfer(Long id) {
         return transferMapper.selectById(id);
+    }
+
+    @Override
+    public PayTransferDO getTransferByMerchantTransferId(String appKey, String merchantTransferId) {
+        PayAppDO payApp = appService.validPayApp(appKey);
+        return transferMapper.selectByAppIdAndMerchantOrderId(payApp.getId(), merchantTransferId);
     }
 
     @Override

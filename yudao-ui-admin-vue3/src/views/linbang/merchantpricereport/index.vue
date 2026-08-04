@@ -1,6 +1,12 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="区域编码" prop="regionCode">
         <el-input
           v-model="queryParams.regionCode"
@@ -11,7 +17,12 @@
         />
       </el-form-item>
       <el-form-item label="申报状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择申报状态" clearable class="!w-220px">
+        <el-select
+          v-model="queryParams.status"
+          placeholder="请选择申报状态"
+          clearable
+          class="!w-220px"
+        >
           <el-option
             v-for="item in PRICE_REPORT_STATUS_OPTIONS"
             :key="item.value"
@@ -21,7 +32,12 @@
         </el-select>
       </el-form-item>
       <el-form-item label="审核状态" prop="auditStatus">
-        <el-select v-model="queryParams.auditStatus" placeholder="请选择审核状态" clearable class="!w-220px">
+        <el-select
+          v-model="queryParams.auditStatus"
+          placeholder="请选择审核状态"
+          clearable
+          class="!w-220px"
+        >
           <el-option
             v-for="dict in getStrDictOptions(DICT_TYPE.LB_PRICE_REPORT_AUDIT_STATUS)"
             :key="dict.value"
@@ -42,12 +58,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
       </el-form-item>
     </el-form>
   </ContentWrap>
@@ -58,8 +70,12 @@
         <template #default="{ row }">
           <div class="leading-20px">
             <div class="font-600">{{ row.merchantName || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactName || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactMobile || '-' }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactName || '-'
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactMobile || '-'
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -85,7 +101,13 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="200" />
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="操作" align="center" fixed="right" width="140">
         <template #default="{ row }">
           <el-button
@@ -119,7 +141,13 @@
   <MerchantPriceReportDetailDialog ref="detailDialogRef" />
 
   <Dialog v-model="auditDialogVisible" title="价格申报审核" width="520px">
-    <el-form ref="auditFormRef" :model="auditFormData" :rules="auditFormRules" label-width="88px" v-loading="auditLoading">
+    <el-form
+      ref="auditFormRef"
+      :model="auditFormData"
+      :rules="auditFormRules"
+      label-width="88px"
+      v-loading="auditLoading"
+    >
       <el-form-item label="服务商">
         <el-input :model-value="formatMerchantDisplay(currentRow)" disabled />
       </el-form-item>
@@ -142,7 +170,11 @@
           placeholder="请输入审核备注"
         />
       </el-form-item>
-      <el-form-item v-if="auditFormData.auditStatus === 'REJECTED'" label="驳回原因" prop="rejectReason">
+      <el-form-item
+        v-if="auditFormData.auditStatus === 'REJECTED'"
+        label="驳回原因"
+        prop="rejectReason"
+      >
         <el-input
           v-model="auditFormData.rejectReason"
           type="textarea"
@@ -225,12 +257,17 @@ const openDetail = (id: number) => {
 }
 
 const formatMerchantDisplay = (
-  row?: Pick<MerchantPriceReport, 'merchantName' | 'merchantContactName' | 'merchantContactMobile' | 'merchantId'>
+  row?: Pick<
+    MerchantPriceReport,
+    'merchantName' | 'merchantContactName' | 'merchantContactMobile' | 'merchantId'
+  >
 ) => {
   if (!row) {
     return '-'
   }
-  const summary = [row.merchantName, row.merchantContactName, row.merchantContactMobile].filter(Boolean).join(' / ')
+  const summary = [row.merchantName, row.merchantContactName, row.merchantContactMobile]
+    .filter(Boolean)
+    .join(' / ')
   return summary || (row.merchantId ? '服务商信息缺失' : '-')
 }
 

@@ -34,7 +34,11 @@
           <WxVoicePlayer v-if="scope.row.responseMediaUrl" :url="scope.row.responseMediaUrl" />
         </div>
         <div v-else-if="scope.row.responseMessageType === 'image'">
-          <a target="_blank" :href="scope.row.responseMediaUrl">
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            :href="toOpenableUrl(scope.row.responseMediaUrl)"
+          >
             <img :src="scope.row.responseMediaUrl" style="width: 100px" />
           </a>
         </div>
@@ -101,6 +105,7 @@ import WxNews from '@/views/mp/components/wx-news'
 import { dateFormatter } from '@/utils/formatTime'
 import { DICT_TYPE } from '@/utils/dict'
 import { MsgType } from './types'
+import { toOpenableUrl } from '@/utils/url'
 
 const props = defineProps<{
   loading: boolean

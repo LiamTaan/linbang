@@ -48,7 +48,12 @@
         </el-select>
       </el-form-item>
       <el-form-item label="拦截级别" prop="blockLevel">
-        <el-select v-model="queryParams.blockLevel" placeholder="请选择拦截级别" clearable class="!w-240px">
+        <el-select
+          v-model="queryParams.blockLevel"
+          placeholder="请选择拦截级别"
+          clearable
+          class="!w-240px"
+        >
           <el-option label="直接拦截" value="BLOCK" />
           <el-option label="人工复核" value="REVIEW" />
         </el-select>
@@ -63,12 +68,7 @@
         />
       </el-form-item>
       <el-form-item label="状态" prop="status">
-        <el-select
-          v-model="queryParams.status"
-          placeholder="请选择状态"
-          clearable
-          class="!w-240px"
-        >
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable class="!w-240px">
           <el-option
             v-for="item in ENABLE_STATUS_OPTIONS"
             :key="item.value"
@@ -109,11 +109,11 @@
           <Icon icon="ep:download" class="mr-5px" /> 导出
         </el-button>
         <el-button
-            type="danger"
-            plain
-            :disabled="isEmpty(checkedIds)"
-            @click="handleDeleteBatch"
-            v-hasPermi="['linbang:sensitive-word:delete']"
+          type="danger"
+          plain
+          :disabled="isEmpty(checkedIds)"
+          @click="handleDeleteBatch"
+          v-hasPermi="['linbang:sensitive-word:delete']"
         >
           <Icon icon="ep:delete" class="mr-5px" /> 批量删除
         </el-button>
@@ -124,14 +124,14 @@
   <!-- 列表 -->
   <ContentWrap>
     <el-table
-        row-key="id"
-        v-loading="loading"
-        :data="list"
-        :stripe="true"
-        :show-overflow-tooltip="true"
-        @selection-change="handleRowCheckboxChange"
+      row-key="id"
+      v-loading="loading"
+      :data="list"
+      :stripe="true"
+      :show-overflow-tooltip="true"
+      @selection-change="handleRowCheckboxChange"
     >
-    <el-table-column type="selection" width="55" />
+      <el-table-column type="selection" width="55" />
       <el-table-column label="关键词" align="center" prop="word" />
       <el-table-column label="词库类型" align="center" prop="wordType">
         <template #default="{ row }">
@@ -296,16 +296,16 @@ const handleDeleteBatch = async () => {
   try {
     // 删除的二次确认
     await message.delConfirm()
-    await SensitiveWordApi.deleteSensitiveWordList(checkedIds.value);
-    checkedIds.value = [];
+    await SensitiveWordApi.deleteSensitiveWordList(checkedIds.value)
+    checkedIds.value = []
     message.success(t('common.delSuccess'))
-    await getList();
+    await getList()
   } catch {}
 }
 
 const checkedIds = ref<number[]>([])
 const handleRowCheckboxChange = (records: SensitiveWord[]) => {
-  checkedIds.value = records.map((item) => item.id!);
+  checkedIds.value = records.map((item) => item.id!)
 }
 
 /** 导出按钮操作 */

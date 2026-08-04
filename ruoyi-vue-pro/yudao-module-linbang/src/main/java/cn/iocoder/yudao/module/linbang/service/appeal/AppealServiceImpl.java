@@ -148,25 +148,33 @@ public class AppealServiceImpl implements AppealService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void auditAppeal(AppealAuditReqVO reqVO) {
-        AppealDO appeal = appealMapper.selectById(reqVO.getId());
+        AppealDO appeal = appealMapper.selectByIdForUpdate(reqVO.getId());
         if (appeal == null) {
             throw exception(APPEAL_NOT_EXISTS);
         }
+        String auditStatus = StrUtil.trimToEmpty(reqVO.getAuditStatus()).toUpperCase(Locale.ROOT);
+        if (!"PENDING".equals(appeal.getAuditStatus())
+                || (!"APPROVED".equals(auditStatus) && !"REJECTED".equals(auditStatus))) {
+            throw exception(APPEAL_AUDIT_STATUS_INVALID);
+        }
+        Long operatorId = SecurityFrameworkUtils.getLoginUserId();
+        LocalDateTime now = LocalDateTime.now();
         AppealDO updateObj = new AppealDO();
         updateObj.setId(reqVO.getId());
-        updateObj.setAuditStatus(reqVO.getAuditStatus());
+        updateObj.setAuditStatus(auditStatus);
         updateObj.setAuditRemark(reqVO.getAuditRemark());
         updateObj.setRejectReason(reqVO.getRejectReason());
-        updateObj.setAuditBy(SecurityFrameworkUtils.getLoginUserId());
-        updateObj.setAuditTime(LocalDateTime.now());
-        if ("APPROVED".equals(reqVO.getAuditStatus())) {
+        updateObj.setAuditBy(operatorId);
+        updateObj.setAuditTime(now);
+        if ("APPROVED".equals(auditStatus)) {
             updateObj.setStatus("PROCESSING");
-        } else if ("REJECTED".equals(reqVO.getAuditStatus())) {
+        } else {
             updateObj.setStatus("REJECTED");
         }
         appealMapper.updateById(updateObj);
-        if ("APPROVED".equals(reqVO.getAuditStatus())) {
+        if ("APPROVED".equals(auditStatus)) {
             MerchantInfoDO merchant = merchantInfoMapper.selectOne(new LambdaQueryWrapperX<MerchantInfoDO>()
                     .eq(MerchantInfoDO::getUserId, appeal.getUserId())
                     .last("LIMIT 1"));
@@ -180,12 +188,12 @@ public class AppealServiceImpl implements AppealService {
                 .unitId(appeal.getUnitId())
                 .operateType("AUDIT_APPEAL")
                 .operateRole("ADMIN")
-                .operateBy(SecurityFrameworkUtils.getLoginUserId())
+                .operateBy(operatorId)
                 .beforeStatus(appeal.getStatus())
                 .afterStatus(updateObj.getStatus())
                 .remark(StrUtil.blankToDefault(reqVO.getAuditRemark(),
-                        "申诉审核结果：" + reqVO.getAuditStatus()))
-                .operateTime(LocalDateTime.now())
+                        "申诉审核结果：" + auditStatus))
+                .operateTime(now)
                 .build());
         dispatchAppealAuditResult(appeal, reqVO);
     }

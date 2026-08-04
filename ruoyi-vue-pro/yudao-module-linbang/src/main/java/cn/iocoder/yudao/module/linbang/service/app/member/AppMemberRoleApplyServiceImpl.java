@@ -10,7 +10,9 @@ import cn.iocoder.yudao.module.linbang.controller.app.member.rolecontext.vo.AppM
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberroleapply.MemberRoleApplyDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberroleapply.MemberRoleApplyMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -38,6 +40,8 @@ public class AppMemberRoleApplyServiceImpl implements AppMemberRoleApplyService 
     @Resource
     private MemberUserService memberUserService;
     @Resource
+    private MemberUserMapper memberUserMapper;
+    @Resource
     private AppMemberRoleContextService appMemberRoleContextService;
     @Resource
     private MemberRoleApplyMapper memberRoleApplyMapper;
@@ -46,16 +50,17 @@ public class AppMemberRoleApplyServiceImpl implements AppMemberRoleApplyService 
     @Transactional(rollbackFor = Exception.class)
     public Long createRoleApply(Long authUserId, AppMemberRoleApplyCreateReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
+        loginUser = memberUserMapper.selectByIdForUpdate(loginUser.getId());
+        if (loginUser == null) {
+            throw exception(cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_NOT_EXISTS);
+        }
         validateApplyRoleCode(reqVO.getApplyRoleCode());
         AppMemberRoleContextRespVO roleContext = appMemberRoleContextService.getRoleContext(authUserId);
         if (roleContext.getEnabledRoleCodes() != null && roleContext.getEnabledRoleCodes().contains(reqVO.getApplyRoleCode())) {
             throw exception(MEMBER_ROLE_APPLY_ALREADY_EXISTS);
         }
-        MemberRoleApplyDO pendingApply = memberRoleApplyMapper.selectOne(new LambdaQueryWrapperX<MemberRoleApplyDO>()
-                .eq(MemberRoleApplyDO::getUserId, loginUser.getId())
-                .eq(MemberRoleApplyDO::getApplyRoleCode, reqVO.getApplyRoleCode())
-                .in(MemberRoleApplyDO::getAuditStatus, Arrays.asList("PENDING", "APPROVED"))
-                .last("LIMIT 1"));
+        MemberRoleApplyDO pendingApply = memberRoleApplyMapper.selectActiveByUserIdAndRoleCodeForUpdate(
+                loginUser.getId(), reqVO.getApplyRoleCode());
         if (pendingApply != null) {
             throw exception(MEMBER_ROLE_APPLY_ALREADY_EXISTS);
         }
@@ -69,7 +74,16 @@ public class AppMemberRoleApplyServiceImpl implements AppMemberRoleApplyService 
                 .availableTimeDesc(reqVO.getAvailableTimeDesc())
                 .auditStatus("PENDING")
                 .build();
-        memberRoleApplyMapper.insert(apply);
+        try {
+            memberRoleApplyMapper.insert(apply);
+        } catch (DuplicateKeyException ex) {
+            MemberRoleApplyDO concurrentApply = memberRoleApplyMapper.selectActiveByUserIdAndRoleCodeForUpdate(
+                    loginUser.getId(), reqVO.getApplyRoleCode());
+            if (concurrentApply != null) {
+                throw exception(MEMBER_ROLE_APPLY_ALREADY_EXISTS);
+            }
+            throw ex;
+        }
         return apply.getId();
     }
 

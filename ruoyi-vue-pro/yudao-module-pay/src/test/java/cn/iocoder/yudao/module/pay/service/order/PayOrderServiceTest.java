@@ -2,6 +2,7 @@ package cn.iocoder.yudao.module.pay.service.order;
 
 import cn.hutool.extra.spring.SpringUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.iocoder.yudao.framework.security.config.SecurityProperties;
 import cn.iocoder.yudao.framework.test.core.ut.BaseDbAndRedisUnitTest;
 import cn.iocoder.yudao.module.pay.api.order.dto.PayOrderCreateReqDTO;
 import cn.iocoder.yudao.module.pay.controller.admin.order.vo.PayOrderExportReqVO;
@@ -68,6 +69,8 @@ public class PayOrderServiceTest extends BaseDbAndRedisUnitTest {
     @MockBean
     private PayProperties properties;
     @MockBean
+    private SecurityProperties securityProperties;
+    @MockBean
     private PayAppService appService;
     @MockBean
     private PayChannelService channelService;
@@ -77,6 +80,7 @@ public class PayOrderServiceTest extends BaseDbAndRedisUnitTest {
     @BeforeEach
     public void setUp() {
         when(properties.getOrderNotifyUrl()).thenReturn("http://127.0.0.1");
+        when(securityProperties.getMockEnable()).thenReturn(false);
     }
 
     @Test

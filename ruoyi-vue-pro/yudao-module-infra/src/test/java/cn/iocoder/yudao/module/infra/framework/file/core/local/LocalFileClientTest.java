@@ -57,6 +57,18 @@ public class LocalFileClientTest {
     }
 
     @Test
+    public void testGetContent_withLimit() throws Exception {
+        LocalFileClient client = createClient();
+        byte[] content = "12345".getBytes(StandardCharsets.UTF_8);
+        String path = "avatar/test.txt";
+        client.upload(content, path, "text/plain");
+
+        byte[] result = client.getContent(path, 2L);
+
+        assertArrayEquals("123".getBytes(StandardCharsets.UTF_8), result);
+    }
+
+    @Test
     public void testUpload_pathInvalid() {
         // 准备参数
         LocalFileClient client = createClient();

@@ -12,6 +12,10 @@ import java.util.Collection;
 @Mapper
 public interface PromoteContentMapper extends BaseMapperX<PromoteContentDO> {
 
+    default PromoteContentDO selectByIdForUpdate(Long id) {
+        return selectOneForUpdate(PromoteContentDO::getId, id);
+    }
+
     default PageResult<PromoteContentDO> selectPageByPromoterIds(PromoteContentPageReqVO reqVO, Collection<Long> promoterIds) {
         return BaseMapperX.super.selectPage(reqVO, new LambdaQueryWrapperX<PromoteContentDO>()
                 .eqIfPresent(PromoteContentDO::getUserId, reqVO.getUserId())

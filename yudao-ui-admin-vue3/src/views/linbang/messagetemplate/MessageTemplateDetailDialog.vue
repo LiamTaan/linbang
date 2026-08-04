@@ -1,17 +1,29 @@
 <template>
   <Dialog v-model="dialogVisible" title="消息模板详情" width="900px" :loading="detailLoading">
     <el-descriptions :column="2" label-class-name="desc-label">
-      <el-descriptions-item label="模板编码">{{ detailData.templateCode || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="模板名称">{{ detailData.templateName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="模板类型">{{ formatTemplateType(detailData.templateType) }}</el-descriptions-item>
-      <el-descriptions-item label="渠道类型">{{ formatChannelType(detailData.channelType) }}</el-descriptions-item>
+      <el-descriptions-item label="模板编码">{{
+        detailData.templateCode || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="模板名称">{{
+        detailData.templateName || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="模板类型">{{
+        formatTemplateType(detailData.templateType)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="渠道类型">{{
+        formatChannelType(detailData.channelType)
+      }}</el-descriptions-item>
       <el-descriptions-item label="状态">
         <el-tag :type="detailData.status === 'ENABLE' ? 'success' : 'info'">
           {{ formatEnableStatus(detailData.status) }}
         </el-tag>
       </el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData.createTime) }}</el-descriptions-item>
-      <el-descriptions-item label="更新时间">{{ formatDate(detailData.updateTime) }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData.createTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="更新时间">{{
+        formatDate(detailData.updateTime)
+      }}</el-descriptions-item>
     </el-descriptions>
     <el-divider />
     <el-descriptions :column="1" border direction="vertical">
@@ -22,7 +34,9 @@
       <el-descriptions-item label="发送总数">{{ detailData.sendCount ?? 0 }}</el-descriptions-item>
       <el-descriptions-item label="成功数">{{ detailData.successCount ?? 0 }}</el-descriptions-item>
       <el-descriptions-item label="失败数">{{ detailData.failedCount ?? 0 }}</el-descriptions-item>
-      <el-descriptions-item label="待发送数">{{ detailData.pendingCount ?? 0 }}</el-descriptions-item>
+      <el-descriptions-item label="待发送数">{{
+        detailData.pendingCount ?? 0
+      }}</el-descriptions-item>
     </el-descriptions>
     <el-divider content-position="left">渠道分布</el-divider>
     <el-table :data="detailData.channelStats || []" size="small" border>
@@ -39,7 +53,9 @@
         <template #default="{ row }">
           <div class="leading-20px">
             <div class="font-600">{{ row.receiverUserNickname || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.receiverUserMobile || '-' }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.receiverUserMobile || '-'
+            }}</div>
             <div class="text-[var(--el-text-color-secondary)]">
               {{ row.receiverUserNo || formatIdFallback(row.receiverUserId) }}
             </div>

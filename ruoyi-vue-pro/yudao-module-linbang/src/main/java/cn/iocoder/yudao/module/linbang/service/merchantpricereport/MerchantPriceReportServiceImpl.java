@@ -29,6 +29,7 @@ import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertMap;
@@ -96,26 +97,32 @@ public class MerchantPriceReportServiceImpl implements MerchantPriceReportServic
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void auditMerchantPriceReport(MerchantPriceReportAuditReqVO reqVO) {
-        MerchantPriceReportDO report = merchantPriceReportMapper.selectById(reqVO.getId());
+        MerchantPriceReportDO report = merchantPriceReportMapper.selectByIdForUpdate(reqVO.getId());
         if (report == null) {
             throw exception(MERCHANT_PRICE_REPORT_NOT_EXISTS);
         }
-        if (!"PENDING".equals(report.getAuditStatus())) {
+        String auditStatus = cn.hutool.core.util.StrUtil.trimToEmpty(reqVO.getAuditStatus()).toUpperCase(Locale.ROOT);
+        if (!"PENDING".equals(report.getAuditStatus())
+                || (!"APPROVED".equals(auditStatus) && !"REJECTED".equals(auditStatus))) {
+            throw exception(MERCHANT_PRICE_REPORT_AUDIT_STATUS_INVALID);
+        }
+        if ("REJECTED".equals(auditStatus)
+                && cn.hutool.core.util.StrUtil.isBlank(reqVO.getRejectReason())) {
             throw exception(MERCHANT_PRICE_REPORT_AUDIT_STATUS_INVALID);
         }
         MerchantInfoDO merchantInfo = report.getMerchantId() == null ? null : merchantInfoMapper.selectById(report.getMerchantId());
         merchantPriceReportMapper.updateById(MerchantPriceReportDO.builder()
                 .id(reqVO.getId())
-                .auditStatus(reqVO.getAuditStatus())
+                .auditStatus(auditStatus)
                 .auditRemark(reqVO.getAuditRemark())
-                .rejectReason(reqVO.getRejectReason())
+                .rejectReason("REJECTED".equals(auditStatus) ? reqVO.getRejectReason() : null)
                 .auditBy(SecurityFrameworkUtils.getLoginUserId())
                 .auditTime(LocalDateTime.now())
-                .status("APPROVED".equals(reqVO.getAuditStatus()) ? "APPROVED" : "REJECTED")
+                .status(auditStatus)
                 .build());
-        messagePushDispatchService.dispatchSingle("lb_price_report_audited", "价格申报审核结果通知", "PRICE_REPORT",
-                report.getId(), merchantInfo != null ? merchantInfo.getUserId() : null,
-                "管理员审核价格申报后自动通知服务商");
+        messagePushDispatchService.dispatchSingleIdempotent("lb_price_report_audited", "价格申报审核结果通知",
+                "PRICE_REPORT", report.getId(), merchantInfo != null ? merchantInfo.getUserId() : null,
+                "管理员审核价格申报后自动通知服务商", "lb_price_report_audited:" + report.getId());
     }
 
     private void fillDisplayInfo(List<MerchantPriceReportRespVO> list) {

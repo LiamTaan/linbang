@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
 import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
+import cn.iocoder.yudao.framework.common.util.number.MoneyUtils;
 import cn.iocoder.yudao.framework.common.util.servlet.ServletUtils;
 import cn.iocoder.yudao.framework.security.config.SecurityProperties;
 import cn.iocoder.yudao.module.linbang.constants.LinbangRiskConstants;
@@ -45,6 +46,8 @@ import cn.iocoder.yudao.module.pay.service.order.PayOrderService;
 import cn.iocoder.yudao.module.system.api.social.SocialUserApi;
 import cn.iocoder.yudao.module.system.api.social.dto.SocialUserRespDTO;
 import cn.iocoder.yudao.module.system.enums.social.SocialTypeEnum;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -52,7 +55,7 @@ import org.springframework.validation.annotation.Validated;
 import javax.annotation.Resource;
 import javax.validation.Valid;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
@@ -62,12 +65,14 @@ import java.util.Objects;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_ACCESS_DENIED;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_AMOUNT_EXCEED_PAY_LIMIT;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_DEPOSIT_PAY_STATUS_INVALID;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_DEPOSIT_REQUIRED;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_INFO_NOT_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_PAY_CALLBACK_INVALID;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_PAY_ORDER_ALREADY_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_PAY_ORDER_NOT_EXISTS;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_PAY_RETURN_URL_INVALID;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_PAY_STATUS_NOT_ALLOWED;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_WECHAT_MINI_PROGRAM_NOT_BOUND;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_WECHAT_PAY_APP_NOT_CONFIGURED;
@@ -78,6 +83,9 @@ import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_WEC
 public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService {
 
     private static final long PAY_ORDER_EXPIRE_MINUTES = 30L;
+
+    @Value("${linbang.public-base-url:}")
+    private String publicBaseUrl;
 
     @Resource
     private MemberUserService memberUserService;
@@ -170,7 +178,7 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
         if (PayChannelEnum.AGGREGATE.getCode().equals(submitReqVO.getChannelCode())) {
             submitReqVO.setChannelExtras(buildPayChannelExtras(reqVO.getPayWay()));
         }
-        submitReqVO.setReturnUrl(reqVO.getReturnUrl());
+        submitReqVO.setReturnUrl(validateReturnUrl(reqVO.getReturnUrl()));
         PayOrderSubmitRespVO submitRespVO = payOrderService.submitOrder(submitReqVO, ServletUtils.getClientIP());
 
         AppLinbangH5PaySubmitRespVO respVO = new AppLinbangH5PaySubmitRespVO();
@@ -207,7 +215,7 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
         if (PayChannelEnum.AGGREGATE.getCode().equals(submitReqVO.getChannelCode())) {
             submitReqVO.setChannelExtras(buildPayChannelExtras(reqVO.getPayWay()));
         }
-        submitReqVO.setReturnUrl(reqVO.getReturnUrl());
+        submitReqVO.setReturnUrl(validateReturnUrl(reqVO.getReturnUrl()));
         PayOrderSubmitRespVO submitRespVO = payOrderService.submitOrder(submitReqVO, ServletUtils.getClientIP());
 
         AppLinbangH5PaySubmitRespVO respVO = new AppLinbangH5PaySubmitRespVO();
@@ -356,6 +364,10 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updatePaid(@Valid PayOrderNotifyReqDTO notifyReqDTO) {
+        if (notifyReqDTO == null || notifyReqDTO.getPayOrderId() == null
+                || StrUtil.isBlank(notifyReqDTO.getMerchantOrderId())) {
+            throw exception(ORDER_PAY_CALLBACK_INVALID);
+        }
         if (linbangRiskFacade.markDepositPaid(notifyReqDTO)) {
             return;
         }
@@ -382,15 +394,22 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
         if (!Objects.equals(payOrder.getMerchantOrderId(), notifyReqDTO.getMerchantOrderId())) {
             throw exception(ORDER_PAY_CALLBACK_INVALID);
         }
-        if (toFen(order.getOrderAmount()) != payOrder.getPrice()) {
+        if (payOrder.getPrice() == null || toFen(order.getOrderAmount()) != payOrder.getPrice()) {
             throw exception(ORDER_PAY_CALLBACK_INVALID);
         }
 
-        orderInfoMapper.updateById(OrderInfoDO.builder()
-                .id(order.getId())
-                .payOrderId(notifyReqDTO.getPayOrderId())
-                .status("PENDING_ACCEPT")
-                .build());
+        int updated = orderInfoMapper.update(null, new LambdaUpdateWrapper<OrderInfoDO>()
+                .eq(OrderInfoDO::getId, order.getId())
+                .eq(OrderInfoDO::getStatus, "PENDING_PAY")
+                .set(OrderInfoDO::getPayOrderId, notifyReqDTO.getPayOrderId())
+                .set(OrderInfoDO::getStatus, "PENDING_ACCEPT"));
+        if (updated == 0) {
+            OrderInfoDO latestOrder = orderInfoMapper.selectById(order.getId());
+            if (latestOrder != null && Objects.equals(latestOrder.getPayOrderId(), notifyReqDTO.getPayOrderId())) {
+                return;
+            }
+            throw exception(ORDER_PAY_STATUS_NOT_ALLOWED);
+        }
         linbangFinanceService.handleOrderPaid(order, notifyReqDTO.getPayOrderId());
         saveOperateLog(order.getId(), null, "PAY_SUCCESS", "SYSTEM", 0L,
                 order.getStatus(), "PENDING_ACCEPT", "支付成功，订单进入待接单");
@@ -503,15 +522,53 @@ public class AppLinbangPayOrderServiceImpl implements AppLinbangPayOrderService 
         return LocalDateTime.now().plusMinutes(PAY_ORDER_EXPIRE_MINUTES);
     }
 
+    private String validateReturnUrl(String returnUrl) {
+        if (StrUtil.isBlank(returnUrl)) {
+            return null;
+        }
+        try {
+            URI returnUri = URI.create(returnUrl.trim());
+            URI baseUri = URI.create(StrUtil.trim(publicBaseUrl));
+            boolean valid = returnUri.isAbsolute()
+                    && StrUtil.isNotBlank(returnUri.getHost())
+                    && returnUri.getUserInfo() == null
+                    && returnUri.getFragment() == null
+                    && StrUtil.equalsIgnoreCase(returnUri.getScheme(), baseUri.getScheme())
+                    && StrUtil.equalsIgnoreCase(returnUri.getHost(), baseUri.getHost())
+                    && effectivePort(returnUri) == effectivePort(baseUri);
+            if (!valid) {
+                throw exception(ORDER_PAY_RETURN_URL_INVALID);
+            }
+            return returnUri.toASCIIString();
+        } catch (IllegalArgumentException ex) {
+            throw exception(ORDER_PAY_RETURN_URL_INVALID);
+        }
+    }
+
+    private int effectivePort(URI uri) {
+        if (uri.getPort() >= 0) {
+            return uri.getPort();
+        }
+        return "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
+    }
+
     private int toFen(BigDecimal amount) {
-        return amount.multiply(new BigDecimal("100")).setScale(0, RoundingMode.HALF_UP).intValue();
+        try {
+            return MoneyUtils.yuanToFen(amount);
+        } catch (ArithmeticException | NullPointerException ex) {
+            throw exception(ORDER_AMOUNT_EXCEED_PAY_LIMIT);
+        }
     }
 
     private Long parseOrderId(String merchantOrderId) {
         if (!StrUtil.isNumeric(merchantOrderId)) {
             throw exception(ORDER_PAY_CALLBACK_INVALID);
         }
-        return Long.valueOf(merchantOrderId);
+        try {
+            return Long.valueOf(merchantOrderId);
+        } catch (NumberFormatException ex) {
+            throw exception(ORDER_PAY_CALLBACK_INVALID);
+        }
     }
 
     private String buildDepositMerchantOrderId(Long orderId) {

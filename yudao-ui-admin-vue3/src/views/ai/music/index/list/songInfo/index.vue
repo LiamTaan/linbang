@@ -9,7 +9,10 @@
       {{ currentSong.date }}
     </div>
     <el-button size="small" round class="my-6px">信息复用</el-button>
-    <div class="text-[var(--el-text-color-secondary)] text-12px" v-html="currentSong.lyric"></div>
+    <div
+      class="text-[var(--el-text-color-secondary)] text-12px"
+      v-dompurify-html="currentSong.lyric"
+    ></div>
   </ContentWrap>
 </template>
 

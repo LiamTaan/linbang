@@ -1,5 +1,7 @@
 package cn.iocoder.yudao.module.linbang.service.messagepushtask;
 
+import cn.iocoder.yudao.module.linbang.dal.dataobject.messagecampaign.MessageCampaignDO;
+
 import java.util.List;
 
 public interface MessagePushDispatchService {
@@ -12,6 +14,9 @@ public interface MessagePushDispatchService {
 
     void dispatchBatch(String templateCode, String fallbackTaskName, String targetScope, String bizType,
                        Long taskBizId, String creatorRemark, List<MessagePushDispatchTarget> targets);
+
+    void dispatchCampaign(MessageCampaignDO campaign, String creatorRemark,
+                          List<MessagePushDispatchTarget> targets);
 
     void retryTask(Long pushTaskId);
 }

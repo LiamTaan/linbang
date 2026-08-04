@@ -175,6 +175,7 @@ import { notifyReminderSettingChanged } from '@/services/app-order-reminder'
 import { getPlatformSettings } from '@/utils/auth'
 import { loadPlatformSettings } from '@/services/app-bootstrap'
 import { logoutSession } from '@/services/session'
+import { normalizeExternalHttpsUrl } from '@/utils/security'
 
 function promptInput(title, placeholder = '') {
     return new Promise((resolve) => {
@@ -458,10 +459,10 @@ export default {
             })
         },
         handleVersionUpdate() {
-            const downloadUrl = getDownloadUrl(this.appSettings)
+            const downloadUrl = normalizeExternalHttpsUrl(getDownloadUrl(this.appSettings))
             if (!downloadUrl) {
                 uni.showToast({
-                    title: '暂未配置新版下载地址',
+                    title: '下载地址未配置或不安全',
                     icon: 'none'
                 })
                 return

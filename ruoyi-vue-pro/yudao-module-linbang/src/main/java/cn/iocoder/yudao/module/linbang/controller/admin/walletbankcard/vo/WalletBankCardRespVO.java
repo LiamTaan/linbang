@@ -29,7 +29,7 @@ public class WalletBankCardRespVO {
     @ExcelProperty("用户昵称")
     private String userNickname;
 
-    @Schema(description = "用户手机号", example = "13800138000")
+    @Schema(description = "脱敏用户手机号", example = "138****8000")
     @ExcelProperty("用户手机号")
     private String userMobile;
 
@@ -40,10 +40,6 @@ public class WalletBankCardRespVO {
     @Schema(description = "银行编码；提现出款时传给第三方通道识别收款银行", example = "ICBC")
     @ExcelProperty("银行编码")
     private String bankCode;
-
-    @Schema(description = "加密卡号", requiredMode = Schema.RequiredMode.REQUIRED)
-    @ExcelProperty("加密卡号")
-    private String cardNoEncrypt;
 
     @Schema(description = "脱敏卡号", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("脱敏卡号")
@@ -61,7 +57,7 @@ public class WalletBankCardRespVO {
     @ExcelProperty("开户城市")
     private String bankCity;
 
-    @Schema(description = "银行预留手机号；第三方出款校验使用", example = "13800138000")
+    @Schema(description = "脱敏银行预留手机号；第三方出款校验使用", example = "138****8000")
     @ExcelProperty("预留手机号")
     private String reservedMobile;
 

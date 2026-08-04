@@ -213,7 +213,7 @@ components:
         auditStatus: { type: string, description: 审核状态 }
         status: { type: string, description: 退款状态 }
         successTime: { type: string, format: date-time, description: 退款成功时间 }
-        channelErrorMsg: { type: string, description: 渠道失败原因 }
+        channelErrorMsg: { type: string, description: 面向用户的稳定退款失败说明，不包含渠道原始错误或内部诊断信息 }
     HelpFaq:
       type: object
       properties:

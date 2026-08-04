@@ -11,6 +11,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Objects;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /**
  * 各种 API 加解密的测试类：不是单测，而是方便大家生成密钥、加密、解密等操作。
  *
@@ -39,25 +43,24 @@ public class ApiEncryptTest {
             responseClientKey = responseRsa.getPrivateKeyBase64();
             responseServerKey = responseRsa.getPublicKeyBase64();
         } else if (Objects.equals(asymmetricAlgorithm, SymmetricAlgorithm.AES.getValue())) {
-            // AES 密钥可选 32、24、16 位
+            // 使用 16 位密钥，兼容未安装 Unlimited Strength Policy 的 JDK 8。
             // 请求的密钥（前后端密钥一致）
-            requestClientKey = RandomUtil.randomNumbers(32);
+            requestClientKey = RandomUtil.randomNumbers(16);
             requestServerKey = requestClientKey;
             // 响应的密钥（前后端密钥一致）
-            responseClientKey = RandomUtil.randomNumbers(32);
+            responseClientKey = RandomUtil.randomNumbers(16);
             responseServerKey = responseClientKey;
         }
 
-        // 打印结果
-        System.out.println("requestClientKey = " + requestClientKey);
-        System.out.println("requestServerKey = " + requestServerKey);
-        System.out.println("responseClientKey = " + responseClientKey);
-        System.out.println("responseServerKey = " + responseServerKey);
+        assertNotNull(requestClientKey);
+        assertNotNull(requestServerKey);
+        assertNotNull(responseClientKey);
+        assertNotNull(responseServerKey);
     }
 
     @Test
     public void testEncrypt_aes() {
-        String key = "52549111389893486934626385991395";
+        String key = "5254911138989348";
         String body = "{\n" +
                 "  \"username\": \"admin\",\n" +
                 "  \"password\": \"admin123\",\n" +
@@ -66,7 +69,8 @@ public class ApiEncryptTest {
                 "}";
         String encrypt = SecureUtil.aes(StrUtil.utf8Bytes(key))
                 .encryptBase64(body);
-        System.out.println("encrypt = " + encrypt);
+        assertNotEquals(body, encrypt);
+        assertFalse(encrypt.contains("admin123"));
     }
 
     @Test
@@ -80,7 +84,8 @@ public class ApiEncryptTest {
                 "}";
         String encrypt = SecureUtil.rsa(null, key)
                 .encryptBase64(body, KeyType.PublicKey);
-        System.out.println("encrypt = " + encrypt);
+        assertNotEquals(body, encrypt);
+        assertFalse(encrypt.contains("admin123"));
     }
 
 }

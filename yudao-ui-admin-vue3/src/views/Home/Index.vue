@@ -160,16 +160,16 @@ const go = (path: string) => {
 }
 
 .hero {
-  align-items: end;
+  display: grid;
+  padding: 28px;
+  color: #fff;
   background:
     linear-gradient(135deg, rgb(33 53 85 / 97%), rgb(49 87 44 / 92%)),
     linear-gradient(180deg, #f6f4ed, #eef3f0);
   border-radius: 8px;
-  color: #fff;
-  display: grid;
+  align-items: end;
   gap: 20px;
   grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
-  padding: 28px;
 }
 
 .hero-copy {
@@ -177,23 +177,23 @@ const go = (path: string) => {
 }
 
 .eyebrow {
+  margin: 0 0 10px;
   font-size: 13px;
   font-weight: 600;
-  margin: 0 0 10px;
   opacity: 0.9;
 }
 
 .hero h1 {
+  margin: 0;
   font-size: 30px;
   line-height: 1.2;
-  margin: 0;
 }
 
 .summary {
+  max-width: 760px;
+  margin: 14px 0 0;
   font-size: 14px;
   line-height: 1.8;
-  margin: 14px 0 0;
-  max-width: 760px;
   opacity: 0.94;
 }
 
@@ -205,11 +205,11 @@ const go = (path: string) => {
 }
 
 .hero-meta span {
+  padding: 6px 12px;
+  font-size: 12px;
   background: rgb(255 255 255 / 12%);
   border: 1px solid rgb(255 255 255 / 16%);
   border-radius: 999px;
-  font-size: 12px;
-  padding: 6px 12px;
 }
 
 .hero-actions {
@@ -220,39 +220,39 @@ const go = (path: string) => {
 
 .primary-action,
 .secondary-action {
-  align-items: center;
-  border-radius: 8px;
-  cursor: pointer;
   display: flex;
-  font-size: 15px;
-  font-weight: 600;
-  gap: 10px;
-  justify-content: center;
   min-height: 52px;
   padding: 0 18px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
     border-color 0.2s ease;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
 }
 
 .primary-action {
+  color: #213555;
   background: #fff;
   border: 1px solid #fff;
-  color: #213555;
 }
 
 .secondary-action {
+  color: #fff;
   background: transparent;
   border: 1px solid rgb(255 255 255 / 30%);
-  color: #fff;
 }
 
 .primary-action:hover,
 .secondary-action:hover,
 .entry-card:hover {
-  box-shadow: 0 10px 24px rgb(15 23 42 / 10%);
   transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgb(15 23 42 / 10%);
 }
 
 .module-section {
@@ -262,16 +262,16 @@ const go = (path: string) => {
 }
 
 .section-head h2 {
-  color: var(--el-text-color-primary);
-  font-size: 20px;
   margin: 0;
+  font-size: 20px;
+  color: var(--el-text-color-primary);
 }
 
 .section-head p {
-  color: var(--el-text-color-secondary);
+  margin: 6px 0 0;
   font-size: 13px;
   line-height: 1.7;
-  margin: 6px 0 0;
+  color: var(--el-text-color-secondary);
 }
 
 .entry-grid {
@@ -281,20 +281,20 @@ const go = (path: string) => {
 }
 
 .entry-card {
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 8px;
-  cursor: pointer;
   display: flex;
-  flex-direction: column;
-  gap: 14px;
   min-height: 132px;
   padding: 18px;
   text-align: left;
+  cursor: pointer;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 8px;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
     border-color 0.2s ease;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .entry-card:hover {
@@ -309,27 +309,27 @@ const go = (path: string) => {
 }
 
 .entry-title {
-  color: var(--el-text-color-primary);
   font-size: 17px;
   font-weight: 600;
   line-height: 1.4;
+  color: var(--el-text-color-primary);
 }
 
 .entry-icon,
 .action-icon {
+  font-size: 22px;
   color: var(--el-color-primary);
   flex: 0 0 auto;
-  font-size: 22px;
 }
 
 .entry-desc {
-  color: var(--el-text-color-secondary);
+  margin: 0;
   font-size: 13px;
   line-height: 1.7;
-  margin: 0;
+  color: var(--el-text-color-secondary);
 }
 
-@media (max-width: 960px) {
+@media (width <= 960px) {
   .hero {
     grid-template-columns: 1fr;
   }

@@ -2,16 +2,36 @@
   <ContentWrap>
     <el-form :model="queryParams" :inline="true" label-width="100px" class="-mb-15px">
       <el-form-item label="订单 ID">
-        <el-input v-model="queryParams.orderId" placeholder="请输入订单 ID" class="!w-220px" clearable />
+        <el-input
+          v-model="queryParams.orderId"
+          placeholder="请输入订单 ID"
+          class="!w-220px"
+          clearable
+        />
       </el-form-item>
       <el-form-item label="单元 ID">
-        <el-input v-model="queryParams.unitId" placeholder="请输入单元 ID" class="!w-220px" clearable />
+        <el-input
+          v-model="queryParams.unitId"
+          placeholder="请输入单元 ID"
+          class="!w-220px"
+          clearable
+        />
       </el-form-item>
       <el-form-item label="派单状态">
-        <el-input v-model="queryParams.dispatchStatus" placeholder="请输入派单状态" class="!w-220px" clearable />
+        <el-input
+          v-model="queryParams.dispatchStatus"
+          placeholder="请输入派单状态"
+          class="!w-220px"
+          clearable
+        />
       </el-form-item>
       <el-form-item label="退款状态">
-        <el-input v-model="queryParams.autoRefundStatus" placeholder="请输入退款状态" class="!w-220px" clearable />
+        <el-input
+          v-model="queryParams.autoRefundStatus"
+          placeholder="请输入退款状态"
+          class="!w-220px"
+          clearable
+        />
       </el-form-item>
       <el-form-item>
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
@@ -32,11 +52,26 @@
       <el-table-column label="退款单 ID" prop="autoRefundId" width="120" />
       <el-table-column label="操作" width="120" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="retryRefund(row.unitId)">重试退款</el-button>
+          <el-button
+            v-if="
+              row.autoRefundStatus === 'FAILED' ||
+              (row.autoRefundStatus === 'PROCESSING' && !row.autoRefundId)
+            "
+            link
+            type="primary"
+            @click="retryRefund(row.unitId)"
+          >
+            重试退款
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 </template>
 
@@ -45,6 +80,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { useMessage } from '@/hooks/web/useMessage'
 import { dateFormatter } from '@/utils/formatTime'
 import { OrderFlowApi, type OrderFlowRecord } from '@/api/linbang/orderflow'
+import { requestDynamicKeyToken } from '../shared/dynamic-key'
 
 defineOptions({ name: 'LinbangOrderFlow' })
 
@@ -78,7 +114,9 @@ const handleQuery = () => {
 }
 
 const retryRefund = async (unitId: number) => {
-  await OrderFlowApi.retryRefund(unitId)
+  await message.confirm('确认重试该流单退款？请先确认原退款未成功，避免重复退款。')
+  const verifyToken = await requestDynamicKeyToken('重试流单退款')
+  await OrderFlowApi.retryRefund(unitId, verifyToken)
   message.success('已触发退款重试')
   getList()
 }

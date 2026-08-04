@@ -36,7 +36,7 @@ public class WalletWithdrawRespVO {
     @ExcelProperty("用户昵称")
     private String userNickname;
 
-    @Schema(description = "用户手机号", example = "13800138000")
+    @Schema(description = "脱敏用户手机号", example = "138****8000")
     @ExcelProperty("用户手机号")
     private String userMobile;
 

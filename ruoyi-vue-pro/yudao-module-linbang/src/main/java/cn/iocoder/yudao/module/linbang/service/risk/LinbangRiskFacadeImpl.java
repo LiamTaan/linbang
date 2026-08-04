@@ -2,6 +2,7 @@ package cn.iocoder.yudao.module.linbang.service.risk;
 
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.iocoder.yudao.framework.common.util.number.MoneyUtils;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.infra.service.config.ConfigService;
 import cn.iocoder.yudao.module.linbang.constants.LinbangRiskConstants;
@@ -20,6 +21,7 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.walletaccount.WalletAccoun
 import cn.iocoder.yudao.module.linbang.dal.dataobject.walletflow.WalletFlowDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.blacklist.BlacklistMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberrealname.MemberUserRealNameMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantentry.MerchantEntryMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantinfo.MerchantInfoMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.orderinfo.OrderInfoMapper;
@@ -36,6 +38,10 @@ import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispat
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchTarget;
 import cn.iocoder.yudao.module.linbang.service.punishlog.PunishLogWriteService;
 import cn.iocoder.yudao.module.pay.api.notify.dto.PayOrderNotifyReqDTO;
+import cn.iocoder.yudao.module.pay.api.order.PayOrderApi;
+import cn.iocoder.yudao.module.pay.api.order.dto.PayOrderRespDTO;
+import cn.iocoder.yudao.module.pay.enums.order.PayOrderStatusEnum;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,9 +56,11 @@ import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionU
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_ACCEPT_RESTRICTED;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_ACCOUNT_BLOCKED;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_INFO_NOT_EXISTS;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_PAY_CALLBACK_INVALID;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_PUBLISH_RESTRICTED;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_REAL_NAME_REQUIRED;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_SELF_DEAL_BLOCKED;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_NOT_EXISTS;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.USER_FROZEN_FUND_RECORD_NOT_EXISTS;
 
 @Service
@@ -62,6 +70,8 @@ public class LinbangRiskFacadeImpl implements LinbangRiskFacade {
     private ConfigService configService;
     @Resource
     private MemberUserRealNameMapper memberUserRealNameMapper;
+    @Resource
+    private MemberUserMapper memberUserMapper;
     @Resource
     private BlacklistMapper blacklistMapper;
     @Resource
@@ -84,6 +94,8 @@ public class LinbangRiskFacadeImpl implements LinbangRiskFacade {
     private MerchantInfoMapper merchantInfoMapper;
     @Resource
     private OrderInfoMapper orderInfoMapper;
+    @Resource
+    private PayOrderApi payOrderApi;
     @Resource
     private MerchantEntryMapper merchantEntryMapper;
     @Resource
@@ -157,6 +169,10 @@ public class LinbangRiskFacadeImpl implements LinbangRiskFacade {
         if (cancelCount < limitCount) {
             return;
         }
+        lockMemberUser(loginUser.getId());
+        if (getActiveRestrict(loginUser.getId(), LinbangRiskConstants.RESTRICT_TYPE_PUBLISH) != null) {
+            return;
+        }
         int restrictHours = getIntConfig(PlatformConfigKeyConstants.ORDER_CANCEL_RESTRICT_HOURS, 24);
         UserRestrictRecordDO record = UserRestrictRecordDO.builder()
                 .userId(loginUser.getId())
@@ -226,6 +242,10 @@ public class LinbangRiskFacadeImpl implements LinbangRiskFacade {
         if (wallet == null || amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             return null;
         }
+        wallet = walletAccountMapper.selectOneForUpdate(WalletAccountDO::getId, wallet.getId());
+        if (wallet == null) {
+            return null;
+        }
         BigDecimal beforeAvailable = defaultBigDecimal(wallet.getAvailableAmount());
         BigDecimal beforeFrozen = defaultBigDecimal(wallet.getFrozenAmount());
         BigDecimal freezeAmount = amount.min(beforeAvailable);
@@ -265,23 +285,30 @@ public class LinbangRiskFacadeImpl implements LinbangRiskFacade {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void releaseFrozenFunds(Long recordId, Long releasedBy, String releaseRemark) {
-        UserFrozenFundRecordDO record = userFrozenFundRecordMapper.selectById(recordId);
+        UserFrozenFundRecordDO record = userFrozenFundRecordMapper.selectOneForUpdate(
+                UserFrozenFundRecordDO::getId, recordId);
         if (record == null) {
             throw exception(USER_FROZEN_FUND_RECORD_NOT_EXISTS);
         }
         if (!Objects.equals(record.getStatus(), LinbangRiskConstants.FROZEN_STATUS_ACTIVE)) {
             return;
         }
-        WalletAccountDO wallet = walletAccountMapper.selectById(record.getWalletAccountId());
-        if (wallet != null) {
-            BigDecimal released = defaultBigDecimal(record.getFrozenAmount())
-                    .subtract(defaultBigDecimal(record.getReleasedAmount()));
-            walletAccountMapper.updateById(WalletAccountDO.builder()
-                    .id(wallet.getId())
-                    .availableAmount(defaultBigDecimal(wallet.getAvailableAmount()).add(released))
-                    .frozenAmount(defaultBigDecimal(wallet.getFrozenAmount()).subtract(released))
-                    .build());
+        WalletAccountDO wallet = walletAccountMapper.selectOneForUpdate(
+                WalletAccountDO::getId, record.getWalletAccountId());
+        if (wallet == null) {
+            throw new IllegalStateException("Frozen wallet account is missing");
         }
+        BigDecimal released = defaultBigDecimal(record.getFrozenAmount())
+                .subtract(defaultBigDecimal(record.getReleasedAmount()));
+        BigDecimal frozenAmount = defaultBigDecimal(wallet.getFrozenAmount());
+        if (released.compareTo(BigDecimal.ZERO) <= 0 || frozenAmount.compareTo(released) < 0) {
+            throw new IllegalStateException("Frozen wallet balance is inconsistent");
+        }
+        walletAccountMapper.updateById(WalletAccountDO.builder()
+                .id(wallet.getId())
+                .availableAmount(defaultBigDecimal(wallet.getAvailableAmount()).add(released))
+                .frozenAmount(frozenAmount.subtract(released))
+                .build());
         userFrozenFundRecordMapper.updateById(UserFrozenFundRecordDO.builder()
                 .id(recordId)
                 .status(LinbangRiskConstants.FROZEN_STATUS_RELEASED)
@@ -297,38 +324,31 @@ public class LinbangRiskFacadeImpl implements LinbangRiskFacade {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void addUserToBlacklist(Long userId, String blackType, String reason, LocalDateTime endTime) {
-        BlacklistDO active = blacklistMapper.selectOne(new LambdaQueryWrapperX<BlacklistDO>()
-                .eq(BlacklistDO::getUserId, userId)
-                .eq(BlacklistDO::getBlackType, blackType)
-                .eq(BlacklistDO::getStatus, LinbangRiskConstants.STATUS_ENABLE)
-                .last("LIMIT 1"));
+        lockMemberUser(userId);
+        LocalDateTime now = LocalDateTime.now();
+        BlacklistDO active = blacklistMapper.selectEffective(userId, blackType, now);
         if (active != null) {
             return;
         }
-        blacklistMapper.insert(BlacklistDO.builder()
+        BlacklistDO blacklist = BlacklistDO.builder()
                 .userId(userId)
                 .blackType(blackType)
                 .reason(reason)
-                .startTime(LocalDateTime.now())
+                .startTime(now)
                 .endTime(endTime)
                 .status(LinbangRiskConstants.STATUS_ENABLE)
-                .build());
-        BlacklistDO latest = blacklistMapper.selectOne(new LambdaQueryWrapperX<BlacklistDO>()
-                .eq(BlacklistDO::getUserId, userId)
-                .eq(BlacklistDO::getBlackType, blackType)
-                .orderByDesc(BlacklistDO::getId)
-                .last("LIMIT 1"));
-        if (latest != null) {
-            punishLogWriteService.createPunishLog(userId, "BLACKLIST_" + blackType, latest.getStatus(), reason,
-                    "USER", userId, "BLACKLIST_RECORD", latest.getId(),
-                    null, latest.getCreateTime(), latest.getStartTime(), latest.getEndTime(), null);
-        }
+                .build();
+        blacklistMapper.insert(blacklist);
+        punishLogWriteService.createPunishLog(userId, "BLACKLIST_" + blackType, blacklist.getStatus(), reason,
+                "USER", userId, "BLACKLIST_RECORD", blacklist.getId(),
+                null, now, blacklist.getStartTime(), blacklist.getEndTime(), null);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createRestrictRecord(Long userId, String restrictType, String sourceRuleCode, String sourceBizType,
                                      Long sourceBizId, String reason, LocalDateTime endTime) {
+        lockMemberUser(userId);
         UserRestrictRecordDO active = getActiveRestrict(userId, restrictType);
         if (active != null) {
             return active.getId();
@@ -385,18 +405,51 @@ public class LinbangRiskFacadeImpl implements LinbangRiskFacade {
                 || !notifyReqDTO.getMerchantOrderId().startsWith("DEPOSIT:")) {
             return false;
         }
-        Long orderId = Long.valueOf(StrUtil.subAfter(notifyReqDTO.getMerchantOrderId(), "DEPOSIT:", false));
+        final Long orderId;
+        try {
+            orderId = Long.valueOf(StrUtil.subAfter(notifyReqDTO.getMerchantOrderId(), "DEPOSIT:", false));
+        } catch (NumberFormatException ex) {
+            return false;
+        }
         OrderInfoDO order = orderInfoMapper.selectById(orderId);
         if (order == null) {
             throw exception(ORDER_INFO_NOT_EXISTS);
         }
-        orderInfoMapper.updateById(OrderInfoDO.builder()
-                .id(order.getId())
-                .depositPayOrderId(notifyReqDTO.getPayOrderId())
-                .depositPayStatus(LinbangRiskConstants.DEPOSIT_PAY_STATUS_PAID)
-                .depositPaidTime(LocalDateTime.now())
-                .build());
+        PayOrderRespDTO payOrder = notifyReqDTO.getPayOrderId() == null
+                ? null : payOrderApi.getOrder(notifyReqDTO.getPayOrderId());
+        if (!Boolean.TRUE.equals(order.getDepositRequired())
+                || (order.getDepositPayOrderId() != null
+                && !Objects.equals(order.getDepositPayOrderId(), notifyReqDTO.getPayOrderId()))
+                || payOrder == null || !PayOrderStatusEnum.isSuccess(payOrder.getStatus())
+                || !Objects.equals(payOrder.getMerchantOrderId(), notifyReqDTO.getMerchantOrderId())
+                || order.getDepositAmount() == null
+                || payOrder.getPrice() == null
+                || toFen(order.getDepositAmount()) != payOrder.getPrice()) {
+            throw exception(ORDER_PAY_CALLBACK_INVALID);
+        }
+        int updated = orderInfoMapper.update(null, new LambdaUpdateWrapper<OrderInfoDO>()
+                .eq(OrderInfoDO::getId, order.getId())
+                .eq(OrderInfoDO::getDepositPayStatus, LinbangRiskConstants.DEPOSIT_PAY_STATUS_UNPAID)
+                .set(OrderInfoDO::getDepositPayOrderId, notifyReqDTO.getPayOrderId())
+                .set(OrderInfoDO::getDepositPayStatus, LinbangRiskConstants.DEPOSIT_PAY_STATUS_PAID)
+                .set(OrderInfoDO::getDepositPaidTime, LocalDateTime.now()));
+        if (updated == 0) {
+            OrderInfoDO latest = orderInfoMapper.selectById(order.getId());
+            if (latest != null && Objects.equals(latest.getDepositPayOrderId(), notifyReqDTO.getPayOrderId())
+                    && Objects.equals(latest.getDepositPayStatus(), LinbangRiskConstants.DEPOSIT_PAY_STATUS_PAID)) {
+                return true;
+            }
+            throw exception(ORDER_PAY_CALLBACK_INVALID);
+        }
         return true;
+    }
+
+    private int toFen(BigDecimal amount) {
+        try {
+            return MoneyUtils.yuanToFen(amount);
+        } catch (ArithmeticException | NullPointerException ex) {
+            throw exception(ORDER_PAY_CALLBACK_INVALID);
+        }
     }
 
     private void validateRealName(Long userId) {
@@ -458,5 +511,11 @@ public class LinbangRiskFacadeImpl implements LinbangRiskFacade {
 
     private BigDecimal defaultBigDecimal(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private void lockMemberUser(Long userId) {
+        if (memberUserMapper.selectByIdForUpdate(userId) == null) {
+            throw exception(MEMBER_USER_NOT_EXISTS);
+        }
     }
 }

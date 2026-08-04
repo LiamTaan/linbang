@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
+@Schema(description = "用户 App - WebSocket 场景票据 Response VO")
 public class AppMemberSceneTicketRespVO {
 
     @Schema(description = "场景票据")

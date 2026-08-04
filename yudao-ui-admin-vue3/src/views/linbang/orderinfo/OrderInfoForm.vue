@@ -11,21 +11,36 @@
         <el-input v-model="formData.orderNo" placeholder="请输入订单号" />
       </el-form-item>
       <el-form-item label="下单用户" prop="userId">
-        <el-input :model-value="selectedUserLabel" placeholder="请选择用户" readonly @click="openUserDialog">
+        <el-input
+          :model-value="selectedUserLabel"
+          placeholder="请选择用户"
+          readonly
+          @click="openUserDialog"
+        >
           <template #append>
             <el-button @click="openUserDialog">选择</el-button>
           </template>
         </el-input>
       </el-form-item>
       <el-form-item label="服务商" prop="merchantId">
-        <el-input :model-value="selectedMerchantLabel" placeholder="请选择服务商" readonly @click="openMerchantDialog">
+        <el-input
+          :model-value="selectedMerchantLabel"
+          placeholder="请选择服务商"
+          readonly
+          @click="openMerchantDialog"
+        >
           <template #append>
             <el-button @click="openMerchantDialog">选择</el-button>
           </template>
         </el-input>
       </el-form-item>
       <el-form-item label="服务类目" prop="categoryId">
-        <el-input :model-value="selectedCategoryLabel" placeholder="请选择服务类目" readonly @click="openCategoryDialog">
+        <el-input
+          :model-value="selectedCategoryLabel"
+          placeholder="请选择服务类目"
+          readonly
+          @click="openCategoryDialog"
+        >
           <template #append>
             <el-button @click="openCategoryDialog">选择</el-button>
           </template>
@@ -60,20 +75,37 @@
         <el-input v-model="formData.requireDesc" placeholder="请输入需求描述" />
       </el-form-item>
       <el-form-item label="服务地址" prop="addressId">
-        <el-input :model-value="selectedAddressLabel" placeholder="请选择服务地址" readonly @click="openAddressDialog">
+        <el-input
+          :model-value="selectedAddressLabel"
+          placeholder="请选择服务地址"
+          readonly
+          @click="openAddressDialog"
+        >
           <template #append>
             <el-button @click="openAddressDialog">选择</el-button>
           </template>
         </el-input>
       </el-form-item>
       <el-form-item label="地址区域">
-        <el-input :model-value="selectedAddressRegion" placeholder="选择服务地址后自动带出" readonly />
+        <el-input
+          :model-value="selectedAddressRegion"
+          placeholder="选择服务地址后自动带出"
+          readonly
+        />
       </el-form-item>
       <el-form-item label="详细地址">
-        <el-input :model-value="formData.detailAddress || ''" placeholder="选择服务地址后自动带出" readonly />
+        <el-input
+          :model-value="formData.detailAddress || ''"
+          placeholder="选择服务地址后自动带出"
+          readonly
+        />
       </el-form-item>
       <el-form-item label="地图坐标">
-        <el-input :model-value="selectedAddressCoordinate" placeholder="选择服务地址后自动带出" readonly />
+        <el-input
+          :model-value="selectedAddressCoordinate"
+          placeholder="选择服务地址后自动带出"
+          readonly
+        />
       </el-form-item>
       <el-form-item label="是否开票" prop="needInvoice">
         <el-radio-group v-model="formData.needInvoice">
@@ -114,7 +146,12 @@
         </el-radio-group>
       </el-form-item>
       <el-form-item label="支付订单" prop="payOrderId">
-        <el-input :model-value="selectedPayOrderLabel" placeholder="请选择支付订单" readonly @click="openPayOrderDialog">
+        <el-input
+          :model-value="selectedPayOrderLabel"
+          placeholder="请选择支付订单"
+          readonly
+          @click="openPayOrderDialog"
+        >
           <template #append>
             <el-button @click="openPayOrderDialog">选择</el-button>
           </template>
@@ -146,7 +183,11 @@
 <script setup lang="ts">
 import { getStrDictOptions, DICT_TYPE } from '@/utils/dict'
 import { OrderInfoApi, OrderInfo, OrderInfoDetail } from '@/api/linbang/orderinfo'
-import { MerchantInfoApi, type MerchantInfo, type MerchantInfoDetail } from '@/api/linbang/merchantinfo'
+import {
+  MerchantInfoApi,
+  type MerchantInfo,
+  type MerchantInfoDetail
+} from '@/api/linbang/merchantinfo'
 import {
   MerchantServiceCategoryApi,
   type MerchantServiceCategory
@@ -312,7 +353,12 @@ const selectedAddressLabel = computed(() => {
 })
 
 const selectedAddressRegion = computed(() => {
-  return [formData.value.province, formData.value.city, formData.value.district, formData.value.street]
+  return [
+    formData.value.province,
+    formData.value.city,
+    formData.value.district,
+    formData.value.street
+  ]
     .filter(Boolean)
     .join(' / ')
 })

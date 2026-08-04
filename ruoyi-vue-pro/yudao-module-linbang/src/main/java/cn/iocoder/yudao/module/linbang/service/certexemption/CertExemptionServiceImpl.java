@@ -36,6 +36,7 @@ import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionU
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertMap;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertSet;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.CERT_EXEMPTION_APPLY_NOT_EXISTS;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.CERT_EXEMPTION_AUDIT_STATUS_INVALID;
 
 @Service
 @Validated
@@ -66,7 +67,7 @@ public class CertExemptionServiceImpl implements CertExemptionService {
 
     @Override
     public CertExemptionDetailRespVO getDetail(Long id) {
-        CertExemptionApplyDO apply = getRequiredApply(id);
+        CertExemptionApplyDO apply = getRequiredApplyForRead(id);
         MemberUserDO user = apply.getUserId() == null ? null : memberUserMapper.selectById(apply.getUserId());
         MerchantInfoDO merchant = apply.getMerchantId() == null ? null : merchantInfoMapper.selectById(apply.getMerchantId());
         MemberUserQualificationDO qualification = apply.getQualificationId() == null ? null : memberUserQualificationMapper.selectById(apply.getQualificationId());
@@ -99,22 +100,34 @@ public class CertExemptionServiceImpl implements CertExemptionService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void audit(@Valid CertExemptionAuditReqVO reqVO) {
-        CertExemptionApplyDO apply = getRequiredApply(reqVO.getId());
+        CertExemptionApplyDO apply = certExemptionApplyMapper.selectByIdForUpdate(reqVO.getId());
+        if (apply == null) {
+            throw exception(CERT_EXEMPTION_APPLY_NOT_EXISTS);
+        }
+        String auditStatus = StrUtil.trimToEmpty(reqVO.getAuditStatus()).toUpperCase(java.util.Locale.ROOT);
+        if (!"PENDING".equals(apply.getAuditStatus())
+                || (!"APPROVED".equals(auditStatus) && !"REJECTED".equals(auditStatus))) {
+            throw exception(CERT_EXEMPTION_AUDIT_STATUS_INVALID);
+        }
+        if ("REJECTED".equals(auditStatus) && StrUtil.isBlank(reqVO.getRejectReason())) {
+            throw exception(CERT_EXEMPTION_AUDIT_STATUS_INVALID);
+        }
         certExemptionApplyMapper.updateById(CertExemptionApplyDO.builder()
                 .id(apply.getId())
-                .auditStatus(reqVO.getAuditStatus())
+                .auditStatus(auditStatus)
                 .auditRemark(reqVO.getAuditRemark())
-                .rejectReason(reqVO.getRejectReason())
+                .rejectReason("REJECTED".equals(auditStatus) ? reqVO.getRejectReason() : null)
                 .auditBy(SecurityFrameworkUtils.getLoginUserId())
                 .auditTime(LocalDateTime.now())
                 .build());
         if (apply.getUserId() != null) {
-            messagePushDispatchService.dispatchSingle("lb_cert_exemption_audited", "证件豁免审核结果通知", "CERT_EXEMPTION",
-                    apply.getId(), apply.getUserId(), "您的证件豁免审核结果已更新，请及时查看。");
+            messagePushDispatchService.dispatchSingleIdempotent("lb_cert_exemption_audited", "证件豁免审核结果通知",
+                    "CERT_EXEMPTION", apply.getId(), apply.getUserId(), "您的证件豁免审核结果已更新，请及时查看。",
+                    "lb_cert_exemption_audited:" + apply.getId());
         }
     }
 
-    private CertExemptionApplyDO getRequiredApply(Long id) {
+    private CertExemptionApplyDO getRequiredApplyForRead(Long id) {
         CertExemptionApplyDO apply = certExemptionApplyMapper.selectById(id);
         if (apply == null) {
             throw exception(CERT_EXEMPTION_APPLY_NOT_EXISTS);

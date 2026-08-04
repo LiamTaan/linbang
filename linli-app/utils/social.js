@@ -1,15 +1,11 @@
-import { APP_CONFIG } from '@/config/app'
 import { getSocialAuthorizeUrl, socialLogin } from '@/api/auth'
 import { applyLoginSession, redirectAfterLogin } from '@/services/session'
-import { setPendingSocialAuth } from '@/utils/auth'
+import { clearPendingSocialAuth, getPendingSocialAuth, setPendingSocialAuth } from '@/utils/auth'
+import { normalizeSocialAuthorizeUrl, openExternalHttpsUrl } from '@/utils/security'
 
 export const SOCIAL_TYPES = {
   WECHAT: 32,
   ALIPAY: 40
-}
-
-function createState() {
-  return `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
 }
 
 function getProviderByType(type) {
@@ -47,51 +43,72 @@ function requestNativeCode(provider, state) {
   })
 }
 
-async function openAuthorizeUrl(type, state) {
+function extractAuthorizeState(url) {
+  try {
+    const state = new URL(url).searchParams.get('state') || ''
+    return state.length <= 512 ? state : ''
+  } catch (error) {
+    return ''
+  }
+}
+
+async function prepareAuthorize(type) {
   const redirectUri = buildRedirectUri(type)
-  const url = await getSocialAuthorizeUrl({
+  const rawUrl = await getSocialAuthorizeUrl({
     type,
     redirectUri
   })
+  const url = normalizeSocialAuthorizeUrl(rawUrl, type)
+  const state = extractAuthorizeState(url)
+  if (!url || !state) {
+    throw new Error('授权地址校验失败')
+  }
   setPendingSocialAuth({
     type,
     state,
     redirectUri
   })
-  // #ifdef APP-PLUS
-  plus.runtime.openURL(url)
-  // #endif
-  // #ifndef APP-PLUS
-  window.location.href = url
-  // #endif
+  return { url, state, redirectUri }
+}
+
+function openAuthorizeUrl(authorize) {
+  if (!openExternalHttpsUrl(authorize.url)) {
+    throw new Error('当前环境无法打开授权页面')
+  }
   return {
     manualCallback: true,
-    state,
-    redirectUri
+    state: authorize.state,
+    redirectUri: authorize.redirectUri
   }
 }
 
 export async function startSocialAuthorize(type) {
   const provider = getProviderByType(type)
-  const state = createState()
+  const authorize = await prepareAuthorize(type)
   if (provider) {
     try {
-      const nativeResult = await requestNativeCode(provider, state)
+      const nativeResult = await requestNativeCode(provider, authorize.state)
       return {
         type,
         ...nativeResult
       }
     } catch (error) {
       if (type === SOCIAL_TYPES.WECHAT) {
-        return openAuthorizeUrl(type, state)
+        return openAuthorizeUrl(authorize)
       }
+      clearPendingSocialAuth()
       throw error
     }
   }
-  return openAuthorizeUrl(type, state)
+  return openAuthorizeUrl(authorize)
 }
 
 export async function finishSocialLogin(payload, redirect) {
+  const pending = getPendingSocialAuth()
+  if (!pending || Number(pending.type) !== Number(payload.type) || pending.state !== payload.state) {
+    clearPendingSocialAuth()
+    throw new Error('授权状态已失效，请重新发起登录')
+  }
   const loginResp = await socialLogin(payload)
   if (loginResp && loginResp.bindRequired) {
     setPendingSocialAuth({

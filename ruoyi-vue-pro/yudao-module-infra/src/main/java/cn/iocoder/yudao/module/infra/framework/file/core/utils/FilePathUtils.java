@@ -16,6 +16,9 @@ import static cn.iocoder.yudao.module.infra.enums.ErrorCodeConstants.FILE_PATH_I
  */
 public class FilePathUtils {
 
+    private static final int MAX_FILE_NAME_LENGTH = 256;
+    private static final int MAX_FILE_PATH_LENGTH = 512;
+
     private FilePathUtils() {
     }
 
@@ -29,7 +32,8 @@ public class FilePathUtils {
         if (StrUtil.isEmpty(name)) {
             return name;
         }
-        if (!isPathValid(name) || StrUtil.contains(name, StrUtil.SLASH) || !StrUtil.equals(name, FileUtil.getName(name))) {
+        if (name.length() > MAX_FILE_NAME_LENGTH || !isPathValid(name)
+                || StrUtil.contains(name, StrUtil.SLASH) || !StrUtil.equals(name, FileUtil.getName(name))) {
             throw exception(FILE_PATH_INVALID);
         }
         return name;
@@ -62,7 +66,7 @@ public class FilePathUtils {
      * @param path 文件相对路径
      */
     public static void validatePath(String path) {
-        if (StrUtil.isEmpty(path) || !isPathValid(path)) {
+        if (StrUtil.isEmpty(path) || path.length() > MAX_FILE_PATH_LENGTH || !isPathValid(path)) {
             throw exception(FILE_PATH_INVALID);
         }
     }
@@ -78,8 +82,8 @@ public class FilePathUtils {
         if (StrUtil.startWithAny(path, StrUtil.SLASH, "\\")) {
             return false;
         }
-        // 不能包含反斜杠或空字符，避免绕过不同系统的路径解析
-        if (StrUtil.contains(path, "\\") || path.indexOf('\0') >= 0) {
+        // 不能包含反斜杠或控制字符，避免绕过不同系统的路径解析或污染响应头、日志
+        if (StrUtil.contains(path, "\\") || containsControlCharacter(path)) {
             return false;
         }
         // 不能是 Windows 盘符路径，例如 C:/test.jpg
@@ -101,6 +105,15 @@ public class FilePathUtils {
             }
         }
         return true;
+    }
+
+    private static boolean containsControlCharacter(String value) {
+        for (int i = 0; i < value.length(); i++) {
+            if (Character.isISOControl(value.charAt(i))) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

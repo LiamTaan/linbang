@@ -115,7 +115,7 @@
     </el-dialog>
     <!-- 帮助说明 -->
     <el-dialog v-model="showHelp" title="格式说明" width="600px" @close="showHelp = false">
-      <div v-html="helpHtml"></div>
+      <div v-dompurify-html="helpHtml"></div>
       <template #footer>
         <el-button @click="showHelp = false">关闭</el-button>
       </template>

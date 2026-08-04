@@ -71,7 +71,7 @@
             <wx-voice-player :url="scope.row.mediaUrl" :content="scope.row.recognition" />
           </div>
           <div v-else-if="scope.row.type === MsgType.Image">
-            <a target="_blank" :href="scope.row.mediaUrl">
+            <a target="_blank" rel="noopener noreferrer" :href="toOpenableUrl(scope.row.mediaUrl)">
               <img :src="scope.row.mediaUrl" style="width: 100px" />
             </a>
           </div>
@@ -81,7 +81,9 @@
           <div v-else-if="scope.row.type === MsgType.Link">
             <el-tag>链接</el-tag>
             ：
-            <a :href="scope.row.url" target="_blank">{{ scope.row.title }}</a>
+            <a :href="toOpenableUrl(scope.row.url)" target="_blank" rel="noopener noreferrer">{{
+              scope.row.title
+            }}</a>
           </div>
           <div v-else-if="scope.row.type === MsgType.Location">
             <WxLocation
@@ -132,6 +134,7 @@ import WxMusic from '@/views/mp/components/wx-music'
 import WxNews from '@/views/mp/components/wx-news'
 import { dateFormatter } from '@/utils/formatTime'
 import { MsgType } from '@/views/mp/components/wx-msg/types'
+import { toOpenableUrl } from '@/utils/url'
 
 const props = defineProps({
   list: {

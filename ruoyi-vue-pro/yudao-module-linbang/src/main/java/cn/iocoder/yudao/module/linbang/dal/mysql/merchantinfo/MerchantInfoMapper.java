@@ -17,6 +17,18 @@ import cn.iocoder.yudao.module.linbang.controller.admin.merchantinfo.vo.*;
 @Mapper
 public interface MerchantInfoMapper extends BaseMapperX<MerchantInfoDO> {
 
+    default MerchantInfoDO selectByIdForUpdate(Long id) {
+        return selectOne(new LambdaQueryWrapperX<MerchantInfoDO>()
+                .eq(MerchantInfoDO::getId, id)
+                .last("FOR UPDATE"));
+    }
+
+    default MerchantInfoDO selectByUserIdForUpdate(Long userId) {
+        return selectOne(new LambdaQueryWrapperX<MerchantInfoDO>()
+                .eq(MerchantInfoDO::getUserId, userId)
+                .last("FOR UPDATE"));
+    }
+
     default PageResult<MerchantInfoDO> selectPage(MerchantInfoPageReqVO reqVO, Collection<Long> userIds) {
         return selectPage(reqVO, new LambdaQueryWrapperX<MerchantInfoDO>()
                 .inIfPresent(MerchantInfoDO::getUserId, userIds)

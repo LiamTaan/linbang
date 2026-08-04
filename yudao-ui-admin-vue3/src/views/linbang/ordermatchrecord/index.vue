@@ -76,12 +76,7 @@
         />
       </el-form-item>
       <el-form-item label="状态" prop="status">
-        <el-select
-          v-model="queryParams.status"
-          placeholder="请选择状态"
-          clearable
-          class="!w-240px"
-        >
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable class="!w-240px">
           <el-option
             v-for="item in MATCH_STATUS_OPTIONS"
             :key="item.value"
@@ -111,11 +106,11 @@
           <Icon icon="ep:download" class="mr-5px" /> 导出
         </el-button>
         <el-button
-            type="danger"
-            plain
-            :disabled="isEmpty(checkedIds)"
-            @click="handleDeleteBatch"
-            v-hasPermi="['linbang:order:match-record:delete']"
+          type="danger"
+          plain
+          :disabled="isEmpty(checkedIds)"
+          @click="handleDeleteBatch"
+          v-hasPermi="['linbang:order:match-record:delete']"
         >
           <Icon icon="ep:delete" class="mr-5px" /> 批量删除
         </el-button>
@@ -126,22 +121,28 @@
   <!-- 列表 -->
   <ContentWrap>
     <el-table
-        row-key="id"
-        v-loading="loading"
-        :data="list"
-        :stripe="true"
-        :show-overflow-tooltip="true"
-        @selection-change="handleRowCheckboxChange"
+      row-key="id"
+      v-loading="loading"
+      :data="list"
+      :stripe="true"
+      :show-overflow-tooltip="true"
+      @selection-change="handleRowCheckboxChange"
     >
-    <el-table-column type="selection" width="55" />
+      <el-table-column type="selection" width="55" />
       <el-table-column label="订单号" align="center" prop="orderNo" min-width="180" />
       <el-table-column label="单元号" align="center" prop="unitNo" min-width="160" />
       <el-table-column label="匹配服务商" align="center" min-width="220">
         <template #default="{ row }">
           <div class="leading-20px">
-            <div class="font-600">{{ row.merchantName || (row.merchantId ? '服务商信息缺失' : '-') }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactName || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactMobile || '-' }}</div>
+            <div class="font-600">{{
+              row.merchantName || (row.merchantId ? '服务商信息缺失' : '-')
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactName || '-'
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactMobile || '-'
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -211,15 +212,31 @@
 
   <Dialog v-model="detailVisible" title="订单匹配记录详情" width="920px">
     <el-descriptions v-loading="detailLoading" :column="2" border>
-      <el-descriptions-item label="命中规则编码">{{ detailData?.matchRuleCode || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="订单号">{{ detailData?.order?.orderNo || detailData?.orderNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="单元号">{{ detailData?.unit?.unitNo || detailData?.unitNo || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="命中规则编码">{{
+        detailData?.matchRuleCode || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="订单号">{{
+        detailData?.order?.orderNo || detailData?.orderNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="单元号">{{
+        detailData?.unit?.unitNo || detailData?.unitNo || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="匹配服务商">{{ formatMerchantDisplay() }}</el-descriptions-item>
-      <el-descriptions-item label="状态">{{ formatMatchStatus(detailData?.status) }}</el-descriptions-item>
-      <el-descriptions-item label="匹配分值">{{ detailData?.matchScore ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="距离公里">{{ detailData?.distanceKm ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="推送时间">{{ formatDate(detailData?.pushTime) }}</el-descriptions-item>
-      <el-descriptions-item label="接单截止时间">{{ formatDate(detailData?.acceptDeadlineTime) }}</el-descriptions-item>
+      <el-descriptions-item label="状态">{{
+        formatMatchStatus(detailData?.status)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="匹配分值">{{
+        detailData?.matchScore ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="距离公里">{{
+        detailData?.distanceKm ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="推送时间">{{
+        formatDate(detailData?.pushTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="接单截止时间">{{
+        formatDate(detailData?.acceptDeadlineTime)
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">订单与单元上下文</el-divider>
@@ -247,7 +264,9 @@
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">匹配服务商</div>
-          <div class="mt-8px text-16px font-600">{{ detailData?.merchant?.merchantName || '-' }}</div>
+          <div class="mt-8px text-16px font-600">{{
+            detailData?.merchant?.merchantName || '-'
+          }}</div>
           <div class="mt-6px text-13px">{{ detailData?.merchant?.contactName || '-' }}</div>
           <div class="mt-6px text-[var(--el-text-color-secondary)]">
             状态：{{ formatEnableStatus(detailData?.merchant?.status) }}
@@ -257,18 +276,31 @@
     </el-row>
 
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="订单金额">{{ detailData?.order?.orderAmount ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="下单用户">{{ formatOrderUserDisplay(detailData?.order) }}</el-descriptions-item>
-      <el-descriptions-item label="单元序号">{{ detailData?.unit?.unitSeq || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="单元金额">{{ detailData?.unit?.unitAmount ?? '-' }}</el-descriptions-item>
+      <el-descriptions-item label="订单金额">{{
+        detailData?.order?.orderAmount ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="下单用户">{{
+        formatOrderUserDisplay(detailData?.order)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="单元序号">{{
+        detailData?.unit?.unitSeq || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="单元金额">{{
+        detailData?.unit?.unitAmount ?? '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="锁单状态">
         <span v-if="detailData?.unit">{{ detailData.unit.isLocked ? '已锁定' : '未锁定' }}</span>
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="锁单原因">{{ detailData?.unit?.lockReason || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="商家联系人">{{ detailData?.merchant?.contactMobile || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="锁单原因">{{
+        detailData?.unit?.lockReason || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="商家联系人">{{
+        detailData?.merchant?.contactMobile || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="信用分 / 等级">
-        {{ detailData?.merchant?.creditScore ?? '-' }} / {{ detailData?.merchant?.creditLevel || '-' }}
+        {{ detailData?.merchant?.creditScore ?? '-' }} /
+        {{ detailData?.merchant?.creditLevel || '-' }}
       </el-descriptions-item>
     </el-descriptions>
 
@@ -277,14 +309,17 @@
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">抢单记录数</div>
-          <div class="mt-8px text-24px font-600">{{ detailData?.summary?.acceptRecordCount ?? 0 }}</div>
+          <div class="mt-8px text-24px font-600">{{
+            detailData?.summary?.acceptRecordCount ?? 0
+          }}</div>
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">已接受 / 未接受</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.acceptedCount ?? 0 }} / {{ detailData?.summary?.rejectedCount ?? 0 }}
+            {{ detailData?.summary?.acceptedCount ?? 0 }} /
+            {{ detailData?.summary?.rejectedCount ?? 0 }}
           </div>
         </el-card>
       </el-col>
@@ -300,12 +335,24 @@
     </el-row>
 
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="规则名称">{{ detailData?.rule?.ruleName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="规则分组">{{ detailData?.rule?.ruleGroup || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="取值类型">{{ detailData?.rule?.valueType || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="规则状态">{{ formatEnableStatus(detailData?.rule?.status) }}</el-descriptions-item>
-      <el-descriptions-item label="规则值" :span="2">{{ detailData?.rule?.ruleValue || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="规则备注" :span="2">{{ detailData?.rule?.remark || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="规则名称">{{
+        detailData?.rule?.ruleName || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="规则分组">{{
+        detailData?.rule?.ruleGroup || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="取值类型">{{
+        detailData?.rule?.valueType || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="规则状态">{{
+        formatEnableStatus(detailData?.rule?.status)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="规则值" :span="2">{{
+        detailData?.rule?.ruleValue || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="规则备注" :span="2">{{
+        detailData?.rule?.remark || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">关联抢单记录</el-divider>
@@ -319,9 +366,15 @@
       <el-table-column label="服务商" min-width="200">
         <template #default="{ row }">
           <div class="leading-20px">
-            <div class="font-600">{{ row.merchantName || (row.merchantId ? '服务商信息缺失' : '-') }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactName || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactMobile || '-' }}</div>
+            <div class="font-600">{{
+              row.merchantName || (row.merchantId ? '服务商信息缺失' : '-')
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactName || '-'
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactMobile || '-'
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -344,7 +397,11 @@
 import { isEmpty } from '@/utils/is'
 import { dateFormatter, formatDate } from '@/utils/formatTime'
 import download from '@/utils/download'
-import { OrderMatchRecordApi, OrderMatchRecord, OrderMatchRecordDetail } from '@/api/linbang/ordermatchrecord'
+import {
+  OrderMatchRecordApi,
+  OrderMatchRecord,
+  OrderMatchRecordDetail
+} from '@/api/linbang/ordermatchrecord'
 import {
   formatAcceptResult,
   formatEnableStatus,
@@ -385,7 +442,9 @@ const queryParams = reactive({
 })
 
 const formatOrderUserDisplay = (order?: OrderMatchRecordDetail['order']) => {
-  const summary = [order?.userNickname, order?.userMobile, order?.userNo].filter(Boolean).join(' / ')
+  const summary = [order?.userNickname, order?.userMobile, order?.userNo]
+    .filter(Boolean)
+    .join(' / ')
   return summary || (order?.userId ? '用户信息缺失' : '-')
 }
 
@@ -461,16 +520,16 @@ const handleDeleteBatch = async () => {
   try {
     // 删除的二次确认
     await message.delConfirm()
-    await OrderMatchRecordApi.deleteOrderMatchRecordList(checkedIds.value);
-    checkedIds.value = [];
+    await OrderMatchRecordApi.deleteOrderMatchRecordList(checkedIds.value)
+    checkedIds.value = []
     message.success(t('common.delSuccess'))
-    await getList();
+    await getList()
   } catch {}
 }
 
 const checkedIds = ref<number[]>([])
 const handleRowCheckboxChange = (records: OrderMatchRecord[]) => {
-  checkedIds.value = records.map((item) => item.id!);
+  checkedIds.value = records.map((item) => item.id!)
 }
 
 /** 导出按钮操作 */

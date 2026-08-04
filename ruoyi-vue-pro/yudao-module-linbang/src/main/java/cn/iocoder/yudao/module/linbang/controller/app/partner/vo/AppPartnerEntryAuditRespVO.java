@@ -94,6 +94,7 @@ public class AppPartnerEntryAuditRespVO {
     private List<QualificationItem> qualifications;
 
     @Data
+    @Schema(description = "用户 App - 服务分类项目 Response VO")
     public static class CategoryItem {
         @Schema(description = "类目 ID", example = "1")
         private Long categoryId;
@@ -103,6 +104,7 @@ public class AppPartnerEntryAuditRespVO {
     }
 
     @Data
+    @Schema(description = "用户 App - 资质项目 Response VO")
     public static class QualificationItem {
         @Schema(description = "资质 ID", example = "1")
         private Long id;

@@ -140,7 +140,12 @@
         </el-table-column>
         <el-table-column label="钱包账户ID" prop="walletAccountId" width="130" />
         <el-table-column label="备注" prop="remark" min-width="180" />
-        <el-table-column label="创建时间" prop="createTime" :formatter="dateFormatter" width="180" />
+        <el-table-column
+          label="创建时间"
+          prop="createTime"
+          :formatter="dateFormatter"
+          width="180"
+        />
       </el-table>
       <el-divider content-position="left">投诉与申诉</el-divider>
       <el-table :data="refundDetail.bizContext.complaints || []" size="small" border>
@@ -155,9 +160,19 @@
           </template>
         </el-table-column>
         <el-table-column label="处理结果" prop="resultDesc" min-width="180" />
-        <el-table-column label="创建时间" prop="createTime" :formatter="dateFormatter" width="180" />
+        <el-table-column
+          label="创建时间"
+          prop="createTime"
+          :formatter="dateFormatter"
+          width="180"
+        />
       </el-table>
-      <el-table :data="refundDetail.bizContext.appeals || []" size="small" border style="margin-top: 12px">
+      <el-table
+        :data="refundDetail.bizContext.appeals || []"
+        size="small"
+        border
+        style="margin-top: 12px"
+      >
         <el-table-column label="申诉单号" prop="appealNo" min-width="160" />
         <el-table-column label="申诉类型" prop="appealType" width="120">
           <template #default="{ row }">{{ formatAppealType(row.appealType) }}</template>
@@ -170,12 +185,21 @@
         </el-table-column>
         <el-table-column label="审核状态" prop="auditStatus" width="120">
           <template #default="{ row }">
-            <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+            <dict-tag
+              v-if="row.auditStatus"
+              :type="DICT_TYPE.LB_AUDIT_STATUS"
+              :value="row.auditStatus"
+            />
             <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column label="审核备注" prop="auditRemark" min-width="180" />
-        <el-table-column label="创建时间" prop="createTime" :formatter="dateFormatter" width="180" />
+        <el-table-column
+          label="创建时间"
+          prop="createTime"
+          :formatter="dateFormatter"
+          width="180"
+        />
       </el-table>
       <el-divider content-position="left">订单操作日志</el-divider>
       <el-table :data="refundDetail.bizContext.operateLogs || []" size="small" border>
@@ -193,7 +217,12 @@
           <template #default="{ row }">{{ formatOperateStatus(row.afterStatus) }}</template>
         </el-table-column>
         <el-table-column label="备注" prop="remark" min-width="180" />
-        <el-table-column label="操作时间" prop="operateTime" :formatter="dateFormatter" width="180" />
+        <el-table-column
+          label="操作时间"
+          prop="operateTime"
+          :formatter="dateFormatter"
+          width="180"
+        />
       </el-table>
     </template>
   </Dialog>

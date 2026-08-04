@@ -86,9 +86,10 @@
           <el-link
             v-else-if="row.type.includes('pdf')"
             type="primary"
-            :href="row.url"
+            :href="toOpenableUrl(row.url)"
             :underline="false"
             target="_blank"
+            rel="noopener noreferrer"
           >
             预览
           </el-link>
@@ -96,9 +97,10 @@
             v-else
             type="primary"
             download
-            :href="row.url"
+            :href="toOpenableUrl(row.url)"
             :underline="false"
             target="_blank"
+            rel="noopener noreferrer"
           >
             下载
           </el-link>
@@ -145,6 +147,7 @@ import { dateFormatter } from '@/utils/formatTime'
 import * as FileApi from '@/api/infra/file'
 import FileForm from './FileForm.vue'
 import { useClipboard } from '@vueuse/core'
+import { toOpenableUrl } from '@/utils/url'
 
 defineOptions({ name: 'InfraFile' })
 

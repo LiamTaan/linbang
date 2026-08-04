@@ -19,7 +19,6 @@ import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.invalidParamException;
-import static cn.iocoder.yudao.framework.common.util.json.JsonUtils.toJsonString;
 
 /**
  * 微信支付【付款码支付】的 PayClient 实现类
@@ -81,8 +80,8 @@ public class WxBarPayClient extends AbstractWxPayClient {
                     throw ex;
                 }
                 // 等待 5 秒，继续下一轮重新发起支付
-                log.info("[doUnifiedOrderV2][发起微信 Bar 支付第({})失败，等待下一轮重试，请求({})，响应({})]", i,
-                        toJsonString(request), ex.getMessage());
+                log.info("[doUnifiedOrderV2][发起微信 Bar 支付第({})次失败，errorCode({})，等待下一轮重试]",
+                        i, ex.getErrCode());
                 ThreadUtil.sleep(5, TimeUnit.SECONDS);
             }
         }

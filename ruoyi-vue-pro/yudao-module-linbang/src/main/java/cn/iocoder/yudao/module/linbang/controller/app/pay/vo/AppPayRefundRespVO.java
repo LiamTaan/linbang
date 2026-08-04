@@ -45,7 +45,7 @@ public class AppPayRefundRespVO {
     @Schema(description = "退款原因")
     private String reason;
 
-    @Schema(description = "原支付渠道返回的退款失败原因；首期为微信支付，未来启用聚合支付后按实际原支付渠道返回，仅退款失败或异常时展示")
+    @Schema(description = "面向用户的稳定退款失败说明；不返回支付渠道原始错误或内部诊断信息，仅退款失败时展示")
     private String channelErrorMsg;
 
     @Schema(description = "退款成功时间；成功后资金原路退回，不允许用户选择退款渠道")

@@ -44,7 +44,4 @@ public class AppMemberQualificationCreateReqVO {
     @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY)
     private LocalDate validEndDate;
 
-    @Schema(description = "是否申请优先权益")
-    private Boolean priorityEnabled;
-
 }

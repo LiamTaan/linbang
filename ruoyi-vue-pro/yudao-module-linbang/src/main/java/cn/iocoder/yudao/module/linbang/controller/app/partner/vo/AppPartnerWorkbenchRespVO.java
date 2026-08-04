@@ -51,6 +51,7 @@ public class AppPartnerWorkbenchRespVO {
     private List<RecentPriceReportRespVO> recentPriceReports;
 
     @Data
+    @Schema(description = "用户 App - 统计摘要 Response VO")
     public static class SummaryRespVO {
 
         @Schema(description = "辖区数量")
@@ -82,6 +83,7 @@ public class AppPartnerWorkbenchRespVO {
     }
 
     @Data
+    @Schema(description = "用户 App - 最近价格申报摘要 Response VO")
     public static class RecentPriceReportRespVO {
 
         @Schema(description = "主键", example = "1")

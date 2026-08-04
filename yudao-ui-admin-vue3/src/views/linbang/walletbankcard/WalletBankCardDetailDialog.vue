@@ -1,22 +1,34 @@
 <template>
-    <Dialog v-model="dialogVisible" title="银行卡详情" width="820px" :loading="detailLoading">
+  <Dialog v-model="dialogVisible" title="银行卡详情" width="820px" :loading="detailLoading">
     <el-descriptions :column="2" label-class-name="desc-label">
       <el-descriptions-item label="用户">{{ formatUserDisplay() }}</el-descriptions-item>
       <el-descriptions-item label="开户银行">{{ detailData.bankName || '-' }}</el-descriptions-item>
       <el-descriptions-item label="银行编码">{{ detailData.bankCode || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="脱敏卡号">{{ detailData.cardNoMask || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="开户名">{{ detailData.accountName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="开户省份">{{ detailData.bankProvince || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="脱敏卡号">{{
+        detailData.cardNoMask || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="开户名">{{
+        detailData.accountName || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="开户省份">{{
+        detailData.bankProvince || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="开户城市">{{ detailData.bankCity || '-' }}</el-descriptions-item>
       <el-descriptions-item label="预留手机号">
         {{ detailData.reservedMobile || '-' }}
       </el-descriptions-item>
-      <el-descriptions-item label="状态">{{ formatEnableStatus(detailData.status) }}</el-descriptions-item>
+      <el-descriptions-item label="状态">{{
+        formatEnableStatus(detailData.status)
+      }}</el-descriptions-item>
       <el-descriptions-item label="是否默认">
         {{ formatBooleanYesNo(detailData.isDefault) }}
       </el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData.createTime) }}</el-descriptions-item>
-      <el-descriptions-item label="更新时间">{{ formatDate(detailData.updateTime) }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData.createTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="更新时间">{{
+        formatDate(detailData.updateTime)
+      }}</el-descriptions-item>
     </el-descriptions>
     <el-divider />
     <el-descriptions :column="3" border>
@@ -110,7 +122,11 @@ const detailLoading = ref(false)
 const detailData = ref<WalletBankCardDetail>({} as WalletBankCardDetail)
 
 const formatUserDisplay = () => {
-  const summary = [detailData.value.userNickname, detailData.value.userMobile, detailData.value.userNo]
+  const summary = [
+    detailData.value.userNickname,
+    detailData.value.userMobile,
+    detailData.value.userNo
+  ]
     .filter(Boolean)
     .join(' / ')
   return summary || (detailData.value.userId ? '用户信息缺失' : '-')

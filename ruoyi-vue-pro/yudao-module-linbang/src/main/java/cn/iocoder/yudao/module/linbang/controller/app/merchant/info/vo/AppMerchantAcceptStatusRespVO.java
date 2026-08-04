@@ -62,6 +62,7 @@ public class AppMerchantAcceptStatusRespVO {
     private List<RecentPushItem> recentPushes;
 
     @Data
+    @Schema(description = "用户 App - 最近推送项目 Response VO")
     public static class RecentPushItem {
         @Schema(description = "单元ID")
         private Long unitId;

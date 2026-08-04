@@ -35,7 +35,7 @@ public class MemberUserRealNameRespVO {
     @ExcelProperty("用户手机号")
     private String userMobile;
 
-    @Schema(description = "真实姓名", requiredMode = Schema.RequiredMode.REQUIRED, example = "??")
+    @Schema(description = "真实姓名", requiredMode = Schema.RequiredMode.REQUIRED, example = "张三")
     @ExcelProperty("真实姓名")
     private String realName;
 
@@ -68,7 +68,7 @@ public class MemberUserRealNameRespVO {
     @DictFormat("lb_audit_status") // TODO 代码优化：建议设置到对应的 DictTypeConstants 枚举类中
     private String auditStatus;
 
-    @Schema(description = "审核备注", example = "??")
+    @Schema(description = "审核备注", example = "材料清晰，信息一致")
     @ExcelProperty("审核备注")
     private String auditRemark;
 
@@ -80,7 +80,7 @@ public class MemberUserRealNameRespVO {
     @ExcelProperty("审核时间")
     private LocalDateTime auditTime;
 
-    @Schema(description = "驳回原因", example = "??")
+    @Schema(description = "驳回原因", example = "身份证照片不清晰")
     @ExcelProperty("驳回原因")
     private String rejectReason;
 

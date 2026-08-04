@@ -41,6 +41,7 @@ public class HelpFeedbackDetailRespVO {
     private List<RelatedFeedbackRespVO> relatedFeedbacks;
 
     @Data
+    @Schema(description = "管理后台 - 用户摘要 Response VO")
     public static class UserRespVO {
         @Schema(description = "用户 ID", example = "5001")
         private Long id;
@@ -59,6 +60,7 @@ public class HelpFeedbackDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 统计摘要 Response VO")
     public static class SummaryRespVO {
         @Schema(description = "该用户累计反馈数", example = "5")
         private Integer sameUserFeedbackCount;
@@ -73,6 +75,7 @@ public class HelpFeedbackDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 关联反馈摘要 Response VO")
     public static class RelatedFeedbackRespVO {
         @Schema(description = "反馈 ID", example = "2")
         private Long id;

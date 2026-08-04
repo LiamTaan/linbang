@@ -1,6 +1,7 @@
 package cn.iocoder.yudao.module.linbang.service.orderabnormal;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertMap;
@@ -13,6 +14,7 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.orderunit.OrderUnitDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.riskrule.RiskRuleDO;
 import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 
@@ -127,7 +129,7 @@ public class OrderAbnormalServiceImpl implements OrderAbnormalService {
         OrderAbnormalDO orderAbnormal = new OrderAbnormalDO();
         orderAbnormal.setOrderId(reqVO.getOrderId());
         orderAbnormal.setUnitId(reqVO.getUnitId());
-        orderAbnormal.setAbnormalNo("ABN" + System.currentTimeMillis());
+        orderAbnormal.setAbnormalNo("ABN" + IdUtil.getSnowflakeNextIdStr());
         orderAbnormal.setAbnormalType(reqVO.getAbnormalType());
         orderAbnormal.setRiskLevel(reqVO.getRiskLevel());
         orderAbnormal.setHitRuleCode(reqVO.getHitRuleCode());
@@ -139,20 +141,27 @@ public class OrderAbnormalServiceImpl implements OrderAbnormalService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void finalAuditOrderAbnormal(OrderAbnormalFinalAuditReqVO reqVO) {
-        OrderAbnormalDO abnormal = orderAbnormalMapper.selectById(reqVO.getId());
+        OrderAbnormalDO abnormal = orderAbnormalMapper.selectByIdForUpdate(reqVO.getId());
         if (abnormal == null) {
             throw exception(ORDER_ABNORMAL_NOT_EXISTS);
         }
+        String auditStatus = StrUtil.trimToEmpty(reqVO.getFinalAuditStatus()).toUpperCase(Locale.ROOT);
+        if (!Arrays.asList("APPROVED", "REJECTED").contains(auditStatus)
+                || !"PENDING".equalsIgnoreCase(abnormal.getFinalAuditStatus())) {
+            throw exception(ORDER_ABNORMAL_FINAL_AUDIT_STATUS_INVALID);
+        }
         Long loginUserId = SecurityFrameworkUtils.getLoginUserId();
         LocalDateTime now = LocalDateTime.now();
+        String handleStatus = "APPROVED".equals(auditStatus) ? "FINISHED" : "PROCESSING";
         orderAbnormalMapper.updateById(OrderAbnormalDO.builder()
                 .id(abnormal.getId())
-                .finalAuditStatus(reqVO.getFinalAuditStatus())
+                .finalAuditStatus(auditStatus)
                 .finalAuditBy(loginUserId)
                 .finalAuditTime(now)
                 .finalAuditRemark(reqVO.getFinalAuditRemark())
-                .handleStatus("APPROVED".equalsIgnoreCase(reqVO.getFinalAuditStatus()) ? "FINISHED" : "PROCESSING")
+                .handleStatus(handleStatus)
                 .handleBy(loginUserId)
                 .handleTime(now)
                 .remark(reqVO.getFinalAuditRemark())
@@ -164,7 +173,7 @@ public class OrderAbnormalServiceImpl implements OrderAbnormalService {
                 .operateRole("ADMIN")
                 .operateBy(loginUserId)
                 .beforeStatus(abnormal.getHandleStatus())
-                .afterStatus("APPROVED".equalsIgnoreCase(reqVO.getFinalAuditStatus()) ? "FINISHED" : "PROCESSING")
+                .afterStatus(handleStatus)
                 .remark(reqVO.getFinalAuditRemark())
                 .operateTime(now)
                 .build());

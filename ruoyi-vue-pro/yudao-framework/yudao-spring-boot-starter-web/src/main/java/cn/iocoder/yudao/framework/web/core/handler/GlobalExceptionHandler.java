@@ -2,7 +2,6 @@ package cn.iocoder.yudao.framework.web.core.handler;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.exceptions.ExceptionUtil;
-import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.biz.infra.logger.ApiErrorLogCommonApi;
@@ -11,9 +10,9 @@ import cn.iocoder.yudao.framework.common.exception.ServiceException;
 import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.util.collection.SetUtils;
-import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
 import cn.iocoder.yudao.framework.common.util.monitor.TracerUtils;
 import cn.iocoder.yudao.framework.common.util.servlet.ServletUtils;
+import cn.iocoder.yudao.framework.apilog.core.util.ApiLogSanitizer;
 import cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.google.common.util.concurrent.UncheckedExecutionException;
@@ -41,7 +40,6 @@ import javax.validation.ConstraintViolationException;
 import javax.validation.ValidationException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static cn.iocoder.yudao.framework.common.exception.enums.GlobalErrorCodeConstants.*;
@@ -335,7 +333,8 @@ public class GlobalExceptionHandler {
             // 执行插入 errorLog
             apiErrorLogApi.createApiErrorLogAsync(errorLog);
         } catch (Throwable th) {
-            log.error("[createExceptionLog][url({}) log({}) 发生异常]", req.getRequestURI(),  JsonUtils.toJsonString(errorLog), th);
+            log.error("[createExceptionLog][url({}) traceId({}) 发生异常]",
+                    req.getRequestURI(), errorLog.getTraceId(), th);
         }
     }
 
@@ -359,10 +358,8 @@ public class GlobalExceptionHandler {
         errorLog.setTraceId(TracerUtils.getTraceId());
         errorLog.setApplicationName(applicationName);
         errorLog.setRequestUrl(request.getRequestURI());
-        Map<String, Object> requestParams = MapUtil.<String, Object>builder()
-                .put("query", ServletUtils.getParamMap(request))
-                .put("body", ServletUtils.getBody(request)).build();
-        errorLog.setRequestParams(JsonUtils.toJsonString(requestParams));
+        errorLog.setRequestParams(ApiLogSanitizer.buildRequestParams(
+                ServletUtils.getParamMap(request), ServletUtils.getBody(request), null));
         errorLog.setRequestMethod(request.getMethod());
         errorLog.setUserAgent(ServletUtils.getUserAgent(request));
         errorLog.setUserIp(ServletUtils.getClientIP(request));

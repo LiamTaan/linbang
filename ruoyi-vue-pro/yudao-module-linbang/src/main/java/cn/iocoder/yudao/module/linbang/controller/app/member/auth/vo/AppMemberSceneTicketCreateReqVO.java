@@ -6,6 +6,7 @@ import lombok.Data;
 import javax.validation.constraints.NotBlank;
 
 @Data
+@Schema(description = "用户 App - 创建 WebSocket 场景票据 Request VO")
 public class AppMemberSceneTicketCreateReqVO {
 
     @Schema(description = "场景，只允许 WEBSOCKET", requiredMode = Schema.RequiredMode.REQUIRED)

@@ -16,6 +16,7 @@ import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantservicepoint.Merch
 import cn.iocoder.yudao.module.linbang.dal.dataobject.walletbankcard.WalletBankCardDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberqualification.MemberUserQualificationMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberrealname.MemberUserRealNameMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantcategory.MerchantServiceCategoryMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantcategoryrel.MerchantCategoryRelMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantentry.MerchantEntryMapper;
@@ -26,6 +27,7 @@ import cn.iocoder.yudao.module.linbang.service.map.AmapLocationService;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
 import cn.iocoder.yudao.module.linbang.service.merchantentry.MerchantEntrySnapshotUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
@@ -51,6 +53,8 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
     @Resource
     private MemberUserService memberUserService;
     @Resource
+    private MemberUserMapper memberUserMapper;
+    @Resource
     private MemberUserQualificationMapper memberUserQualificationMapper;
     @Resource
     private MemberUserRealNameMapper memberUserRealNameMapper;
@@ -73,10 +77,11 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
     @Transactional(rollbackFor = Exception.class)
     public Long createEntry(Long authUserId, @Valid AppMerchantEntryCreateReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
-        MerchantEntryDO latestEntry = merchantEntryMapper.selectOne(new LambdaQueryWrapperX<MerchantEntryDO>()
-                .eq(MerchantEntryDO::getUserId, loginUser.getId())
-                .orderByDesc(MerchantEntryDO::getId)
-                .last("LIMIT 1"));
+        loginUser = memberUserMapper.selectByIdForUpdate(loginUser.getId());
+        if (loginUser == null) {
+            throw exception(cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_NOT_EXISTS);
+        }
+        MerchantEntryDO latestEntry = merchantEntryMapper.selectLatestByUserIdForUpdate(loginUser.getId());
         if (latestEntry != null && !"REJECTED".equalsIgnoreCase(latestEntry.getStatus())) {
             throw exception(MERCHANT_ENTRY_ALREADY_EXISTS);
         }
@@ -90,8 +95,7 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
                 reqVO.getMerchantName(), reqVO.getContactName(), reqVO.getContactMobile(), reqVO.getServiceScopeDesc(),
                 realName, categories, qualifications);
 
-        MerchantInfoDO merchantInfo = merchantInfoMapper.selectOne(new LambdaQueryWrapperX<MerchantInfoDO>()
-                .eq(MerchantInfoDO::getUserId, loginUser.getId()));
+        MerchantInfoDO merchantInfo = merchantInfoMapper.selectByUserIdForUpdate(loginUser.getId());
         if (merchantInfo == null) {
             merchantInfo = MerchantInfoDO.builder()
                     .userId(loginUser.getId())
@@ -104,7 +108,14 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
                     .creditScore(100)
                     .creditLevel("NORMAL")
                     .build();
-            merchantInfoMapper.insert(merchantInfo);
+            try {
+                merchantInfoMapper.insert(merchantInfo);
+            } catch (DuplicateKeyException ex) {
+                merchantInfo = merchantInfoMapper.selectByUserIdForUpdate(loginUser.getId());
+                if (merchantInfo == null) {
+                    throw ex;
+                }
+            }
         } else {
             merchantInfoMapper.updateById(MerchantInfoDO.builder()
                     .id(merchantInfo.getId())
@@ -148,7 +159,15 @@ public class AppMerchantEntryServiceImpl implements AppMerchantEntryService {
                 .bankCardRequired(Boolean.TRUE)
                 .remark(null)
                 .build();
-        merchantEntryMapper.insert(entry);
+        try {
+            merchantEntryMapper.insert(entry);
+        } catch (DuplicateKeyException ex) {
+            MerchantEntryDO concurrentEntry = merchantEntryMapper.selectLatestByUserIdForUpdate(loginUser.getId());
+            if (concurrentEntry != null && !"REJECTED".equalsIgnoreCase(concurrentEntry.getStatus())) {
+                throw exception(MERCHANT_ENTRY_ALREADY_EXISTS);
+            }
+            throw ex;
+        }
         return entry.getId();
     }
 

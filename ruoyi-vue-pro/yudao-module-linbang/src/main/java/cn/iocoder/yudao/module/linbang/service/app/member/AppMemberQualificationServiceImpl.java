@@ -3,6 +3,9 @@ package cn.iocoder.yudao.module.linbang.service.app.member;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.PageParam;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
+import cn.iocoder.yudao.module.infra.dal.dataobject.file.FileDO;
+import cn.iocoder.yudao.module.infra.service.file.FileService;
 import cn.iocoder.yudao.module.linbang.controller.app.member.qualification.vo.AppMemberQualificationCreateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.qualification.vo.AppCertExemptionCreateReqVO;
 import cn.iocoder.yudao.module.linbang.controller.app.member.qualification.vo.AppCertExemptionRespVO;
@@ -33,7 +36,12 @@ import java.util.ArrayList;
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Objects;
+import java.util.Collections;
 import java.util.stream.Collectors;
+
+import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_QUALIFICATION_AUDIT_STATUS_INVALID;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.REVIEW_ACCESS_DENIED;
 
 @Service
 @Validated
@@ -49,11 +57,14 @@ public class AppMemberQualificationServiceImpl implements AppMemberQualification
     private MessageRecordMapper messageRecordMapper;
     @Resource
     private CertExemptionApplyMapper certExemptionApplyMapper;
+    @Resource
+    private FileService fileService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createQualification(Long authUserId, @Valid AppMemberQualificationCreateReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
+        validateOwnedFiles(authUserId, reqVO.getFileId(), reqVO.getVideoFileId(), reqVO.getEvidenceFileIdsJson());
         MemberUserQualificationDO qualification = MemberUserQualificationDO.builder()
                 .userId(loginUser.getId())
                 .qualificationType(reqVO.getQualificationType())
@@ -75,10 +86,13 @@ public class AppMemberQualificationServiceImpl implements AppMemberQualification
     @Transactional(rollbackFor = Exception.class)
     public void updateQualification(Long authUserId, @Valid AppMemberQualificationUpdateReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
-        MemberUserQualificationDO qualification = memberUserQualificationMapper.selectListByUserIdAndIds(loginUser.getId(),
-                java.util.Collections.singletonList(reqVO.getId())).stream().findFirst().orElse(null);
-        if (qualification == null) {
-            return;
+        validateOwnedFiles(authUserId, reqVO.getFileId(), reqVO.getVideoFileId(), reqVO.getEvidenceFileIdsJson());
+        MemberUserQualificationDO qualification = memberUserQualificationMapper.selectByIdForUpdate(reqVO.getId());
+        if (qualification == null || !Objects.equals(qualification.getUserId(), loginUser.getId())) {
+            throw exception(REVIEW_ACCESS_DENIED);
+        }
+        if (Objects.equals(qualification.getAuditStatus(), "APPROVED")) {
+            throw exception(MEMBER_USER_QUALIFICATION_AUDIT_STATUS_INVALID);
         }
         memberUserQualificationMapper.updateById(MemberUserQualificationDO.builder()
                 .id(qualification.getId())
@@ -95,7 +109,7 @@ public class AppMemberQualificationServiceImpl implements AppMemberQualification
                 .auditBy(null)
                 .auditTime(null)
                 .rejectReason(null)
-                .priorityEnabled(Boolean.TRUE.equals(reqVO.getPriorityEnabled()))
+                .priorityEnabled(Boolean.FALSE)
                 .build());
     }
 
@@ -122,7 +136,7 @@ public class AppMemberQualificationServiceImpl implements AppMemberQualification
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
         MemberUserRealNameDO realName = memberUserRealNameMapper.selectByUserId(loginUser.getId());
         List<MemberUserQualificationDO> qualifications = memberUserQualificationMapper.selectListByUserId(loginUser.getId());
-        List<MessageRecordDO> reminders = selectQualificationReminders(loginUser.getId());
+        List<MessageRecordDO> reminders = selectRecentQualificationReminders(loginUser.getId());
         List<CertExemptionApplyDO> exemptions = certExemptionApplyMapper.selectListByUserId(loginUser.getId());
 
         AppMemberQualificationSummaryRespVO respVO = new AppMemberQualificationSummaryRespVO();
@@ -171,25 +185,26 @@ public class AppMemberQualificationServiceImpl implements AppMemberQualification
     @Override
     public PageResult<AppMemberQualificationReminderRespVO> getReminderPage(Long authUserId, AppMemberQualificationReminderPageReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
-        List<AppMemberQualificationReminderRespVO> list = selectQualificationReminders(loginUser.getId()).stream()
-                .filter(item -> reqVO.getReadStatus() == null || Objects.equals(item.getReadStatus(), reqVO.getReadStatus()))
-                .map(item -> {
-                    AppMemberQualificationReminderRespVO respVO = new AppMemberQualificationReminderRespVO();
-                    respVO.setId(item.getId());
-                    respVO.setTitle(item.getTitle());
-                    respVO.setContentSnapshot(item.getContentSnapshot());
-                    respVO.setReadStatus(item.getReadStatus());
-                    respVO.setSendTime(item.getSendTime());
-                    respVO.setBizId(item.getBizId());
-                    return respVO;
-                }).collect(Collectors.toList());
-        return manualPage(list, reqVO.getPageNo(), reqVO.getPageSize());
+        PageResult<MessageRecordDO> pageResult = messageRecordMapper.selectQualificationReminderPage(
+                loginUser.getId(), reqVO.getReadStatus(), reqVO, MessageCenterConstants.BIZ_TYPE_QUALIFICATION_EXPIRY);
+        List<AppMemberQualificationReminderRespVO> list = pageResult.getList().stream()
+                .map(this::convertReminder)
+                .collect(Collectors.toList());
+        return new PageResult<>(list, pageResult.getTotal());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createCertExemption(Long authUserId, @Valid AppCertExemptionCreateReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
+        validateOwnedFiles(authUserId, null, null, reqVO.getAttachmentFileIdsJson());
+        if (reqVO.getQualificationId() != null) {
+            MemberUserQualificationDO qualification = memberUserQualificationMapper
+                    .selectByIdForUpdate(reqVO.getQualificationId());
+            if (qualification == null || !Objects.equals(qualification.getUserId(), loginUser.getId())) {
+                throw exception(REVIEW_ACCESS_DENIED);
+            }
+        }
         CertExemptionApplyDO applyDO = CertExemptionApplyDO.builder()
                 .userId(loginUser.getId())
                 .qualificationId(reqVO.getQualificationId())
@@ -227,6 +242,40 @@ public class AppMemberQualificationServiceImpl implements AppMemberQualification
             return respVO;
         }).collect(Collectors.toList());
         return new PageResult<>(list, pageResult.getTotal());
+    }
+
+    private void validateOwnedFiles(Long userId, Long fileId, Long videoFileId, String fileIdsJson) {
+        List<Long> fileIds = new ArrayList<>();
+        if (fileId != null) {
+            fileIds.add(fileId);
+        }
+        if (videoFileId != null) {
+            fileIds.add(videoFileId);
+        }
+        if (fileIdsJson != null && !fileIdsJson.trim().isEmpty()) {
+            try {
+                List<Long> parsed = JsonUtils.parseArray(fileIdsJson, Long.class);
+                if (parsed != null) {
+                    fileIds.addAll(parsed);
+                }
+            } catch (RuntimeException ex) {
+                throw exception(REVIEW_ACCESS_DENIED);
+            }
+        }
+        if (fileIds.size() > 10 || fileIds.stream().anyMatch(Objects::isNull)
+                || fileIds.size() != new java.util.HashSet<>(fileIds).size()) {
+            throw exception(REVIEW_ACCESS_DENIED);
+        }
+        for (Long id : fileIds) {
+            FileDO file = fileService.getFile(id);
+            String type = file == null ? null : file.getType();
+            if (file == null || !Objects.equals(file.getCreator(), String.valueOf(userId))
+                    || !(cn.hutool.core.util.StrUtil.startWithIgnoreCase(type, "image/")
+                    || cn.hutool.core.util.StrUtil.startWithIgnoreCase(type, "video/")
+                    || "application/pdf".equalsIgnoreCase(type))) {
+                throw exception(REVIEW_ACCESS_DENIED);
+            }
+        }
     }
 
     private AppMemberQualificationRespVO convert(MemberUserQualificationDO qualification) {
@@ -285,26 +334,23 @@ public class AppMemberQualificationServiceImpl implements AppMemberQualification
         return primary != null && !primary.trim().isEmpty() ? primary : secondary;
     }
 
-    private List<MessageRecordDO> selectQualificationReminders(Long userId) {
+    private List<MessageRecordDO> selectRecentQualificationReminders(Long userId) {
         return messageRecordMapper.selectList(new LambdaQueryWrapperX<MessageRecordDO>()
                 .eq(MessageRecordDO::getReceiverUserId, userId)
                 .eq(MessageRecordDO::getBizType, MessageCenterConstants.BIZ_TYPE_QUALIFICATION_EXPIRY)
-                .orderByDesc(MessageRecordDO::getId));
+                .orderByDesc(MessageRecordDO::getId)
+                .last("LIMIT 5"));
     }
 
-    private PageResult<AppMemberQualificationReminderRespVO> manualPage(List<AppMemberQualificationReminderRespVO> list,
-                                                                        Integer pageNo, Integer pageSize) {
-        if (list.isEmpty()) {
-            return new PageResult<>(new ArrayList<>(), 0L);
-        }
-        int safePageNo = pageNo == null || pageNo < 1 ? 1 : pageNo;
-        int safePageSize = pageSize == null || pageSize < 1 ? 10 : pageSize;
-        int fromIndex = (safePageNo - 1) * safePageSize;
-        if (fromIndex >= list.size()) {
-            return new PageResult<>(new ArrayList<>(), (long) list.size());
-        }
-        int toIndex = Math.min(fromIndex + safePageSize, list.size());
-        return new PageResult<>(list.subList(fromIndex, toIndex), (long) list.size());
+    private AppMemberQualificationReminderRespVO convertReminder(MessageRecordDO item) {
+        AppMemberQualificationReminderRespVO respVO = new AppMemberQualificationReminderRespVO();
+        respVO.setId(item.getId());
+        respVO.setTitle(item.getTitle());
+        respVO.setContentSnapshot(item.getContentSnapshot());
+        respVO.setReadStatus(item.getReadStatus());
+        respVO.setSendTime(item.getSendTime());
+        respVO.setBizId(item.getBizId());
+        return respVO;
     }
 
 }

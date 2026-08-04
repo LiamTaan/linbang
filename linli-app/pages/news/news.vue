@@ -64,11 +64,7 @@ import {
     submitMessageClickFeedback
 } from '@/api/message'
 import { syncMessageUnreadCount } from '@/services/message-unread'
-
-const TAB_BAR_PAGES = ['/pages/index/index', '/pages/order/order', '/pages/news/news', '/pages/my/my']
-const ROUTE_ALIAS_MAP = {
-    '/pages/qualification/index': '/pages/certificate/certificate'
-}
+import { openAppRoute } from '@/utils/navigation'
 
 export default {
     components: {
@@ -271,42 +267,15 @@ export default {
             this.showMessageFallback(current)
         },
         navigateByRoute(message) {
-            const routeValue = this.normalizeRouteValue(message && message.routeValue ? String(message.routeValue).trim() : '')
-            if (!routeValue) {
-                return false
-            }
-            if (!routeValue.startsWith('/')) {
-                return false
-            }
-            const pagePath = routeValue.split('?')[0]
-            if (TAB_BAR_PAGES.includes(pagePath)) {
-                uni.switchTab({ url: pagePath })
-                return true
-            }
-            uni.navigateTo({ url: routeValue })
-            return true
-        },
-        normalizeRouteValue(routeValue) {
-            if (!routeValue) {
-                return ''
-            }
-            const pagePath = routeValue.split('?')[0]
-            if (!ROUTE_ALIAS_MAP[pagePath]) {
-                return routeValue
-            }
-            return routeValue.replace(pagePath, ROUTE_ALIAS_MAP[pagePath])
+            const routeValue = message && message.routeValue ? String(message.routeValue).trim() : ''
+            return openAppRoute(routeValue)
         },
         navigateByGuess(message) {
             const route = this.guessMessageRoute(message)
             if (!route) {
                 return false
             }
-            if (TAB_BAR_PAGES.includes(route)) {
-                uni.switchTab({ url: route })
-                return true
-            }
-            uni.navigateTo({ url: route })
-            return true
+            return openAppRoute(route)
         },
         guessMessageRoute(message) {
             const text = [

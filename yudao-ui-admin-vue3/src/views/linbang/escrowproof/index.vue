@@ -1,17 +1,47 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="凭证编号" prop="proofNo">
-        <el-input v-model="queryParams.proofNo" placeholder="请输入托管凭证编号" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.proofNo"
+          placeholder="请输入托管凭证编号"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="订单 ID" prop="orderId">
-        <el-input v-model="queryParams.orderId" placeholder="请输入订单 ID" clearable class="!w-200px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.orderId"
+          placeholder="请输入订单 ID"
+          clearable
+          class="!w-200px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="单元 ID" prop="unitId">
-        <el-input v-model="queryParams.unitId" placeholder="请输入单元 ID" clearable class="!w-200px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.unitId"
+          placeholder="请输入单元 ID"
+          clearable
+          class="!w-200px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="状态" prop="proofStatus">
-        <el-input v-model="queryParams.proofStatus" placeholder="如 LOCKED / UNLOCKED / REFUNDED" clearable class="!w-240px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.proofStatus"
+          placeholder="如 LOCKED / UNLOCKED / REFUNDED"
+          clearable
+          class="!w-240px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item>
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
@@ -37,7 +67,13 @@
       <el-table-column label="状态" align="center" prop="proofStatus" width="120" />
       <el-table-column label="锁定原因" align="center" prop="lockReason" min-width="180" />
       <el-table-column label="解锁原因" align="center" prop="unlockReason" min-width="180" />
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="操作" align="center" width="100" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
@@ -59,11 +95,21 @@
       <el-descriptions-item label="订单 ID">{{ detailData?.orderId || '-' }}</el-descriptions-item>
       <el-descriptions-item label="单元 ID">{{ detailData?.unitId || '-' }}</el-descriptions-item>
       <el-descriptions-item label="用户 ID">{{ detailData?.userId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="服务商 ID">{{ detailData?.merchantId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="托管金额">{{ detailData?.escrowAmount ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData?.createTime) }}</el-descriptions-item>
-      <el-descriptions-item label="锁定原因" :span="2">{{ detailData?.lockReason || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="解锁原因" :span="2">{{ detailData?.unlockReason || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="服务商 ID">{{
+        detailData?.merchantId || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="托管金额">{{
+        detailData?.escrowAmount ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData?.createTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="锁定原因" :span="2">{{
+        detailData?.lockReason || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="解锁原因" :span="2">{{
+        detailData?.unlockReason || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
   </Dialog>
 </template>

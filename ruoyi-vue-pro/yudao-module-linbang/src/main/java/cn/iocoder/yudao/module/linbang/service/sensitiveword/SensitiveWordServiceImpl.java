@@ -86,29 +86,22 @@ public class SensitiveWordServiceImpl implements SensitiveWordService {
                 .eq(SensitiveWordDO::getWordType, sensitiveWord.getWordType())
                 .ne(SensitiveWordDO::getId, sensitiveWord.getId())
                 .orderByDesc(SensitiveWordDO::getStatus)
-                .orderByDesc(SensitiveWordDO::getId));
-        List<SensitiveWordDO> relatedWords = sameWordTypeWords.size() > 10 ? sameWordTypeWords.subList(0, 10) : sameWordTypeWords;
-
-        List<SensitiveWordDO> allWords = sensitiveWordMapper.selectList(new LambdaQueryWrapperX<SensitiveWordDO>()
-                .orderByDesc(SensitiveWordDO::getId));
-        int sameMatchTypeCount = 0;
-        int sameBlockLevelCount = 0;
-        for (SensitiveWordDO word : allWords) {
-            if (sensitiveWord.getMatchType() != null && sensitiveWord.getMatchType().equals(word.getMatchType())) {
-                sameMatchTypeCount++;
-            }
-            if (sensitiveWord.getBlockLevel() != null && sensitiveWord.getBlockLevel().equals(word.getBlockLevel())) {
-                sameBlockLevelCount++;
-            }
-        }
+                .orderByDesc(SensitiveWordDO::getId)
+                .last("LIMIT 10"));
+        long sameWordTypeCount = sensitiveWordMapper.selectCount(new LambdaQueryWrapperX<SensitiveWordDO>()
+                .eq(SensitiveWordDO::getWordType, sensitiveWord.getWordType()));
+        long sameMatchTypeCount = sensitiveWordMapper.selectCount(new LambdaQueryWrapperX<SensitiveWordDO>()
+                .eq(SensitiveWordDO::getMatchType, sensitiveWord.getMatchType()));
+        long sameBlockLevelCount = sensitiveWordMapper.selectCount(new LambdaQueryWrapperX<SensitiveWordDO>()
+                .eq(SensitiveWordDO::getBlockLevel, sensitiveWord.getBlockLevel()));
 
         SensitiveWordDetailRespVO respVO = BeanUtils.toBean(sensitiveWord, SensitiveWordDetailRespVO.class);
-        respVO.setSameWordTypeCount(sameWordTypeWords.size() + 1);
-        respVO.setSameMatchTypeCount(sameMatchTypeCount);
-        respVO.setSameBlockLevelCount(sameBlockLevelCount);
+        respVO.setSameWordTypeCount((int) Math.min(sameWordTypeCount, Integer.MAX_VALUE));
+        respVO.setSameMatchTypeCount((int) Math.min(sameMatchTypeCount, Integer.MAX_VALUE));
+        respVO.setSameBlockLevelCount((int) Math.min(sameBlockLevelCount, Integer.MAX_VALUE));
         respVO.setRelatedWords(sameWordTypeWords.isEmpty()
                 ? Collections.emptyList()
-                : SensitiveWordDetailAssembler.buildRelatedWords(relatedWords));
+                : SensitiveWordDetailAssembler.buildRelatedWords(sameWordTypeWords));
         return respVO;
     }
 

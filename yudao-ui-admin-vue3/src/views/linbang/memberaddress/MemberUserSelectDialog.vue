@@ -109,10 +109,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { DICT_TYPE, getStrDictOptions } from '@/utils/dict'
-import {
-  MemberUserApi,
-  type MemberUser
-} from '@/api/linbang/memberuser'
+import { MemberUserApi, type MemberUser } from '@/api/linbang/memberuser'
 import { formatEnableStatus } from '../utils/display'
 
 defineOptions({ name: 'MemberUserSelectDialog' })

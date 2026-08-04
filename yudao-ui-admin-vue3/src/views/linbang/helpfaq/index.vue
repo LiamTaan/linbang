@@ -1,6 +1,12 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="问题标题" prop="title">
         <el-input
           v-model="queryParams.title"
@@ -11,7 +17,12 @@
         />
       </el-form-item>
       <el-form-item label="问题分类" prop="categoryCode">
-        <el-select v-model="queryParams.categoryCode" placeholder="请选择分类" clearable class="!w-220px">
+        <el-select
+          v-model="queryParams.categoryCode"
+          placeholder="请选择分类"
+          clearable
+          class="!w-220px"
+        >
           <el-option
             v-for="item in HELP_FAQ_CATEGORY_OPTIONS"
             :key="item.value"
@@ -22,17 +33,23 @@
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable class="!w-180px">
-          <el-option v-for="item in ENABLE_STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
+          <el-option
+            v-for="item in ENABLE_STATUS_OPTIONS"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
-        <el-button type="primary" plain v-hasPermi="['linbang:help:faq:create']" @click="openForm('create')">
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
+        <el-button
+          type="primary"
+          plain
+          v-hasPermi="['linbang:help:faq:create']"
+          @click="openForm('create')"
+        >
           <Icon icon="ep:plus" class="mr-5px" /> 新增
         </el-button>
         <el-button
@@ -69,13 +86,29 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="操作" align="center" fixed="right" width="150">
         <template #default="{ row }">
-          <el-button link type="primary" v-hasPermi="['linbang:help:faq:update']" @click="openForm('update', row.id)">
+          <el-button
+            link
+            type="primary"
+            v-hasPermi="['linbang:help:faq:update']"
+            @click="openForm('update', row.id)"
+          >
             编辑
           </el-button>
-          <el-button link type="danger" v-hasPermi="['linbang:help:faq:delete']" @click="handleDelete(row.id)">
+          <el-button
+            link
+            type="danger"
+            v-hasPermi="['linbang:help:faq:delete']"
+            @click="handleDelete(row.id)"
+          >
             删除
           </el-button>
         </template>
@@ -92,7 +125,12 @@
   <Dialog v-model="formVisible" :title="formTitle" width="720px">
     <el-form ref="formRef" :model="formData" :rules="formRules" label-width="110px">
       <el-form-item label="问题分类" prop="categoryCode">
-        <el-select v-model="formData.categoryCode" placeholder="请选择分类" class="!w-260px" @change="handleCategoryChange">
+        <el-select
+          v-model="formData.categoryCode"
+          placeholder="请选择分类"
+          class="!w-260px"
+          @change="handleCategoryChange"
+        >
           <el-option
             v-for="item in HELP_FAQ_CATEGORY_OPTIONS"
             :key="item.value"
@@ -108,17 +146,29 @@
         <el-input v-model="formData.title" placeholder="请输入问题标题" />
       </el-form-item>
       <el-form-item label="答案正文" prop="content">
-        <el-input v-model="formData.content" type="textarea" :rows="6" placeholder="请输入问题答案、处理路径和注意事项" />
+        <el-input
+          v-model="formData.content"
+          type="textarea"
+          :rows="6"
+          placeholder="请输入问题答案、处理路径和注意事项"
+        />
       </el-form-item>
       <el-form-item label="图标标识" prop="icon">
-        <el-input v-model="formData.icon" placeholder="fund / order / verify / order_match / voice" />
+        <el-input
+          v-model="formData.icon"
+          placeholder="fund / order / verify / order_match / voice"
+        />
       </el-form-item>
       <el-form-item label="排序号" prop="sortNo">
         <el-input-number v-model="formData.sortNo" :min="0" :max="9999" controls-position="right" />
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-radio-group v-model="formData.status">
-          <el-radio-button v-for="item in ENABLE_STATUS_OPTIONS" :key="item.value" :label="item.value">
+          <el-radio-button
+            v-for="item in ENABLE_STATUS_OPTIONS"
+            :key="item.value"
+            :label="item.value"
+          >
             {{ item.label }}
           </el-radio-button>
         </el-radio-group>

@@ -2,6 +2,7 @@ package cn.iocoder.yudao.module.linbang.service.messagepushtask;
 
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.exception.ServiceException;
+import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.constants.LinbangRiskConstants;
 import cn.iocoder.yudao.module.linbang.constants.MessageCenterConstants;
 import cn.iocoder.yudao.module.linbang.controller.admin.messagepushtask.vo.MessagePushTaskManualSendReqVO;
@@ -14,7 +15,6 @@ import cn.iocoder.yudao.module.linbang.service.messagefeedback.MessageFeedbackSt
 import cn.iocoder.yudao.module.linbang.service.sensitiveword.SensitiveContentDetectService;
 import cn.iocoder.yudao.module.linbang.service.sensitiveword.SensitiveDetectResult;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
@@ -33,6 +33,8 @@ public class ManualMessagePushServiceImpl implements ManualMessagePushService {
     private static final String DEFAULT_BIZ_TYPE = "ADMIN_MANUAL_NOTICE";
     private static final String DEFAULT_TARGET_SCOPE = "SINGLE_USER";
     private static final String TARGET_SCOPE_ALL_USERS = "ALL_USERS";
+    private static final int USER_BATCH_SIZE = 500;
+    private static final long MAX_MANUAL_AUDIENCE = 10_000L;
 
     @Resource
     private MemberUserMapper memberUserMapper;
@@ -46,14 +48,18 @@ public class ManualMessagePushServiceImpl implements ManualMessagePushService {
     private SensitiveContentDetectService sensitiveContentDetectService;
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public Long manualSend(MessagePushTaskManualSendReqVO reqVO) {
         validateReq(reqVO);
         String bizType = StrUtil.blankToDefault(reqVO.getBizType(), DEFAULT_BIZ_TYPE);
         String targetScope = resolveTargetScope(reqVO);
         String title = sanitizeContent(reqVO.getTitle(), bizType + "_TITLE");
         String content = sanitizeContent(reqVO.getContent(), bizType);
-        List<MemberUserDO> receiverUsers = resolveReceiverUsers(reqVO, targetScope);
+        MemberUserDO receiverUser = resolveSingleReceiver(reqVO, targetScope);
+        long audienceCount = TARGET_SCOPE_ALL_USERS.equals(targetScope)
+                ? memberUserMapper.selectCount(MemberUserDO::getStatus, "ENABLE") : 1L;
+        if (audienceCount > MAX_MANUAL_AUDIENCE) {
+            throw new ServiceException(400, "手动同步群发最多支持 10000 人，请改用投放活动分批执行");
+        }
         Long pushTaskId = messagePushTaskService.createTask(MessagePushTaskDO.builder()
                 .taskName(StrUtil.maxLength(title, 128))
                 .sceneCode(MessageCenterConstants.SCENE_SYSTEM_NOTICE)
@@ -64,32 +70,72 @@ public class ManualMessagePushServiceImpl implements ManualMessagePushService {
                 .plannedSendTime(LocalDateTime.now())
                 .status(MessageCenterConstants.EXECUTE_STATUS_PROCESSING)
                 .executeStatus(MessageCenterConstants.EXECUTE_STATUS_PROCESSING)
-                .plannedAudienceCount(receiverUsers.size())
+                .plannedAudienceCount((int) Math.min(audienceCount, Integer.MAX_VALUE))
                 .creatorRemark(StrUtil.maxLength(content, 255))
                 .build());
         int successCount = 0;
-        for (MemberUserDO receiverUser : receiverUsers) {
-            MessageRecordDO record = MessageRecordDO.builder()
-                    .pushTaskId(pushTaskId)
-                    .receiverUserId(receiverUser.getId())
-                    .sceneCode(MessageCenterConstants.SCENE_SYSTEM_NOTICE)
-                    .messageCategory(MessageCenterConstants.CATEGORY_SYSTEM)
-                    .channelType(MessageCenterConstants.CHANNEL_APP_POPUP)
-                    .bizType(bizType)
-                    .sendStatus("SUCCESS")
-                    .sendTime(LocalDateTime.now())
-                    .title(title)
-                    .contentSnapshot(content)
-                    .routeType(reqVO.getRouteType())
-                    .routeValue(reqVO.getRouteValue())
-                    .readStatus(MessageCenterConstants.READ_STATUS_UNREAD)
-                    .build();
-            messageRecordMapper.insert(record);
-            messageFeedbackStatService.refreshByRecord(record);
-            successCount++;
+        MessageRecordDO lastRecord = null;
+        try {
+            if (TARGET_SCOPE_ALL_USERS.equals(targetScope)) {
+                Long lastUserId = null;
+                while (true) {
+                    List<MemberUserDO> userBatch = selectNextUserBatch(lastUserId);
+                    if (userBatch.isEmpty()) {
+                        break;
+                    }
+                    for (MemberUserDO user : userBatch) {
+                        lastRecord = insertMessageRecord(pushTaskId, user.getId(), bizType, title, content, reqVO);
+                        successCount++;
+                    }
+                    lastUserId = userBatch.get(userBatch.size() - 1).getId();
+                }
+            } else {
+                lastRecord = insertMessageRecord(pushTaskId, receiverUser.getId(), bizType, title, content, reqVO);
+                successCount++;
+            }
+        } catch (RuntimeException ex) {
+            messagePushTaskService.updateTaskResult(pushTaskId,
+                    resolveTaskStatus(successCount, 1), successCount, 1);
+            throw ex;
         }
         messagePushTaskService.updateTaskResult(pushTaskId, MessageCenterConstants.EXECUTE_STATUS_SUCCESS, successCount, 0);
+        if (lastRecord != null) {
+            messageFeedbackStatService.refreshByRecord(lastRecord);
+        }
         return pushTaskId;
+    }
+
+    private List<MemberUserDO> selectNextUserBatch(Long lastUserId) {
+        LambdaQueryWrapperX<MemberUserDO> query = new LambdaQueryWrapperX<>();
+        query.select(MemberUserDO::getId);
+        query.eq(MemberUserDO::getStatus, "ENABLE");
+        if (lastUserId != null) {
+            query.gt(MemberUserDO::getId, lastUserId);
+        }
+        query.orderByAsc(MemberUserDO::getId).last("LIMIT " + USER_BATCH_SIZE);
+        return memberUserMapper.selectList(query);
+    }
+
+    private MessageRecordDO insertMessageRecord(Long pushTaskId, Long receiverUserId, String bizType,
+                                                String title, String content,
+                                                MessagePushTaskManualSendReqVO reqVO) {
+        MessageRecordDO record = MessageRecordDO.builder()
+                .pushTaskId(pushTaskId)
+                .receiverUserId(receiverUserId)
+                .sceneCode(MessageCenterConstants.SCENE_SYSTEM_NOTICE)
+                .messageCategory(MessageCenterConstants.CATEGORY_SYSTEM)
+                .channelType(MessageCenterConstants.CHANNEL_APP_POPUP)
+                .bizType(bizType)
+                .sendStatus("SUCCESS")
+                .sendTime(LocalDateTime.now())
+                .title(title)
+                .contentSnapshot(content)
+                .routeType(reqVO.getRouteType())
+                .routeValue(reqVO.getRouteValue())
+                .readStatus(MessageCenterConstants.READ_STATUS_UNREAD)
+                .build();
+        messageRecordMapper.insert(record);
+        return record;
     }
 
     private void validateReq(MessagePushTaskManualSendReqVO reqVO) {
@@ -102,12 +148,16 @@ public class ManualMessagePushServiceImpl implements ManualMessagePushService {
     }
 
     private String resolveTargetScope(MessagePushTaskManualSendReqVO reqVO) {
-        return TARGET_SCOPE_ALL_USERS.equalsIgnoreCase(reqVO.getReceiverScope()) ? TARGET_SCOPE_ALL_USERS : DEFAULT_TARGET_SCOPE;
+        String scope = StrUtil.blankToDefault(reqVO.getReceiverScope(), DEFAULT_TARGET_SCOPE).trim().toUpperCase();
+        if (!DEFAULT_TARGET_SCOPE.equals(scope) && !TARGET_SCOPE_ALL_USERS.equals(scope)) {
+            throw new ServiceException(400, "接收范围仅支持 SINGLE_USER 或 ALL_USERS");
+        }
+        return scope;
     }
 
-    private List<MemberUserDO> resolveReceiverUsers(MessagePushTaskManualSendReqVO reqVO, String targetScope) {
+    private MemberUserDO resolveSingleReceiver(MessagePushTaskManualSendReqVO reqVO, String targetScope) {
         if (TARGET_SCOPE_ALL_USERS.equals(targetScope)) {
-            return memberUserMapper.selectList();
+            return null;
         }
         if (reqVO.getReceiverUserId() == null) {
             throw new ServiceException(400, "请选择接收用户");
@@ -116,7 +166,15 @@ public class ManualMessagePushServiceImpl implements ManualMessagePushService {
         if (receiverUser == null) {
             throw exception(MEMBER_USER_NOT_EXISTS);
         }
-        return java.util.Collections.singletonList(receiverUser);
+        return receiverUser;
+    }
+
+    private String resolveTaskStatus(int successCount, int failCount) {
+        if (successCount > 0 && failCount > 0) {
+            return MessageCenterConstants.EXECUTE_STATUS_PARTIAL_FAILED;
+        }
+        return failCount > 0 ? MessageCenterConstants.EXECUTE_STATUS_FAILED
+                : MessageCenterConstants.EXECUTE_STATUS_SUCCESS;
     }
 
     private String sanitizeContent(String content, String bizType) {

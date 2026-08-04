@@ -17,6 +17,12 @@ import cn.iocoder.yudao.module.linbang.controller.admin.sensitiveword.vo.*;
 @Mapper
 public interface SensitiveWordMapper extends BaseMapperX<SensitiveWordDO> {
 
+    default List<SensitiveWordDO> selectEnabledList() {
+        return selectList(new LambdaQueryWrapperX<SensitiveWordDO>()
+                .eq(SensitiveWordDO::getStatus, "ENABLE")
+                .orderByAsc(SensitiveWordDO::getId));
+    }
+
     default PageResult<SensitiveWordDO> selectPage(SensitiveWordPageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<SensitiveWordDO>()
                 .likeIfPresent(SensitiveWordDO::getWord, reqVO.getWord())

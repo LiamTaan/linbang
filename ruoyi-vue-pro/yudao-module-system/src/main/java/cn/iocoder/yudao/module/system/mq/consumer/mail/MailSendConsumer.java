@@ -24,7 +24,7 @@ public class MailSendConsumer {
     @EventListener
     @Async // Spring Event 默认在 Producer 发送的线程，通过 @Async 实现异步
     public void onMessage(MailSendMessage message) {
-        log.info("[onMessage][消息内容({})]", message);
+        log.info("[onMessage][邮件日志编号({})]", message.getLogId());
         mailSendService.doSendMail(message);
     }
 

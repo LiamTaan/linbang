@@ -83,7 +83,8 @@ public class SmsClientFactoryImpl implements SmsClientFactory {
             case QINIU: return new QiniuSmsClient(properties);
         }
         // 创建失败，错误日志 + 抛出异常
-        log.error("[createSmsClient][配置({}) 找不到合适的客户端实现]", properties);
+        log.error("[createSmsClient][短信渠道({}) code({}) 找不到合适的客户端实现]",
+                properties.getId(), properties.getCode());
         throw new IllegalArgumentException(String.format("配置(%s) 找不到合适的客户端实现", properties));
     }
 

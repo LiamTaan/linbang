@@ -8,7 +8,12 @@
       v-loading="formLoading"
     >
       <el-form-item label="用户" prop="userId">
-        <el-input :model-value="selectedUserLabel" placeholder="请选择用户" readonly @click="openUserDialog">
+        <el-input
+          :model-value="selectedUserLabel"
+          placeholder="请选择用户"
+          readonly
+          @click="openUserDialog"
+        >
           <template #append>
             <el-button @click="openUserDialog">选择</el-button>
           </template>
@@ -21,21 +26,36 @@
         <el-input v-model="formData.idCardNo" placeholder="请输入身份证号" />
       </el-form-item>
       <el-form-item label="身份证正面" prop="idCardFrontFileId">
-        <el-input :model-value="selectedFrontFileLabel" placeholder="请选择身份证正面文件" readonly @click="openFrontFileDialog">
+        <el-input
+          :model-value="selectedFrontFileLabel"
+          placeholder="请选择身份证正面文件"
+          readonly
+          @click="openFrontFileDialog"
+        >
           <template #append>
             <el-button @click="openFrontFileDialog">选择</el-button>
           </template>
         </el-input>
       </el-form-item>
       <el-form-item label="身份证反面" prop="idCardBackFileId">
-        <el-input :model-value="selectedBackFileLabel" placeholder="请选择身份证反面文件" readonly @click="openBackFileDialog">
+        <el-input
+          :model-value="selectedBackFileLabel"
+          placeholder="请选择身份证反面文件"
+          readonly
+          @click="openBackFileDialog"
+        >
           <template #append>
             <el-button @click="openBackFileDialog">选择</el-button>
           </template>
         </el-input>
       </el-form-item>
       <el-form-item label="手持证件照" prop="holdCardFileId">
-        <el-input :model-value="selectedHoldFileLabel" placeholder="请选择手持证件文件" readonly @click="openHoldFileDialog">
+        <el-input
+          :model-value="selectedHoldFileLabel"
+          placeholder="请选择手持证件文件"
+          readonly
+          @click="openHoldFileDialog"
+        >
           <template #append>
             <el-button @click="openHoldFileDialog">选择</el-button>
           </template>

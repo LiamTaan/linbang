@@ -2,7 +2,12 @@
   <ContentWrap>
     <el-form :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
       <el-form-item label="投放名称">
-        <el-input v-model="queryParams.campaignName" placeholder="请输入投放名称" clearable class="!w-220px" />
+        <el-input
+          v-model="queryParams.campaignName"
+          placeholder="请输入投放名称"
+          clearable
+          class="!w-220px"
+        />
       </el-form-item>
       <el-form-item label="审核状态">
         <el-select v-model="queryParams.auditStatus" clearable class="!w-180px">
@@ -24,7 +29,9 @@
       </el-form-item>
       <el-form-item>
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" />搜索</el-button>
-        <el-button type="primary" @click="openCreateDialog"><Icon icon="ep:plus" class="mr-5px" />新建投放</el-button>
+        <el-button type="primary" @click="openCreateDialog"
+          ><Icon icon="ep:plus" class="mr-5px" />新建投放</el-button
+        >
       </el-form-item>
     </el-form>
   </ContentWrap>
@@ -58,11 +65,33 @@
       <el-table-column label="操作" fixed="right" width="220">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetailDialog(row)">详情</el-button>
-          <el-button v-if="row.auditStatus === 'PENDING'" link type="primary" @click="openApproveDialog(row)">通过</el-button>
-          <el-button v-if="row.auditStatus === 'PENDING'" link type="danger" @click="openRejectDialog(row)">驳回</el-button>
-          <el-button v-if="row.auditStatus === 'APPROVED'" link type="primary" @click="executeNow(row)">执行</el-button>
           <el-button
-            v-if="row.executeStatus !== 'SUCCESS' && row.executeStatus !== 'PARTIAL_FAILED' && row.executeStatus !== 'CANCELLED'"
+            v-if="row.auditStatus === 'PENDING'"
+            link
+            type="primary"
+            @click="openApproveDialog(row)"
+            >通过</el-button
+          >
+          <el-button
+            v-if="row.auditStatus === 'PENDING'"
+            link
+            type="danger"
+            @click="openRejectDialog(row)"
+            >驳回</el-button
+          >
+          <el-button
+            v-if="row.auditStatus === 'APPROVED'"
+            link
+            type="primary"
+            @click="executeNow(row)"
+            >执行</el-button
+          >
+          <el-button
+            v-if="
+              row.executeStatus !== 'SUCCESS' &&
+              row.executeStatus !== 'PARTIAL_FAILED' &&
+              row.executeStatus !== 'CANCELLED'
+            "
             link
             type="danger"
             @click="openCancelDialog(row)"
@@ -72,7 +101,12 @@
         </template>
       </el-table-column>
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 
   <Dialog v-model="createVisible" title="新建投放活动" width="720px">
@@ -103,14 +137,32 @@
         <el-input v-model="campaignForm.targetRoleCodes" placeholder="多个用逗号分隔" />
       </el-form-item>
       <el-form-item label="投放时段">
-        <el-input v-model="campaignForm.deliveryTimeWindows" placeholder="如 09:00-12:00,14:00-18:00" />
+        <el-input
+          v-model="campaignForm.deliveryTimeWindows"
+          placeholder="如 09:00-12:00,14:00-18:00"
+        />
       </el-form-item>
       <el-form-item label="定时执行">
-        <el-date-picker v-model="campaignForm.scheduleTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" class="!w-full" />
+        <el-date-picker
+          v-model="campaignForm.scheduleTime"
+          type="datetime"
+          value-format="YYYY-MM-DD HH:mm:ss"
+          class="!w-full"
+        />
       </el-form-item>
       <el-form-item label="场景编码" prop="sceneCode" required>
-        <el-select v-model="campaignForm.sceneCode" filterable class="!w-full" placeholder="请选择消息场景">
-          <el-option v-for="item in sceneOptions" :key="item.id" :label="`${item.sceneName} (${item.sceneCode})`" :value="item.sceneCode" />
+        <el-select
+          v-model="campaignForm.sceneCode"
+          filterable
+          class="!w-full"
+          placeholder="请选择消息场景"
+        >
+          <el-option
+            v-for="item in sceneOptions"
+            :key="item.id"
+            :label="`${item.sceneName} (${item.sceneCode})`"
+            :value="item.sceneCode"
+          />
         </el-select>
       </el-form-item>
       <el-form-item label="消息分类" prop="messageCategory" required>
@@ -130,7 +182,12 @@
         <el-input-number v-model="campaignForm.bizId" :min="0" class="!w-full" />
       </el-form-item>
       <el-form-item label="内容快照" prop="contentSnapshot" required>
-        <el-input v-model="campaignForm.contentSnapshot" type="textarea" :rows="4" placeholder="请输入消息内容快照" />
+        <el-input
+          v-model="campaignForm.contentSnapshot"
+          type="textarea"
+          :rows="4"
+          placeholder="请输入消息内容快照"
+        />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -141,28 +198,63 @@
 
   <Dialog v-model="detailVisible" title="投放活动详情" width="720px">
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="投放名称">{{ currentRow?.campaignName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="来源">{{ formatCampaignSourceType(currentRow?.sourceType) }}</el-descriptions-item>
-      <el-descriptions-item label="目标模式">{{ formatCampaignTargetMode(currentRow?.targetMode) }}</el-descriptions-item>
-      <el-descriptions-item label="场景编码">{{ currentRow?.sceneCode || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="消息分类">{{ formatMessageCategory(currentRow?.messageCategory) }}</el-descriptions-item>
-      <el-descriptions-item label="投放时段">{{ currentRow?.deliveryTimeWindows || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="区域编码">{{ currentRow?.targetRegionCodes || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="类目 ID">{{ currentRow?.targetCategoryIds || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="角色编码">{{ currentRow?.targetRoleCodes || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="计划执行">{{ currentRow?.scheduleTime || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="计划人数">{{ currentRow?.plannedAudienceCount || 0 }}</el-descriptions-item>
+      <el-descriptions-item label="投放名称">{{
+        currentRow?.campaignName || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="来源">{{
+        formatCampaignSourceType(currentRow?.sourceType)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="目标模式">{{
+        formatCampaignTargetMode(currentRow?.targetMode)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="场景编码">{{
+        currentRow?.sceneCode || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="消息分类">{{
+        formatMessageCategory(currentRow?.messageCategory)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="投放时段">{{
+        currentRow?.deliveryTimeWindows || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="区域编码">{{
+        currentRow?.targetRegionCodes || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="类目 ID">{{
+        currentRow?.targetCategoryIds || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="角色编码">{{
+        currentRow?.targetRoleCodes || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="计划执行">{{
+        currentRow?.scheduleTime || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="计划人数">{{
+        currentRow?.plannedAudienceCount || 0
+      }}</el-descriptions-item>
       <el-descriptions-item label="触达/点击/已读">
-        {{ currentRow?.reachedCount || 0 }}/{{ currentRow?.clickedCount || 0 }}/{{ currentRow?.readCount || 0 }}
+        {{ currentRow?.reachedCount || 0 }}/{{ currentRow?.clickedCount || 0 }}/{{
+          currentRow?.readCount || 0
+        }}
       </el-descriptions-item>
-      <el-descriptions-item label="内容快照" :span="2">{{ currentRow?.contentSnapshot || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="内容快照" :span="2">{{
+        currentRow?.contentSnapshot || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
   </Dialog>
 
-  <Dialog v-model="auditVisible" :title="auditMode === 'approve' ? '审核通过' : auditMode === 'reject' ? '驳回投放' : '取消投放'" width="520px">
+  <Dialog
+    v-model="auditVisible"
+    :title="auditMode === 'approve' ? '审核通过' : auditMode === 'reject' ? '驳回投放' : '取消投放'"
+    width="520px"
+  >
     <el-form :model="auditForm" label-width="90px">
       <el-form-item :label="auditLabel" required>
-        <el-input v-model="auditForm.reason" type="textarea" :rows="4" :placeholder="auditPlaceholder" />
+        <el-input
+          v-model="auditForm.reason"
+          type="textarea"
+          :rows="4"
+          :placeholder="auditPlaceholder"
+        />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -177,6 +269,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useMessage } from '@/hooks/web/useMessage'
 import { MessageCampaignApi, type MessageCampaign } from '@/api/linbang/messagecampaign'
+import { requestDynamicKeyToken } from '../shared/dynamic-key'
 import { MessageSceneApi, type MessageScene } from '@/api/linbang/messagescene'
 import {
   formatCampaignAuditStatus,
@@ -330,10 +423,12 @@ const openCancelDialog = (row: MessageCampaign) => {
 const submitAudit = async () => {
   if (!currentRow.value?.id) return
   if (auditMode.value === 'approve') {
-    await MessageCampaignApi.approve(currentRow.value.id, auditForm.reason)
+    const verifyToken = await requestDynamicKeyToken('审核通过消息投放活动')
+    await MessageCampaignApi.approve(currentRow.value.id, auditForm.reason, verifyToken)
     message.success('已审核通过')
   } else if (auditMode.value === 'reject') {
-    await MessageCampaignApi.reject(currentRow.value.id, auditForm.reason)
+    const verifyToken = await requestDynamicKeyToken('驳回消息投放活动')
+    await MessageCampaignApi.reject(currentRow.value.id, auditForm.reason, verifyToken)
     message.success('已驳回')
   } else {
     await MessageCampaignApi.cancel(currentRow.value.id, auditForm.reason)
@@ -344,7 +439,9 @@ const submitAudit = async () => {
 }
 
 const executeNow = async (row: MessageCampaign) => {
-  await MessageCampaignApi.executeNow(row.id!)
+  await message.confirm('确认立即执行该消息投放活动？')
+  const verifyToken = await requestDynamicKeyToken('立即执行消息投放活动')
+  await MessageCampaignApi.executeNow(row.id!, verifyToken)
   message.success('已触发执行')
   getList()
 }

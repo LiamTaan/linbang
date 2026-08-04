@@ -37,10 +37,11 @@
           <span>{{ row.file.name }}</span>
           <div class="ml-10px">
             <el-link
-              :href="row.file.url"
+              :href="toOpenableUrl(row.file.url)"
               :underline="false"
               download
               target="_blank"
+              rel="noopener noreferrer"
               type="primary"
             >
               下载
@@ -59,7 +60,14 @@
     <div v-for="(file, index) in fileList" :key="index" class="flex items-center file-list-item">
       <span>{{ file.name }}</span>
       <div class="ml-10px">
-        <el-link :href="file.url" :underline="false" download target="_blank" type="primary">
+        <el-link
+          :href="toOpenableUrl(file.url)"
+          :underline="false"
+          download
+          target="_blank"
+          rel="noopener noreferrer"
+          type="primary"
+        >
           下载
         </el-link>
       </div>
@@ -72,6 +80,7 @@ import type { UploadProps, UploadRawFile, UploadUserFile } from 'element-plus'
 import { isString } from '@/utils/is'
 import { useUpload } from '@/components/UploadFile/src/useUpload'
 import { UploadFile } from 'element-plus/es/components/upload/src/upload'
+import { toOpenableUrl } from '@/utils/url'
 
 defineOptions({ name: 'UploadFile' })
 

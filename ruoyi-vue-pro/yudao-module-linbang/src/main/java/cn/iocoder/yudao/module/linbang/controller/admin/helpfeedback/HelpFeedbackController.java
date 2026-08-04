@@ -2,7 +2,7 @@ package cn.iocoder.yudao.module.linbang.controller.admin.helpfeedback;
 
 import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.excel.core.util.ExcelUtils;
 import cn.iocoder.yudao.module.linbang.controller.admin.helpfeedback.vo.HelpFeedbackDetailRespVO;
@@ -58,7 +58,7 @@ public class HelpFeedbackController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportHelpFeedbackExcel(@Valid HelpFeedbackPageReqVO reqVO, HttpServletResponse response)
             throws IOException {
-        reqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        reqVO.setPageSize(MAX_EXPORT_ROWS);
         List<HelpFeedbackRespVO> list = helpFeedbackService.getAdminHelpFeedbackPage(reqVO).getList();
         ExcelUtils.write(response, "帮助反馈.xls", "数据", HelpFeedbackRespVO.class, list);
     }

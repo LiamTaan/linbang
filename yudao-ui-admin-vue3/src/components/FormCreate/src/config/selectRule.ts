@@ -149,19 +149,11 @@ const apiSelectRule = [
   },
   {
     type: 'input',
-    field: 'parseFunc',
-    title: '选项解析函数',
-    info: `data 为接口返回值,需要写一个匿名函数解析返回值为选择器 options 列表
-    (data: any)=>{ label: string; value: any }[]`,
+    field: 'dataPath',
+    title: '选项数组路径',
+    info: '接口返回值中选项数组的属性路径，例如 list、data.items；留空时自动识别数组或 list 字段',
     props: {
-      autosize: true,
-      rows: { minRows: 2, maxRows: 6 },
-      type: 'textarea',
-      placeholder: `
-        function (data) {
-            console.log(data)
-            return data.list.map(item=> ({label: item.nickname,value: item.id}))
-        }`
+      placeholder: 'list'
     }
   },
   {

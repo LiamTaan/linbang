@@ -22,7 +22,7 @@ public class PayRefundAuditResultConsumer {
     @EventListener
     @Async
     public void onMessage(PayRefundAuditResultMessage message) {
-        log.info("[onMessage][退款审核结果消息({})]", message);
+        log.info("[onMessage][refundId({}) auditStatus({})]", message.getRefundId(), message.getAuditStatus());
         messagePushDispatchService.dispatchSingle("lb_refund_audited", "退款审核结果通知", "REFUND",
                 message.getRefundId(), message.getUserId(), "管理员审核退款后自动通知申请人");
     }

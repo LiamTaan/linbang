@@ -2,15 +2,23 @@
   <Dialog v-model="dialogVisible" title="黑名单详情" width="760px" :loading="detailLoading">
     <el-descriptions :column="2" label-class-name="desc-label">
       <el-descriptions-item label="用户">{{ formatUserDisplay() }}</el-descriptions-item>
-      <el-descriptions-item label="黑名单类型">{{ formatBlackType(detailData.blackType) }}</el-descriptions-item>
+      <el-descriptions-item label="黑名单类型">{{
+        formatBlackType(detailData.blackType)
+      }}</el-descriptions-item>
       <el-descriptions-item label="状态">
         <el-tag :type="detailData.status === 'ENABLE' ? 'danger' : 'info'">
           {{ formatEnableStatus(detailData.status) }}
         </el-tag>
       </el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData.createTime) }}</el-descriptions-item>
-      <el-descriptions-item label="开始时间">{{ formatDate(detailData.startTime) }}</el-descriptions-item>
-      <el-descriptions-item label="结束时间">{{ formatDate(detailData.endTime) }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData.createTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="开始时间">{{
+        formatDate(detailData.startTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="结束时间">{{
+        formatDate(detailData.endTime)
+      }}</el-descriptions-item>
     </el-descriptions>
     <el-divider />
     <el-descriptions :column="1" border direction="vertical">
@@ -18,9 +26,15 @@
     </el-descriptions>
     <el-divider />
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="用户编号">{{ detailData.user?.userNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="手机号">{{ detailData.user?.mobile || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="昵称">{{ detailData.user?.nickname || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="用户编号">{{
+        detailData.user?.userNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="手机号">{{
+        detailData.user?.mobile || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="昵称">{{
+        detailData.user?.nickname || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="当前角色">
         <dict-tag
           v-if="detailData.user?.currentRoleCode"
@@ -35,7 +49,9 @@
       <el-descriptions-item label="最后登录时间">
         {{ formatDate(detailData.user?.lastLoginTime) }}
       </el-descriptions-item>
-      <el-descriptions-item label="最后登录IP">{{ detailData.user?.lastLoginIp || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="最后登录IP">{{
+        detailData.user?.lastLoginIp || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
     <el-divider />
     <el-table :data="detailData.recentRiskEvents || []" size="small" border>
@@ -84,7 +100,11 @@ const detailLoading = ref(false)
 const detailData = ref<BlacklistDetail>({} as BlacklistDetail)
 
 const formatUserDisplay = () => {
-  const summary = [detailData.value.user?.nickname, detailData.value.user?.mobile, detailData.value.user?.userNo]
+  const summary = [
+    detailData.value.user?.nickname,
+    detailData.value.user?.mobile,
+    detailData.value.user?.userNo
+  ]
     .filter(Boolean)
     .join(' / ')
   return summary || (detailData.value.userId ? '用户信息缺失' : '-')

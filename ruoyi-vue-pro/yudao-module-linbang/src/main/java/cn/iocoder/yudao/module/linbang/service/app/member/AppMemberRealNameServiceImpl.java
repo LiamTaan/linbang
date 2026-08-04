@@ -8,8 +8,11 @@ import cn.iocoder.yudao.module.linbang.controller.app.member.realname.vo.AppMemb
 import cn.iocoder.yudao.module.linbang.dal.dataobject.identityverifylog.IdentityVerifyLogDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberrealname.MemberUserRealNameDO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberuser.MemberUserDO;
+import cn.iocoder.yudao.module.infra.dal.dataobject.file.FileDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.identityverifylog.IdentityVerifyLogMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.memberrealname.MemberUserRealNameMapper;
+import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
+import cn.iocoder.yudao.module.infra.service.file.FileService;
 import cn.iocoder.yudao.module.linbang.service.memberrealname.IdentityVerifyFacade;
 import cn.iocoder.yudao.module.linbang.service.memberuser.MemberUserService;
 import cn.iocoder.yudao.module.system.api.social.SocialUserApi;
@@ -18,10 +21,17 @@ import cn.iocoder.yudao.module.system.enums.social.SocialTypeEnum;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
+import cn.hutool.core.util.StrUtil;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.util.Objects;
+
+import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_NOT_EXISTS;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_REAL_NAME_NOT_EXISTS;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.MEMBER_USER_REAL_NAME_STATUS_INVALID;
+import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.ORDER_ACCESS_DENIED;
 
 @Service
 @Validated
@@ -30,6 +40,8 @@ public class AppMemberRealNameServiceImpl implements AppMemberRealNameService {
     @Resource
     private MemberUserService memberUserService;
     @Resource
+    private MemberUserMapper memberUserMapper;
+    @Resource
     private MemberUserRealNameMapper memberUserRealNameMapper;
     @Resource
     private IdentityVerifyLogMapper identityVerifyLogMapper;
@@ -37,20 +49,19 @@ public class AppMemberRealNameServiceImpl implements AppMemberRealNameService {
     private IdentityVerifyFacade identityVerifyFacade;
     @Resource
     private SocialUserApi socialUserApi;
+    @Resource
+    private FileService fileService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public AppMemberRealNameStartVerifyRespVO startVerify(Long authUserId) {
-        MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
-        MemberUserRealNameDO record = memberUserRealNameMapper.selectByUserId(loginUser.getId());
+        MemberUserDO loginUser = lockLoginUser(authUserId);
+        MemberUserRealNameDO record = memberUserRealNameMapper.selectByUserIdForUpdate(loginUser.getId());
         if (record == null) {
-            record = MemberUserRealNameDO.builder()
-                    .userId(loginUser.getId())
-                    .auditStatus("PENDING")
-                    .wechatRealNameStatus(resolveChannelStatus(loginUser.getId(), SocialTypeEnum.WECHAT_OPEN.getType()))
-                    .alipayRealNameStatus(resolveChannelStatus(loginUser.getId(), SocialTypeEnum.ALIPAY_MINI_PROGRAM.getType()))
-                    .build();
-            memberUserRealNameMapper.insert(record);
+            throw exception(MEMBER_USER_REAL_NAME_NOT_EXISTS);
+        }
+        if (!"PENDING".equals(record.getAuditStatus())) {
+            throw exception(MEMBER_USER_REAL_NAME_STATUS_INVALID);
         }
         LocalDateTime now = LocalDateTime.now();
         memberUserRealNameMapper.updateById(MemberUserRealNameDO.builder()
@@ -100,7 +111,12 @@ public class AppMemberRealNameServiceImpl implements AppMemberRealNameService {
     @Transactional(rollbackFor = Exception.class)
     public Long createOrUpdateRealName(Long authUserId, AppMemberRealNameCreateReqVO reqVO) {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
-        MemberUserRealNameDO existed = memberUserRealNameMapper.selectByUserId(loginUser.getId());
+        validateIdentityFiles(authUserId, reqVO);
+        loginUser = memberUserMapper.selectByIdForUpdate(loginUser.getId());
+        if (loginUser == null) {
+            throw exception(MEMBER_USER_NOT_EXISTS);
+        }
+        MemberUserRealNameDO existed = memberUserRealNameMapper.selectByUserIdForUpdate(loginUser.getId());
         if (existed == null) {
             MemberUserRealNameDO record = MemberUserRealNameDO.builder()
                     .userId(loginUser.getId())
@@ -118,6 +134,9 @@ public class AppMemberRealNameServiceImpl implements AppMemberRealNameService {
                     .build();
             memberUserRealNameMapper.insert(record);
             return record.getId();
+        }
+        if (Objects.equals(existed.getAuditStatus(), "APPROVED")) {
+            throw exception(MEMBER_USER_REAL_NAME_STATUS_INVALID);
         }
 
         memberUserRealNameMapper.updateById(MemberUserRealNameDO.builder()
@@ -159,7 +178,7 @@ public class AppMemberRealNameServiceImpl implements AppMemberRealNameService {
         respVO.setId(record.getId());
         respVO.setUserId(record.getUserId());
         respVO.setRealName(record.getRealName());
-        respVO.setIdCardNo(record.getIdCardNo());
+        respVO.setIdCardNo(maskIdCardNo(record.getIdCardNo()));
         respVO.setIdCardFrontFileId(record.getIdCardFrontFileId());
         respVO.setIdCardBackFileId(record.getIdCardBackFileId());
         respVO.setHoldCardFileId(record.getHoldCardFileId());
@@ -180,6 +199,34 @@ public class AppMemberRealNameServiceImpl implements AppMemberRealNameService {
         respVO.setRejectReason(record.getRejectReason());
         respVO.setCreateTime(record.getCreateTime());
         return respVO;
+    }
+
+    private void validateIdentityFiles(Long authUserId, AppMemberRealNameCreateReqVO reqVO) {
+        validateOwnedFile(authUserId, reqVO.getIdCardFrontFileId(), "image/");
+        validateOwnedFile(authUserId, reqVO.getIdCardBackFileId(), "image/");
+        validateOwnedFile(authUserId, reqVO.getHoldCardFileId(), "image/");
+        validateOwnedFile(authUserId, reqVO.getHoldCardVideoFileId(), "video/");
+    }
+
+    private void validateOwnedFile(Long authUserId, Long fileId, String typePrefix) {
+        if (fileId == null) {
+            return;
+        }
+        FileDO file = fileService.getFile(fileId);
+        if (file == null || !Objects.equals(file.getCreator(), String.valueOf(authUserId))
+                || !StrUtil.startWithIgnoreCase(file.getType(), typePrefix)) {
+            throw exception(ORDER_ACCESS_DENIED);
+        }
+    }
+
+    private String maskIdCardNo(String idCardNo) {
+        if (StrUtil.isBlank(idCardNo)) {
+            return idCardNo;
+        }
+        if (idCardNo.length() <= 4) {
+            return "****";
+        }
+        return idCardNo.substring(0, 2) + "********" + idCardNo.substring(idCardNo.length() - 2);
     }
 
     @Override
@@ -226,5 +273,14 @@ public class AppMemberRealNameServiceImpl implements AppMemberRealNameService {
     private String resolveChannelStatus(Long userId, Integer socialType) {
         SocialUserRespDTO socialUser = socialUserApi.getSocialUserByUserId(UserTypeEnum.MEMBER.getValue(), userId, socialType);
         return socialUser == null ? "UNBOUND" : "MATCHED";
+    }
+
+    private MemberUserDO lockLoginUser(Long authUserId) {
+        MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
+        MemberUserDO lockedUser = memberUserMapper.selectByIdForUpdate(loginUser.getId());
+        if (lockedUser == null) {
+            throw exception(MEMBER_USER_NOT_EXISTS);
+        }
+        return lockedUser;
     }
 }

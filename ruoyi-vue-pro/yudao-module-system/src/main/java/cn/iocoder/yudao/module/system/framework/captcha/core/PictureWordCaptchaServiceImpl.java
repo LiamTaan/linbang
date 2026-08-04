@@ -14,6 +14,7 @@ import org.apache.commons.lang3.Strings;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.security.SecureRandom;
 import java.util.Properties;
 
 /**
@@ -36,6 +37,7 @@ public class PictureWordCaptchaServiceImpl extends AbstractCaptchaService {
     private static final int WIDTH = 120;
     private static final int HEIGHT = 40;
     private static final int LINES = 10;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Override
     public void init(Properties config) {
@@ -206,7 +208,14 @@ public class PictureWordCaptchaServiceImpl extends AbstractCaptchaService {
      * @return {@link String}
      */
     public static String generateRandomText(int length) {
-        return RandomUtil.randomString(CHARACTERS, length);
+        if (length < 0) {
+            throw new IllegalArgumentException("Captcha length must not be negative");
+        }
+        StringBuilder result = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            result.append(CHARACTERS.charAt(SECURE_RANDOM.nextInt(CHARACTERS.length())));
+        }
+        return result.toString();
     }
 
 }

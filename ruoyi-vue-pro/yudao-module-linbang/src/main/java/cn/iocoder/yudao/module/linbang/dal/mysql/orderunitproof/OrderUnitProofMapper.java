@@ -6,4 +6,8 @@ import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
 public interface OrderUnitProofMapper extends BaseMapperX<OrderUnitProofDO> {
+
+    default OrderUnitProofDO selectByIdForUpdate(Long id) {
+        return selectOneForUpdate(OrderUnitProofDO::getId, id);
+    }
 }

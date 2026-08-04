@@ -1,17 +1,47 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="用户 ID" prop="userId">
-        <el-input v-model="queryParams.userId" placeholder="请输入用户 ID" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.userId"
+          placeholder="请输入用户 ID"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="关联用户" prop="relatedUserId">
-        <el-input v-model="queryParams.relatedUserId" placeholder="请输入关联用户 ID" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.relatedUserId"
+          placeholder="请输入关联用户 ID"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="关联类型" prop="relationType">
-        <el-input v-model="queryParams.relationType" placeholder="如 DEVICE/IP/CARD" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.relationType"
+          placeholder="如 DEVICE/IP/CARD"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="状态" prop="status">
-        <el-input v-model="queryParams.status" placeholder="如 ENABLE/DISABLE" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.status"
+          placeholder="如 ENABLE/DISABLE"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="创建时间" prop="createTime">
         <el-date-picker
@@ -46,7 +76,9 @@
         <template #default="{ row }">
           <div class="leading-20px">
             <div class="font-600">{{ row.relatedUserNickname || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.relatedUserMobile || '-' }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.relatedUserMobile || '-'
+            }}</div>
             <div class="text-[var(--el-text-color-secondary)]">{{ row.relatedUserNo || '-' }}</div>
           </div>
         </template>
@@ -57,7 +89,12 @@
       <el-table-column label="备注" prop="remark" min-width="180" />
       <el-table-column label="创建时间" prop="createTime" :formatter="dateFormatter" width="180" />
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 </template>
 

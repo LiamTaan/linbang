@@ -39,6 +39,7 @@ public class MemberUserDO extends BaseDO {
     /**
      * 密码摘要
      */
+    @ToString.Exclude
     private String password;
     /**
      * 账户类型

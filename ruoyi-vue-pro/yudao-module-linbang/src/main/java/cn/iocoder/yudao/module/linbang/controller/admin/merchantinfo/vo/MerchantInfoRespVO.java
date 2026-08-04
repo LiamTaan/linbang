@@ -34,11 +34,11 @@ public class MerchantInfoRespVO {
     @ExcelProperty("用户手机号")
     private String userMobile;
 
-    @Schema(description = "服务商名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "??")
+    @Schema(description = "服务商名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "安心家政服务中心")
     @ExcelProperty("服务商名称")
     private String merchantName;
 
-    @Schema(description = "联系人", requiredMode = Schema.RequiredMode.REQUIRED, example = "??")
+    @Schema(description = "联系人", requiredMode = Schema.RequiredMode.REQUIRED, example = "张师傅")
     @ExcelProperty("联系人")
     private String contactName;
 

@@ -17,11 +17,11 @@ public class MerchantInfoSaveReqVO {
     @NotNull(message = "用户ID不能为空")
     private Long userId;
 
-    @Schema(description = "服务商名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "??")
+    @Schema(description = "服务商名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "安心家政服务中心")
     @NotEmpty(message = "服务商名称不能为空")
     private String merchantName;
 
-    @Schema(description = "联系人", requiredMode = Schema.RequiredMode.REQUIRED, example = "??")
+    @Schema(description = "联系人", requiredMode = Schema.RequiredMode.REQUIRED, example = "张师傅")
     @NotEmpty(message = "联系人不能为空")
     private String contactName;
 

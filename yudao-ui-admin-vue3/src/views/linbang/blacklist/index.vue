@@ -1,6 +1,12 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="用户" prop="userKeyword">
         <el-input
           v-model="queryParams.userKeyword"
@@ -41,12 +47,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
       </el-form-item>
     </el-form>
   </ContentWrap>
@@ -58,7 +60,9 @@
           <div class="leading-20px">
             <div class="font-600">{{ row.userNickname || '-' }}</div>
             <div class="text-[var(--el-text-color-secondary)]">{{ row.userMobile || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.userNo || formatIdFallback(row.userId) }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.userNo || formatIdFallback(row.userId)
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -66,8 +70,20 @@
         <template #default="{ row }">{{ formatBlackType(row.blackType) }}</template>
       </el-table-column>
       <el-table-column label="原因" align="center" prop="reason" min-width="220" />
-      <el-table-column label="开始时间" align="center" prop="startTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="结束时间" align="center" prop="endTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="开始时间"
+        align="center"
+        prop="startTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
+      <el-table-column
+        label="结束时间"
+        align="center"
+        prop="endTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="状态" align="center" prop="status" width="100">
         <template #default="{ row }">
           <el-tag :type="row.status === 'ENABLE' ? 'danger' : 'info'">
@@ -75,7 +91,13 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="操作" align="center" width="100" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetailDialog(row.id)">详情</el-button>

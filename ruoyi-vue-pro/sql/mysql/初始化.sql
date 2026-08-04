@@ -145,7 +145,7 @@ INSERT INTO `infra_config`
 VALUES
 (2, 'biz', 1, '用户管理-账号初始密码', 'system.user.init-password', 'admin123', b'0', '邻里互助初始密码', 'admin', NOW(), 'admin', NOW(), b'0'),
 (13, 'biz', 2, '用户管理-注册开关', 'system.user.register-enabled', 'true', b'0', '邻里互助前台注册开关', 'admin', NOW(), 'admin', NOW(), b'0'),
-(14, 'linbang', 2, '邻里互助-后台动态密钥', 'linbang.admin.dynamic-key.password', 'linbang@2026', b'0', '管理端敏感操作统一二次口令', 'admin', NOW(), 'admin', NOW(), b'0'),
+(14, 'linbang', 2, '邻里互助-后台动态密钥', 'linbang.admin.dynamic-key.password', '$2a$12$9E9OkzsYtWcPxi7lNYfLvuRYK4I.Wacs67Oh2fLeB4KK3IgAWylo6', b'0', '管理端敏感操作统一二次口令', 'admin', NOW(), 'admin', NOW(), b'0'),
 (15, 'linbang', 2, '邻里互助-资质到期提醒阈值', 'linbang.qualification.expire-remind-days', '7,1', b'0', '资质到期前提醒天数，逗号分隔', 'admin', NOW(), 'admin', NOW(), b'0'),
 (30, 'linbang_agreement', 2, '邻里互助-服务协议', 'linbang.agreement.service', '欢迎使用邻里互助平台服务。您在平台发布需求、下单、接单、交易、提现等行为，均受平台服务协议约束。', b'1', 'App 协议配置：服务协议', 'admin', NOW(), 'admin', NOW(), b'0'),
 (31, 'linbang_agreement', 2, '邻里互助-隐私协议', 'linbang.agreement.privacy', '邻里互助将按照法律法规和平台隐私规则收集、使用、存储和保护您的个人信息，并在必要范围内用于实名认证、资质审核、交易履约与风控。', b'1', 'App 协议配置：隐私协议', 'admin', NOW(), 'admin', NOW(), b'0'),
@@ -657,9 +657,9 @@ VALUES
 INSERT INTO `lb_divide_rule`
 (`id`, `rule_name`, `city_level`, `category_id`, `merchant_rate`, `platform_rate`, `partner_rate`, `promoter_rate`, `tax_withhold_rate`, `min_withdraw_amount`, `status`, `effective_time`, `tenant_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
 VALUES
-(300001, '一线城市标准分账', 'TIER_1', 340201, 0.7800, 0.1200, 0.0500, 0.0200, 0.0300, 50.00, 'ENABLE', NOW(), 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(300002, '二线城市标准分账', 'TIER_2', 340101, 0.8000, 0.1100, 0.0400, 0.0200, 0.0300, 30.00, 'ENABLE', NOW(), 1, 'admin', NOW(), 'admin', NOW(), b'0'),
-(300003, '跑腿即时服务分账', 'TIER_2', 340401, 0.7600, 0.1400, 0.0500, 0.0200, 0.0300, 20.00, 'ENABLE', NOW(), 1, 'admin', NOW(), 'admin', NOW(), b'0');
+(300001, '一线城市标准分账', 'TIER_1', 340201, 81.0000, 12.0000, 5.0000, 2.0000, 3.0000, 50.00, 'ENABLE', NOW(), 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(300002, '二线城市标准分账', 'TIER_2', 340101, 83.0000, 11.0000, 4.0000, 2.0000, 3.0000, 30.00, 'ENABLE', NOW(), 1, 'admin', NOW(), 'admin', NOW(), b'0'),
+(300003, '跑腿即时服务分账', 'TIER_2', 340401, 79.0000, 14.0000, 5.0000, 2.0000, 3.0000, 20.00, 'ENABLE', NOW(), 1, 'admin', NOW(), 'admin', NOW(), b'0');
 
 INSERT INTO `system_notify_template`
 (`id`, `name`, `code`, `nickname`, `content`, `type`, `params`, `status`, `remark`, `creator`, `create_time`, `updater`, `update_time`, `deleted`)
@@ -924,7 +924,9 @@ VALUES
 (110765, '常见问题删除', 'linbang:help:faq:delete', 3, 5, 110760, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110766, '常见问题导出', 'linbang:help:faq:export', 3, 6, 110760, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
 (110800, '消息中心', '', 1, 90, 0, '/linbang-message', 'ep:message', NULL, NULL, 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
-(110830, '推送任务', 'linbang:message:push-task:query', 2, 10, 110800, 'message-push-task', 'ep:promotion', 'linbang/messagepushtask/index', 'LinbangMessagePushTask', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0');
+(110830, '推送任务', 'linbang:message:push-task:query', 2, 10, 110800, 'message-push-task', 'ep:promotion', 'linbang/messagepushtask/index', 'LinbangMessagePushTask', 0, b'1', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110831, '手动发送通知', 'linbang:message:push-task:manual-send', 3, 1, 110830, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0'),
+(110832, '重试推送任务', 'linbang:message:push-task:retry', 3, 2, 110830, '', '', '', '', 0, b'0', b'1', b'1', 'admin', NOW(), 'admin', NOW(), b'0');
 
 INSERT INTO `system_role_menu`
 (`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
@@ -936,7 +938,7 @@ INSERT INTO `system_role_menu`
 (`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)
 SELECT 20001, `id`, 'admin', NOW(), 'admin', NOW(), b'0', 1
 FROM `system_menu`
-WHERE (`id` BETWEEN 110000 AND 110399) OR (`id` BETWEEN 110600 AND 110685) OR (`id` BETWEEN 110700 AND 110830);
+WHERE (`id` BETWEEN 110000 AND 110399) OR (`id` BETWEEN 110600 AND 110685) OR (`id` BETWEEN 110700 AND 110832);
 
 INSERT INTO `system_role_menu`
 (`role_id`, `menu_id`, `creator`, `create_time`, `updater`, `update_time`, `deleted`, `tenant_id`)

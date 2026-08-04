@@ -1,4 +1,5 @@
 import request from '@/config/axios'
+import { buildDynamicKeyHeaders } from '@/api/linbang/security'
 import type { Dayjs } from 'dayjs'
 
 export interface CertExemption {
@@ -87,7 +88,11 @@ export const CertExemptionApi = {
     return await request.get<CertExemptionDetail>({ url: `/member/cert-exemption/get?id=${id}` })
   },
 
-  auditCertExemption: async (data: CertExemptionAuditReqVO) => {
-    return await request.post({ url: '/member/cert-exemption/audit', data })
+  auditCertExemption: async (data: CertExemptionAuditReqVO, verifyToken?: string) => {
+    return await request.post({
+      url: '/member/cert-exemption/audit',
+      data,
+      headers: buildDynamicKeyHeaders(verifyToken)
+    })
   }
 }

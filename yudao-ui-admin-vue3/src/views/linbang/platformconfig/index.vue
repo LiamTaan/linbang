@@ -1,8 +1,19 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="配置分类" prop="category">
-        <el-select v-model="queryParams.category" placeholder="请选择配置分类" clearable class="!w-220px">
+        <el-select
+          v-model="queryParams.category"
+          placeholder="请选择配置分类"
+          clearable
+          class="!w-220px"
+        >
           <el-option
             v-for="item in PLATFORM_CONFIG_CATEGORY_OPTIONS"
             :key="item.value"
@@ -41,12 +52,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
         <el-button
           type="primary"
           plain
@@ -82,11 +89,19 @@
       <el-table-column label="配置值" align="center" prop="value" min-width="260" />
       <el-table-column label="前台可见" align="center" prop="visible" width="100">
         <template #default="{ row }">
-          <el-tag :type="row.visible ? 'success' : 'info'">{{ formatVisibleStatus(row.visible) }}</el-tag>
+          <el-tag :type="row.visible ? 'success' : 'info'">{{
+            formatVisibleStatus(row.visible)
+          }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" min-width="180" />
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="操作" align="center" fixed="right" width="100">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
@@ -113,15 +128,23 @@
 
   <Dialog v-model="detailVisible" title="平台配置详情" width="760px">
     <el-descriptions v-loading="detailLoading" :column="2" border>
-      <el-descriptions-item label="配置分类">{{ formatPlatformConfigCategory(detailData?.category) }}</el-descriptions-item>
+      <el-descriptions-item label="配置分类">{{
+        formatPlatformConfigCategory(detailData?.category)
+      }}</el-descriptions-item>
       <el-descriptions-item label="配置名称">{{ detailData?.name || '-' }}</el-descriptions-item>
       <el-descriptions-item label="配置键">{{ detailData?.key || '-' }}</el-descriptions-item>
       <el-descriptions-item label="前台可见">
         {{ formatVisibleStatus(detailData?.visible) }}
       </el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData?.createTime) }}</el-descriptions-item>
-      <el-descriptions-item label="配置值" :span="2">{{ detailData?.value || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="备注" :span="2">{{ detailData?.remark || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData?.createTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="配置值" :span="2">{{
+        detailData?.value || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="备注" :span="2">{{
+        detailData?.remark || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">分类统计</el-divider>
@@ -129,7 +152,9 @@
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">同分类配置数</div>
-          <div class="mt-8px text-24px font-600">{{ detailData?.summary?.sameCategoryCount ?? 0 }}</div>
+          <div class="mt-8px text-24px font-600">{{
+            detailData?.summary?.sameCategoryCount ?? 0
+          }}</div>
         </el-card>
       </el-col>
       <el-col :span="8">
@@ -178,7 +203,11 @@ import { onMounted, reactive, ref } from 'vue'
 import { dateFormatter, formatDate } from '@/utils/formatTime'
 import download from '@/utils/download'
 import { useMessage } from '@/hooks/web/useMessage'
-import { PlatformConfigApi, type PlatformConfig, type PlatformConfigDetail } from '@/api/linbang/platformconfig'
+import {
+  PlatformConfigApi,
+  type PlatformConfig,
+  type PlatformConfigDetail
+} from '@/api/linbang/platformconfig'
 import {
   formatPlatformConfigCategory,
   formatVisibleStatus,

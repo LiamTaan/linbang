@@ -14,7 +14,7 @@ import javax.servlet.http.*;
 import java.util.*;
 import java.io.IOException;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -35,39 +35,6 @@ public class MerchantEntryController {
 
     @Resource
     private MerchantEntryService merchantEntryService;
-
-    @PostMapping("/create")
-    @Operation(summary = "创建服务商入驻申请表")
-    @PreAuthorize("@ss.hasPermission('linbang:merchant-entry:create')")
-    public CommonResult<Long> createMerchantEntry(@Valid @RequestBody MerchantEntrySaveReqVO createReqVO) {
-        return success(merchantEntryService.createMerchantEntry(createReqVO));
-    }
-
-    @PutMapping("/update")
-    @Operation(summary = "更新服务商入驻申请表")
-    @PreAuthorize("@ss.hasPermission('linbang:merchant-entry:update')")
-    public CommonResult<Boolean> updateMerchantEntry(@Valid @RequestBody MerchantEntrySaveReqVO updateReqVO) {
-        merchantEntryService.updateMerchantEntry(updateReqVO);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete")
-    @Operation(summary = "删除服务商入驻申请表")
-    @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('linbang:merchant-entry:delete')")
-    public CommonResult<Boolean> deleteMerchantEntry(@RequestParam("id") Long id) {
-        merchantEntryService.deleteMerchantEntry(id);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete-list")
-    @Parameter(name = "ids", description = "编号", required = true)
-    @Operation(summary = "批量删除服务商入驻申请表")
-                @PreAuthorize("@ss.hasPermission('linbang:merchant-entry:delete')")
-    public CommonResult<Boolean> deleteMerchantEntryList(@RequestParam("ids") List<Long> ids) {
-        merchantEntryService.deleteMerchantEntryListByIds(ids);
-        return success(true);
-    }
 
     @GetMapping("/get")
     @Operation(summary = "获得服务商入驻申请表")
@@ -98,7 +65,7 @@ public class MerchantEntryController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportMerchantEntryExcel(@Valid MerchantEntryPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<MerchantEntryRespVO> list = merchantEntryService.getMerchantEntryPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "服务商入驻申请表.xls", "数据", MerchantEntryRespVO.class, list);

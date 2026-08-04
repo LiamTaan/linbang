@@ -24,10 +24,11 @@ public interface UserReminderMapper extends BaseMapperX<UserReminderDO> {
                 .last("LIMIT 1"));
     }
 
-    default List<UserReminderDO> selectDueList(LocalDateTime now) {
+    default List<UserReminderDO> selectDueListForUpdate(LocalDateTime now) {
         return selectList(new LambdaQueryWrapperX<UserReminderDO>()
                 .eq(UserReminderDO::getStatus, "ACTIVE")
                 .le(UserReminderDO::getNextRemindTime, now)
-                .orderByAsc(UserReminderDO::getNextRemindTime, UserReminderDO::getId));
+                .orderByAsc(UserReminderDO::getNextRemindTime, UserReminderDO::getId)
+                .last("FOR UPDATE"));
     }
 }

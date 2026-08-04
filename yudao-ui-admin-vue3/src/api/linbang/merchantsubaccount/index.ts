@@ -57,7 +57,9 @@ export const MerchantSubAccountApi = {
     return await request.put({ url: '/merchant/sub-account/status/update', data })
   },
 
-  updateMerchantSubAccountServicePoints: async (data: MerchantSubAccountServicePointUpdateReqVO) => {
+  updateMerchantSubAccountServicePoints: async (
+    data: MerchantSubAccountServicePointUpdateReqVO
+  ) => {
     return await request.put({ url: '/merchant/sub-account/service-point/update', data })
   }
 }

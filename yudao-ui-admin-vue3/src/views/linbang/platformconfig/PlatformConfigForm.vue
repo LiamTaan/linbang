@@ -62,10 +62,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { reactive, ref } from 'vue'
 import { useI18n } from '@/hooks/web/useI18n'
 import { useMessage } from '@/hooks/web/useMessage'
-import {
-  PlatformConfigApi,
-  type PlatformConfigDetail
-} from '@/api/linbang/platformconfig'
+import { PlatformConfigApi, type PlatformConfigDetail } from '@/api/linbang/platformconfig'
 import { requestDynamicKeyToken } from '../shared/dynamic-key'
 import { PLATFORM_CONFIG_CATEGORY_OPTIONS } from '../utils/display'
 
@@ -129,7 +126,9 @@ const submitForm = async () => {
   formLoading.value = true
   try {
     const data = formData.value
-    const verifyToken = await requestDynamicKeyToken(formType.value === 'create' ? '新增平台配置' : '修改平台配置')
+    const verifyToken = await requestDynamicKeyToken(
+      formType.value === 'create' ? '新增平台配置' : '修改平台配置'
+    )
     if (formType.value === 'create') {
       await PlatformConfigApi.createPlatformConfig(data, verifyToken)
       message.success(t('common.createSuccess'))

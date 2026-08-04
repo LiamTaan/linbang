@@ -17,10 +17,10 @@ public class MerchantInfoPageReqVO extends PageParam {
     @Schema(description = "用户关键词（用户编号 / 昵称 / 手机号）", example = "18888888888")
     private String userKeyword;
 
-    @Schema(description = "服务商名称", example = "??")
+    @Schema(description = "服务商名称", example = "安心家政")
     private String merchantName;
 
-    @Schema(description = "联系人", example = "??")
+    @Schema(description = "联系人", example = "张师傅")
     private String contactName;
 
     @Schema(description = "联系人手机号")

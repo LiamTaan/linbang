@@ -5,6 +5,7 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.controller.app.promote.vo.AppPromoteInviteCodeBindReqVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.promoter.vo.PromoterDetailRespVO;
@@ -98,8 +99,16 @@ public class PromoterServiceImpl implements PromoterService {
                 .availableCommissionAmount(BigDecimal.ZERO)
                 .status("ENABLE")
                 .build();
-        promoterMapper.insert(promoter);
-        return promoter;
+        try {
+            promoterMapper.insert(promoter);
+            return promoter;
+        } catch (DuplicateKeyException ex) {
+            PromoterDO concurrent = promoterMapper.selectByUserIdForUpdate(userId);
+            if (concurrent == null) {
+                throw ex;
+            }
+            return concurrent;
+        }
     }
 
     @Override
@@ -138,7 +147,10 @@ public class PromoterServiceImpl implements PromoterService {
                     .sourcePage(StrUtil.sub(reqVO.getSourcePage(), 0, 255))
                     .build());
         } catch (DuplicateKeyException ex) {
-            PromoterRelationDO concurrentRelation = promoterRelationMapper.selectByUserId(userId);
+            PromoterRelationDO concurrentRelation = promoterRelationMapper.selectByUserIdForUpdate(userId);
+            if (concurrentRelation == null) {
+                throw ex;
+            }
             if (concurrentRelation != null && Objects.equals(concurrentRelation.getPromoterId(), promoter.getId())) {
                 return;
             }
@@ -209,13 +221,7 @@ public class PromoterServiceImpl implements PromoterService {
         } catch (DuplicateKeyException ex) {
             return;
         }
-        PromoterDO promoter = promoterMapper.selectById(relation.getPromoterId());
-        if (promoter != null) {
-            promoterMapper.updateById(PromoterDO.builder()
-                    .id(promoter.getId())
-                    .totalCommissionAmount(defaultAmount(promoter.getTotalCommissionAmount()).add(commissionAmount))
-                    .build());
-        }
+        promoterMapper.updateCommissionAmounts(relation.getPromoterId(), commissionAmount, BigDecimal.ZERO);
     }
 
     @Override
@@ -230,23 +236,20 @@ public class PromoterServiceImpl implements PromoterService {
                         .eqIfPresent(CommissionOrderDO::getSourceUnitId, unit == null ? null : unit.getId())
                         .ne(CommissionOrderDO::getStatus, "REFUNDED"));
         for (CommissionOrderDO commissionOrder : commissionOrders) {
-            commissionOrderMapper.updateById(CommissionOrderDO.builder()
-                    .id(commissionOrder.getId()).status("REFUNDED").build());
+            int updated = commissionOrderMapper.update(null, new LambdaUpdateWrapper<CommissionOrderDO>()
+                    .eq(CommissionOrderDO::getId, commissionOrder.getId())
+                    .eq(CommissionOrderDO::getStatus, commissionOrder.getStatus())
+                    .ne(CommissionOrderDO::getStatus, "REFUNDED")
+                    .set(CommissionOrderDO::getStatus, "REFUNDED"));
+            if (updated == 0) {
+                continue;
+            }
             saveOperationLog(commissionOrder.getPromoterId(), commissionOrder.getUserId(), "COMMISSION",
                     commissionOrder.getId(), "COMMISSION_REFUND", commissionOrder.getStatus(), "REFUNDED",
                     "来源订单退款，佣金冲正");
-            PromoterDO promoter = promoterMapper.selectById(commissionOrder.getPromoterId());
-            if (promoter == null) {
-                continue;
-            }
             BigDecimal amount = defaultAmount(commissionOrder.getCommissionAmount());
-            promoterMapper.updateById(PromoterDO.builder()
-                    .id(promoter.getId())
-                    .totalCommissionAmount(nonNegative(defaultAmount(promoter.getTotalCommissionAmount()).subtract(amount)))
-                    .availableCommissionAmount("SETTLED".equalsIgnoreCase(commissionOrder.getStatus())
-                            ? nonNegative(defaultAmount(promoter.getAvailableCommissionAmount()).subtract(amount))
-                            : promoter.getAvailableCommissionAmount())
-                    .build());
+            promoterMapper.updateCommissionAmounts(commissionOrder.getPromoterId(), amount.negate(),
+                    "SETTLED".equalsIgnoreCase(commissionOrder.getStatus()) ? amount.negate() : BigDecimal.ZERO);
         }
     }
 

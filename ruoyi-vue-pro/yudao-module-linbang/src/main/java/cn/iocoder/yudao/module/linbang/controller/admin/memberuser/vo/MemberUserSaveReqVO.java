@@ -18,7 +18,7 @@ public class MemberUserSaveReqVO {
     @NotEmpty(message = "手机号不能为空")
     private String mobile;
 
-    @Schema(description = "昵称", requiredMode = Schema.RequiredMode.REQUIRED, example = "??")
+    @Schema(description = "昵称", requiredMode = Schema.RequiredMode.REQUIRED, example = "邻里小帮手")
     @NotEmpty(message = "昵称不能为空")
     private String nickname;
 
@@ -42,7 +42,7 @@ public class MemberUserSaveReqVO {
     @NotEmpty(message = "状态不能为空")
     private String status;
 
-    @Schema(description = "备注", example = "??")
+    @Schema(description = "备注", example = "重点关注用户")
     private String remark;
 
 }

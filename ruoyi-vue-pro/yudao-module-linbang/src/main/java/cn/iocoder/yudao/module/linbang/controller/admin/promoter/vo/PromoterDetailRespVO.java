@@ -48,6 +48,7 @@ public class PromoterDetailRespVO {
     private List<OperationLogRespVO> recentOperationLogs;
 
     @Data
+    @Schema(description = "管理后台 - 用户摘要 Response VO")
     public static class UserRespVO {
         @Schema(description = "用户 ID", example = "5001")
         private Long id;
@@ -66,6 +67,7 @@ public class PromoterDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 统计摘要 Response VO")
     public static class SummaryRespVO {
         @Schema(description = "绑定关系总数", example = "28")
         private Integer relationCount;
@@ -84,6 +86,7 @@ public class PromoterDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 推广关系摘要 Response VO")
     public static class RelationRespVO {
         @Schema(description = "绑定关系 ID", example = "1")
         private Long id;
@@ -108,6 +111,7 @@ public class PromoterDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 佣金摘要 Response VO")
     public static class CommissionRespVO {
         @Schema(description = "佣金单 ID", example = "1")
         private Long id;
@@ -142,6 +146,7 @@ public class PromoterDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 操作日志摘要 Response VO")
     public static class OperationLogRespVO {
         @Schema(description = "日志 ID", example = "1")
         private Long id;

@@ -18,6 +18,10 @@ import cn.iocoder.yudao.module.linbang.controller.admin.orderabnormal.vo.*;
 @Mapper
 public interface OrderAbnormalMapper extends BaseMapperX<OrderAbnormalDO> {
 
+    default OrderAbnormalDO selectByIdForUpdate(Long id) {
+        return selectOneForUpdate(OrderAbnormalDO::getId, id);
+    }
+
     default List<OrderAbnormalDO> selectListByAbnormalNo(String abnormalNo) {
         if (StrUtil.isBlank(abnormalNo)) {
             return Collections.emptyList();

@@ -57,7 +57,7 @@ public class MessagePushTaskController {
 
     @PostMapping("/manual-send")
     @Operation(summary = "手动发送消息通知")
-    @PreAuthorize("@ss.hasPermission('linbang:message:push-task:query')")
+    @PreAuthorize("@ss.hasPermission('linbang:message:push-task:manual-send')")
     public CommonResult<Long> manualSend(@Valid @RequestBody MessagePushTaskManualSendReqVO reqVO) {
         return success(manualMessagePushService.manualSend(reqVO));
     }

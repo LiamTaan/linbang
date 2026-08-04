@@ -135,7 +135,9 @@ const submitForm = async () => {
   formLoading.value = true
   try {
     const data = formData.value as RiskRuleFormData
-    const verifyToken = await requestDynamicKeyToken(formType.value === 'create' ? '新增风控规则' : '修改风控规则')
+    const verifyToken = await requestDynamicKeyToken(
+      formType.value === 'create' ? '新增风控规则' : '修改风控规则'
+    )
     if (formType.value === 'create') {
       await RiskRuleApi.createRiskRule(data, verifyToken)
       message.success(t('common.createSuccess'))

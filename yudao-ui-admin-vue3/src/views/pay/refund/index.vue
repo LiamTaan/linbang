@@ -112,11 +112,21 @@
   <ContentWrap>
     <el-table v-loading="loading" :data="list" :stripe="true" :show-overflow-tooltip="true">
       <el-table-column label="ID" align="center" prop="id" width="90" />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180" :formatter="dateFormatter" />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        width="180"
+        :formatter="dateFormatter"
+      />
       <el-table-column label="退款单号" align="left" min-width="260">
         <template #default="{ row }">
-          <p class="order-font"><el-tag size="small">商户</el-tag> {{ row.merchantRefundId || '-' }}</p>
-          <p class="order-font"><el-tag size="small" type="warning">系统</el-tag> {{ row.no || '-' }}</p>
+          <p class="order-font"
+            ><el-tag size="small">商户</el-tag> {{ row.merchantRefundId || '-' }}</p
+          >
+          <p class="order-font"
+            ><el-tag size="small" type="warning">系统</el-tag> {{ row.no || '-' }}</p
+          >
           <p class="order-font" v-if="row.channelRefundNo">
             <el-tag size="small" type="success">渠道</el-tag> {{ row.channelRefundNo }}
           </p>
@@ -124,7 +134,9 @@
       </el-table-column>
       <el-table-column label="支付单号" align="left" min-width="260">
         <template #default="{ row }">
-          <p class="order-font"><el-tag size="small">商户</el-tag> {{ row.merchantOrderId || '-' }}</p>
+          <p class="order-font"
+            ><el-tag size="small">商户</el-tag> {{ row.merchantOrderId || '-' }}</p
+          >
           <p class="order-font" v-if="row.channelOrderNo">
             <el-tag size="small" type="success">渠道</el-tag> {{ row.channelOrderNo }}
           </p>
@@ -139,27 +151,51 @@
       </el-table-column>
       <el-table-column label="审核状态" align="center" prop="auditStatus" width="110">
         <template #default="{ row }">
-          <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+          <dict-tag
+            v-if="row.auditStatus"
+            :type="DICT_TYPE.LB_AUDIT_STATUS"
+            :value="row.auditStatus"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="退款状态" align="center" prop="status" width="110">
         <template #default="{ row }">
-          <dict-tag v-if="row.status !== undefined" :type="DICT_TYPE.PAY_REFUND_STATUS" :value="row.status" />
+          <dict-tag
+            v-if="row.status !== undefined"
+            :type="DICT_TYPE.PAY_REFUND_STATUS"
+            :value="row.status"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="退款渠道" align="center" width="130">
         <template #default="{ row }">
-          <dict-tag v-if="row.channelCode" :type="DICT_TYPE.PAY_CHANNEL_CODE" :value="row.channelCode" />
+          <dict-tag
+            v-if="row.channelCode"
+            :type="DICT_TYPE.PAY_CHANNEL_CODE"
+            :value="row.channelCode"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="退款原因" align="center" prop="reason" min-width="180" />
       <el-table-column label="审核备注" align="center" prop="auditRemark" min-width="160" />
       <el-table-column label="驳回原因" align="center" prop="rejectReason" min-width="160" />
-      <el-table-column label="审核时间" align="center" prop="auditTime" width="180" :formatter="dateFormatter" />
-      <el-table-column label="成功时间" align="center" prop="successTime" width="180" :formatter="dateFormatter" />
+      <el-table-column
+        label="审核时间"
+        align="center"
+        prop="auditTime"
+        width="180"
+        :formatter="dateFormatter"
+      />
+      <el-table-column
+        label="成功时间"
+        align="center"
+        prop="successTime"
+        width="180"
+        :formatter="dateFormatter"
+      />
       <el-table-column label="操作" align="center" fixed="right" width="150">
         <template #default="{ row }">
           <el-button
@@ -217,7 +253,11 @@
           placeholder="请输入审核备注"
         />
       </el-form-item>
-      <el-form-item v-if="auditFormData.auditStatus === 'REJECTED'" label="驳回原因" prop="rejectReason">
+      <el-form-item
+        v-if="auditFormData.auditStatus === 'REJECTED'"
+        label="驳回原因"
+        prop="rejectReason"
+      >
         <el-input
           v-model="auditFormData.rejectReason"
           type="textarea"

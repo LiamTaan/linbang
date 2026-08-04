@@ -14,7 +14,7 @@ import javax.servlet.http.*;
 import java.util.*;
 import java.io.IOException;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -38,39 +38,6 @@ public class OrderInfoController {
     private OrderInfoService orderInfoService;
     @Resource
     private OrderAbnormalService orderAbnormalService;
-
-    @PostMapping("/create")
-    @Operation(summary = "创建订单主")
-    @PreAuthorize("@ss.hasPermission('linbang:order:info:create')")
-    public CommonResult<Long> createOrderInfo(@Valid @RequestBody OrderInfoSaveReqVO createReqVO) {
-        return success(orderInfoService.createOrderInfo(createReqVO));
-    }
-
-    @PutMapping("/update")
-    @Operation(summary = "更新订单主")
-    @PreAuthorize("@ss.hasPermission('linbang:order:info:update')")
-    public CommonResult<Boolean> updateOrderInfo(@Valid @RequestBody OrderInfoSaveReqVO updateReqVO) {
-        orderInfoService.updateOrderInfo(updateReqVO);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete")
-    @Operation(summary = "删除订单主")
-    @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('linbang:order:info:delete')")
-    public CommonResult<Boolean> deleteOrderInfo(@RequestParam("id") Long id) {
-        orderInfoService.deleteOrderInfo(id);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete-list")
-    @Parameter(name = "ids", description = "编号", required = true)
-    @Operation(summary = "批量删除订单主")
-                @PreAuthorize("@ss.hasPermission('linbang:order:info:delete')")
-    public CommonResult<Boolean> deleteOrderInfoList(@RequestParam("ids") List<Long> ids) {
-        orderInfoService.deleteOrderInfoListByIds(ids);
-        return success(true);
-    }
 
     @GetMapping("/get")
     @Operation(summary = "获得订单主")
@@ -100,7 +67,7 @@ public class OrderInfoController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportOrderInfoExcel(@Valid OrderInfoPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<OrderInfoRespVO> list = orderInfoService.getOrderInfoPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "订单主.xls", "数据", OrderInfoRespVO.class, list);

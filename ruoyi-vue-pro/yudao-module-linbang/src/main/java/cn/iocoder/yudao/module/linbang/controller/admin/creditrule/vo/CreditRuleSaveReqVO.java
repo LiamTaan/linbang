@@ -15,14 +15,18 @@ public class CreditRuleSaveReqVO {
 
     @Schema(description = "规则编码", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotEmpty(message = "规则编码不能为空")
+    @Pattern(regexp = "[A-Za-z0-9_]{2,64}", message = "规则编码仅支持 2 到 64 位字母、数字和下划线")
     private String ruleCode;
 
     @Schema(description = "规则名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "李四")
     @NotEmpty(message = "规则名称不能为空")
+    @Size(max = 128, message = "规则名称不能超过 128 个字符")
     private String ruleName;
 
     @Schema(description = "分值变动", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "分值变动不能为空")
+    @Min(value = -1000, message = "单次分值变动不能小于 -1000")
+    @Max(value = 1000, message = "单次分值变动不能大于 1000")
     private Integer scoreChange;
 
     @Schema(description = OpenApiSchemaConstants.CREDIT_TRIGGER_TYPE, requiredMode = Schema.RequiredMode.REQUIRED, example = "AUTO")

@@ -6,12 +6,19 @@ import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.linbang.controller.admin.memberqualification.vo.MemberQualificationPageReqVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.memberqualification.MemberUserQualificationDO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
 @Mapper
 public interface MemberUserQualificationMapper extends BaseMapperX<MemberUserQualificationDO> {
+
+    default MemberUserQualificationDO selectByIdForUpdate(Long id) {
+        return selectOneForUpdate(MemberUserQualificationDO::getId, id);
+    }
 
     default PageResult<MemberUserQualificationDO> selectPage(MemberQualificationPageReqVO reqVO, Collection<Long> userIds) {
         return selectPage(reqVO, new LambdaQueryWrapperX<MemberUserQualificationDO>()
@@ -36,5 +43,16 @@ public interface MemberUserQualificationMapper extends BaseMapperX<MemberUserQua
                 .in(MemberUserQualificationDO::getId, ids)
                 .orderByDesc(MemberUserQualificationDO::getId));
     }
+
+    @Select("SELECT f.id FROM infra_file f "
+            + "WHERE f.deleted = b'0' AND f.size >= 0 AND f.path LIKE CONCAT(#{pathPrefix}, '%') "
+            + "AND f.create_time <= #{expiredBefore} AND f.id > #{afterId} "
+            + "AND NOT EXISTS (SELECT 1 FROM lb_member_user_qualification q "
+            + "WHERE q.file_id = f.id AND q.deleted = b'0') "
+            + "ORDER BY f.id ASC LIMIT #{limit}")
+    List<Long> selectUnreferencedFileIds(@Param("pathPrefix") String pathPrefix,
+                                         @Param("expiredBefore") LocalDateTime expiredBefore,
+                                         @Param("afterId") Long afterId,
+                                         @Param("limit") int limit);
 
 }

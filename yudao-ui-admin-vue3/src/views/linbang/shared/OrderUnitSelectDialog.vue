@@ -21,7 +21,12 @@
           />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="queryParams.status" placeholder="请选择单元状态" clearable class="!w-220px">
+          <el-select
+            v-model="queryParams.status"
+            placeholder="请选择单元状态"
+            clearable
+            class="!w-220px"
+          >
             <el-option
               v-for="dict in getStrDictOptions(DICT_TYPE.LB_ORDER_UNIT_STATUS)"
               :key="dict.value"

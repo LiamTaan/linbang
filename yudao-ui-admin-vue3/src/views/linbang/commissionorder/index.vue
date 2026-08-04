@@ -1,6 +1,12 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="推广员" prop="promoterKeyword">
         <el-input
           v-model="queryParams.promoterKeyword"
@@ -50,12 +56,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
       </el-form-item>
     </el-form>
   </ContentWrap>
@@ -67,8 +69,12 @@
         <template #default="{ row }">
           <div class="leading-20px">
             <div class="font-600">{{ row.promoterUserNickname || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.promoterUserMobile || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.promoterUserNo || formatIdFallback(row.promoterId) }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.promoterUserMobile || '-'
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.promoterUserNo || formatIdFallback(row.promoterId)
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -77,7 +83,9 @@
           <div class="leading-20px">
             <div class="font-600">{{ row.userNickname || '-' }}</div>
             <div class="text-[var(--el-text-color-secondary)]">{{ row.userMobile || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.userNo || formatIdFallback(row.userId) }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.userNo || formatIdFallback(row.userId)
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -92,8 +100,20 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="结算时间" align="center" prop="settleTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="结算时间"
+        align="center"
+        prop="settleTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="操作" align="center" fixed="right" width="100">
         <template #default="{ row }">
           <el-button

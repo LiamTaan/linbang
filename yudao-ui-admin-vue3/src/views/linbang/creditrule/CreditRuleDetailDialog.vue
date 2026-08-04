@@ -1,10 +1,14 @@
 <template>
-    <Dialog v-model="dialogVisible" title="信用规则详情" width="820px" :loading="detailLoading">
+  <Dialog v-model="dialogVisible" title="信用规则详情" width="820px" :loading="detailLoading">
     <el-descriptions :column="2" label-class-name="desc-label">
       <el-descriptions-item label="规则编码">{{ detailData.ruleCode || '-' }}</el-descriptions-item>
       <el-descriptions-item label="规则名称">{{ detailData.ruleName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="触发类型">{{ formatTriggerType(detailData.triggerType) }}</el-descriptions-item>
-      <el-descriptions-item label="分值变动">{{ detailData.scoreChange ?? 0 }}</el-descriptions-item>
+      <el-descriptions-item label="触发类型">{{
+        formatTriggerType(detailData.triggerType)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="分值变动">{{
+        detailData.scoreChange ?? 0
+      }}</el-descriptions-item>
       <el-descriptions-item label="规则方向">
         <el-tag :type="detailData.positiveRule ? 'success' : 'danger'">
           {{ detailData.positiveRule ? '加分规则' : '扣分规则' }}
@@ -15,8 +19,12 @@
           {{ formatEnableStatus(detailData.status) }}
         </el-tag>
       </el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData.createTime) }}</el-descriptions-item>
-      <el-descriptions-item label="更新时间">{{ formatDate(detailData.updateTime) }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData.createTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="更新时间">{{
+        formatDate(detailData.updateTime)
+      }}</el-descriptions-item>
     </el-descriptions>
     <el-divider />
     <el-descriptions :column="3" border>
@@ -31,7 +39,7 @@
       </el-descriptions-item>
     </el-descriptions>
     <el-divider content-position="left">同触发类型关联规则</el-divider>
-      <el-table :data="detailData.relatedRules || []" size="small" border>
+    <el-table :data="detailData.relatedRules || []" size="small" border>
       <el-table-column label="规则编码" prop="ruleCode" min-width="140" />
       <el-table-column label="规则名称" prop="ruleName" min-width="180" />
       <el-table-column label="分值变动" prop="scoreChange" width="120" />

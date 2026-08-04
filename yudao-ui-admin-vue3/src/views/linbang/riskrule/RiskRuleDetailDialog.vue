@@ -1,18 +1,26 @@
 <template>
-    <Dialog v-model="dialogVisible" title="风控规则详情" width="900px" :loading="detailLoading">
+  <Dialog v-model="dialogVisible" title="风控规则详情" width="900px" :loading="detailLoading">
     <el-descriptions :column="2" label-class-name="desc-label">
       <el-descriptions-item label="规则编码">{{ detailData.ruleCode || '-' }}</el-descriptions-item>
       <el-descriptions-item label="规则名称">{{ detailData.ruleName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="规则分组">{{ formatRiskRuleGroup(detailData.ruleGroup) }}</el-descriptions-item>
+      <el-descriptions-item label="规则分组">{{
+        formatRiskRuleGroup(detailData.ruleGroup)
+      }}</el-descriptions-item>
       <el-descriptions-item label="规则值">{{ detailData.ruleValue || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="值类型">{{ formatRiskRuleValueType(detailData.valueType) }}</el-descriptions-item>
+      <el-descriptions-item label="值类型">{{
+        formatRiskRuleValueType(detailData.valueType)
+      }}</el-descriptions-item>
       <el-descriptions-item label="状态">
         <el-tag :type="detailData.status === 'ENABLE' ? 'success' : 'info'">
           {{ formatEnableStatus(detailData.status) }}
         </el-tag>
       </el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData.createTime) }}</el-descriptions-item>
-      <el-descriptions-item label="更新时间">{{ formatDate(detailData.updateTime) }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData.createTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="更新时间">{{
+        formatDate(detailData.updateTime)
+      }}</el-descriptions-item>
     </el-descriptions>
     <el-divider />
     <el-descriptions :column="3" border>

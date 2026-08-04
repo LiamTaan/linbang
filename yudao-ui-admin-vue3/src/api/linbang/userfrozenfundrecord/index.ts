@@ -24,6 +24,8 @@ export const UserFrozenFundRecordApi = {
     return await request.get({ url: '/risk/user-frozen-fund-record/page', params })
   },
   get: async (id: number) => {
-    return await request.get<UserFrozenFundRecord>({ url: `/risk/user-frozen-fund-record/get?id=${id}` })
+    return await request.get<UserFrozenFundRecord>({
+      url: `/risk/user-frozen-fund-record/get?id=${id}`
+    })
   }
 }

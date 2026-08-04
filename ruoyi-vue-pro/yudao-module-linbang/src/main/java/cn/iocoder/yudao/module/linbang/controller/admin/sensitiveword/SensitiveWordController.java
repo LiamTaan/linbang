@@ -14,7 +14,7 @@ import javax.servlet.http.*;
 import java.util.*;
 import java.io.IOException;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
@@ -93,7 +93,7 @@ public class SensitiveWordController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportSensitiveWordExcel(@Valid SensitiveWordPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<SensitiveWordDO> list = sensitiveWordService.getSensitiveWordPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "敏感词表.xls", "数据", SensitiveWordRespVO.class,

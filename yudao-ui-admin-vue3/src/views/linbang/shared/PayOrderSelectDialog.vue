@@ -30,7 +30,12 @@
           />
         </el-form-item>
         <el-form-item label="支付状态">
-          <el-select v-model="queryParams.status" placeholder="请选择支付状态" clearable class="!w-220px">
+          <el-select
+            v-model="queryParams.status"
+            placeholder="请选择支付状态"
+            clearable
+            class="!w-220px"
+          >
             <el-option
               v-for="dict in getIntDictOptions(DICT_TYPE.PAY_ORDER_STATUS)"
               :key="dict.value"
@@ -91,8 +96,18 @@
             {{ formatPayAmount(row.refundPrice) }}
           </template>
         </el-table-column>
-        <el-table-column label="支付时间" prop="successTime" width="180" :formatter="dateFormatter" />
-        <el-table-column label="创建时间" prop="createTime" width="180" :formatter="dateFormatter" />
+        <el-table-column
+          label="支付时间"
+          prop="successTime"
+          width="180"
+          :formatter="dateFormatter"
+        />
+        <el-table-column
+          label="创建时间"
+          prop="createTime"
+          width="180"
+          :formatter="dateFormatter"
+        />
       </el-table>
 
       <Pagination

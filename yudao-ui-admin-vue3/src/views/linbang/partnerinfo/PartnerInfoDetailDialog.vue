@@ -1,10 +1,16 @@
 <template>
-    <Dialog v-model="dialogVisible" title="区域合作商详情" width="920px" :loading="detailLoading">
+  <Dialog v-model="dialogVisible" title="区域合作商详情" width="920px" :loading="detailLoading">
     <el-descriptions :column="2" label-class-name="desc-label">
       <el-descriptions-item label="用户">{{ formatUserDisplay() }}</el-descriptions-item>
-      <el-descriptions-item label="合作商名称">{{ detailData.partnerName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="联系人">{{ detailData.contactName || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="联系手机">{{ detailData.contactMobile || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="合作商名称">{{
+        detailData.partnerName || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="联系人">{{
+        detailData.contactName || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="联系手机">{{
+        detailData.contactMobile || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="状态">
         <el-tag :type="detailData.status === 'ENABLE' ? 'success' : 'info'">
           {{ formatEnableStatus(detailData.status) }}
@@ -13,20 +19,36 @@
       <el-descriptions-item label="辖区编码" :span="2">
         {{ formatRegion(detailData.regionAdcodes) }}
       </el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData.createTime) }}</el-descriptions-item>
-      <el-descriptions-item label="更新时间">{{ formatDate(detailData.updateTime) }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData.createTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="更新时间">{{
+        formatDate(detailData.updateTime)
+      }}</el-descriptions-item>
     </el-descriptions>
     <el-divider />
     <el-descriptions :column="4" border>
-      <el-descriptions-item label="辖区数">{{ detailData.summary?.regionCount ?? 0 }}</el-descriptions-item>
-      <el-descriptions-item label="启用辖区数">{{ detailData.summary?.enabledRegionCount ?? 0 }}</el-descriptions-item>
-      <el-descriptions-item label="待初审入驻">{{ detailData.summary?.pendingEntryAuditCount ?? 0 }}</el-descriptions-item>
-      <el-descriptions-item label="待处理投诉">{{ detailData.summary?.pendingComplaintCount ?? 0 }}</el-descriptions-item>
+      <el-descriptions-item label="辖区数">{{
+        detailData.summary?.regionCount ?? 0
+      }}</el-descriptions-item>
+      <el-descriptions-item label="启用辖区数">{{
+        detailData.summary?.enabledRegionCount ?? 0
+      }}</el-descriptions-item>
+      <el-descriptions-item label="待初审入驻">{{
+        detailData.summary?.pendingEntryAuditCount ?? 0
+      }}</el-descriptions-item>
+      <el-descriptions-item label="待处理投诉">{{
+        detailData.summary?.pendingComplaintCount ?? 0
+      }}</el-descriptions-item>
       <el-descriptions-item label="待处理价格申报">
         {{ detailData.summary?.pendingPriceReportCount ?? 0 }}
       </el-descriptions-item>
-      <el-descriptions-item label="辖区订单数">{{ detailData.summary?.orderCount ?? 0 }}</el-descriptions-item>
-      <el-descriptions-item label="辖区成交额">{{ detailData.summary?.tradeAmount ?? 0 }}</el-descriptions-item>
+      <el-descriptions-item label="辖区订单数">{{
+        detailData.summary?.orderCount ?? 0
+      }}</el-descriptions-item>
+      <el-descriptions-item label="辖区成交额">{{
+        detailData.summary?.tradeAmount ?? 0
+      }}</el-descriptions-item>
       <el-descriptions-item label="已通过申报价">
         {{ detailData.summary?.approvedPriceReportCount ?? 0 }}
       </el-descriptions-item>
@@ -53,8 +75,12 @@
         <template #default="{ row }">
           <div class="leading-20px">
             <div class="font-600">{{ row.merchantName || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactMobile || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactName || '-' }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactMobile || '-'
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactName || '-'
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -96,7 +122,11 @@ const formatRegion = (regionAdcodes?: string[]) => {
 }
 
 const formatUserDisplay = () => {
-  const summary = [detailData.value.userNickname, detailData.value.userMobile, detailData.value.userNo]
+  const summary = [
+    detailData.value.userNickname,
+    detailData.value.userMobile,
+    detailData.value.userNo
+  ]
     .filter(Boolean)
     .join(' / ')
   return summary || (detailData.value.userId ? '用户信息缺失' : '-')

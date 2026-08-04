@@ -66,7 +66,7 @@ public class WalletWithdrawDetailRespVO {
         private Long id;
         @Schema(description = "用户编号")
         private String userNo;
-        @Schema(description = "手机号")
+        @Schema(description = "脱敏手机号", example = "138****8000")
         private String mobile;
         @Schema(description = "昵称")
         private String nickname;
@@ -110,8 +110,6 @@ public class WalletWithdrawDetailRespVO {
         private String bankName;
         @Schema(description = "银行编码")
         private String bankCode;
-        @Schema(description = "出款收款账号；第三方提现时实际传输的收款账号")
-        private String transferAccount;
         @Schema(description = "脱敏卡号")
         private String cardNoMask;
         @Schema(description = "开户名")
@@ -120,7 +118,7 @@ public class WalletWithdrawDetailRespVO {
         private String bankProvince;
         @Schema(description = "开户城市；第三方出款需要的开户行城市")
         private String bankCity;
-        @Schema(description = "银行预留手机号；第三方出款校验使用")
+        @Schema(description = "脱敏银行预留手机号；第三方出款校验使用", example = "138****8000")
         private String reservedMobile;
         @Schema(description = "银行卡状态", example = "ENABLE")
         private String status;
@@ -129,6 +127,7 @@ public class WalletWithdrawDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 钱包流水摘要 Response VO")
     public static class WalletFlowSimpleRespVO {
         @Schema(description = "流水 ID", example = "1")
         private Long id;

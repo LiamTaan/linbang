@@ -217,6 +217,12 @@ public interface OpenApiSchemaConstants {
     String PARTNER_COORDINATION_STATUS =
             "合作商协调状态：INITIATED 已发起、PROCESSING 协调中、ESCALATED 已升级平台终审、FINISHED 已结束。";
 
+    String PARTNER_DISPUTE_TYPE =
+            "纠纷类型：COMPLAINT 投诉、APPEAL 申诉。";
+
+    String PARTNER_INSTRUCTION_CATEGORY =
+            "合作商通知分类：MEETING_NOTICE 会议通知、SUPERIOR_INSTRUCTION 上级指令。";
+
     String COMMISSION_TYPE =
             "佣金类型，按推广佣金字典展示，当前常见值如 ORDER 订单佣金。";
 

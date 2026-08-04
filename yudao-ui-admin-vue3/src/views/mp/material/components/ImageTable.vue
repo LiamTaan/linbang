@@ -1,7 +1,7 @@
 <template>
   <div class="waterfall" v-loading="props.loading">
     <div class="waterfall-item" v-for="item in props.list" :key="item.id">
-      <a target="_blank" :href="item.url">
+      <a target="_blank" rel="noopener noreferrer" :href="toOpenableUrl(item.url)">
         <img class="material-img" :src="item.url" />
         <div class="item-name">{{ item.name }}</div>
       </a>
@@ -20,6 +20,8 @@
 </template>
 
 <script lang="ts" setup>
+import { toOpenableUrl } from '@/utils/url'
+
 const props = defineProps<{
   list: any[]
   loading: boolean

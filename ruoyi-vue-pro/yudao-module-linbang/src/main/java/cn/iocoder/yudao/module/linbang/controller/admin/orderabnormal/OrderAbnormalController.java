@@ -14,7 +14,7 @@ import javax.servlet.http.*;
 import java.util.*;
 import java.io.IOException;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
@@ -36,39 +36,6 @@ public class OrderAbnormalController {
 
     @Resource
     private OrderAbnormalService orderAbnormalService;
-
-    @PostMapping("/create")
-    @Operation(summary = "创建异常订单")
-    @PreAuthorize("@ss.hasPermission('linbang:order:abnormal:create')")
-    public CommonResult<Long> createOrderAbnormal(@Valid @RequestBody OrderAbnormalSaveReqVO createReqVO) {
-        return success(orderAbnormalService.createOrderAbnormal(createReqVO));
-    }
-
-    @PutMapping("/update")
-    @Operation(summary = "更新异常订单")
-    @PreAuthorize("@ss.hasPermission('linbang:order:abnormal:update')")
-    public CommonResult<Boolean> updateOrderAbnormal(@Valid @RequestBody OrderAbnormalSaveReqVO updateReqVO) {
-        orderAbnormalService.updateOrderAbnormal(updateReqVO);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete")
-    @Operation(summary = "删除异常订单")
-    @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('linbang:order:abnormal:delete')")
-    public CommonResult<Boolean> deleteOrderAbnormal(@RequestParam("id") Long id) {
-        orderAbnormalService.deleteOrderAbnormal(id);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete-list")
-    @Parameter(name = "ids", description = "编号", required = true)
-    @Operation(summary = "批量删除异常订单")
-                @PreAuthorize("@ss.hasPermission('linbang:order:abnormal:delete')")
-    public CommonResult<Boolean> deleteOrderAbnormalList(@RequestParam("ids") List<Long> ids) {
-        orderAbnormalService.deleteOrderAbnormalListByIds(ids);
-        return success(true);
-    }
 
     @GetMapping("/get")
     @Operation(summary = "获得异常订单")
@@ -99,7 +66,7 @@ public class OrderAbnormalController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportOrderAbnormalExcel(@Valid OrderAbnormalPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<OrderAbnormalRespVO> list = orderAbnormalService.getOrderAbnormalPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "异常订单.xls", "数据", OrderAbnormalRespVO.class, list);

@@ -271,6 +271,54 @@ function syncDraftToStore(editor: HTMLDivElement) {
   })
 }
 
+function createSafeDraftFragment(html: string): DocumentFragment {
+  const parsed = new DOMParser().parseFromString(html.slice(0, 100_000), 'text/html')
+  const fragment = document.createDocumentFragment()
+  const blockedTags = new Set(['script', 'style', 'iframe', 'object', 'embed', 'link', 'meta'])
+
+  const appendSafeNode = (source: Node, target: Node) => {
+    if (source.nodeType === Node.TEXT_NODE) {
+      target.appendChild(document.createTextNode(source.textContent || ''))
+      return
+    }
+    if (source.nodeType !== Node.ELEMENT_NODE) {
+      return
+    }
+
+    const element = source as HTMLElement
+    const tag = element.tagName.toLowerCase()
+    if (blockedTags.has(tag)) {
+      return
+    }
+    if (tag === 'br') {
+      target.appendChild(document.createElement('br'))
+      return
+    }
+    if (tag === 'div') {
+      const line = document.createElement('div')
+      element.childNodes.forEach((child) => appendSafeNode(child, line))
+      target.appendChild(line)
+      return
+    }
+    if (tag === 'span' && element.dataset.id) {
+      const userId = Number(element.dataset.id)
+      if (Number.isSafeInteger(userId) && (userId === -1 || userId > 0)) {
+        const mention = document.createElement('span')
+        mention.className = 'mention-token'
+        mention.dataset.id = String(userId)
+        mention.contentEditable = 'false'
+        mention.textContent = (element.textContent || '').slice(0, 100)
+        target.appendChild(mention)
+        return
+      }
+    }
+    element.childNodes.forEach((child) => appendSafeNode(child, target))
+  }
+
+  parsed.body.childNodes.forEach((node) => appendSafeNode(node, fragment))
+  return fragment
+}
+
 /** 切会话时把 store 里的草稿还原到 editor；只更 UI 不回写草稿，避免 store→editor→store 回流 */
 function restoreDraftToEditor() {
   const editor = editorRef.value
@@ -279,10 +327,10 @@ function restoreDraftToEditor() {
   }
   const conversation = conversationStore.activeConversation
   const draft = conversation ? conversationStore.getConversationDraft(conversation) : undefined
-  editor.innerHTML = draft?.html || ''
+  editor.replaceChildren(createSafeDraftFragment(draft?.html || ''))
   applyEditorUiState(editor)
   // 把光标移到末尾，让用户接着输入；空内容直接 focus 即可
-  if (draft?.html) {
+  if (editor.hasChildNodes()) {
     placeCaretAtEnd(editor)
   }
 }

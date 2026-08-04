@@ -260,8 +260,8 @@ public class PayOrderServiceImpl implements PayOrderService {
             }
             PayOrderRespDTO respDTO = payClient.getOrder(orderExtension.getNo());
             if (respDTO != null && PayOrderStatusEnum.isSuccess(respDTO.getStatus())) {
-                log.warn("[validateOrderCanSubmit][order({}) 的 PayOrderRespDTO({}) 已支付，可能是回调延迟]",
-                        id, toJsonString(respDTO));
+                log.warn("[validateOrderCanSubmit][order({}) 渠道状态({}) 已支付，可能是回调延迟]",
+                        id, respDTO.getStatus());
                 throw exception(PAY_ORDER_EXTENSION_IS_PAID);
             }
         });
@@ -620,8 +620,8 @@ public class PayOrderServiceImpl implements PayOrderService {
                 if (PayOrderStatusEnum.isRefund(respDTO.getStatus())) {
                     // 补充说明：按道理，应该是 WAITING => SUCCESS => REFUND 状态，如果直接 WAITING => REFUND 状态，说明中间丢了过程
                     // 此时，需要人工介入，手工补齐数据，保持 WAITING => SUCCESS => REFUND 的过程
-                    log.error("[expireOrder][extension({}) 的 PayOrderRespDTO({}) 已退款，可能是回调延迟]",
-                            orderExtension.getId(), toJsonString(respDTO));
+                    log.error("[expireOrder][extension({}) 渠道状态({}) 已退款，可能是回调延迟]",
+                            orderExtension.getId(), respDTO.getStatus());
                     return false;
                 }
                 if (PayOrderStatusEnum.isSuccess(respDTO.getStatus())) {

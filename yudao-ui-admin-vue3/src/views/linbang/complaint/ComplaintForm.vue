@@ -11,14 +11,24 @@
         <el-input v-model="formData.complaintNo" placeholder="请输入投诉单号" />
       </el-form-item>
       <el-form-item label="关联订单" prop="orderId">
-        <el-input :model-value="selectedOrderLabel" placeholder="请选择关联订单" readonly @click="openOrderDialog">
+        <el-input
+          :model-value="selectedOrderLabel"
+          placeholder="请选择关联订单"
+          readonly
+          @click="openOrderDialog"
+        >
           <template #append>
             <el-button @click="openOrderDialog">选择</el-button>
           </template>
         </el-input>
       </el-form-item>
       <el-form-item label="关联单元" prop="unitId">
-        <el-input :model-value="selectedUnitLabel" placeholder="请选择关联单元" readonly @click="openUnitDialog">
+        <el-input
+          :model-value="selectedUnitLabel"
+          placeholder="请选择关联单元"
+          readonly
+          @click="openUnitDialog"
+        >
           <template #append>
             <el-button @click="openUnitDialog">选择</el-button>
           </template>
@@ -92,8 +102,14 @@
       <el-button @click="dialogVisible = false">取 消</el-button>
     </template>
   </Dialog>
-  <MemberUserSelectDialog ref="complainantUserSelectDialogRef" @selected="handleComplainantSelected" />
-  <MemberUserSelectDialog ref="respondentUserSelectDialogRef" @selected="handleRespondentSelected" />
+  <MemberUserSelectDialog
+    ref="complainantUserSelectDialogRef"
+    @selected="handleComplainantSelected"
+  />
+  <MemberUserSelectDialog
+    ref="respondentUserSelectDialogRef"
+    @selected="handleRespondentSelected"
+  />
   <OrderSelectDialog ref="orderSelectDialogRef" @selected="handleOrderSelected" />
   <OrderUnitSelectDialog ref="unitSelectDialogRef" @selected="handleUnitSelected" />
 </template>

@@ -75,7 +75,9 @@ export const MerchantServicePointApi = {
   },
 
   getMerchantServicePoint: async (id: number) => {
-    return await request.get<MerchantServicePointDetail>({ url: `/merchant/service-point/get?id=${id}` })
+    return await request.get<MerchantServicePointDetail>({
+      url: `/merchant/service-point/get?id=${id}`
+    })
   },
 
   createMerchantServicePoint: async (data: MerchantServicePoint) => {

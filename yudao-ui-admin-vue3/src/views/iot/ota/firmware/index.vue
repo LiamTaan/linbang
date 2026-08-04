@@ -85,7 +85,12 @@
       </el-table-column>
       <el-table-column label="固件文件" align="center" prop="fileUrl">
         <template #default="scope">
-          <el-link :href="scope.row.fileUrl" target="_blank" download>
+          <el-link
+            :href="toOpenableUrl(scope.row.fileUrl)"
+            target="_blank"
+            rel="noopener noreferrer"
+            download
+          >
             <Icon icon="ep:download" class="mr-5px" />
             下载固件
           </el-link>
@@ -144,6 +149,7 @@ import { dateFormatter } from '@/utils/formatTime'
 import { IoTOtaFirmwareApi, IoTOtaFirmware } from '@/api/iot/ota/firmware'
 import { ProductApi, ProductVO } from '@/api/iot/product/product'
 import OtaFirmwareForm from './OtaFirmwareForm.vue'
+import { toOpenableUrl } from '@/utils/url'
 
 /** IoT OTA 固件列表 */
 defineOptions({ name: 'IoTOtaFirmware' })

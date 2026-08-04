@@ -2,6 +2,7 @@ package cn.iocoder.yudao.module.linbang.service.match;
 
 import cn.iocoder.yudao.module.linbang.dal.dataobject.merchantdispatchsetting.MerchantDispatchSettingDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.merchantdispatchsetting.MerchantDispatchSettingMapper;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,8 +28,16 @@ public class MerchantDispatchSettingServiceImpl implements MerchantDispatchSetti
                 .maxAcceptRadiusKm(new BigDecimal("5.00"))
                 .voiceRemindEnabled(true)
                 .build();
-        merchantDispatchSettingMapper.insert(setting);
-        return setting;
+        try {
+            merchantDispatchSettingMapper.insert(setting);
+            return setting;
+        } catch (DuplicateKeyException ex) {
+            MerchantDispatchSettingDO concurrent = merchantDispatchSettingMapper.selectByMerchantIdForUpdate(merchantId);
+            if (concurrent == null) {
+                throw ex;
+            }
+            return concurrent;
+        }
     }
 
     @Override

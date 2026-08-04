@@ -30,6 +30,7 @@
           <a
             href="https://pay.weixin.qq.com/index.php/extend/merchant_appid/mapay_platform/account_manage"
             target="_blank"
+            rel="noopener noreferrer"
           >
             前往微信商户平台查看 APPID
           </a>
@@ -39,7 +40,11 @@
         </el-form-item>
 
         <el-form-item label-width="180px">
-          <a href="https://pay.weixin.qq.com/index.php/extend/pay_setting" target="_blank">
+          <a
+            href="https://pay.weixin.qq.com/index.php/extend/pay_setting"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             前往微信商户平台查看商户号
           </a>
         </el-form-item>
@@ -143,6 +148,7 @@
             <a
               href="https://pay.weixin.qq.com/index.php/core/cert/api_cert#/api-cert-manage"
               target="_blank"
+              rel="noopener noreferrer"
             >
               前往微信商户平台查看证书序列号
             </a>
@@ -181,7 +187,11 @@
             <el-input v-model="formData.config.publicKeyId" clearable placeholder="请输入公钥 ID" />
           </el-form-item>
           <el-form-item label-width="180px">
-            <a href="https://pay.weixin.qq.com/doc/v3/merchant/4012153196" target="_blank">
+            <a
+              href="https://pay.weixin.qq.com/doc/v3/merchant/4012153196"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               微信支付公钥产品简介及使用说明
             </a>
           </el-form-item>

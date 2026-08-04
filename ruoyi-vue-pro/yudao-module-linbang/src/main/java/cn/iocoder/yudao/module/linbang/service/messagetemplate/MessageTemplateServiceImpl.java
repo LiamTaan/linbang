@@ -70,24 +70,25 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
             throw exception(MESSAGE_TEMPLATE_NOT_EXISTS);
         }
 
-        List<MessageRecordDO> allRecords = messageRecordMapper.selectList(new LambdaQueryWrapperX<MessageRecordDO>()
+        List<MessageRecordDO> recentRecords = messageRecordMapper.selectList(new LambdaQueryWrapperX<MessageRecordDO>()
                 .eq(MessageRecordDO::getTemplateId, id)
-                .orderByDesc(MessageRecordDO::getId));
-        List<MessageRecordDO> recentRecords = allRecords.size() > 10 ? allRecords.subList(0, 10) : allRecords;
+                .orderByDesc(MessageRecordDO::getId)
+                .last("LIMIT 10"));
 
-        int successCount = 0;
-        int failedCount = 0;
-        int pendingCount = 0;
+        int sendCount = countRecords(id, null, null);
+        int successCount = countRecords(id, "SUCCESS", null);
+        int failedCount = countRecords(id, "FAILED", null);
+        int pendingCount = Math.max(0, sendCount - successCount - failedCount);
         Map<String, Long> channelCountMap = new LinkedHashMap<>();
-        for (MessageRecordDO record : allRecords) {
-            if ("SUCCESS".equalsIgnoreCase(record.getSendStatus())) {
-                successCount++;
-            } else if ("FAILED".equalsIgnoreCase(record.getSendStatus())) {
-                failedCount++;
-            } else {
-                pendingCount++;
+        for (String channelType : java.util.Arrays.asList(
+                MessageCenterConstants.CHANNEL_APP_POPUP,
+                MessageCenterConstants.CHANNEL_WECHAT_MP_TEMPLATE,
+                MessageCenterConstants.CHANNEL_SMS,
+                MessageCenterConstants.CHANNEL_APP_VOICE)) {
+            int channelCount = countRecords(id, null, channelType);
+            if (channelCount > 0) {
+                channelCountMap.put(channelType, (long) channelCount);
             }
-            channelCountMap.merge(record.getChannelType(), 1L, Long::sum);
         }
 
         MessageTemplateDetailRespVO respVO = BeanUtils.toBean(template, MessageTemplateDetailRespVO.class);
@@ -95,17 +96,25 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
                 item -> item.getReceiverUserId() != null);
         Map<Long, MemberUserDO> userMap = receiverUserIds.isEmpty() ? Collections.emptyMap()
                 : convertMap(memberUserMapper.selectListByIds(receiverUserIds), MemberUserDO::getId);
-        respVO.setSendCount(allRecords.size());
+        respVO.setSendCount(sendCount);
         respVO.setSuccessCount(successCount);
         respVO.setFailedCount(failedCount);
         respVO.setPendingCount(pendingCount);
         respVO.setChannelStats(channelCountMap.isEmpty()
                 ? Collections.emptyList()
                 : MessageTemplateDetailAssembler.buildChannelStats(channelCountMap));
-        respVO.setRecentRecords(allRecords.isEmpty()
+        respVO.setRecentRecords(recentRecords.isEmpty()
                 ? Collections.emptyList()
                 : MessageTemplateDetailAssembler.buildRecords(recentRecords, userMap));
         return respVO;
+    }
+
+    private int countRecords(Long templateId, String sendStatus, String channelType) {
+        long count = messageRecordMapper.selectCount(new LambdaQueryWrapperX<MessageRecordDO>()
+                .eq(MessageRecordDO::getTemplateId, templateId)
+                .eqIfPresent(MessageRecordDO::getSendStatus, sendStatus)
+                .eqIfPresent(MessageRecordDO::getChannelType, channelType));
+        return (int) Math.min(count, Integer.MAX_VALUE);
     }
 
     private void validateMessageTemplateExists(Long id) {

@@ -1,11 +1,29 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="处罚动作" prop="penaltyAction">
-        <el-input v-model="queryParams.penaltyAction" placeholder="如 DEMOTE/SCORE" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.penaltyAction"
+          placeholder="如 DEMOTE/SCORE"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="状态" prop="status">
-        <el-input v-model="queryParams.status" placeholder="如 ACTIVE" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.status"
+          placeholder="如 ACTIVE"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item>
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
@@ -37,18 +55,35 @@
         </template>
       </el-table-column>
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 
   <Dialog v-model="detailVisible" title="处罚记录详情" width="720px">
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="推广员">{{ detailData?.userNickname || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="手机号">{{ detailData?.userMobile || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="违规内容">{{ detailData?.contentTitle || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="处罚动作">{{ detailData?.penaltyAction || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="扣分值">{{ detailData?.scoreChange || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="推广员">{{
+        detailData?.userNickname || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="手机号">{{
+        detailData?.userMobile || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="违规内容">{{
+        detailData?.contentTitle || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="处罚动作">{{
+        detailData?.penaltyAction || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="扣分值">{{
+        detailData?.scoreChange || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="状态">{{ detailData?.status || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="原因" :span="2">{{ detailData?.reason || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="原因" :span="2">{{
+        detailData?.reason || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
   </Dialog>
 </template>
@@ -56,7 +91,10 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { dateFormatter } from '@/utils/formatTime'
-import { PromoterPenaltyRecordApi, type PromoterPenaltyRecord } from '@/api/linbang/promoterpenaltyrecord'
+import {
+  PromoterPenaltyRecordApi,
+  type PromoterPenaltyRecord
+} from '@/api/linbang/promoterpenaltyrecord'
 
 defineOptions({ name: 'PromoterPenaltyRecord' })
 

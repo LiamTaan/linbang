@@ -39,7 +39,12 @@
           />
         </el-form-item>
         <el-form-item label="默认地址">
-          <el-select v-model="queryParams.isDefault" placeholder="请选择是否默认" clearable class="!w-180px">
+          <el-select
+            v-model="queryParams.isDefault"
+            placeholder="请选择是否默认"
+            clearable
+            class="!w-180px"
+          >
             <el-option label="是" :value="true" />
             <el-option label="否" :value="false" />
           </el-select>
@@ -137,7 +142,11 @@ const emit = defineEmits<{
 }>()
 
 const formatAddress = (row: MemberUserAddress) => {
-  return [row.province, row.city, row.district, row.street, row.detailAddress].filter(Boolean).join(' / ') || '-'
+  return (
+    [row.province, row.city, row.district, row.street, row.detailAddress]
+      .filter(Boolean)
+      .join(' / ') || '-'
+  )
 }
 
 const getList = async () => {
@@ -192,7 +201,9 @@ const open = async (row?: MemberUserAddress, user?: MemberUser) => {
   selectedId.value = row?.id
   selectedRow.value = row
   queryParams.pageNo = 1
-  queryParams.userKeyword = user ? user.userNo || user.mobile || user.nickname || undefined : undefined
+  queryParams.userKeyword = user
+    ? user.userNo || user.mobile || user.nickname || undefined
+    : undefined
   await getList()
 }
 

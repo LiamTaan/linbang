@@ -59,6 +59,7 @@ public class WalletFlowDetailRespVO {
     private PayRefundSimpleRespVO refund;
 
     @Data
+    @Schema(description = "管理后台 - 钱包账户摘要 Response VO")
     public static class WalletAccountSimpleRespVO {
         @Schema(description = "钱包账户 ID", example = "2001")
         private Long id;
@@ -81,6 +82,7 @@ public class WalletFlowDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 主订单摘要 Response VO")
     public static class OrderSimpleRespVO {
         @Schema(description = "订单 ID", example = "3001")
         private Long id;
@@ -105,6 +107,7 @@ public class WalletFlowDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 订单单元摘要 Response VO")
     public static class OrderUnitSimpleRespVO {
         @Schema(description = "单元 ID", example = "4001")
         private Long id;
@@ -137,6 +140,7 @@ public class WalletFlowDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 支付订单摘要 Response VO")
     public static class PayOrderSimpleRespVO {
         @Schema(description = "支付订单 ID", example = "5001")
         private Long id;
@@ -163,6 +167,7 @@ public class WalletFlowDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 退款摘要 Response VO")
     public static class PayRefundSimpleRespVO {
         @Schema(description = "退款单 ID", example = "6001")
         private Long id;

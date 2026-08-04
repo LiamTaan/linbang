@@ -100,7 +100,7 @@ public abstract class AbstractWxPayClient extends AbstractPayClient<WxPayClientC
                     throw new IllegalArgumentException(String.format("未知的 API 版本(%s)", config.getApiVersion()));
             }
         } catch (WxPayException e) {
-            log.error("[doUnifiedOrder][支付({}) 发起微信支付异常", reqDTO, e);
+            log.error("[doUnifiedOrder][客户端({}) 发起微信支付异常]", getId(), e);
             String errorCode = getErrorCode(e);
             String errorMessage = getErrorMessage(e);
             return PayOrderRespDTO.closedOf(errorCode, errorMessage,
@@ -477,7 +477,7 @@ public abstract class AbstractWxPayClient extends AbstractPayClient<WxPayClientC
             return PayTransferRespDTO.closedOf(state, response.getFailReason(),
                     response.getOutBillNo(), response);
         } catch (WxPayException e) {
-            log.error("[doUnifiedTransfer][转账({}) 发起微信支付异常", reqDTO, e);
+            log.error("[doUnifiedTransfer][客户端({}) 发起微信转账异常]", getId(), e);
             String errorCode = getErrorCode(e);
             String errorMessage = getErrorMessage(e);
             return PayTransferRespDTO.closedOf(errorCode, errorMessage,

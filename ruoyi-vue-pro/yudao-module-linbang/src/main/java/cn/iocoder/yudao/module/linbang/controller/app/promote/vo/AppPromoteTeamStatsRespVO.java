@@ -33,6 +33,7 @@ public class AppPromoteTeamStatsRespVO {
     private List<RecentConvertRespVO> recentConverts;
 
     @Data
+    @Schema(description = "用户 App - 最近转化摘要 Response VO")
     public static class RecentConvertRespVO {
         @Schema(description = "关联用户 ID", example = "1001")
         private Long userId;

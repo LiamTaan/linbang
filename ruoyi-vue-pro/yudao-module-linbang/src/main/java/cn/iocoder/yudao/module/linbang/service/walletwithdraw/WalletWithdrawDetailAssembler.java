@@ -22,7 +22,7 @@ final class WalletWithdrawDetailAssembler {
         WalletWithdrawDetailRespVO.MemberUserSimpleRespVO respVO = new WalletWithdrawDetailRespVO.MemberUserSimpleRespVO();
         respVO.setId(user.getId());
         respVO.setUserNo(user.getUserNo());
-        respVO.setMobile(user.getMobile());
+        respVO.setMobile(maskMobile(user.getMobile()));
         respVO.setNickname(user.getNickname());
         respVO.setCurrentRoleCode(user.getCurrentRoleCode());
         respVO.setStatus(user.getStatus());
@@ -55,15 +55,21 @@ final class WalletWithdrawDetailAssembler {
         respVO.setUserId(bankCard.getUserId());
         respVO.setBankName(bankCard.getBankName());
         respVO.setBankCode(bankCard.getBankCode());
-        respVO.setTransferAccount(bankCard.getTransferAccount());
         respVO.setCardNoMask(bankCard.getCardNoMask());
         respVO.setAccountName(bankCard.getAccountName());
         respVO.setBankProvince(bankCard.getBankProvince());
         respVO.setBankCity(bankCard.getBankCity());
-        respVO.setReservedMobile(bankCard.getReservedMobile());
+        respVO.setReservedMobile(maskMobile(bankCard.getReservedMobile()));
         respVO.setStatus(bankCard.getStatus());
         respVO.setIsDefault(bankCard.getIsDefault());
         return respVO;
+    }
+
+    private static String maskMobile(String mobile) {
+        if (mobile == null || mobile.length() < 7) {
+            return mobile == null ? null : "******";
+        }
+        return mobile.substring(0, 3) + "****" + mobile.substring(mobile.length() - 4);
     }
 
     static List<WalletWithdrawDetailRespVO.WalletFlowSimpleRespVO> buildFlows(List<WalletFlowDO> flows) {

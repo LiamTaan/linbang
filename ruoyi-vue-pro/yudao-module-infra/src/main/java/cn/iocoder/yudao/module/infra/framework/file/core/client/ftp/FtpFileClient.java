@@ -11,6 +11,7 @@ import cn.iocoder.yudao.module.infra.framework.file.core.client.AbstractFileClie
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 
 /**
  * Ftp 文件客户端
@@ -77,12 +78,57 @@ public class FtpFileClient extends AbstractFileClient<FtpFileClientConfig> {
         return out.toByteArray();
     }
 
+    @Override
+    public byte[] getContent(String path, long maxBytes) {
+        if (maxBytes < 0 || maxBytes >= Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("maxBytes must be between 0 and Integer.MAX_VALUE - 1");
+        }
+        String filePath = getFilePath(path);
+        String fileName = FileUtil.getName(filePath);
+        String dir = StrUtil.removeSuffix(filePath, fileName);
+        LimitedOutputStream out = new LimitedOutputStream(maxBytes + 1);
+        reconnectIfTimeout();
+        ftp.download(dir, fileName, out);
+        return out.toByteArray();
+    }
+
     private String getFilePath(String path) {
         return config.getBasePath() + StrUtil.SLASH + path;
     }
 
     private synchronized void reconnectIfTimeout() {
         ftp.reconnectIfTimeout();
+    }
+
+    private static final class LimitedOutputStream extends OutputStream {
+
+        private final ByteArrayOutputStream delegate = new ByteArrayOutputStream();
+        private long remaining;
+
+        private LimitedOutputStream(long limit) {
+            this.remaining = limit;
+        }
+
+        @Override
+        public void write(int value) {
+            if (remaining > 0) {
+                delegate.write(value);
+                remaining--;
+            }
+        }
+
+        @Override
+        public void write(byte[] bytes, int offset, int length) {
+            int acceptedLength = (int) Math.min(remaining, length);
+            if (acceptedLength > 0) {
+                delegate.write(bytes, offset, acceptedLength);
+                remaining -= acceptedLength;
+            }
+        }
+
+        private byte[] toByteArray() {
+            return delegate.toByteArray();
+        }
     }
 
 }

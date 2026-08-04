@@ -1,13 +1,9 @@
 package cn.iocoder.yudao.module.infra.framework.file.core.client.db;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import cn.iocoder.yudao.module.infra.dal.dataobject.file.FileContentDO;
 import cn.iocoder.yudao.module.infra.dal.mysql.file.FileContentMapper;
 import cn.iocoder.yudao.module.infra.framework.file.core.client.AbstractFileClient;
-
-import java.util.Comparator;
-import java.util.List;
 
 /**
  * 基于 DB 存储的文件客户端的配置类
@@ -43,13 +39,16 @@ public class DBFileClient extends AbstractFileClient<DBFileClientConfig> {
 
     @Override
     public byte[] getContent(String path) {
-        List<FileContentDO> list = fileContentMapper.selectListByConfigIdAndPath(getId(), path);
-        if (CollUtil.isEmpty(list)) {
-            return null;
+        FileContentDO latest = fileContentMapper.selectLatestByConfigIdAndPath(getId(), path);
+        return latest == null ? null : latest.getContent();
+    }
+
+    @Override
+    public byte[] getContent(String path, long maxBytes) {
+        if (maxBytes < 0 || maxBytes >= Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("maxBytes must be between 0 and Integer.MAX_VALUE - 1");
         }
-        // 排序后，拿 id 最大的，即最后上传的
-        list.sort(Comparator.comparing(FileContentDO::getId));
-        return CollUtil.getLast(list).getContent();
+        return fileContentMapper.selectLatestContentPrefix(getId(), path, (int) maxBytes + 1);
     }
 
 }

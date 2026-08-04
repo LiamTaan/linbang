@@ -12,7 +12,12 @@
           />
         </el-form-item>
         <el-form-item label="角色">
-          <el-select v-model="queryParams.roleCode" placeholder="请选择角色" clearable class="!w-200px">
+          <el-select
+            v-model="queryParams.roleCode"
+            placeholder="请选择角色"
+            clearable
+            class="!w-200px"
+          >
             <el-option
               v-for="dict in getStrDictOptions(DICT_TYPE.LB_ROLE_CODE)"
               :key="dict.value"
@@ -22,7 +27,12 @@
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable class="!w-180px">
+          <el-select
+            v-model="queryParams.status"
+            placeholder="请选择状态"
+            clearable
+            class="!w-180px"
+          >
             <el-option
               v-for="item in ENABLE_STATUS_OPTIONS"
               :key="item.value"
@@ -172,7 +182,9 @@ const open = async (row?: WalletAccount, user?: MemberUser) => {
   selectedId.value = row?.id
   selectedRow.value = row
   queryParams.pageNo = 1
-  queryParams.userKeyword = user ? user.userNo || user.mobile || user.nickname || undefined : undefined
+  queryParams.userKeyword = user
+    ? user.userNo || user.mobile || user.nickname || undefined
+    : undefined
   await getList()
 }
 

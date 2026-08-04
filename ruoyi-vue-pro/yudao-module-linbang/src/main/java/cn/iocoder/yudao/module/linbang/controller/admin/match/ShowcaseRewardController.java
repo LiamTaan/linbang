@@ -7,7 +7,6 @@ import cn.iocoder.yudao.module.linbang.controller.admin.match.vo.ShowcaseRewardA
 import cn.iocoder.yudao.module.linbang.controller.admin.match.vo.ShowcaseRewardParticipationRespVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.match.vo.ShowcaseRewardPageReqVO;
 import cn.iocoder.yudao.module.linbang.controller.admin.match.vo.ShowcaseRewardRespVO;
-import cn.iocoder.yudao.module.linbang.dal.dataobject.showcasereward.ShowcaseRewardDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.rewardorderparticipation.RewardOrderParticipationMapper;
 import cn.iocoder.yudao.module.linbang.service.match.ShowcaseRewardService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,16 +42,14 @@ public class ShowcaseRewardController {
     @Operation(summary = "分页获取晒单悬赏申请")
     @PreAuthorize("@ss.hasPermission('linbang:showcase:reward:query')")
     public CommonResult<PageResult<ShowcaseRewardRespVO>> page(@Valid ShowcaseRewardPageReqVO reqVO) {
-        PageResult<ShowcaseRewardDO> pageResult = showcaseRewardService.getRewardPage(reqVO, reqVO.getMerchantId(), reqVO.getAuditStatus());
-        return success(new PageResult<>(pageResult.getList().stream().map(this::convert).collect(Collectors.toList()), pageResult.getTotal()));
+        return success(showcaseRewardService.getRewardPage(reqVO, reqVO.getMerchantId(), reqVO.getAuditStatus()));
     }
 
     @GetMapping("/get")
     @Operation(summary = "获取晒单悬赏详情")
     @PreAuthorize("@ss.hasPermission('linbang:showcase:reward:query')")
     public CommonResult<ShowcaseRewardRespVO> get(@RequestParam("id") Long id) {
-        ShowcaseRewardDO reward = showcaseRewardService.getReward(id);
-        return success(reward == null ? null : convert(reward));
+        return success(showcaseRewardService.getReward(id));
     }
 
     @GetMapping("/participation/list")
@@ -84,23 +81,4 @@ public class ShowcaseRewardController {
         return success(Boolean.TRUE);
     }
 
-    private ShowcaseRewardRespVO convert(ShowcaseRewardDO reward) {
-        ShowcaseRewardRespVO respVO = new ShowcaseRewardRespVO();
-        respVO.setId(reward.getId());
-        respVO.setMerchantId(reward.getMerchantId());
-        respVO.setUserId(reward.getUserId());
-        respVO.setTitle(reward.getTitle());
-        respVO.setDescription(reward.getDescription());
-        respVO.setEvidenceFileIdsJson(reward.getEvidenceFileIdsJson());
-        respVO.setAuditStatus(reward.getAuditStatus());
-        respVO.setAuditRemark(reward.getAuditRemark());
-        respVO.setRejectReason(reward.getRejectReason());
-        respVO.setAuditBy(reward.getAuditBy());
-        respVO.setAuditTime(reward.getAuditTime());
-        respVO.setPriorityEnabled(reward.getPriorityEnabled());
-        respVO.setEffectiveStartTime(reward.getEffectiveStartTime());
-        respVO.setEffectiveEndTime(reward.getEffectiveEndTime());
-        respVO.setCreateTime(reward.getCreateTime());
-        return respVO;
-    }
 }

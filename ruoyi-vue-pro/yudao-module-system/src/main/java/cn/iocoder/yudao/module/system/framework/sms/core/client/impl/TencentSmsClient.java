@@ -4,8 +4,6 @@ import cn.hutool.core.date.format.FastDateFormat;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.HexUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.digest.DigestUtil;
-import cn.hutool.crypto.digest.HmacAlgorithm;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -196,7 +194,7 @@ public class TencentSmsClient extends AbstractSmsClient {
     }
 
     private static byte[] hmac256(byte[] key, String msg) {
-        return DigestUtil.hmac(HmacAlgorithm.HmacSHA256, key).digest(msg);
+        return SmsSignatureUtils.hmacSha256(key, msg);
     }
 
 }

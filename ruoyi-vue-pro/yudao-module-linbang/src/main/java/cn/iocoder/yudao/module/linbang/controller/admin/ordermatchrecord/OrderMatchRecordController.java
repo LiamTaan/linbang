@@ -14,7 +14,7 @@ import javax.servlet.http.*;
 import java.util.*;
 import java.io.IOException;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -35,39 +35,6 @@ public class OrderMatchRecordController {
 
     @Resource
     private OrderMatchRecordService orderMatchRecordService;
-
-    @PostMapping("/create")
-    @Operation(summary = "创建订单匹配记录")
-    @PreAuthorize("@ss.hasPermission('linbang:order:match-record:create')")
-    public CommonResult<Long> createOrderMatchRecord(@Valid @RequestBody OrderMatchRecordSaveReqVO createReqVO) {
-        return success(orderMatchRecordService.createOrderMatchRecord(createReqVO));
-    }
-
-    @PutMapping("/update")
-    @Operation(summary = "更新订单匹配记录")
-    @PreAuthorize("@ss.hasPermission('linbang:order:match-record:update')")
-    public CommonResult<Boolean> updateOrderMatchRecord(@Valid @RequestBody OrderMatchRecordSaveReqVO updateReqVO) {
-        orderMatchRecordService.updateOrderMatchRecord(updateReqVO);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete")
-    @Operation(summary = "删除订单匹配记录")
-    @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('linbang:order:match-record:delete')")
-    public CommonResult<Boolean> deleteOrderMatchRecord(@RequestParam("id") Long id) {
-        orderMatchRecordService.deleteOrderMatchRecord(id);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete-list")
-    @Parameter(name = "ids", description = "编号", required = true)
-    @Operation(summary = "批量删除订单匹配记录")
-                @PreAuthorize("@ss.hasPermission('linbang:order:match-record:delete')")
-    public CommonResult<Boolean> deleteOrderMatchRecordList(@RequestParam("ids") List<Long> ids) {
-        orderMatchRecordService.deleteOrderMatchRecordListByIds(ids);
-        return success(true);
-    }
 
     @GetMapping("/get")
     @Operation(summary = "获得订单匹配记录")
@@ -90,7 +57,7 @@ public class OrderMatchRecordController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportOrderMatchRecordExcel(@Valid OrderMatchRecordPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<OrderMatchRecordRespVO> list = orderMatchRecordService.getOrderMatchRecordPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "订单匹配记录.xls", "数据", OrderMatchRecordRespVO.class, list);

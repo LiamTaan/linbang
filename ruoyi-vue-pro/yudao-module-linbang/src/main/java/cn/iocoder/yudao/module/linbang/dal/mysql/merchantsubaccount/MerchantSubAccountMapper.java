@@ -19,6 +19,16 @@ public interface MerchantSubAccountMapper extends BaseMapperX<MerchantSubAccount
                 .last("LIMIT 1"));
     }
 
+    default MerchantSubAccountDO selectByUserIdForUpdate(Long userId) {
+        return selectOne(new LambdaQueryWrapperX<MerchantSubAccountDO>()
+                .eq(MerchantSubAccountDO::getUserId, userId)
+                .last("LIMIT 1 FOR UPDATE"));
+    }
+
+    default MerchantSubAccountDO selectByIdForUpdate(Long id) {
+        return selectOneForUpdate(MerchantSubAccountDO::getId, id);
+    }
+
     default List<MerchantSubAccountDO> selectListByMerchantId(Long merchantId) {
         return selectList(new LambdaQueryWrapperX<MerchantSubAccountDO>()
                 .eq(MerchantSubAccountDO::getMerchantId, merchantId)

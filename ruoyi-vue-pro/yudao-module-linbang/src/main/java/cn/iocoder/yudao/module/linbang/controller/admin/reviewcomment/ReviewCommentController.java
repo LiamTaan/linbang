@@ -14,7 +14,7 @@ import javax.servlet.http.*;
 import java.util.*;
 import java.io.IOException;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -35,39 +35,6 @@ public class ReviewCommentController {
 
     @Resource
     private ReviewCommentService reviewCommentService;
-
-    @PostMapping("/create")
-    @Operation(summary = "创建评价")
-    @PreAuthorize("@ss.hasPermission('linbang:review:comment:create')")
-    public CommonResult<Long> createReviewComment(@Valid @RequestBody ReviewCommentSaveReqVO createReqVO) {
-        return success(reviewCommentService.createReviewComment(createReqVO));
-    }
-
-    @PutMapping("/update")
-    @Operation(summary = "更新评价")
-    @PreAuthorize("@ss.hasPermission('linbang:review:comment:update')")
-    public CommonResult<Boolean> updateReviewComment(@Valid @RequestBody ReviewCommentSaveReqVO updateReqVO) {
-        reviewCommentService.updateReviewComment(updateReqVO);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete")
-    @Operation(summary = "删除评价")
-    @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('linbang:review:comment:delete')")
-    public CommonResult<Boolean> deleteReviewComment(@RequestParam("id") Long id) {
-        reviewCommentService.deleteReviewComment(id);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete-list")
-    @Parameter(name = "ids", description = "编号", required = true)
-    @Operation(summary = "批量删除评价")
-                @PreAuthorize("@ss.hasPermission('linbang:review:comment:delete')")
-    public CommonResult<Boolean> deleteReviewCommentList(@RequestParam("ids") List<Long> ids) {
-        reviewCommentService.deleteReviewCommentListByIds(ids);
-        return success(true);
-    }
 
     @GetMapping("/get")
     @Operation(summary = "获得评价")
@@ -90,7 +57,7 @@ public class ReviewCommentController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportReviewCommentExcel(@Valid ReviewCommentPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<ReviewCommentRespVO> list = reviewCommentService.getReviewCommentPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "评价.xls", "数据", ReviewCommentRespVO.class, list);

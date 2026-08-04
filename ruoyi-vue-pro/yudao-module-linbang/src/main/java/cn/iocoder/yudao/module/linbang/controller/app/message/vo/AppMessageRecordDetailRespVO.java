@@ -85,6 +85,7 @@ public class AppMessageRecordDetailRespVO {
     private TemplateRespVO template;
 
     @Data
+    @Schema(description = "用户 App - 消息模板摘要 Response VO")
     public static class TemplateRespVO {
 
         @Schema(description = "模板 ID", example = "10")

@@ -118,16 +118,18 @@
           <el-link
             v-if="row.audioUrl?.length > 0"
             type="primary"
-            :href="row.audioUrl"
+            :href="toOpenableUrl(row.audioUrl)"
             target="_blank"
+            rel="noopener noreferrer"
           >
             音乐
           </el-link>
           <el-link
             v-if="row.videoUrl?.length > 0"
             type="primary"
-            :href="row.videoUrl"
+            :href="toOpenableUrl(row.videoUrl)"
             target="_blank"
+            rel="noopener noreferrer"
             class="!pl-5px"
           >
             视频
@@ -135,8 +137,9 @@
           <el-link
             v-if="row.imageUrl?.length > 0"
             type="primary"
-            :href="row.imageUrl"
+            :href="toOpenableUrl(row.imageUrl)"
             target="_blank"
+            rel="noopener noreferrer"
             class="!pl-5px"
           >
             封面
@@ -208,6 +211,7 @@ import { dateFormatter } from '@/utils/formatTime'
 import { MusicApi, MusicVO } from '@/api/ai/music'
 import * as UserApi from '@/api/system/user'
 import { AiMusicStatusEnum } from '@/views/ai/utils/constants'
+import { toOpenableUrl } from '@/utils/url'
 
 /** AI 音乐 列表 */
 defineOptions({ name: 'AiMusicManager' })

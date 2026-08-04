@@ -34,6 +34,7 @@ public class PlatformConfigDetailRespVO {
     private List<RelatedConfigRespVO> relatedConfigs;
 
     @Data
+    @Schema(description = "管理后台 - 统计摘要 Response VO")
     public static class SummaryRespVO {
         @Schema(description = "同分类配置项总数", example = "8")
         private Integer sameCategoryCount;
@@ -48,6 +49,7 @@ public class PlatformConfigDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 关联配置摘要 Response VO")
     public static class RelatedConfigRespVO {
         @Schema(description = "配置 ID", example = "2")
         private Long id;

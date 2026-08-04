@@ -151,6 +151,7 @@ public class OrderInfoDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - OrderPriceItemRespVO Response VO")
     public static class OrderPriceItemRespVO {
         @Schema(description = "价格项类型，按价格明细字典展示，例如 BASE 基础服务费、MATERIAL 材料费、EXTRA 附加费")
         private String itemType;
@@ -163,6 +164,7 @@ public class OrderInfoDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - OrderAttachmentRespVO Response VO")
     public static class OrderAttachmentRespVO {
         @Schema(description = "文件 ID", example = "6001")
         private Long fileId;
@@ -242,48 +244,85 @@ public class OrderInfoDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 订单单元取证摘要 Response VO")
     public static class OrderUnitProofRespVO {
+        @Schema(description = "主键 ID")
         private Long id;
+        @Schema(description = "订单单元 ID，关联拆分后的订单单元")
         private Long unitId;
+        @Schema(description = "服务商 ID，关联服务商档案")
         private Long merchantId;
+        @Schema(description = "文件 ID，关联文件中心文件")
         private Long fileId;
+        @Schema(description = "文件访问地址")
         private String fileUrl;
+        @Schema(description = "文件内容哈希，用于校验取证文件完整性")
         private String fileHash;
+        @Schema(description = "履约取证类型，按订单取证类型字典展示")
         private String proofType;
+        @Schema(description = "履约取证说明")
         private String proofDesc;
+        @Schema(description = "履约取证时间")
         private LocalDateTime proofTime;
+        @Schema(description = "取证设备记录的拍摄时间")
         private LocalDateTime deviceTime;
+        @Schema(description = "经度，GCJ-02 坐标系")
         private BigDecimal longitude;
+        @Schema(description = "纬度，GCJ-02 坐标系")
         private BigDecimal latitude;
+        @Schema(description = "取证时的地址文本")
         private String addressText;
     }
 
     @Data
+    @Schema(description = "管理后台 - 支付记录摘要 Response VO")
     public static class OrderPayRecordRespVO {
+        @Schema(description = "主键 ID")
         private Long id;
+        @Schema(description = "业务侧支付订单号，用于关联支付中心订单")
         private String merchantOrderId;
+        @Schema(description = "支付订单标题")
         private String subject;
+        @Schema(description = "支付订单金额，单位：分")
         private Integer price;
+        @Schema(description = "支付订单状态码：0 未支付、10 支付成功、20 已退款、30 支付关闭")
         private Integer status;
+        @Schema(description = "支付渠道编码，例如 wx_lite 微信小程序支付、alipay_pc 支付宝网页支付")
         private String channelCode;
+        @Schema(description = "支付渠道返回的订单号")
         private String channelOrderNo;
+        @Schema(description = "已退款金额，单位：分")
         private Integer refundPrice;
+        @Schema(description = "失效时间")
         private LocalDateTime expireTime;
+        @Schema(description = "支付成功时间")
         private LocalDateTime successTime;
+        @Schema(description = "记录创建时间")
         private LocalDateTime createTime;
     }
 
     @Data
+    @Schema(description = "管理后台 - 抢单记录摘要 Response VO")
     public static class OrderAcceptRecordRespVO {
+        @Schema(description = "主键 ID")
         private Long id;
+        @Schema(description = "订单单元 ID，关联拆分后的订单单元")
         private Long unitId;
+        @Schema(description = "服务商 ID，关联服务商档案")
         private Long merchantId;
+        @Schema(description = "服务商名称")
         private String merchantName;
+        @Schema(description = "服务商联系人姓名")
         private String merchantContactName;
+        @Schema(description = "服务商联系人手机号")
         private String merchantContactMobile;
+        @Schema(description = "抢单时间")
         private LocalDateTime acceptTime;
+        @Schema(description = "抢单时服务商与服务地点的距离，单位：公里")
         private BigDecimal distanceKm;
+        @Schema(description = "抢单结果：SUCCESS 抢单成功、FAILED 抢单失败、EXPIRED 抢单已过期")
         private String acceptResult;
+        @Schema(description = "业务备注")
         private String remark;
     }
 
@@ -310,7 +349,7 @@ public class OrderInfoDetailRespVO {
         private Integer refundPrice;
         @Schema(description = "退款原因")
         private String reason;
-        @Schema(description = "渠道错误信息")
+        @Schema(description = "稳定退款失败说明，不包含渠道原始错误或内部诊断信息")
         private String channelErrorMsg;
         @Schema(description = "退款成功时间")
         private LocalDateTime successTime;
@@ -416,6 +455,7 @@ public class OrderInfoDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - OrderOperateLogRespVO Response VO")
     public static class OrderOperateLogRespVO {
         @Schema(description = "日志 ID", example = "1")
         private Long id;

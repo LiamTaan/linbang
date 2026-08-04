@@ -35,7 +35,12 @@
         />
       </el-form-item>
       <el-form-item label="当前角色" prop="currentRoleCode">
-        <el-select v-model="queryParams.currentRoleCode" placeholder="请选择当前角色" clearable class="!w-220px">
+        <el-select
+          v-model="queryParams.currentRoleCode"
+          placeholder="请选择当前角色"
+          clearable
+          class="!w-220px"
+        >
           <el-option
             v-for="dict in getStrDictOptions(DICT_TYPE.LB_ROLE_CODE)"
             :key="dict.value"
@@ -80,14 +85,6 @@
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
         <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
         <el-button
-          type="primary"
-          plain
-          v-hasPermi="['linbang:member-user:create']"
-          @click="openForm('create')"
-        >
-          <Icon icon="ep:plus" class="mr-5px" /> 新增
-        </el-button>
-        <el-button
           type="success"
           plain
           :loading="exportLoading"
@@ -95,15 +92,6 @@
           @click="handleExport"
         >
           <Icon icon="ep:download" class="mr-5px" /> 导出
-        </el-button>
-        <el-button
-          type="danger"
-          plain
-          :disabled="checkedIds.length === 0"
-          v-hasPermi="['linbang:member-user:delete']"
-          @click="handleDeleteBatch"
-        >
-          <Icon icon="ep:delete" class="mr-5px" /> 批量删除
         </el-button>
       </el-form-item>
     </el-form>
@@ -116,9 +104,7 @@
       :stripe="true"
       :show-overflow-tooltip="true"
       row-key="id"
-      @selection-change="handleRowCheckboxChange"
     >
-      <el-table-column type="selection" width="55" />
       <el-table-column label="用户编号" align="center" prop="userNo" min-width="150" />
       <el-table-column label="手机号" align="center" prop="mobile" width="140" />
       <el-table-column label="昵称" align="center" prop="nickname" min-width="140" />
@@ -133,9 +119,15 @@
       <el-table-column label="角色" align="center" min-width="180">
         <template #default="{ row }">
           <div class="flex flex-wrap justify-center gap-4px">
-            <dict-tag v-if="row.currentRoleCode" :type="DICT_TYPE.LB_ROLE_CODE" :value="row.currentRoleCode" />
             <dict-tag
-              v-for="roleCode in (row.enabledRoleCodes || []).filter((item) => item !== row.currentRoleCode)"
+              v-if="row.currentRoleCode"
+              :type="DICT_TYPE.LB_ROLE_CODE"
+              :value="row.currentRoleCode"
+            />
+            <dict-tag
+              v-for="roleCode in (row.enabledRoleCodes || []).filter(
+                (item) => item !== row.currentRoleCode
+              )"
               :key="roleCode"
               :type="DICT_TYPE.LB_ROLE_CODE"
               :value="roleCode"
@@ -149,13 +141,33 @@
           {{ formatEnableStatus(row.status) }}
         </template>
       </el-table-column>
-      <el-table-column label="最后登录时间" align="center" prop="lastLoginTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="最后登录时间"
+        align="center"
+        prop="lastLoginTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="最后登录IP" align="center" prop="lastLoginIp" width="140" />
       <el-table-column label="备注" align="center" prop="remark" min-width="180" />
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="操作" align="center" fixed="right" :show-overflow-tooltip="false" min-width="220">
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
+      <el-table-column
+        label="操作"
+        align="center"
+        fixed="right"
+        :show-overflow-tooltip="false"
+        min-width="220"
+      >
         <template #default="{ row }">
-          <div class="flex flex-wrap items-center justify-center gap-x-8px gap-y-4px whitespace-normal">
+          <div
+            class="flex flex-wrap items-center justify-center gap-x-8px gap-y-4px whitespace-normal"
+          >
             <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
             <el-button
               link
@@ -164,22 +176,6 @@
               @click="openRestrictDialog(row)"
             >
               限制
-            </el-button>
-            <el-button
-              link
-              type="primary"
-              v-hasPermi="['linbang:member-user:update']"
-              @click="openForm('update', row.id)"
-            >
-              编辑
-            </el-button>
-            <el-button
-              link
-              type="danger"
-              v-hasPermi="['linbang:member-user:delete']"
-              @click="handleDelete(row.id)"
-            >
-              删除
             </el-button>
           </div>
         </template>
@@ -199,7 +195,11 @@
       <el-descriptions-item label="手机号">{{ detailData?.mobile || '-' }}</el-descriptions-item>
       <el-descriptions-item label="昵称">{{ detailData?.nickname || '-' }}</el-descriptions-item>
       <el-descriptions-item label="当前角色">
-        <dict-tag v-if="detailData?.currentRoleCode" :type="DICT_TYPE.LB_ROLE_CODE" :value="detailData.currentRoleCode" />
+        <dict-tag
+          v-if="detailData?.currentRoleCode"
+          :type="DICT_TYPE.LB_ROLE_CODE"
+          :value="detailData.currentRoleCode"
+        />
         <span v-else>-</span>
       </el-descriptions-item>
       <el-descriptions-item label="已开通角色">
@@ -213,12 +213,22 @@
           <span v-if="!(detailData?.enabledRoleCodes || []).length">-</span>
         </div>
       </el-descriptions-item>
-      <el-descriptions-item label="状态">{{ formatEnableStatus(detailData?.status) }}</el-descriptions-item>
-      <el-descriptions-item label="注册来源">{{ detailData?.registerSource || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="状态">{{
+        formatEnableStatus(detailData?.status)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="注册来源">{{
+        detailData?.registerSource || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="生日">{{ detailData?.birthday || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="最后登录时间">{{ formatDate(detailData?.lastLoginTime) }}</el-descriptions-item>
-      <el-descriptions-item label="最后登录IP">{{ detailData?.lastLoginIp || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="备注" :span="2">{{ detailData?.remark || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="最后登录时间">{{
+        formatDate(detailData?.lastLoginTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="最后登录IP">{{
+        detailData?.lastLoginIp || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="备注" :span="2">{{
+        detailData?.remark || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">账号概览</el-divider>
@@ -227,7 +237,8 @@
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">资质数 / 已通过</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.qualificationCount ?? 0 }} / {{ detailData?.summary?.approvedQualificationCount ?? 0 }}
+            {{ detailData?.summary?.qualificationCount ?? 0 }} /
+            {{ detailData?.summary?.approvedQualificationCount ?? 0 }}
           </div>
         </el-card>
       </el-col>
@@ -235,7 +246,8 @@
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">地址数 / 默认地址</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.addressCount ?? 0 }} / {{ detailData?.summary?.defaultAddressCount ?? 0 }}
+            {{ detailData?.summary?.addressCount ?? 0 }} /
+            {{ detailData?.summary?.defaultAddressCount ?? 0 }}
           </div>
         </el-card>
       </el-col>
@@ -243,7 +255,8 @@
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">信用记录 / 最新分值</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.creditRecordCount ?? 0 }} / {{ detailData?.summary?.latestCreditScore ?? 0 }}
+            {{ detailData?.summary?.creditRecordCount ?? 0 }} /
+            {{ detailData?.summary?.latestCreditScore ?? 0 }}
           </div>
         </el-card>
       </el-col>
@@ -251,7 +264,9 @@
 
     <el-divider content-position="left">实名与服务商上下文</el-divider>
     <el-descriptions :column="2" border>
-      <el-descriptions-item label="实名姓名">{{ detailData?.realName?.realName || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="实名姓名">{{
+        detailData?.realName?.realName || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="实名状态">
         <dict-tag
           v-if="detailData?.realName?.auditStatus"
@@ -260,9 +275,15 @@
         />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="身份证号">{{ detailData?.realName?.idCardNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="实名审核时间">{{ formatDate(detailData?.realName?.auditTime) }}</el-descriptions-item>
-      <el-descriptions-item label="服务商名称">{{ detailData?.merchant?.merchantName || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="身份证号">{{
+        detailData?.realName?.idCardNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="实名审核时间">{{
+        formatDate(detailData?.realName?.auditTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="服务商名称">{{
+        detailData?.merchant?.merchantName || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="服务商状态">
         {{ formatEnableStatus(detailData?.merchant?.status) }}
       </el-descriptions-item>
@@ -270,9 +291,12 @@
         {{ formatAcceptStatus(detailData?.merchant?.acceptStatus) }}
       </el-descriptions-item>
       <el-descriptions-item label="信用等级">
-        {{ detailData?.merchant?.creditScore ?? '-' }} / {{ detailData?.merchant?.creditLevel || '-' }}
+        {{ detailData?.merchant?.creditScore ?? '-' }} /
+        {{ detailData?.merchant?.creditLevel || '-' }}
       </el-descriptions-item>
-      <el-descriptions-item label="最近入驻单号">{{ detailData?.latestEntry?.entryNo || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="最近入驻单号">{{
+        detailData?.latestEntry?.entryNo || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="最近入驻状态">
         <dict-tag
           v-if="detailData?.latestEntry?.status"
@@ -308,12 +332,18 @@
       <el-table-column label="资质编号" prop="qualificationNo" width="160" />
       <el-table-column label="审核状态" prop="auditStatus" width="110">
         <template #default="{ row }">
-          <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+          <dict-tag
+            v-if="row.auditStatus"
+            :type="DICT_TYPE.LB_AUDIT_STATUS"
+            :value="row.auditStatus"
+          />
           <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="有效期" min-width="180">
-        <template #default="{ row }">{{ row.validStartDate || '-' }} ~ {{ row.validEndDate || '-' }}</template>
+        <template #default="{ row }"
+          >{{ row.validStartDate || '-' }} ~ {{ row.validEndDate || '-' }}</template
+        >
       </el-table-column>
     </el-table>
     <el-empty v-else description="暂无资质" :image-size="80" />
@@ -354,7 +384,9 @@
       <el-table-column label="规则名称" prop="ruleName" min-width="160" />
       <el-table-column label="分值变动" prop="scoreChange" width="110" />
       <el-table-column label="前后分值" min-width="160">
-        <template #default="{ row }">{{ row.beforeScore ?? '-' }} -> {{ row.afterScore ?? '-' }}</template>
+        <template #default="{ row }"
+          >{{ row.beforeScore ?? '-' }} -> {{ row.afterScore ?? '-' }}</template
+        >
       </el-table-column>
       <el-table-column label="触发类型" prop="triggerType" width="120">
         <template #default="{ row }">
@@ -374,9 +406,19 @@
   </Dialog>
 
   <Dialog v-model="restrictVisible" title="账号限制与处置" width="560px">
-    <el-form ref="restrictFormRef" :model="restrictFormData" :rules="restrictFormRules" label-width="100px">
+    <el-form
+      ref="restrictFormRef"
+      :model="restrictFormData"
+      :rules="restrictFormRules"
+      label-width="100px"
+    >
       <el-form-item label="目标用户">
-        <el-input :model-value="currentRow ? `${currentRow.nickname || '-'} / ${currentRow.mobile || '-'}` : ''" disabled />
+        <el-input
+          :model-value="
+            currentRow ? `${currentRow.nickname || '-'} / ${currentRow.mobile || '-'}` : ''
+          "
+          disabled
+        />
       </el-form-item>
       <el-form-item label="动作类型" prop="actionType">
         <el-radio-group v-model="restrictFormData.actionType">
@@ -386,7 +428,10 @@
         </el-radio-group>
       </el-form-item>
       <el-form-item label="限制类型" prop="restrictType">
-        <el-input v-model="restrictFormData.restrictType" placeholder="如 LOGIN / ORDER / COMMENT" />
+        <el-input
+          v-model="restrictFormData.restrictType"
+          placeholder="如 LOGIN / ORDER / COMMENT"
+        />
       </el-form-item>
       <el-form-item label="结束时间" prop="endTime">
         <el-date-picker
@@ -413,8 +458,6 @@
       <el-button type="primary" :loading="restrictLoading" @click="submitRestrict">提交</el-button>
     </template>
   </Dialog>
-
-  <MemberUserForm ref="formRef" @success="getList" />
 </template>
 
 <script setup lang="ts">
@@ -424,7 +467,6 @@ import { onMounted, reactive, ref } from 'vue'
 import { getStrDictOptions, DICT_TYPE } from '@/utils/dict'
 import { dateFormatter, formatDate } from '@/utils/formatTime'
 import download from '@/utils/download'
-import { useI18n } from '@/hooks/web/useI18n'
 import { useMessage } from '@/hooks/web/useMessage'
 import {
   MemberUserApi,
@@ -441,13 +483,11 @@ import {
   formatGender,
   formatTriggerType
 } from '../utils/display'
-import MemberUserForm from './MemberUserForm.vue'
 import { requestDynamicKeyToken } from '../shared/dynamic-key'
 
 defineOptions({ name: 'MemberUser' })
 
 const message = useMessage()
-const { t } = useI18n()
 const loading = ref(false)
 const exportLoading = ref(false)
 const detailVisible = ref(false)
@@ -456,8 +496,6 @@ const list = ref<MemberUser[]>([])
 const detailData = ref<MemberUserDetail>()
 const total = ref(0)
 const queryFormRef = ref<FormInstance>()
-const formRef = ref()
-const checkedIds = ref<number[]>([])
 const currentRow = ref<MemberUser>()
 const restrictVisible = ref(false)
 const restrictLoading = ref(false)
@@ -507,10 +545,6 @@ const resetQuery = () => {
   handleQuery()
 }
 
-const openForm = (type: string, id?: number) => {
-  formRef.value.open(type, id)
-}
-
 const openRestrictDialog = (row: MemberUser) => {
   currentRow.value = row
   restrictFormData.userId = row.id
@@ -529,29 +563,6 @@ const openDetail = async (id: number) => {
   } finally {
     detailLoading.value = false
   }
-}
-
-const handleDelete = async (id: number) => {
-  try {
-    await message.delConfirm()
-    await MemberUserApi.deleteMemberUser(id)
-    message.success(t('common.delSuccess'))
-    await getList()
-  } catch {}
-}
-
-const handleDeleteBatch = async () => {
-  try {
-    await message.delConfirm()
-    await MemberUserApi.deleteMemberUserList(checkedIds.value)
-    checkedIds.value = []
-    message.success(t('common.delSuccess'))
-    await getList()
-  } catch {}
-}
-
-const handleRowCheckboxChange = (records: MemberUser[]) => {
-  checkedIds.value = records.map((item) => item.id)
 }
 
 const handleExport = async () => {

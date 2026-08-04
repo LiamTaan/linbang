@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.iocoder.yudao.module.linbang.dal.mysql.partnercoordination.PartnerCoordinationMapper">
+
+    <sql id="CurrentMerchantInRegions">
+        AND EXISTS (
+            SELECT 1
+            FROM lb_merchant_entry me
+            WHERE me.tenant_id = o.tenant_id
+              AND me.merchant_id = o.merchant_id
+              AND me.status = 'APPROVED'
+              AND me.deleted = b'0'
+              AND me.id = (
+                  SELECT MAX(me_latest.id)
+                  FROM lb_merchant_entry me_latest
+                  WHERE me_latest.tenant_id = me.tenant_id
+                    AND me_latest.merchant_id = me.merchant_id
+                    AND me_latest.status = 'APPROVED'
+                    AND me_latest.deleted = b'0'
+              )
+              AND me.region_code IN
+              <foreach collection="regionCodes" item="regionCode" open="(" separator="," close=")">
+                  #{regionCode}
+              </foreach>
+        )
+    </sql>
+
+    <sql id="CanonicalAddressInRegions">
+        AND a.adcode IN
+        <foreach collection="regionCodes" item="regionCode" open="(" separator="," close=")">
+            #{regionCode}
+        </foreach>
+        AND NOT EXISTS (
+            SELECT 1
+            FROM lb_user_address preferred
+            WHERE preferred.tenant_id = a.tenant_id
+              AND preferred.user_id = a.user_id
+              AND preferred.deleted = b'0'
+              AND (
+                  preferred.is_default &gt; a.is_default
+                  OR (preferred.is_default = a.is_default AND preferred.id &lt; a.id)
+              )
+        )
+    </sql>
+
+    <select id="selectDisputePage"
+            resultType="cn.iocoder.yudao.module.linbang.dal.dataobject.partnercoordination.dto.PartnerDisputePageRecordDTO">
+        SELECT dispute.dispute_type,
+               dispute.dispute_id,
+               dispute.dispute_no,
+               dispute.order_id,
+               dispute.order_no,
+               dispute.unit_id,
+               dispute.unit_no,
+               dispute.region_code,
+               dispute.status,
+               dispute.content,
+               dispute.result_desc,
+               dispute.create_time
+        FROM (
+            <choose>
+                <when test="reqVO.disputeType != null and reqVO.disputeType == 'COMPLAINT'">
+                    <include refid="ComplaintDisputeSelect"/>
+                </when>
+                <when test="reqVO.disputeType != null and reqVO.disputeType == 'APPEAL'">
+                    <include refid="AppealDisputeSelect"/>
+                </when>
+                <otherwise>
+                    <include refid="ComplaintDisputeSelect"/>
+                    UNION ALL
+                    <include refid="AppealDisputeSelect"/>
+                </otherwise>
+            </choose>
+        ) dispute
+        WHERE 1 = 1
+        <if test="reqVO.status != null and reqVO.status != ''">
+            AND dispute.status = #{reqVO.status}
+        </if>
+        <if test="reqVO.regionCode != null and reqVO.regionCode != ''">
+            AND dispute.region_code = #{reqVO.regionCode}
+        </if>
+        <if test="reqVO.keyword != null and reqVO.keyword != ''">
+            AND (dispute.order_no LIKE CONCAT('%', #{reqVO.keyword}, '%')
+                OR dispute.dispute_no LIKE CONCAT('%', #{reqVO.keyword}, '%'))
+        </if>
+        ORDER BY dispute.create_time DESC, dispute.dispute_id DESC
+    </select>
+
+    <sql id="ComplaintDisputeSelect">
+        SELECT 'COMPLAINT' AS dispute_type,
+               c.id AS dispute_id,
+               c.complaint_no AS dispute_no,
+               c.order_id,
+               o.order_no,
+               c.unit_id,
+               ou.unit_no,
+               me.region_code,
+               c.status,
+               c.content,
+               c.result_desc,
+               c.create_time
+        FROM lb_complaint c
+        INNER JOIN lb_order_info o
+                ON o.id = c.order_id
+               AND o.tenant_id = c.tenant_id
+               AND o.deleted = b'0'
+        LEFT JOIN lb_order_unit ou
+               ON ou.id = c.unit_id
+              AND ou.tenant_id = c.tenant_id
+              AND ou.deleted = b'0'
+        INNER JOIN lb_merchant_entry me
+                ON me.tenant_id = o.tenant_id
+               AND me.merchant_id = o.merchant_id
+               AND me.status = 'APPROVED'
+               AND me.deleted = b'0'
+               AND me.id = (
+                   SELECT MAX(me_latest.id)
+                   FROM lb_merchant_entry me_latest
+                   WHERE me_latest.tenant_id = me.tenant_id
+                     AND me_latest.merchant_id = me.merchant_id
+                     AND me_latest.status = 'APPROVED'
+                     AND me_latest.deleted = b'0'
+               )
+        WHERE c.deleted = b'0'
+          AND me.region_code IN
+          <foreach collection="regionCodes" item="regionCode" open="(" separator="," close=")">
+              #{regionCode}
+          </foreach>
+    </sql>
+
+    <sql id="AppealDisputeSelect">
+        SELECT 'APPEAL' AS dispute_type,
+               ap.id AS dispute_id,
+               ap.appeal_no AS dispute_no,
+               ap.order_id,
+               o.order_no,
+               ap.unit_id,
+               ou.unit_no,
+               me.region_code,
+               ap.status,
+               ap.content,
+               COALESCE(NULLIF(ap.audit_remark, ''), ap.reject_reason) AS result_desc,
+               ap.create_time
+        FROM lb_appeal ap
+        INNER JOIN lb_order_info o
+                ON o.id = ap.order_id
+               AND o.tenant_id = ap.tenant_id
+               AND o.deleted = b'0'
+        LEFT JOIN lb_order_unit ou
+               ON ou.id = ap.unit_id
+              AND ou.tenant_id = ap.tenant_id
+              AND ou.deleted = b'0'
+        INNER JOIN lb_merchant_entry me
+                ON me.tenant_id = o.tenant_id
+               AND me.merchant_id = o.merchant_id
+               AND me.status = 'APPROVED'
+               AND me.deleted = b'0'
+               AND me.id = (
+                   SELECT MAX(me_latest.id)
+                   FROM lb_merchant_entry me_latest
+                   WHERE me_latest.tenant_id = me.tenant_id
+                     AND me_latest.merchant_id = me.merchant_id
+                     AND me_latest.status = 'APPROVED'
+                     AND me_latest.deleted = b'0'
+               )
+        WHERE ap.deleted = b'0'
+          AND me.region_code IN
+          <foreach collection="regionCodes" item="regionCode" open="(" separator="," close=")">
+              #{regionCode}
+          </foreach>
+    </sql>
+
+    <select id="selectWorkbenchAggregate"
+            resultType="cn.iocoder.yudao.module.linbang.dal.dataobject.partnercoordination.dto.PartnerWorkbenchAggregateDTO">
+        SELECT order_stats.order_count,
+               order_stats.trade_amount,
+               (
+                   SELECT COUNT(*)
+                   FROM lb_complaint c
+                   INNER JOIN lb_order_info o
+                           ON o.id = c.order_id
+                          AND o.tenant_id = c.tenant_id
+                          AND o.deleted = b'0'
+                   WHERE c.deleted = b'0'
+                     AND c.status IN ('PENDING', 'PROCESSING')
+                     <include refid="CurrentMerchantInRegions"/>
+               ) + (
+                   SELECT COUNT(*)
+                   FROM lb_appeal ap
+                   INNER JOIN lb_order_info o
+                           ON o.id = ap.order_id
+                          AND o.tenant_id = ap.tenant_id
+                          AND o.deleted = b'0'
+                   WHERE ap.deleted = b'0'
+                     AND ap.status IN ('PENDING', 'PROCESSING')
+                     <include refid="CurrentMerchantInRegions"/>
+               ) AS pending_dispute_count
+        FROM (
+            SELECT COUNT(*) AS order_count,
+                   COALESCE(SUM(o.order_amount), 0) AS trade_amount
+            FROM lb_order_info o
+            WHERE o.deleted = b'0'
+            <include refid="CurrentMerchantInRegions"/>
+        ) order_stats
+    </select>
+
+    <select id="selectPromoteAggregate"
+            resultType="cn.iocoder.yudao.module.linbang.dal.dataobject.partnercoordination.dto.PartnerPromoteAggregateDTO">
+        SELECT COUNT(DISTINCT CASE
+                   WHEN u.create_time &gt;= #{todayStart} AND u.create_time &lt; #{tomorrowStart} THEN u.id
+               END) AS today_new_user_count,
+               COUNT(DISTINCT u.id) AS new_user_count,
+               COUNT(DISTINCT pr.promoter_id) AS bound_promoter_count,
+               COUNT(DISTINCT pr.id) AS relation_count,
+               COUNT(DISTINCT CASE WHEN pr.convert_status = 'CONVERTED' THEN pr.id END)
+                   AS converted_relation_count,
+               COUNT(DISTINCT co.id) AS commission_order_count,
+               COALESCE(SUM(CASE
+                   WHEN co.id IS NOT NULL AND co.status &lt;&gt; 'REFUNDED'
+                       THEN COALESCE(co.commission_amount, 0)
+                   ELSE 0
+               END), 0) AS commission_amount
+        FROM lb_user u
+        INNER JOIN lb_user_address a
+                ON a.user_id = u.id
+               AND a.tenant_id = u.tenant_id
+               AND a.deleted = b'0'
+        LEFT JOIN lb_promoter_relation pr
+               ON pr.user_id = u.id
+              AND pr.tenant_id = u.tenant_id
+              AND pr.deleted = b'0'
+        LEFT JOIN lb_commission_order co
+               ON co.user_id = pr.user_id
+              AND co.promoter_id = pr.promoter_id
+              AND co.tenant_id = pr.tenant_id
+              AND co.deleted = b'0'
+        WHERE u.deleted = b'0'
+        <include refid="CanonicalAddressInRegions"/>
+    </select>
+
+    <select id="selectPromoteTradeAggregate"
+            resultType="cn.iocoder.yudao.module.linbang.dal.dataobject.partnercoordination.dto.PartnerPromoteTradeAggregateDTO">
+        SELECT COUNT(*) AS convert_order_count,
+               COALESCE(SUM(o.order_amount), 0) AS trade_amount
+        FROM lb_order_info o
+        INNER JOIN (
+            SELECT DISTINCT co.tenant_id, co.source_order_id
+            FROM lb_commission_order co
+            INNER JOIN lb_promoter_relation pr
+                    ON pr.user_id = co.user_id
+                   AND pr.promoter_id = co.promoter_id
+                   AND pr.tenant_id = co.tenant_id
+                   AND pr.deleted = b'0'
+            INNER JOIN lb_user u
+                    ON u.id = co.user_id
+                   AND u.tenant_id = co.tenant_id
+                   AND u.deleted = b'0'
+            INNER JOIN lb_user_address a
+                    ON a.user_id = u.id
+                   AND a.tenant_id = u.tenant_id
+                   AND a.deleted = b'0'
+            WHERE co.deleted = b'0'
+              AND co.status &lt;&gt; 'REFUNDED'
+              AND co.source_order_id IS NOT NULL
+            <include refid="CanonicalAddressInRegions"/>
+        ) converted_order
+                ON converted_order.source_order_id = o.id
+               AND converted_order.tenant_id = o.tenant_id
+        WHERE o.deleted = b'0'
+    </select>
+
+    <select id="selectOrderInRegionCount" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM lb_order_info o
+        WHERE o.id = #{orderId}
+          AND o.deleted = b'0'
+        <include refid="CurrentMerchantInRegions"/>
+    </select>
+
+</mapper>

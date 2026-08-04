@@ -29,6 +29,8 @@ public class MessageFeedbackStatDO extends BaseDO {
 
     private LocalDate statDate;
 
+    private String statKey;
+
     private String sceneCode;
 
     private String messageCategory;

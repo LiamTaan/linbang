@@ -72,6 +72,10 @@ public class WalletFlowDO {
      */
     private Long relatedRefundId;
     /**
+     * 关联提现申请 ID
+     */
+    private Long relatedWithdrawId;
+    /**
      * 备注
      */
     private String remark;

@@ -36,6 +36,16 @@ public class PayTransferApiImpl implements PayTransferApi {
     @Override
     public PayTransferRespDTO getTransfer(Long id) {
         PayTransferDO transfer = payTransferService.getTransfer(id);
+        return buildTransferRespDTO(transfer);
+    }
+
+    @Override
+    public PayTransferRespDTO getTransferByMerchantTransferId(String appKey, String merchantTransferId) {
+        PayTransferDO transfer = payTransferService.getTransferByMerchantTransferId(appKey, merchantTransferId);
+        return buildTransferRespDTO(transfer);
+    }
+
+    private PayTransferRespDTO buildTransferRespDTO(PayTransferDO transfer) {
         if (transfer == null) {
             return null;
         }

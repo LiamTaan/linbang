@@ -152,14 +152,6 @@
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
         <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
         <el-button
-          type="primary"
-          plain
-          @click="openForm('create')"
-          v-hasPermi="['linbang:order:unit:create']"
-        >
-          <Icon icon="ep:plus" class="mr-5px" /> 新增
-        </el-button>
-        <el-button
           type="success"
           plain
           @click="handleExport"
@@ -167,15 +159,6 @@
           v-hasPermi="['linbang:order:unit:export']"
         >
           <Icon icon="ep:download" class="mr-5px" /> 导出
-        </el-button>
-        <el-button
-          type="danger"
-          plain
-          :disabled="isEmpty(checkedIds)"
-          @click="handleDeleteBatch"
-          v-hasPermi="['linbang:order:unit:delete']"
-        >
-          <Icon icon="ep:delete" class="mr-5px" /> 批量删除
         </el-button>
       </el-form-item>
     </el-form>
@@ -188,9 +171,7 @@
       :data="list"
       :stripe="true"
       :show-overflow-tooltip="true"
-      @selection-change="handleRowCheckboxChange"
     >
-      <el-table-column type="selection" width="55" />
       <el-table-column label="订单号" align="center" prop="orderNo" min-width="160" />
       <el-table-column label="单元号" align="center" prop="unitNo" min-width="160" />
       <el-table-column label="单元序号" align="center" prop="unitSeq" width="100" />
@@ -211,9 +192,15 @@
       <el-table-column label="服务商" align="center" min-width="220">
         <template #default="{ row }">
           <div class="leading-20px">
-            <div class="font-600">{{ row.merchantName || (row.merchantId ? '服务商信息缺失' : '-') }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactName || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactMobile || '-' }}</div>
+            <div class="font-600">{{
+              row.merchantName || (row.merchantId ? '服务商信息缺失' : '-')
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactName || '-'
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactMobile || '-'
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -224,7 +211,13 @@
       </el-table-column>
       <el-table-column label="核销状态" align="center" prop="verifyStatus" width="120" />
       <el-table-column label="核销码" align="center" prop="verifyCode" width="120" />
-      <el-table-column label="核销时间" align="center" prop="verifyTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="核销时间"
+        align="center"
+        prop="verifyTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column
         label="接单截止时间"
         align="center"
@@ -249,22 +242,6 @@
       <el-table-column label="操作" align="center" min-width="170">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', row.id)"
-            v-hasPermi="['linbang:order:unit:update']"
-          >
-            编辑
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(row.id)"
-            v-hasPermi="['linbang:order:unit:delete']"
-          >
-            删除
-          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -276,37 +253,73 @@
     />
   </ContentWrap>
 
-    <Dialog v-model="detailVisible" title="拆分单元详情" width="980px">
+  <Dialog v-model="detailVisible" title="拆分单元详情" width="980px">
     <el-descriptions v-loading="detailLoading" :column="2" border>
       <el-descriptions-item label="单元号">{{ detailData?.unitNo || '-' }}</el-descriptions-item>
       <el-descriptions-item label="单元序号">{{ detailData?.unitSeq ?? '-' }}</el-descriptions-item>
       <el-descriptions-item label="单元状态">
-        <dict-tag v-if="detailData?.status" :type="DICT_TYPE.LB_ORDER_UNIT_STATUS" :value="detailData.status" />
+        <dict-tag
+          v-if="detailData?.status"
+          :type="DICT_TYPE.LB_ORDER_UNIT_STATUS"
+          :value="detailData.status"
+        />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="单元标题">{{ detailData?.unitTitle || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="单元金额">{{ detailData?.unitAmount ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="拆分模式">{{ formatSplitMode(detailData?.splitMode) }}</el-descriptions-item>
-      <el-descriptions-item label="前置单元号">{{ detailData?.prevUnitNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="是否锁定">{{ formatBooleanYesNo(detailData?.isLocked) }}</el-descriptions-item>
-      <el-descriptions-item label="锁定原因">{{ detailData?.lockReason || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="单元标题">{{
+        detailData?.unitTitle || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="单元金额">{{
+        detailData?.unitAmount ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="拆分模式">{{
+        formatSplitMode(detailData?.splitMode)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="前置单元号">{{
+        detailData?.prevUnitNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="是否锁定">{{
+        formatBooleanYesNo(detailData?.isLocked)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="锁定原因">{{
+        detailData?.lockReason || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="服务商">{{ formatMerchantSummary() }}</el-descriptions-item>
-      <el-descriptions-item label="接单截止时间">{{ formatDate(detailData?.acceptDeadlineTime) }}</el-descriptions-item>
-      <el-descriptions-item label="完成时间">{{ formatDate(detailData?.finishTime) }}</el-descriptions-item>
-      <el-descriptions-item label="核销状态">{{ detailData?.verifyStatus || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="核销码">{{ detailData?.verifyCode || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="核销时间">{{ formatDate(detailData?.verifyTime) }}</el-descriptions-item>
+      <el-descriptions-item label="接单截止时间">{{
+        formatDate(detailData?.acceptDeadlineTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="完成时间">{{
+        formatDate(detailData?.finishTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="核销状态">{{
+        detailData?.verifyStatus || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="核销码">{{
+        detailData?.verifyCode || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="核销时间">{{
+        formatDate(detailData?.verifyTime)
+      }}</el-descriptions-item>
       <el-descriptions-item label="核销人">{{ detailData?.verifyBy || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="核销备注" :span="2">{{ detailData?.verifyRemark || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData?.createTime) }}</el-descriptions-item>
+      <el-descriptions-item label="核销备注" :span="2">{{
+        detailData?.verifyRemark || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData?.createTime)
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">主订单上下文</el-divider>
     <el-descriptions :column="2" border>
       <el-descriptions-item label="订单号">{{ detailData?.orderNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="订单标题">{{ detailData?.orderTitle || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="订单标题">{{
+        detailData?.orderTitle || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="订单状态">
-        <dict-tag v-if="detailData?.orderStatus" :type="DICT_TYPE.LB_ORDER_STATUS" :value="detailData.orderStatus" />
+        <dict-tag
+          v-if="detailData?.orderStatus"
+          :type="DICT_TYPE.LB_ORDER_STATUS"
+          :value="detailData.orderStatus"
+        />
         <span v-else>-</span>
       </el-descriptions-item>
       <el-descriptions-item label="下单用户">{{ formatOrderUserSummary() }}</el-descriptions-item>
@@ -344,14 +357,21 @@
     </el-row>
 
     <el-divider content-position="left">交付凭证</el-divider>
-    <el-table v-if="detailData?.proofs?.length" :data="detailData.proofs" size="small" border max-height="220">
+    <el-table
+      v-if="detailData?.proofs?.length"
+      :data="detailData.proofs"
+      size="small"
+      border
+      max-height="220"
+    >
       <el-table-column label="ID" prop="id" width="90" />
       <el-table-column label="附件文件" min-width="240">
         <template #default="{ row }">
           <el-link
-            v-if="row.fileId && fileMap[row.fileId]?.url"
-            :href="fileMap[row.fileId].url"
+            v-if="row.fileId && getOpenableFileUrl(fileMap[row.fileId])"
+            :href="getOpenableFileUrl(fileMap[row.fileId])"
             target="_blank"
+            rel="noopener noreferrer"
             type="primary"
             :underline="false"
           >
@@ -363,9 +383,15 @@
       <el-table-column label="服务商" min-width="200">
         <template #default="{ row }">
           <div class="leading-20px">
-            <div class="font-600">{{ row.merchantName || (row.merchantId ? '服务商信息缺失' : '-') }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactName || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactMobile || '-' }}</div>
+            <div class="font-600">{{
+              row.merchantName || (row.merchantId ? '服务商信息缺失' : '-')
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactName || '-'
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactMobile || '-'
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -377,20 +403,34 @@
         <template #default="{ row }">{{ formatDate(row.proofTime) }}</template>
       </el-table-column>
       <el-table-column label="坐标" min-width="180">
-        <template #default="{ row }">{{ row.longitude ?? '-' }} / {{ row.latitude ?? '-' }}</template>
+        <template #default="{ row }"
+          >{{ row.longitude ?? '-' }} / {{ row.latitude ?? '-' }}</template
+        >
       </el-table-column>
     </el-table>
     <el-empty v-else description="暂无交付凭证" :image-size="80" />
 
     <el-divider content-position="left">抢单记录</el-divider>
-    <el-table v-if="detailData?.acceptRecords?.length" :data="detailData.acceptRecords" size="small" border max-height="220">
+    <el-table
+      v-if="detailData?.acceptRecords?.length"
+      :data="detailData.acceptRecords"
+      size="small"
+      border
+      max-height="220"
+    >
       <el-table-column label="ID" prop="id" width="90" />
       <el-table-column label="服务商" min-width="200">
         <template #default="{ row }">
           <div class="leading-20px">
-            <div class="font-600">{{ row.merchantName || (row.merchantId ? '服务商信息缺失' : '-') }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactName || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantContactMobile || '-' }}</div>
+            <div class="font-600">{{
+              row.merchantName || (row.merchantId ? '服务商信息缺失' : '-')
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactName || '-'
+            }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.merchantContactMobile || '-'
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -408,14 +448,24 @@
     <el-divider content-position="left">投诉与申诉</el-divider>
     <el-row :gutter="12">
       <el-col :span="12">
-        <el-table v-if="detailData?.complaints?.length" :data="detailData.complaints" size="small" border max-height="220">
+        <el-table
+          v-if="detailData?.complaints?.length"
+          :data="detailData.complaints"
+          size="small"
+          border
+          max-height="220"
+        >
           <el-table-column label="投诉单号" prop="complaintNo" min-width="150" />
           <el-table-column label="投诉类型" prop="complaintType" width="110">
             <template #default="{ row }">{{ formatComplaintType(row.complaintType) }}</template>
           </el-table-column>
           <el-table-column label="状态" prop="status" width="100">
             <template #default="{ row }">
-              <dict-tag v-if="row.status" :type="DICT_TYPE.LB_COMPLAINT_STATUS" :value="row.status" />
+              <dict-tag
+                v-if="row.status"
+                :type="DICT_TYPE.LB_COMPLAINT_STATUS"
+                :value="row.status"
+              />
               <span v-else>-</span>
             </template>
           </el-table-column>
@@ -427,14 +477,24 @@
         <el-empty v-else description="暂无投诉" :image-size="70" />
       </el-col>
       <el-col :span="12">
-        <el-table v-if="detailData?.appeals?.length" :data="detailData.appeals" size="small" border max-height="220">
+        <el-table
+          v-if="detailData?.appeals?.length"
+          :data="detailData.appeals"
+          size="small"
+          border
+          max-height="220"
+        >
           <el-table-column label="申诉单号" prop="appealNo" min-width="150" />
           <el-table-column label="申诉类型" prop="appealType" width="110">
             <template #default="{ row }">{{ formatAppealType(row.appealType) }}</template>
           </el-table-column>
           <el-table-column label="审核状态" prop="auditStatus" width="110">
             <template #default="{ row }">
-              <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+              <dict-tag
+                v-if="row.auditStatus"
+                :type="DICT_TYPE.LB_AUDIT_STATUS"
+                :value="row.auditStatus"
+              />
               <span v-else>-</span>
             </template>
           </el-table-column>
@@ -448,7 +508,13 @@
     </el-row>
 
     <el-divider content-position="left">操作日志</el-divider>
-    <el-table v-if="detailData?.operateLogs?.length" :data="detailData.operateLogs" size="small" border max-height="240">
+    <el-table
+      v-if="detailData?.operateLogs?.length"
+      :data="detailData.operateLogs"
+      size="small"
+      border
+      max-height="240"
+    >
       <el-table-column label="ID" prop="id" width="90" />
       <el-table-column label="操作类型" prop="operateType" width="120">
         <template #default="{ row }">{{ formatOperateType(row.operateType) }}</template>
@@ -486,13 +552,10 @@
     </el-timeline>
     <el-empty v-else description="暂无单元时间线" :image-size="80" />
   </Dialog>
-
-  <OrderUnitForm ref="formRef" @success="getList" />
 </template>
 
 <script setup lang="ts">
 import { getStrDictOptions, DICT_TYPE } from '@/utils/dict'
-import { isEmpty } from '@/utils/is'
 import { dateFormatter, formatDate } from '@/utils/formatTime'
 import download from '@/utils/download'
 import { OrderUnitApi, OrderUnit, OrderUnitDetail } from '@/api/linbang/orderunit'
@@ -509,17 +572,19 @@ import {
   formatSplitMode,
   SPLIT_MODE_OPTIONS
 } from '../utils/display'
-import OrderUnitForm from './OrderUnitForm.vue'
-import { formatFileBrief, loadFilesByIds, type FileLookupMap } from '../shared/file-display'
+import {
+  formatFileBrief,
+  getOpenableFileUrl,
+  loadFilesByIds,
+  type FileLookupMap
+} from '../shared/file-display'
 
 import { onMounted, reactive, ref } from 'vue'
-import { useI18n } from '@/hooks/web/useI18n'
 import { useMessage } from '@/hooks/web/useMessage'
 /** 拆分单元 列表 */
 defineOptions({ name: 'OrderUnit' })
 
 const message = useMessage()
-const { t } = useI18n()
 
 const loading = ref(true)
 const detailVisible = ref(false)
@@ -550,7 +615,11 @@ const queryFormRef = ref()
 const exportLoading = ref(false)
 
 const formatOrderUserSummary = () => {
-  const summary = [detailData.value?.userNickname, detailData.value?.userMobile, detailData.value?.userNo]
+  const summary = [
+    detailData.value?.userNickname,
+    detailData.value?.userMobile,
+    detailData.value?.userNo
+  ]
     .filter(Boolean)
     .join(' / ')
   return summary || (detailData.value?.userId ? '用户信息缺失' : '-')
@@ -588,17 +657,15 @@ const resetQuery = () => {
   handleQuery()
 }
 
-const formRef = ref()
-const openForm = (type: string, id?: number) => {
-  formRef.value.open(type, id)
-}
-
 const openDetail = async (id: number) => {
   detailVisible.value = true
   detailLoading.value = true
   try {
     detailData.value = await OrderUnitApi.getOrderUnit(id)
-    Object.assign(fileMap, await loadFilesByIds(detailData.value.proofs?.map((item) => item.fileId) || []))
+    Object.assign(
+      fileMap,
+      await loadFilesByIds(detailData.value.proofs?.map((item) => item.fileId) || [])
+    )
   } finally {
     detailLoading.value = false
   }
@@ -609,30 +676,6 @@ const formatAttachedFile = (fileId?: number) => {
     return '-'
   }
   return formatFileBrief(fileMap[fileId], '附件信息缺失')
-}
-
-const handleDelete = async (id: number) => {
-  try {
-    await message.delConfirm()
-    await OrderUnitApi.deleteOrderUnit(id)
-    message.success(t('common.delSuccess'))
-    await getList()
-  } catch {}
-}
-
-const handleDeleteBatch = async () => {
-  try {
-    await message.delConfirm()
-    await OrderUnitApi.deleteOrderUnitList(checkedIds.value)
-    checkedIds.value = []
-    message.success(t('common.delSuccess'))
-    await getList()
-  } catch {}
-}
-
-const checkedIds = ref<number[]>([])
-const handleRowCheckboxChange = (records: OrderUnit[]) => {
-  checkedIds.value = records.map((item) => item.id)
 }
 
 const handleExport = async () => {

@@ -8,6 +8,7 @@ import cn.iocoder.yudao.module.linbang.controller.admin.escrowproof.vo.EscrowPro
 import cn.iocoder.yudao.module.linbang.controller.admin.escrowproof.vo.EscrowProofRespVO;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.escrowproof.EscrowProofDO;
 import cn.iocoder.yudao.module.linbang.dal.mysql.escrowproof.EscrowProofMapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -43,38 +44,28 @@ public class EscrowProofServiceImpl implements EscrowProofService {
 
     @Override
     public void unlockProof(Long orderId, Long unitId, String unlockReason) {
-        EscrowProofDO proof = escrowProofMapper.selectOne(new LambdaQueryWrapperX<EscrowProofDO>()
+        LambdaUpdateWrapper<EscrowProofDO> updateWrapper = new LambdaUpdateWrapper<EscrowProofDO>()
                 .eq(EscrowProofDO::getOrderId, orderId)
-                .eqIfPresent(EscrowProofDO::getUnitId, unitId)
                 .eq(EscrowProofDO::getProofStatus, "LOCKED")
-                .orderByDesc(EscrowProofDO::getId)
-                .last("LIMIT 1"));
-        if (proof == null) {
-            return;
+                .set(EscrowProofDO::getProofStatus, "UNLOCKED")
+                .set(EscrowProofDO::getUnlockReason, unlockReason);
+        if (unitId != null) {
+            updateWrapper.eq(EscrowProofDO::getUnitId, unitId);
         }
-        escrowProofMapper.updateById(EscrowProofDO.builder()
-                .id(proof.getId())
-                .proofStatus("UNLOCKED")
-                .unlockReason(unlockReason)
-                .build());
+        escrowProofMapper.update(null, updateWrapper);
     }
 
     @Override
     public void refundProof(Long orderId, Long unitId, String unlockReason) {
-        EscrowProofDO proof = escrowProofMapper.selectOne(new LambdaQueryWrapperX<EscrowProofDO>()
+        LambdaUpdateWrapper<EscrowProofDO> updateWrapper = new LambdaUpdateWrapper<EscrowProofDO>()
                 .eq(EscrowProofDO::getOrderId, orderId)
-                .eqIfPresent(EscrowProofDO::getUnitId, unitId)
                 .eq(EscrowProofDO::getProofStatus, "LOCKED")
-                .orderByDesc(EscrowProofDO::getId)
-                .last("LIMIT 1"));
-        if (proof == null) {
-            return;
+                .set(EscrowProofDO::getProofStatus, "REFUNDED")
+                .set(EscrowProofDO::getUnlockReason, unlockReason);
+        if (unitId != null) {
+            updateWrapper.eq(EscrowProofDO::getUnitId, unitId);
         }
-        escrowProofMapper.updateById(EscrowProofDO.builder()
-                .id(proof.getId())
-                .proofStatus("REFUNDED")
-                .unlockReason(unlockReason)
-                .build());
+        escrowProofMapper.update(null, updateWrapper);
     }
 
     @Override

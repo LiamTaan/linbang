@@ -21,7 +21,7 @@ public class MemberUserPageReqVO extends PageParam {
     @Schema(description = "手机号")
     private String mobile;
 
-    @Schema(description = "昵称", example = "??")
+    @Schema(description = "昵称", example = "邻里小帮手")
     private String nickname;
 
     @Schema(description = "头像")
@@ -49,7 +49,7 @@ public class MemberUserPageReqVO extends PageParam {
     @Schema(description = "最后登录IP")
     private String lastLoginIp;
 
-    @Schema(description = "备注", example = "??")
+    @Schema(description = "备注", example = "重点关注")
     private String remark;
 
     @Schema(description = "创建时间")

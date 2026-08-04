@@ -44,6 +44,7 @@ public class PartnerInfoDetailRespVO {
     private List<RecentPriceReportRespVO> recentPriceReports;
 
     @Data
+    @Schema(description = "管理后台 - 负责区域摘要 Response VO")
     public static class RegionRespVO {
         @Schema(description = "区域记录 ID", example = "1")
         private Long id;
@@ -62,6 +63,7 @@ public class PartnerInfoDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 统计摘要 Response VO")
     public static class SummaryRespVO {
         @Schema(description = "覆盖区域数量", example = "6")
         private Integer regionCount;
@@ -84,6 +86,7 @@ public class PartnerInfoDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 最近价格申报摘要 Response VO")
     public static class RecentPriceReportRespVO {
         @Schema(description = "价格申报 ID", example = "1")
         private Long id;

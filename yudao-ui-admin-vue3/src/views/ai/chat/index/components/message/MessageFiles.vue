@@ -30,6 +30,7 @@
 
 <script setup lang="ts">
 import { getFileIcon, getFileNameFromUrl, isImage } from '@/utils/file'
+import { openSafeUrl } from '@/utils/url'
 
 defineOptions({ name: 'MessageFiles' })
 
@@ -61,6 +62,6 @@ const getFileTypeClass = (filename: string): string => {
 
 /** 点击文件 */
 const handleFileClick = (url: string) => {
-  window.open(url, '_blank')
+  openSafeUrl(url)
 }
 </script>

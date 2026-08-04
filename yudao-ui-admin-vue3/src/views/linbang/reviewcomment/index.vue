@@ -47,7 +47,12 @@
         <el-input-number v-model="queryParams.starLevel" :min="1" :max="5" class="!w-220px" />
       </el-form-item>
       <el-form-item label="自动评价" prop="isAutoReview">
-        <el-select v-model="queryParams.isAutoReview" placeholder="请选择是否自动评价" clearable class="!w-220px">
+        <el-select
+          v-model="queryParams.isAutoReview"
+          placeholder="请选择是否自动评价"
+          clearable
+          class="!w-220px"
+        >
           <el-option
             v-for="item in AUTO_REVIEW_OPTIONS"
             :key="String(item.value)"
@@ -81,14 +86,6 @@
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
         <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
         <el-button
-          type="primary"
-          plain
-          v-hasPermi="['linbang:review:comment:create']"
-          @click="openForm('create')"
-        >
-          <Icon icon="ep:plus" class="mr-5px" /> 新增
-        </el-button>
-        <el-button
           type="success"
           plain
           :loading="exportLoading"
@@ -96,15 +93,6 @@
           @click="handleExport"
         >
           <Icon icon="ep:download" class="mr-5px" /> 导出
-        </el-button>
-        <el-button
-          type="danger"
-          plain
-          :disabled="checkedIds.length === 0"
-          v-hasPermi="['linbang:review:comment:delete']"
-          @click="handleDeleteBatch"
-        >
-          <Icon icon="ep:delete" class="mr-5px" /> 批量删除
         </el-button>
       </el-form-item>
     </el-form>
@@ -117,9 +105,7 @@
       :stripe="true"
       :show-overflow-tooltip="true"
       row-key="id"
-      @selection-change="handleRowCheckboxChange"
     >
-      <el-table-column type="selection" width="55" />
       <el-table-column label="订单号" align="center" prop="orderNo" min-width="180" />
       <el-table-column label="单元号" align="center" prop="unitNo" min-width="160" />
       <el-table-column label="发起人" align="center" min-width="220">
@@ -163,26 +149,16 @@
           {{ formatEnableStatus(row.status) }}
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
-      <el-table-column label="操作" align="center" fixed="right" width="190">
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
+      <el-table-column label="操作" align="center" fixed="right" width="90">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
-          <el-button
-            link
-            type="primary"
-            v-hasPermi="['linbang:review:comment:update']"
-            @click="openForm('update', row.id)"
-          >
-            编辑
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            v-hasPermi="['linbang:review:comment:delete']"
-            @click="handleDelete(row.id)"
-          >
-            删除
-          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -196,17 +172,30 @@
 
   <Dialog v-model="detailVisible" title="评价详情" width="920px">
     <el-descriptions v-loading="detailLoading" :column="2" border>
-      <el-descriptions-item label="状态">{{ formatEnableStatus(detailData?.status) }}</el-descriptions-item>
-      <el-descriptions-item label="订单号">{{ detailData?.order?.orderNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="单元号">{{ detailData?.unit?.unitNo || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="状态">{{
+        formatEnableStatus(detailData?.status)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="订单号">{{
+        detailData?.order?.orderNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="单元号">{{
+        detailData?.unit?.unitNo || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="发起人">
-        {{ detailData?.fromUser?.nickname || '-' }} / {{ detailData?.fromUser?.mobile || '-' }} / {{ detailData?.fromUser?.userNo || '-' }}
+        {{ detailData?.fromUser?.nickname || '-' }} / {{ detailData?.fromUser?.mobile || '-' }} /
+        {{ detailData?.fromUser?.userNo || '-' }}
       </el-descriptions-item>
       <el-descriptions-item label="目标用户">
-        {{ detailData?.toUser?.nickname || '-' }} / {{ detailData?.toUser?.mobile || '-' }} / {{ detailData?.toUser?.userNo || '-' }}
+        {{ detailData?.toUser?.nickname || '-' }} / {{ detailData?.toUser?.mobile || '-' }} /
+        {{ detailData?.toUser?.userNo || '-' }}
       </el-descriptions-item>
       <el-descriptions-item label="星级">
-        <el-rate :model-value="detailData?.starLevel || 0" disabled show-score text-color="#ff9900" />
+        <el-rate
+          :model-value="detailData?.starLevel || 0"
+          disabled
+          show-score
+          text-color="#ff9900"
+        />
       </el-descriptions-item>
       <el-descriptions-item label="自动评价">
         <el-tag v-if="detailData" :type="detailData.isAutoReview ? 'warning' : 'success'">
@@ -217,14 +206,24 @@
       <el-descriptions-item label="内容已补充">
         {{ formatBooleanYesNo(detailData?.isContentSupplemented) }}
       </el-descriptions-item>
-      <el-descriptions-item label="编辑次数">{{ detailData?.editCount ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="编辑截止时间">{{ formatDate(detailData?.editDeadlineTime) }}</el-descriptions-item>
-      <el-descriptions-item label="最后编辑时间">{{ formatDate(detailData?.lastEditTime) }}</el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData?.createTime) }}</el-descriptions-item>
+      <el-descriptions-item label="编辑次数">{{
+        detailData?.editCount ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="编辑截止时间">{{
+        formatDate(detailData?.editDeadlineTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="最后编辑时间">{{
+        formatDate(detailData?.lastEditTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData?.createTime)
+      }}</el-descriptions-item>
       <el-descriptions-item label="目标服务商">
         {{ detailData?.toMerchant?.merchantName || '-' }}
       </el-descriptions-item>
-      <el-descriptions-item label="评价内容" :span="2">{{ detailData?.content || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="评价内容" :span="2">{{
+        detailData?.content || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">订单与对象上下文</el-divider>
@@ -264,7 +263,9 @@
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">目标服务商</div>
-          <div class="mt-8px text-16px font-600">{{ detailData?.toMerchant?.merchantName || '-' }}</div>
+          <div class="mt-8px text-16px font-600">{{
+            detailData?.toMerchant?.merchantName || '-'
+          }}</div>
           <div class="mt-6px text-13px">{{ detailData?.toMerchant?.contactName || '-' }}</div>
           <div class="mt-6px text-[var(--el-text-color-secondary)]">
             状态：{{ formatEnableStatus(detailData?.toMerchant?.status) }}
@@ -280,21 +281,38 @@
       <el-descriptions-item label="目标用户">
         {{ detailData?.toUser?.nickname || '-' }} / {{ detailData?.toUser?.mobile || '-' }}
       </el-descriptions-item>
-      <el-descriptions-item label="主订单号">{{ detailData?.order?.orderNo || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="订单金额">{{ detailData?.order?.orderAmount ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="单元序号">{{ detailData?.unit?.unitSeq || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="单元金额">{{ detailData?.unit?.unitAmount ?? '-' }}</el-descriptions-item>
+      <el-descriptions-item label="主订单号">{{
+        detailData?.order?.orderNo || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="订单金额">{{
+        detailData?.order?.orderAmount ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="单元序号">{{
+        detailData?.unit?.unitSeq || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="单元金额">{{
+        detailData?.unit?.unitAmount ?? '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="锁单状态">
         <span v-if="detailData?.unit">{{ detailData.unit.isLocked ? '已锁定' : '未锁定' }}</span>
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="锁单原因">{{ detailData?.unit?.lockReason || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="接单截止">{{ formatDate(detailData?.unit?.acceptDeadlineTime) }}</el-descriptions-item>
-      <el-descriptions-item label="完工时间">{{ formatDate(detailData?.unit?.finishTime) }}</el-descriptions-item>
+      <el-descriptions-item label="锁单原因">{{
+        detailData?.unit?.lockReason || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="接单截止">{{
+        formatDate(detailData?.unit?.acceptDeadlineTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="完工时间">{{
+        formatDate(detailData?.unit?.finishTime)
+      }}</el-descriptions-item>
       <el-descriptions-item label="信用分 / 等级">
-        {{ detailData?.toMerchant?.creditScore ?? '-' }} / {{ formatCreditLevel(detailData?.toMerchant?.creditLevel) }}
+        {{ detailData?.toMerchant?.creditScore ?? '-' }} /
+        {{ formatCreditLevel(detailData?.toMerchant?.creditLevel) }}
       </el-descriptions-item>
-      <el-descriptions-item label="接单状态">{{ formatAcceptStatus(detailData?.toMerchant?.acceptStatus) }}</el-descriptions-item>
+      <el-descriptions-item label="接单状态">{{
+        formatAcceptStatus(detailData?.toMerchant?.acceptStatus)
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">统计概览</el-divider>
@@ -303,7 +321,8 @@
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">同单评价 / 目标数</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.sameOrderReviewCount ?? 0 }} / {{ detailData?.summary?.sameTargetReviewCount ?? 0 }}
+            {{ detailData?.summary?.sameOrderReviewCount ?? 0 }} /
+            {{ detailData?.summary?.sameTargetReviewCount ?? 0 }}
           </div>
         </el-card>
       </el-col>
@@ -311,7 +330,8 @@
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">好评 / 中评 / 差评</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.positiveReviewCount ?? 0 }} / {{ detailData?.summary?.neutralReviewCount ?? 0 }} /
+            {{ detailData?.summary?.positiveReviewCount ?? 0 }} /
+            {{ detailData?.summary?.neutralReviewCount ?? 0 }} /
             {{ detailData?.summary?.negativeReviewCount ?? 0 }}
           </div>
         </el-card>
@@ -320,7 +340,8 @@
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">自动评价 / 信用记录</div>
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.autoReviewCount ?? 0 }} / {{ detailData?.summary?.creditRecordCount ?? 0 }}
+            {{ detailData?.summary?.autoReviewCount ?? 0 }} /
+            {{ detailData?.summary?.creditRecordCount ?? 0 }}
           </div>
         </el-card>
       </el-col>
@@ -392,7 +413,9 @@
       <el-table-column label="规则名称" prop="ruleName" min-width="160" />
       <el-table-column label="分值变动" prop="scoreChange" width="110" />
       <el-table-column label="前后分值" min-width="160">
-        <template #default="{ row }">{{ row.beforeScore ?? '-' }} -> {{ row.afterScore ?? '-' }}</template>
+        <template #default="{ row }"
+          >{{ row.beforeScore ?? '-' }} -> {{ row.afterScore ?? '-' }}</template
+        >
       </el-table-column>
       <el-table-column label="触发类型" prop="triggerType" width="120">
         <template #default="{ row }">
@@ -411,8 +434,6 @@
     </el-table>
     <el-empty v-else description="暂无信用记录" :image-size="80" />
   </Dialog>
-
-  <ReviewCommentForm ref="formRef" @success="getList" />
 </template>
 
 <script setup lang="ts">
@@ -438,7 +459,6 @@ import {
   type ReviewComment,
   type ReviewCommentDetail
 } from '@/api/linbang/reviewcomment'
-import ReviewCommentForm from './ReviewCommentForm.vue'
 
 defineOptions({ name: 'ReviewComment' })
 
@@ -451,8 +471,6 @@ const list = ref<ReviewComment[]>([])
 const detailData = ref<ReviewCommentDetail>()
 const total = ref(0)
 const queryFormRef = ref<FormInstance>()
-const formRef = ref()
-const checkedIds = ref<number[]>([])
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
@@ -491,10 +509,6 @@ const resetQuery = () => {
   handleQuery()
 }
 
-const openForm = (type: string, id?: number) => {
-  formRef.value.open(type, id)
-}
-
 const openDetail = async (id: number) => {
   detailVisible.value = true
   detailLoading.value = true
@@ -503,29 +517,6 @@ const openDetail = async (id: number) => {
   } finally {
     detailLoading.value = false
   }
-}
-
-const handleDelete = async (id: number) => {
-  try {
-    await message.delConfirm()
-    await ReviewCommentApi.deleteReviewComment(id)
-    message.success('删除成功')
-    await getList()
-  } catch {}
-}
-
-const handleDeleteBatch = async () => {
-  try {
-    await message.delConfirm()
-    await ReviewCommentApi.deleteReviewCommentList(checkedIds.value)
-    checkedIds.value = []
-    message.success('删除成功')
-    await getList()
-  } catch {}
-}
-
-const handleRowCheckboxChange = (records: ReviewComment[]) => {
-  checkedIds.value = records.map((item) => item.id)
 }
 
 const handleExport = async () => {

@@ -9,6 +9,8 @@ import java.math.BigDecimal;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
 
+import static cn.iocoder.yudao.framework.common.util.number.MoneyUtils.MAX_YUAN_AMOUNT_STR;
+
 @Schema(description = "管理后台 - 提现申请新增/修改 Request VO")
 @Data
 public class WalletWithdrawSaveReqVO {
@@ -34,14 +36,23 @@ public class WalletWithdrawSaveReqVO {
 
     @Schema(description = "申请金额", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "申请金额不能为空")
+    @DecimalMin(value = "0.01", message = "申请金额必须大于 0")
+    @DecimalMax(value = MAX_YUAN_AMOUNT_STR, message = "申请金额超过支付渠道支持上限")
+    @Digits(integer = 8, fraction = 2, message = "申请金额最多 8 位整数和 2 位小数")
     private BigDecimal applyAmount;
 
     @Schema(description = "手续费", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "手续费不能为空")
+    @DecimalMin(value = "0.00", message = "手续费不能小于 0")
+    @DecimalMax(value = MAX_YUAN_AMOUNT_STR, message = "手续费超过支付渠道支持上限")
+    @Digits(integer = 8, fraction = 2, message = "手续费最多 8 位整数和 2 位小数")
     private BigDecimal feeAmount;
 
     @Schema(description = "实际到账金额", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "实际到账金额不能为空")
+    @DecimalMin(value = "0.01", message = "实际到账金额必须大于 0")
+    @DecimalMax(value = MAX_YUAN_AMOUNT_STR, message = "实际到账金额超过支付渠道支持上限")
+    @Digits(integer = 8, fraction = 2, message = "实际到账金额最多 8 位整数和 2 位小数")
     private BigDecimal realAmount;
 
     @Schema(description = OpenApiSchemaConstants.WITHDRAW_STATUS, requiredMode = Schema.RequiredMode.REQUIRED, example = "PENDING")

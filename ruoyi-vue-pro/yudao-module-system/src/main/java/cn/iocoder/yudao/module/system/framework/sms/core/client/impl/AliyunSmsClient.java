@@ -20,8 +20,6 @@ import com.google.common.annotations.VisibleForTesting;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
@@ -173,7 +171,7 @@ public class AliyunSmsClient extends AbstractSmsClient {
                 hashedRequestPayload;
         String hashedCanonicalRequest = sha256Hex(canonicalRequest);
         String stringToSign = "ACS3-HMAC-SHA256" + "\n" + hashedCanonicalRequest;
-        String signature = hmacSha256Hex(properties.getApiSecret(), stringToSign); // 使用 JDK 原生实现，避免额外 Provider 依赖
+        String signature = SmsSignatureUtils.hmacSha256Hex(properties.getApiSecret(), stringToSign);
         headers.put("Authorization", "ACS3-HMAC-SHA256" + " " + "Credential=" + properties.getApiKey()
                 + ", " + "SignedHeaders=" + signedHeaders + ", " + "Signature=" + signature);
 
@@ -203,16 +201,6 @@ public class AliyunSmsClient extends AbstractSmsClient {
             return toHex(digest.digest(content.getBytes(StandardCharsets.UTF_8)));
         } catch (GeneralSecurityException e) {
             throw new IllegalStateException("SHA-256 计算失败", e);
-        }
-    }
-
-    private static String hmacSha256Hex(String secret, String content) {
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            return toHex(mac.doFinal(content.getBytes(StandardCharsets.UTF_8)));
-        } catch (GeneralSecurityException e) {
-            throw new IllegalStateException("HmacSHA256 计算失败", e);
         }
     }
 

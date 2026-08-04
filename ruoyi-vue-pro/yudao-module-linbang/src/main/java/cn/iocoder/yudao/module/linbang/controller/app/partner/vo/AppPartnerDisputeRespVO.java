@@ -51,6 +51,7 @@ public class AppPartnerDisputeRespVO {
     private LocalDateTime createTime;
 
     @Data
+    @Schema(description = "用户 App - 协调记录项目 Response VO")
     public static class CoordinationItem {
 
         @Schema(description = "协调记录 ID", example = "1")

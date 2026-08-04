@@ -6,6 +6,7 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
+import cn.iocoder.yudao.framework.common.util.number.MoneyUtils;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
@@ -45,8 +46,10 @@ import cn.iocoder.yudao.module.pay.enums.transfer.PayTransferStatusEnum;
 import cn.iocoder.yudao.module.pay.framework.pay.core.client.impl.aggregate.AggregatePayClientConfig;
 import cn.iocoder.yudao.module.pay.service.app.PayAppService;
 import cn.iocoder.yudao.module.pay.service.channel.PayChannelService;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertList;
@@ -92,6 +95,8 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
     private PayChannelService payChannelService;
     @Resource
     private LinbangFinanceService linbangFinanceService;
+    @Resource
+    private TransactionTemplate transactionTemplate;
 
     @Override
     public Long createWalletWithdraw(WalletWithdrawSaveReqVO createReqVO) {
@@ -148,9 +153,7 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
         WalletAccountDO walletAccount = withdraw.getWalletAccountId() == null ? null : walletAccountMapper.selectById(withdraw.getWalletAccountId());
         WalletBankCardDO bankCard = withdraw.getBankCardId() == null ? null : walletBankCardMapper.selectById(withdraw.getBankCardId());
         List<WalletFlowDO> flows = walletFlowMapper.selectList(new LambdaQueryWrapperX<WalletFlowDO>()
-                .eq(WalletFlowDO::getWalletAccountId, withdraw.getWalletAccountId())
-                .eq(WalletFlowDO::getUserId, withdraw.getUserId())
-                .or(wrapper -> wrapper.like(WalletFlowDO::getRemark, withdraw.getWithdrawNo()))
+                .eq(WalletFlowDO::getRelatedWithdrawId, withdraw.getId())
                 .orderByDesc(WalletFlowDO::getCreateTime, WalletFlowDO::getId)
                 .last("LIMIT 10"));
 
@@ -163,28 +166,41 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void auditWalletWithdraw(WithdrawAuditReqVO reqVO) {
-        WalletWithdrawDO walletWithdraw = walletWithdrawMapper.selectById(reqVO.getId());
-        if (walletWithdraw == null) {
-            throw exception(WALLET_WITHDRAW_NOT_EXISTS);
-        }
-        if (!Objects.equals(walletWithdraw.getAuditStatus(), "PENDING")) {
+        if (!AUDIT_STATUS_APPROVED.equals(reqVO.getAuditStatus())
+                && !AUDIT_STATUS_REJECTED.equals(reqVO.getAuditStatus())) {
             throw exception(WALLET_WITHDRAW_AUDIT_STATUS_INVALID);
         }
-        WalletWithdrawDO updateObj = new WalletWithdrawDO();
-        updateObj.setId(reqVO.getId());
-        updateObj.setAuditStatus(reqVO.getAuditStatus());
-        updateObj.setAuditRemark(reqVO.getAuditRemark());
-        updateObj.setRejectReason(reqVO.getRejectReason());
-        updateObj.setAuditBy(SecurityFrameworkUtils.getLoginUserId());
-        updateObj.setAuditTime(LocalDateTime.now());
-        if (AUDIT_STATUS_APPROVED.equals(reqVO.getAuditStatus())) {
-            updateObj.setStatus(WITHDRAW_STATUS_PROCESSING);
-        } else if (AUDIT_STATUS_REJECTED.equals(reqVO.getAuditStatus())) {
-            updateObj.setStatus("REJECTED");
-        }
-        walletWithdrawMapper.updateById(updateObj);
+        WalletWithdrawDO walletWithdraw = transactionTemplate.execute(status -> {
+            WalletWithdrawDO current = walletWithdrawMapper.selectOneForUpdate(WalletWithdrawDO::getId, reqVO.getId());
+            if (current == null) {
+                throw exception(WALLET_WITHDRAW_NOT_EXISTS);
+            }
+            if (!Objects.equals(current.getAuditStatus(), "PENDING")
+                    || !Objects.equals(current.getStatus(), "PENDING")) {
+                throw exception(WALLET_WITHDRAW_AUDIT_STATUS_INVALID);
+            }
+            WalletWithdrawDO updateObj = new WalletWithdrawDO();
+            updateObj.setId(reqVO.getId());
+            updateObj.setAuditStatus(reqVO.getAuditStatus());
+            updateObj.setAuditRemark(reqVO.getAuditRemark());
+            updateObj.setRejectReason(reqVO.getRejectReason());
+            updateObj.setAuditBy(SecurityFrameworkUtils.getLoginUserId());
+            updateObj.setAuditTime(LocalDateTime.now());
+            updateObj.setStatus(AUDIT_STATUS_APPROVED.equals(reqVO.getAuditStatus())
+                    ? WITHDRAW_STATUS_PROCESSING : "REJECTED");
+            int updated = walletWithdrawMapper.update(updateObj, new LambdaUpdateWrapper<WalletWithdrawDO>()
+                    .eq(WalletWithdrawDO::getId, current.getId())
+                    .eq(WalletWithdrawDO::getAuditStatus, "PENDING")
+                    .eq(WalletWithdrawDO::getStatus, "PENDING"));
+            if (updated == 0) {
+                throw exception(WALLET_WITHDRAW_AUDIT_STATUS_INVALID);
+            }
+            if (AUDIT_STATUS_REJECTED.equals(reqVO.getAuditStatus())) {
+                rollbackRejectedWithdraw(current);
+            }
+            return current;
+        });
         if (AUDIT_STATUS_APPROVED.equals(reqVO.getAuditStatus())) {
             try {
                 createTransfer(walletWithdraw);
@@ -192,30 +208,65 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
                 log.error("[auditWalletWithdraw][withdraw({}) 发起打款失败]", walletWithdraw.getId(), ex);
                 handleTransferCreateFailure(walletWithdraw, ex);
             }
-        } else if (AUDIT_STATUS_REJECTED.equals(reqVO.getAuditStatus())) {
-            rollbackRejectedWithdraw(walletWithdraw);
         }
         messagePushDispatchService.dispatchSingle("lb_withdraw_audited", "提现审核结果通知", "WITHDRAW",
                 walletWithdraw.getId(), walletWithdraw.getUserId(), "管理员审核提现后自动通知申请人");
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public Long retryWalletWithdrawTransfer(Long id) {
-        WalletWithdrawDO withdraw = walletWithdrawMapper.selectById(id);
-        if (withdraw == null) {
-            throw exception(WALLET_WITHDRAW_NOT_EXISTS);
-        }
-        if (!Objects.equals(withdraw.getAuditStatus(), AUDIT_STATUS_APPROVED)
-                || (!Objects.equals(withdraw.getStatus(), WITHDRAW_STATUS_FAILED)
-                && !Objects.equals(withdraw.getStatus(), WITHDRAW_STATUS_PROCESSING))) {
-            throw exception(WALLET_WITHDRAW_AUDIT_STATUS_INVALID);
-        }
-        walletWithdrawMapper.updateById(WalletWithdrawDO.builder()
-                .id(withdraw.getId())
-                .status(WITHDRAW_STATUS_PROCESSING)
-                .transferErrorMsg(null)
-                .build());
+        WalletWithdrawDO withdraw = transactionTemplate.execute(status -> {
+            WalletWithdrawDO current = walletWithdrawMapper.selectOneForUpdate(WalletWithdrawDO::getId, id);
+            if (current == null) {
+                throw exception(WALLET_WITHDRAW_NOT_EXISTS);
+            }
+            if (!Objects.equals(current.getAuditStatus(), AUDIT_STATUS_APPROVED)
+                    || !Objects.equals(current.getStatus(), WITHDRAW_STATUS_FAILED)) {
+                throw exception(WALLET_WITHDRAW_AUDIT_STATUS_INVALID);
+            }
+            WalletAccountDO walletAccount = walletAccountMapper.selectOneForUpdate(
+                    WalletAccountDO::getId, current.getWalletAccountId());
+            BigDecimal amount = current.getRealAmount() == null ? BigDecimal.ZERO : current.getRealAmount();
+            if (walletAccount == null || amount.compareTo(BigDecimal.ZERO) <= 0
+                    || walletAccount.getAvailableAmount() == null
+                    || walletAccount.getAvailableAmount().compareTo(amount) < 0) {
+                throw exception(WALLET_AVAILABLE_AMOUNT_NOT_ENOUGH);
+            }
+            BigDecimal beforeAvailable = walletAccount.getAvailableAmount();
+            BigDecimal beforeFrozen = walletAccount.getFrozenAmount() == null
+                    ? BigDecimal.ZERO : walletAccount.getFrozenAmount();
+            int walletUpdated = walletAccountMapper.update(null, new LambdaUpdateWrapper<WalletAccountDO>()
+                    .eq(WalletAccountDO::getId, walletAccount.getId())
+                    .ge(WalletAccountDO::getAvailableAmount, amount)
+                    .set(WalletAccountDO::getAvailableAmount, beforeAvailable.subtract(amount))
+                    .set(WalletAccountDO::getFrozenAmount, beforeFrozen.add(amount)));
+            if (walletUpdated == 0) {
+                throw exception(WALLET_AVAILABLE_AMOUNT_NOT_ENOUGH);
+            }
+            int updated = walletWithdrawMapper.update(null, new LambdaUpdateWrapper<WalletWithdrawDO>()
+                    .eq(WalletWithdrawDO::getId, current.getId())
+                    .eq(WalletWithdrawDO::getAuditStatus, AUDIT_STATUS_APPROVED)
+                    .eq(WalletWithdrawDO::getStatus, WITHDRAW_STATUS_FAILED)
+                    .set(WalletWithdrawDO::getStatus, WITHDRAW_STATUS_PROCESSING)
+                    .set(WalletWithdrawDO::getTransferErrorMsg, null));
+            if (updated == 0) {
+                throw exception(WALLET_WITHDRAW_AUDIT_STATUS_INVALID);
+            }
+            walletFlowMapper.insert(WalletFlowDO.builder()
+                    .flowNo("LBF" + IdUtil.getSnowflakeNextIdStr())
+                    .userId(current.getUserId())
+                    .walletAccountId(walletAccount.getId())
+                    .bizType("WITHDRAW_RETRY_FREEZE")
+                    .flowType("OUT")
+                    .changeAmount(amount.negate())
+                    .beforeAmount(beforeAvailable)
+                    .afterAmount(beforeAvailable.subtract(amount))
+                    .relatedWithdrawId(current.getId())
+                    .remark("提现打款失败后重新冻结余额")
+                    .createTime(LocalDateTime.now())
+                    .build());
+            return current;
+        });
         try {
             return createTransfer(withdraw);
         } catch (Exception ex) {
@@ -228,7 +279,17 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateWalletWithdrawTransferred(PayTransferNotifyReqDTO notifyReqDTO) {
-        WalletWithdrawDO withdraw = walletWithdrawMapper.selectById(Long.valueOf(notifyReqDTO.getMerchantTransferId()));
+        if (notifyReqDTO == null || StrUtil.isBlank(notifyReqDTO.getMerchantTransferId())
+                || notifyReqDTO.getPayTransferId() == null) {
+            throw exception(WALLET_WITHDRAW_TRANSFER_NOTIFY_INVALID);
+        }
+        final Long withdrawId;
+        try {
+            withdrawId = Long.valueOf(notifyReqDTO.getMerchantTransferId());
+        } catch (RuntimeException ex) {
+            throw exception(WALLET_WITHDRAW_TRANSFER_NOTIFY_INVALID);
+        }
+        WalletWithdrawDO withdraw = walletWithdrawMapper.selectById(withdrawId);
         if (withdraw == null) {
             throw exception(WALLET_WITHDRAW_TRANSFER_NOTIFY_INVALID);
         }
@@ -241,19 +302,15 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
                 || !ObjectUtil.equal(transfer.getMerchantTransferId(), notifyReqDTO.getMerchantTransferId())) {
             throw exception(WALLET_WITHDRAW_TRANSFER_NOTIFY_INVALID);
         }
+        if (transfer.getPrice() == null || withdraw.getRealAmount() == null
+                || transfer.getPrice() != toFen(withdraw.getRealAmount())) {
+            throw exception(WALLET_WITHDRAW_TRANSFER_NOTIFY_INVALID);
+        }
         WalletAccountDO walletAccount = walletAccountMapper.selectById(withdraw.getWalletAccountId());
         if (walletAccount == null) {
             throw exception(WALLET_ACCOUNT_NOT_EXISTS);
         }
-        if (PayTransferStatusEnum.isSuccess(transfer.getStatus())) {
-            linbangFinanceService.handleWithdrawTransferSuccess(walletAccount, withdraw.getId(), transfer);
-            messagePushDispatchService.dispatchSingle("lb_withdraw_arrived", "提现到账通知", "WITHDRAW",
-                    withdraw.getId(), withdraw.getUserId(), "提现打款成功后通知申请人");
-        } else if (PayTransferStatusEnum.isClosed(transfer.getStatus())) {
-            linbangFinanceService.handleWithdrawTransferFailed(walletAccount, withdraw.getId(), transfer);
-            messagePushDispatchService.dispatchSingle("lb_withdraw_failed", "提现失败通知", "WITHDRAW",
-                    withdraw.getId(), withdraw.getUserId(), "提现打款失败后通知申请人");
-        }
+        reconcileTerminalTransfer(withdraw, walletAccount, transfer);
     }
 
     @Override
@@ -293,7 +350,7 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
             if (user != null) {
                 item.setUserNo(user.getUserNo());
                 item.setUserNickname(user.getNickname());
-                item.setUserMobile(user.getMobile());
+                item.setUserMobile(maskMobile(user.getMobile()));
             }
             WalletAccountDO walletAccount = walletAccountMap.get(item.getWalletAccountId());
             if (walletAccount != null) {
@@ -330,27 +387,125 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
                 .setUserName(bankCard.getAccountName())
                 .setChannelExtras(buildTransferExtras(bankCard))
                 .setChannelCode(channel.getCode());
-        PayTransferCreateRespDTO transferRespDTO = payTransferApi.createTransfer(transferReqDTO);
-        walletWithdrawMapper.updateById(WalletWithdrawDO.builder()
-                .id(withdraw.getId())
-                .payTransferId(transferRespDTO.getId())
-                .build());
-        return transferRespDTO.getId();
+        try {
+            PayTransferCreateRespDTO transferRespDTO = payTransferApi.createTransfer(transferReqDTO);
+            linkPayTransfer(withdraw, transferRespDTO.getId());
+            return transferRespDTO.getId();
+        } catch (Exception ex) {
+            return recoverTransferAfterSubmitException(withdraw, payApp, ex);
+        }
+    }
+
+    private Long recoverTransferAfterSubmitException(WalletWithdrawDO withdraw, PayAppDO payApp, Exception submitEx) {
+        try {
+            PayTransferRespDTO transfer = payTransferApi.getTransferByMerchantTransferId(
+                    payApp.getAppKey(), String.valueOf(withdraw.getId()));
+            if (transfer == null) {
+                // A not-found result immediately after a timeout does not prove the channel rejected the transfer.
+                // Keep funds frozen until reconciliation establishes a terminal result.
+                log.error("[recoverTransferAfterSubmitException][withdraw({}) transfer not visible after submit failure]",
+                        withdraw.getId(), submitEx);
+                markTransferSubmissionUncertain(withdraw.getId());
+                return null;
+            }
+            if (transfer.getId() == null
+                    || !Objects.equals(transfer.getMerchantTransferId(), String.valueOf(withdraw.getId()))
+                    || transfer.getPrice() == null || transfer.getPrice() != toFen(withdraw.getRealAmount())) {
+                log.error("[recoverTransferAfterSubmitException][withdraw({}) 转账单关键字段不一致]", withdraw.getId());
+                markTransferSubmissionUncertain(withdraw.getId());
+                return null;
+            }
+            linkPayTransfer(withdraw, transfer.getId());
+            if (PayTransferStatusEnum.isSuccessOrClosed(transfer.getStatus())) {
+                try {
+                    WalletAccountDO walletAccount = walletAccountMapper.selectById(withdraw.getWalletAccountId());
+                    if (walletAccount == null) {
+                        throw exception(WALLET_ACCOUNT_NOT_EXISTS);
+                    }
+                    reconcileTerminalTransfer(withdraw, walletAccount, transfer);
+                } catch (Exception reconcileEx) {
+                    // 已确认渠道单存在时不得按“创建失败”解冻；保留关联关系，等待回调、轮询或人工重试对账。
+                    log.error("[recoverTransferAfterSubmitException][withdraw({}) 转账终态对账失败，保持资金冻结]",
+                            withdraw.getId(), reconcileEx);
+                    markTransferSubmissionUncertain(withdraw.getId());
+                }
+            } else if (!PayTransferStatusEnum.isWaitingOrProcessing(transfer.getStatus())) {
+                log.error("[recoverTransferAfterSubmitException][withdraw({}) 转账单状态({}) 无法识别，等待人工核对]",
+                        withdraw.getId(), transfer.getStatus());
+                markTransferSubmissionUncertain(withdraw.getId());
+            }
+            return transfer.getId();
+        } catch (Exception queryEx) {
+            // 无法证明渠道转账单不存在时必须保持余额冻结，等待支付模块轮询或人工核对。
+            log.error("[recoverTransferAfterSubmitException][withdraw({}) 查询支付转账单失败，保持处理中]",
+                    withdraw.getId(), queryEx);
+            markTransferSubmissionUncertain(withdraw.getId());
+            return null;
+        }
+    }
+
+    private void linkPayTransfer(WalletWithdrawDO withdraw, Long payTransferId) {
+        if (payTransferId == null) {
+            markTransferSubmissionUncertain(withdraw.getId());
+            throw new IllegalStateException("Pay transfer id must not be null");
+        }
+        int updated = walletWithdrawMapper.update(null, new LambdaUpdateWrapper<WalletWithdrawDO>()
+                .eq(WalletWithdrawDO::getId, withdraw.getId())
+                .eq(WalletWithdrawDO::getStatus, WITHDRAW_STATUS_PROCESSING)
+                .and(wrapper -> wrapper.isNull(WalletWithdrawDO::getPayTransferId)
+                        .or().eq(WalletWithdrawDO::getPayTransferId, payTransferId))
+                .set(WalletWithdrawDO::getPayTransferId, payTransferId)
+                .set(WalletWithdrawDO::getTransferErrorMsg, null));
+        if (updated > 0) {
+            return;
+        }
+        WalletWithdrawDO latest = walletWithdrawMapper.selectById(withdraw.getId());
+        if (latest != null && Objects.equals(latest.getPayTransferId(), payTransferId)) {
+            return;
+        }
+        markTransferSubmissionUncertain(withdraw.getId());
+        throw new IllegalStateException("Withdraw transfer link conflict: " + withdraw.getId());
+    }
+
+    private void markTransferSubmissionUncertain(Long withdrawId) {
+        walletWithdrawMapper.update(null, new LambdaUpdateWrapper<WalletWithdrawDO>()
+                .eq(WalletWithdrawDO::getId, withdrawId)
+                .eq(WalletWithdrawDO::getStatus, WITHDRAW_STATUS_PROCESSING)
+                .set(WalletWithdrawDO::getTransferErrorMsg, "提现打款结果待核对"));
+    }
+
+    private void reconcileTerminalTransfer(WalletWithdrawDO withdraw, WalletAccountDO walletAccount,
+                                           PayTransferRespDTO transfer) {
+        if (PayTransferStatusEnum.isSuccess(transfer.getStatus())) {
+            linbangFinanceService.handleWithdrawTransferSuccess(walletAccount, withdraw.getId(), transfer);
+            messagePushDispatchService.dispatchSingleIdempotent("lb_withdraw_arrived", "提现到账通知", "WITHDRAW",
+                    withdraw.getId(), withdraw.getUserId(), "提现打款成功后通知申请人",
+                    "lb_withdraw_arrived:" + withdraw.getId() + ":" + transfer.getId());
+        } else if (PayTransferStatusEnum.isClosed(transfer.getStatus())) {
+            linbangFinanceService.handleWithdrawTransferFailed(walletAccount, withdraw.getId(), transfer);
+            messagePushDispatchService.dispatchSingleIdempotent("lb_withdraw_failed", "提现失败通知", "WITHDRAW",
+                    withdraw.getId(), withdraw.getUserId(), "提现打款失败后通知申请人",
+                    "lb_withdraw_failed:" + withdraw.getId() + ":" + transfer.getId());
+        }
     }
 
     private void rollbackRejectedWithdraw(WalletWithdrawDO withdraw) {
-        WalletAccountDO walletAccount = withdraw.getWalletAccountId() == null ? null : walletAccountMapper.selectById(withdraw.getWalletAccountId());
+        WalletAccountDO walletAccount = withdraw.getWalletAccountId() == null ? null
+                : walletAccountMapper.selectOneForUpdate(WalletAccountDO::getId, withdraw.getWalletAccountId());
         if (walletAccount == null) {
             throw exception(WALLET_ACCOUNT_NOT_EXISTS);
         }
         BigDecimal amount = withdraw.getRealAmount() == null ? BigDecimal.ZERO : withdraw.getRealAmount();
         BigDecimal beforeAvailable = walletAccount.getAvailableAmount() == null ? BigDecimal.ZERO : walletAccount.getAvailableAmount();
         BigDecimal beforeFrozen = walletAccount.getFrozenAmount() == null ? BigDecimal.ZERO : walletAccount.getFrozenAmount();
+        if (amount.compareTo(BigDecimal.ZERO) <= 0 || beforeFrozen.compareTo(amount) < 0) {
+            throw exception(WALLET_AVAILABLE_AMOUNT_NOT_ENOUGH);
+        }
         BigDecimal afterFrozen = beforeFrozen.subtract(amount);
         walletAccountMapper.updateById(WalletAccountDO.builder()
                 .id(walletAccount.getId())
                 .availableAmount(beforeAvailable.add(amount))
-                .frozenAmount(afterFrozen.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : afterFrozen)
+                .frozenAmount(afterFrozen)
                 .build());
         walletFlowMapper.insert(WalletFlowDO.builder()
                 .flowNo("LBF" + IdUtil.getSnowflakeNextIdStr())
@@ -361,6 +516,7 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
                 .changeAmount(amount)
                 .beforeAmount(beforeAvailable)
                 .afterAmount(beforeAvailable.add(amount))
+                .relatedWithdrawId(withdraw.getId())
                 .remark("提现审核驳回，退回可提现余额")
                 .createTime(LocalDateTime.now())
                 .build());
@@ -417,10 +573,14 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
     }
 
     private String resolveTransferCreateErrorMsg(Exception ex) {
-        if (StrUtil.isNotBlank(ex.getMessage())) {
-            return ex.getMessage();
-        }
         return "提现打款发起失败";
+    }
+
+    private String maskMobile(String mobile) {
+        if (StrUtil.isBlank(mobile) || mobile.length() < 7) {
+            return mobile == null ? null : "******";
+        }
+        return mobile.substring(0, 3) + "****" + mobile.substring(mobile.length() - 4);
     }
 
     private Map<String, String> buildTransferExtras(WalletBankCardDO bankCard) {
@@ -444,7 +604,7 @@ public class WalletWithdrawServiceImpl implements WalletWithdrawService {
     }
 
     private int toFen(BigDecimal amount) {
-        return amount.multiply(new BigDecimal("100")).setScale(0, BigDecimal.ROUND_HALF_UP).intValue();
+        return MoneyUtils.yuanToFen(amount);
     }
 
 }

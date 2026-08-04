@@ -17,6 +17,8 @@ export interface FilePresignedUrlRespVO {
   configId: number
   // 文件上传 URL
   uploadUrl: string
+  // PUT 请求必须使用的 Content-Type（已纳入预签名校验）
+  uploadContentType: string
   // 文件 URL
   url: string
   // 文件路径
@@ -44,15 +46,20 @@ export const deleteFileList = (ids: number[]) => {
 }
 
 // 获取文件预签名地址
-export const getFilePresignedUrl = (name: string, directory?: string) => {
+export const getFilePresignedUrl = (name: string, size: number, directory?: string) => {
   return request.get<FilePresignedUrlRespVO>({
     url: '/infra/file/presigned-url',
-    params: { name, directory }
+    params: { name, size, directory }
   })
 }
 
+export interface FileCreateReqVO {
+  configId: number
+  path: string
+}
+
 // 创建文件
-export const createFile = (data: any) => {
+export const createFile = (data: FileCreateReqVO) => {
   return request.post({ url: '/infra/file/create', data })
 }
 

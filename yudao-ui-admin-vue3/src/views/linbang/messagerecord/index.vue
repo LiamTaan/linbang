@@ -1,6 +1,12 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="接收用户" prop="receiverUserKeyword">
         <el-input
           v-model="queryParams.receiverUserKeyword"
@@ -35,7 +41,12 @@
         />
       </el-form-item>
       <el-form-item label="发送状态" prop="sendStatus">
-        <el-select v-model="queryParams.sendStatus" placeholder="请选择发送状态" clearable class="!w-220px">
+        <el-select
+          v-model="queryParams.sendStatus"
+          placeholder="请选择发送状态"
+          clearable
+          class="!w-220px"
+        >
           <el-option
             v-for="item in SEND_STATUS_OPTIONS"
             :key="item.value"
@@ -56,12 +67,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
       </el-form-item>
     </el-form>
   </ContentWrap>
@@ -72,7 +79,9 @@
         <template #default="{ row }">
           <div class="leading-20px">
             <div class="font-600">{{ row.receiverUserNickname || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.receiverUserMobile || '-' }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.receiverUserMobile || '-'
+            }}</div>
             <div class="text-[var(--el-text-color-secondary)]">
               {{ row.receiverUserNo || formatIdFallback(row.receiverUserId) }}
             </div>
@@ -96,9 +105,21 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="发送时间" align="center" prop="sendTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="发送时间"
+        align="center"
+        prop="sendTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="失败原因" align="center" prop="failReason" min-width="200" />
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="操作" align="center" fixed="right" width="100">
         <template #default="{ row }">
           <el-button

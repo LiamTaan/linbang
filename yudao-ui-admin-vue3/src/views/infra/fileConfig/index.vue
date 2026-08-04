@@ -141,6 +141,7 @@ import * as FileConfigApi from '@/api/infra/fileConfig'
 import FileConfigForm from './FileConfigForm.vue'
 import { DICT_TYPE, getIntDictOptions } from '@/utils/dict'
 import { dateFormatter } from '@/utils/formatTime'
+import { openSafeUrl } from '@/utils/url'
 
 defineOptions({ name: 'InfraFileConfig' })
 
@@ -236,7 +237,7 @@ const handleTest = async (id) => {
   try {
     const response = await FileConfigApi.testFileConfig(id)
     await message.confirm('是否要访问该文件？', '测试上传成功')
-    window.open(response, '_blank')
+    openSafeUrl(response)
   } catch {}
 }
 

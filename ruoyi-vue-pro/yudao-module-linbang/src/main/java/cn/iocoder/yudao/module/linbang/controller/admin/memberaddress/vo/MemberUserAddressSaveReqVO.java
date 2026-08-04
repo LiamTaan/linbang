@@ -17,7 +17,7 @@ public class MemberUserAddressSaveReqVO {
     @NotNull(message = "用户ID不能为空")
     private Long userId;
 
-    @Schema(description = "联系人", requiredMode = Schema.RequiredMode.REQUIRED, example = "??")
+    @Schema(description = "联系人", requiredMode = Schema.RequiredMode.REQUIRED, example = "张女士")
     @NotEmpty(message = "联系人不能为空")
     private String receiverName;
 

@@ -50,6 +50,7 @@ public class MerchantServicePointDetailRespVO {
     private List<RelatedPointRespVO> relatedPoints;
 
     @Data
+    @Schema(description = "管理后台 - 服务商摘要 Response VO")
     public static class MerchantRespVO {
         @Schema(description = "服务商 ID", example = "2001")
         private Long id;
@@ -82,6 +83,7 @@ public class MerchantServicePointDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 统计摘要 Response VO")
     public static class SummaryRespVO {
         @Schema(description = "服务点总数")
         private Integer servicePointCount;
@@ -98,6 +100,7 @@ public class MerchantServicePointDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 服务分类摘要 Response VO")
     public static class CategoryRespVO {
         @Schema(description = "类目 ID", example = "340201")
         private Long categoryId;
@@ -116,6 +119,7 @@ public class MerchantServicePointDetailRespVO {
     }
 
     @Data
+    @Schema(description = "管理后台 - 关联服务点摘要 Response VO")
     public static class RelatedPointRespVO {
         @Schema(description = "服务点 ID", example = "2")
         private Long id;

@@ -2,6 +2,7 @@ package cn.iocoder.yudao.module.linbang.controller.admin.memberqualification.vo;
 
 import cn.iocoder.yudao.module.linbang.constants.OpenApiSchemaConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
+import cn.iocoder.yudao.framework.desensitize.core.slider.annotation.IdCardDesensitize;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -88,6 +89,7 @@ public class MemberQualificationDetailRespVO {
         @Schema(description = "真实姓名", example = "张三")
         private String realName;
         @Schema(description = "身份证号")
+        @IdCardDesensitize
         private String idCardNo;
         @Schema(description = OpenApiSchemaConstants.AUDIT_STATUS, example = "APPROVED")
         private String auditStatus;

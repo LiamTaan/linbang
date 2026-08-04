@@ -23,7 +23,7 @@ public class AppLinbangH5PaySubmitReqVO {
     @NotEmpty(message = "支付方式不能为空")
     private String payWay;
 
-    @Schema(description = "支付完成后的 App 回跳地址；聚合支付 H5 收银台完成后按渠道配置回跳", example = "https://app.linbang.com/pay/result")
+    @Schema(description = "支付完成后的回跳地址；必须与平台公开访问地址同源，禁止跳转到第三方站点", example = "https://llhz.yunying2026.top/pay/result")
     @URL(message = "回跳地址的格式必须是 URL")
     private String returnUrl;
 

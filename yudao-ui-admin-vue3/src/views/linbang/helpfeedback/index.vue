@@ -1,6 +1,12 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="用户" prop="userKeyword">
         <el-input
           v-model="queryParams.userKeyword"
@@ -29,7 +35,12 @@
         />
       </el-form-item>
       <el-form-item label="处理状态" prop="status">
-        <el-select v-model="queryParams.status" placeholder="请选择处理状态" clearable class="!w-220px">
+        <el-select
+          v-model="queryParams.status"
+          placeholder="请选择处理状态"
+          clearable
+          class="!w-220px"
+        >
           <el-option
             v-for="item in HELP_FEEDBACK_STATUS_OPTIONS"
             :key="item.value"
@@ -50,12 +61,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
         <el-button
           type="success"
           plain
@@ -76,7 +83,9 @@
           <div class="leading-20px">
             <div class="font-600">{{ row.userNickname || '-' }}</div>
             <div class="text-[var(--el-text-color-secondary)]">{{ row.userMobile || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.userNo || formatIdFallback(row.userId) }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.userNo || formatIdFallback(row.userId)
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -85,14 +94,28 @@
       <el-table-column label="联系电话" align="center" prop="contactMobile" width="140" />
       <el-table-column label="处理状态" align="center" prop="status" width="120">
         <template #default="{ row }">
-          <el-tag :type="row.status === 'FINISHED' ? 'success' : row.status === 'PROCESSING' ? 'warning' : 'info'">
+          <el-tag
+            :type="
+              row.status === 'FINISHED'
+                ? 'success'
+                : row.status === 'PROCESSING'
+                  ? 'warning'
+                  : 'info'
+            "
+          >
             {{ formatHelpFeedbackStatus(row.status) }}
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column label="处理人" align="center" prop="handleBy" width="100" />
       <el-table-column label="处理备注" align="center" prop="handleRemark" min-width="180" />
-      <el-table-column label="创建时间" align="center" prop="createTime" :formatter="dateFormatter" width="180" />
+      <el-table-column
+        label="创建时间"
+        align="center"
+        prop="createTime"
+        :formatter="dateFormatter"
+        width="180"
+      />
       <el-table-column label="操作" align="center" fixed="right" width="100">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row.id)">详情</el-button>
@@ -110,9 +133,15 @@
   <Dialog v-model="detailVisible" title="帮助反馈详情" width="760px">
     <el-descriptions v-loading="detailLoading" :column="2" border>
       <el-descriptions-item label="用户">{{ formatDetailUserDisplay() }}</el-descriptions-item>
-      <el-descriptions-item label="反馈分类">{{ detailData?.feedbackType || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="联系电话">{{ detailData?.contactMobile || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="处理状态">{{ formatHelpFeedbackStatus(detailData?.status) }}</el-descriptions-item>
+      <el-descriptions-item label="反馈分类">{{
+        detailData?.feedbackType || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="联系电话">{{
+        detailData?.contactMobile || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="处理状态">{{
+        formatHelpFeedbackStatus(detailData?.status)
+      }}</el-descriptions-item>
       <el-descriptions-item label="处理人">{{ detailData?.handleBy || '-' }}</el-descriptions-item>
       <el-descriptions-item label="用户角色">
         <dict-tag
@@ -122,7 +151,9 @@
         />
         <span v-else>-</span>
       </el-descriptions-item>
-      <el-descriptions-item label="用户状态">{{ formatEnableStatus(detailData?.user?.status) }}</el-descriptions-item>
+      <el-descriptions-item label="用户状态">{{
+        formatEnableStatus(detailData?.user?.status)
+      }}</el-descriptions-item>
       <el-descriptions-item label="反馈内容" :span="2">
         {{ detailData?.content || '-' }}
       </el-descriptions-item>
@@ -142,20 +173,27 @@
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">同用户反馈数</div>
-          <div class="mt-8px text-24px font-600">{{ detailData?.summary?.sameUserFeedbackCount ?? 0 }}</div>
+          <div class="mt-8px text-24px font-600">{{
+            detailData?.summary?.sameUserFeedbackCount ?? 0
+          }}</div>
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">同分类反馈数</div>
-          <div class="mt-8px text-24px font-600">{{ detailData?.summary?.sameTypeFeedbackCount ?? 0 }}</div>
+          <div class="mt-8px text-24px font-600">{{
+            detailData?.summary?.sameTypeFeedbackCount ?? 0
+          }}</div>
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card shadow="never">
-          <div class="text-14px text-[var(--el-text-color-secondary)]">待处理 / 处理中 / 已完成</div>
+          <div class="text-14px text-[var(--el-text-color-secondary)]"
+            >待处理 / 处理中 / 已完成</div
+          >
           <div class="mt-8px text-18px font-600">
-            {{ detailData?.summary?.pendingCount ?? 0 }} / {{ detailData?.summary?.processingCount ?? 0 }} /
+            {{ detailData?.summary?.pendingCount ?? 0 }} /
+            {{ detailData?.summary?.processingCount ?? 0 }} /
             {{ detailData?.summary?.finishedCount ?? 0 }}
           </div>
         </el-card>
@@ -195,7 +233,11 @@ import { DICT_TYPE } from '@/utils/dict'
 import { formatDate, dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
 import { useMessage } from '@/hooks/web/useMessage'
-import { HelpFeedbackApi, type HelpFeedback, type HelpFeedbackDetail } from '@/api/linbang/helpfeedback'
+import {
+  HelpFeedbackApi,
+  type HelpFeedback,
+  type HelpFeedbackDetail
+} from '@/api/linbang/helpfeedback'
 import {
   formatEnableStatus,
   formatHelpFeedbackStatus,

@@ -2,10 +2,20 @@
   <ContentWrap>
     <el-form :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
       <el-form-item label="商户 ID">
-        <el-input v-model="queryParams.merchantId" placeholder="请输入商户 ID" class="!w-220px" clearable />
+        <el-input
+          v-model="queryParams.merchantId"
+          placeholder="请输入商户 ID"
+          class="!w-220px"
+          clearable
+        />
       </el-form-item>
       <el-form-item label="用户">
-        <el-input v-model="queryParams.userKeyword" placeholder="请输入用户编号 / 昵称 / 手机号" class="!w-220px" clearable />
+        <el-input
+          v-model="queryParams.userKeyword"
+          placeholder="请输入用户编号 / 昵称 / 手机号"
+          class="!w-220px"
+          clearable
+        />
       </el-form-item>
       <el-form-item label="状态">
         <el-select v-model="queryParams.status" class="!w-220px" clearable placeholder="请选择状态">
@@ -35,7 +45,9 @@
         <template #default="{ row }">{{ (row.permissionCodes || []).join(' / ') || '-' }}</template>
       </el-table-column>
       <el-table-column label="服务点" min-width="220">
-        <template #default="{ row }">{{ (row.servicePointNames || []).join(' / ') || '-' }}</template>
+        <template #default="{ row }">{{
+          (row.servicePointNames || []).join(' / ') || '-'
+        }}</template>
       </el-table-column>
       <el-table-column label="状态" prop="status" width="100" />
       <el-table-column label="备注" prop="remark" min-width="160" />
@@ -50,7 +62,12 @@
         </template>
       </el-table-column>
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 
   <Dialog v-model="editVisible" title="商户子账号" width="560px">
@@ -84,7 +101,13 @@
   <Dialog v-model="pointVisible" title="配置服务点" width="560px">
     <el-form label-width="100px">
       <el-form-item label="服务点 ID 列表">
-        <el-select v-model="pointFormData.servicePointIds" multiple filterable class="!w-360px" placeholder="请选择服务点">
+        <el-select
+          v-model="pointFormData.servicePointIds"
+          multiple
+          filterable
+          class="!w-360px"
+          placeholder="请选择服务点"
+        >
           <el-option
             v-for="item in pointCandidates"
             :key="item.id"
@@ -112,7 +135,10 @@ import {
   type MerchantSubAccountSaveReqVO,
   type MerchantSubAccountServicePointUpdateReqVO
 } from '@/api/linbang/merchantsubaccount'
-import { MerchantServicePointApi, type MerchantServicePoint } from '@/api/linbang/merchantservicepoint'
+import {
+  MerchantServicePointApi,
+  type MerchantServicePoint
+} from '@/api/linbang/merchantservicepoint'
 
 defineOptions({ name: 'LinbangMerchantSubAccount' })
 

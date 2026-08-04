@@ -17,6 +17,19 @@ import cn.iocoder.yudao.module.linbang.controller.admin.walletaccount.vo.*;
 @Mapper
 public interface WalletAccountMapper extends BaseMapperX<WalletAccountDO> {
 
+    default WalletAccountDO selectByUserIdAndRoleCode(Long userId, String roleCode) {
+        return selectOne(new LambdaQueryWrapperX<WalletAccountDO>()
+                .eq(WalletAccountDO::getUserId, userId)
+                .eq(WalletAccountDO::getRoleCode, roleCode));
+    }
+
+    default WalletAccountDO selectByUserIdAndRoleCodeForUpdate(Long userId, String roleCode) {
+        return selectOne(new LambdaQueryWrapperX<WalletAccountDO>()
+                .eq(WalletAccountDO::getUserId, userId)
+                .eq(WalletAccountDO::getRoleCode, roleCode)
+                .last("FOR UPDATE"));
+    }
+
     default PageResult<WalletAccountDO> selectPage(WalletAccountPageReqVO reqVO, Collection<Long> userIds) {
         return selectPage(reqVO, new LambdaQueryWrapperX<WalletAccountDO>()
                 .eqIfPresent(WalletAccountDO::getUserId, reqVO.getUserId())

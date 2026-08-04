@@ -20,12 +20,32 @@ import cn.iocoder.yudao.module.linbang.controller.admin.memberuser.vo.*;
 @Repository("linbangMemberUserMapper")
 public interface MemberUserMapper extends BaseMapperX<MemberUserDO> {
 
+    int KEYWORD_MATCH_LIMIT = 1_000;
+
     default MemberUserDO selectByMobile(String mobile) {
         return selectOne(MemberUserDO::getMobile, mobile);
     }
 
+    default MemberUserDO selectByMobileForUpdate(String mobile) {
+        return selectOne(new LambdaQueryWrapperX<MemberUserDO>()
+                .eq(MemberUserDO::getMobile, mobile)
+                .last("FOR UPDATE"));
+    }
+
     default MemberUserDO selectByUsername(String username) {
         return selectOne(MemberUserDO::getUsername, username);
+    }
+
+    default MemberUserDO selectByUsernameForUpdate(String username) {
+        return selectOne(new LambdaQueryWrapperX<MemberUserDO>()
+                .eq(MemberUserDO::getUsername, username)
+                .last("FOR UPDATE"));
+    }
+
+    default MemberUserDO selectByIdForUpdate(Long id) {
+        return selectOne(new LambdaQueryWrapperX<MemberUserDO>()
+                .eq(MemberUserDO::getId, id)
+                .last("FOR UPDATE"));
     }
 
     default List<MemberUserDO> selectListByIds(Collection<Long> ids) {
@@ -45,7 +65,8 @@ public interface MemberUserMapper extends BaseMapperX<MemberUserDO> {
                         .like(MemberUserDO::getMobile, keyword)
                         .or()
                         .like(MemberUserDO::getNickname, keyword))
-                .orderByDesc(MemberUserDO::getId));
+                .orderByDesc(MemberUserDO::getId)
+                .last("LIMIT " + KEYWORD_MATCH_LIMIT));
     }
 
     default PageResult<MemberUserDO> selectPage(MemberUserPageReqVO reqVO) {

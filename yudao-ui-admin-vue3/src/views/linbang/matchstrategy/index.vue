@@ -15,28 +15,54 @@
             </el-table-column>
             <el-table-column label="从多少公里开始" min-width="180">
               <template #default="{ row }">
-                <el-input-number v-model="row.radiusStartKm" :min="0" :precision="2" :step="0.1" controls-position="right" />
+                <el-input-number
+                  v-model="row.radiusStartKm"
+                  :min="0"
+                  :precision="2"
+                  :step="0.1"
+                  controls-position="right"
+                />
               </template>
             </el-table-column>
             <el-table-column label="扩到多少公里" min-width="180">
               <template #default="{ row }">
-                <el-input-number v-model="row.radiusEndKm" :min="0.01" :precision="2" :step="0.1" controls-position="right" />
+                <el-input-number
+                  v-model="row.radiusEndKm"
+                  :min="0.01"
+                  :precision="2"
+                  :step="0.1"
+                  controls-position="right"
+                />
               </template>
             </el-table-column>
             <el-table-column label="本轮等待时间" min-width="170">
               <template #default="{ row }">
-                <el-input-number v-model="row.durationSeconds" :min="1" :max="3600" :step="30" controls-position="right" />
+                <el-input-number
+                  v-model="row.durationSeconds"
+                  :min="1"
+                  :max="3600"
+                  :step="30"
+                  controls-position="right"
+                />
                 <span class="unit-text">秒</span>
               </template>
             </el-table-column>
             <el-table-column label="操作" width="92" align="center">
               <template #default="{ $index }">
-                <el-button link type="danger" :disabled="stageRows.length <= 1" @click="removeStage($index)">删除</el-button>
+                <el-button
+                  link
+                  type="danger"
+                  :disabled="stageRows.length <= 1"
+                  @click="removeStage($index)"
+                  >删除</el-button
+                >
               </template>
             </el-table-column>
           </el-table>
           <div class="stage-actions">
-            <el-button :disabled="stageRows.length >= formData.maxStageCount" @click="addStage">新增一轮</el-button>
+            <el-button :disabled="stageRows.length >= formData.maxStageCount" @click="addStage"
+              >新增一轮</el-button
+            >
             <el-button @click="resetDefaultStages">恢复默认 5 轮</el-button>
           </div>
         </div>
@@ -71,6 +97,7 @@
 import { onMounted, reactive, ref, watch } from 'vue'
 import { useMessage } from '@/hooks/web/useMessage'
 import { MatchStrategyApi, type MatchStrategy } from '@/api/linbang/matchstrategy'
+import { requestDynamicKeyToken } from '../shared/dynamic-key'
 
 defineOptions({ name: 'LinbangMatchStrategy' })
 
@@ -221,7 +248,8 @@ const submit = async () => {
   saving.value = true
   try {
     formData.stageConfigJson = buildStageConfigJson()
-    await MatchStrategyApi.updateMatchStrategy(formData)
+    const verifyToken = await requestDynamicKeyToken('修改匹配与自动退款策略')
+    await MatchStrategyApi.updateMatchStrategy(formData, verifyToken)
     message.success('匹配策略已保存')
   } finally {
     saving.value = false

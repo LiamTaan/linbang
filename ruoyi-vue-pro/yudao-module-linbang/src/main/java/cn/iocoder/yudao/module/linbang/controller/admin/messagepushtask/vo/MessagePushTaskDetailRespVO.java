@@ -90,6 +90,7 @@ public class MessagePushTaskDetailRespVO {
     private List<RecordSummary> recentRecords;
 
     @Data
+    @Schema(description = "管理后台 - 消息记录统计摘要 Response VO")
     public static class RecordSummary {
         @Schema(description = "消息记录 ID", example = "1")
         private Long id;

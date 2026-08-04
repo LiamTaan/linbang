@@ -8,7 +8,12 @@
       v-loading="formLoading"
     >
       <el-form-item label="主订单" prop="orderId">
-        <el-input :model-value="selectedOrderLabel" placeholder="请选择主订单" readonly @click="openOrderDialog">
+        <el-input
+          :model-value="selectedOrderLabel"
+          placeholder="请选择主订单"
+          readonly
+          @click="openOrderDialog"
+        >
           <template #append>
             <el-button @click="openOrderDialog">选择</el-button>
           </template>
@@ -37,7 +42,12 @@
         </el-select>
       </el-form-item>
       <el-form-item label="前置单元" prop="prevUnitId">
-        <el-input :model-value="selectedPrevUnitLabel" placeholder="请选择前置单元" readonly @click="openPrevUnitDialog">
+        <el-input
+          :model-value="selectedPrevUnitLabel"
+          placeholder="请选择前置单元"
+          readonly
+          @click="openPrevUnitDialog"
+        >
           <template #append>
             <el-button @click="openPrevUnitDialog">选择</el-button>
           </template>
@@ -58,7 +68,12 @@
         <el-input v-model="formData.lockReason" placeholder="请输入锁定原因" />
       </el-form-item>
       <el-form-item label="服务商" prop="merchantId">
-        <el-input :model-value="selectedMerchantLabel" placeholder="请选择服务商" readonly @click="openMerchantDialog">
+        <el-input
+          :model-value="selectedMerchantLabel"
+          placeholder="请选择服务商"
+          readonly
+          @click="openMerchantDialog"
+        >
           <template #append>
             <el-button @click="openMerchantDialog">选择</el-button>
           </template>
@@ -103,7 +118,11 @@
 </template>
 <script setup lang="ts">
 import { getStrDictOptions, DICT_TYPE } from '@/utils/dict'
-import { MerchantInfoApi, type MerchantInfo, type MerchantInfoDetail } from '@/api/linbang/merchantinfo'
+import {
+  MerchantInfoApi,
+  type MerchantInfo,
+  type MerchantInfoDetail
+} from '@/api/linbang/merchantinfo'
 import { OrderUnitApi, OrderUnit, OrderUnitDetail } from '@/api/linbang/orderunit'
 import { OrderInfoApi, type OrderInfo } from '@/api/linbang/orderinfo'
 import { BOOLEAN_YES_NO_OPTIONS, SPLIT_MODE_OPTIONS } from '../utils/display'
@@ -160,7 +179,9 @@ const selectedPrevUnitLabel = computed(() => {
   if (!selectedPrevUnit.value) {
     return ''
   }
-  return [selectedPrevUnit.value.unitNo, selectedPrevUnit.value.unitTitle].filter(Boolean).join(' / ')
+  return [selectedPrevUnit.value.unitNo, selectedPrevUnit.value.unitTitle]
+    .filter(Boolean)
+    .join(' / ')
 })
 
 const selectedMerchantLabel = computed(() => {

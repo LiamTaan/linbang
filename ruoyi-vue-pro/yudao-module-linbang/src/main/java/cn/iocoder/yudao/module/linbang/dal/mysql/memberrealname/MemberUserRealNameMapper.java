@@ -21,6 +21,14 @@ public interface MemberUserRealNameMapper extends BaseMapperX<MemberUserRealName
         return selectOne(MemberUserRealNameDO::getUserId, userId);
     }
 
+    default MemberUserRealNameDO selectByUserIdForUpdate(Long userId) {
+        return selectOneForUpdate(MemberUserRealNameDO::getUserId, userId);
+    }
+
+    default MemberUserRealNameDO selectByIdForUpdate(Long id) {
+        return selectOneForUpdate(MemberUserRealNameDO::getId, id);
+    }
+
     default PageResult<MemberUserRealNameDO> selectPage(MemberUserRealNamePageReqVO reqVO, Collection<Long> userIds) {
         return selectPage(reqVO, new LambdaQueryWrapperX<MemberUserRealNameDO>()
                 .eqIfPresent(MemberUserRealNameDO::getUserId, reqVO.getUserId())

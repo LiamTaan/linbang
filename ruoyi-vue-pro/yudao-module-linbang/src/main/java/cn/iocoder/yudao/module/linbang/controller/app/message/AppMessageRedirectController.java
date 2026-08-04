@@ -3,6 +3,7 @@ package cn.iocoder.yudao.module.linbang.controller.app.message;
 import cn.iocoder.yudao.module.linbang.service.app.message.AppMessageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,11 +28,13 @@ public class AppMessageRedirectController {
     @GetMapping("/click")
     @PermitAll
     @Operation(summary = "短信/公众号点击跳转并回写点击回执")
-    @Parameter(name = "recordId", description = "消息记录 ID")
+    @Parameters({
+            @Parameter(name = "recordId", description = "消息记录 ID；缺失或无效时安全跳转到站点根路径"),
+            @Parameter(name = "clickToken", description = "消息发送时生成的 32 位随机点击凭证；缺失或无效时安全跳转到站点根路径")
+    })
     public void clickRedirect(@RequestParam(value = "recordId", required = false) Long recordId,
-                              @RequestParam(value = "targetUrl", required = false) String targetUrl,
+                              @RequestParam(value = "clickToken", required = false) String clickToken,
                               HttpServletResponse response) throws IOException {
-        appMessageService.recordExternalClick(recordId);
-        response.sendRedirect(appMessageService.resolveRedirectTarget(recordId, targetUrl));
+        response.sendRedirect(appMessageService.recordExternalClickAndResolveTarget(recordId, clickToken));
     }
 }

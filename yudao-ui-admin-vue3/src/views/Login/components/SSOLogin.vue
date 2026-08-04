@@ -43,6 +43,7 @@ import LoginFormTitle from './LoginFormTitle.vue'
 import * as OAuth2Api from '@/api/login/oauth2'
 import { LoginStateEnum, useLoginState } from './useLogin'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
+import { navigateToSafeUrl } from '@/utils/url'
 
 defineOptions({ name: 'SSOLogin' })
 
@@ -78,6 +79,7 @@ const formData = reactive<formType>({
   scopes: [] // 已选中的 scope 数组
 })
 const formLoading = ref(false) // 表单是否提交中
+const message = useMessage()
 
 /** 初始化授权信息 */
 const init = async () => {
@@ -98,7 +100,9 @@ const init = async () => {
   if (queryParams.scopes.length > 0) {
     const data = await doAuthorize(true, queryParams.scopes, [])
     if (data) {
-      location.href = data
+      if (!navigateToSafeUrl(data)) {
+        message.error('授权回调地址不合法')
+      }
       return
     }
   }
@@ -152,7 +156,9 @@ const handleAuthorize = async (approved) => {
     if (!data) {
       return
     }
-    location.href = data
+    if (!navigateToSafeUrl(data)) {
+      message.error('授权回调地址不合法')
+    }
   } finally {
     formLoading.value = false
   }

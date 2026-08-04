@@ -14,9 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import javax.annotation.Resource;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 
-import static cn.hutool.core.util.RandomUtil.randomInt;
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.framework.common.util.date.DateUtils.isToday;
 import static cn.iocoder.yudao.module.system.enums.ErrorCodeConstants.*;
@@ -29,6 +29,8 @@ import static cn.iocoder.yudao.module.system.enums.ErrorCodeConstants.*;
 @Service
 @Validated
 public class SmsCodeServiceImpl implements SmsCodeService {
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Resource
     private SmsCodeProperties smsCodeProperties;
@@ -68,12 +70,20 @@ public class SmsCodeServiceImpl implements SmsCodeService {
 
         // 创建验证码记录
         String code = String.format("%0" + smsCodeProperties.getEndCode().toString().length() + "d",
-                randomInt(smsCodeProperties.getBeginCode(), smsCodeProperties.getEndCode() + 1));
+                secureRandomInt(smsCodeProperties.getBeginCode(), smsCodeProperties.getEndCode()));
         SmsCodeDO newSmsCode = SmsCodeDO.builder().mobile(mobile).code(code).scene(scene)
                 .todayIndex(lastSmsCode != null && isToday(lastSmsCode.getCreateTime()) ? lastSmsCode.getTodayIndex() + 1 : 1)
                 .createIp(ip).used(false).build();
         smsCodeMapper.insert(newSmsCode);
         return code;
+    }
+
+    private static int secureRandomInt(int begin, int end) {
+        long range = (long) end - begin + 1L;
+        if (range <= 0L || range > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Invalid SMS code range");
+        }
+        return begin + SECURE_RANDOM.nextInt((int) range);
     }
 
     @Override

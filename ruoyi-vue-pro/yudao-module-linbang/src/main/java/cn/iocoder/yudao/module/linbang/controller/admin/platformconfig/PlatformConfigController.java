@@ -2,7 +2,7 @@ package cn.iocoder.yudao.module.linbang.controller.admin.platformconfig;
 
 import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.excel.core.util.ExcelUtils;
 import cn.iocoder.yudao.module.linbang.controller.admin.platformconfig.vo.PlatformConfigDetailRespVO;
@@ -77,7 +77,7 @@ public class PlatformConfigController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportPlatformConfigExcel(@Valid PlatformConfigPageReqVO reqVO, HttpServletResponse response)
             throws IOException {
-        reqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        reqVO.setPageSize(MAX_EXPORT_ROWS);
         List<PlatformConfigRespVO> list = platformConfigService.getPlatformConfigPage(reqVO).getList();
         ExcelUtils.write(response, "平台配置.xls", "数据", PlatformConfigRespVO.class, list);
     }

@@ -8,7 +8,11 @@ import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.module.linbang.dal.dataobject.orderinfo.OrderInfoDO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 import cn.iocoder.yudao.module.linbang.controller.admin.orderinfo.vo.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * 订单主 Mapper
@@ -17,6 +21,10 @@ import cn.iocoder.yudao.module.linbang.controller.admin.orderinfo.vo.*;
  */
 @Mapper
 public interface OrderInfoMapper extends BaseMapperX<OrderInfoDO> {
+
+    @Select("SELECT COALESCE(SUM(order_amount), 0) FROM lb_order_info "
+            + "WHERE create_time >= #{start} AND create_time < #{end} AND deleted = b'0'")
+    BigDecimal selectSumOrderAmount(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     default List<OrderInfoDO> selectListByOrderNo(String orderNo) {
         if (StrUtil.isBlank(orderNo)) {

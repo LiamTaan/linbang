@@ -12,6 +12,18 @@ import java.util.Collection;
 @Mapper
 public interface PromoteAppealMapper extends BaseMapperX<PromoteAppealDO> {
 
+    default PromoteAppealDO selectByIdForUpdate(Long id) {
+        return selectOneForUpdate(PromoteAppealDO::getId, id);
+    }
+
+    default PromoteAppealDO selectPendingForUpdate(Long contentId, Long promoterId) {
+        return selectOne(new LambdaQueryWrapperX<PromoteAppealDO>()
+                .eq(PromoteAppealDO::getContentId, contentId)
+                .eq(PromoteAppealDO::getPromoterId, promoterId)
+                .eq(PromoteAppealDO::getStatus, "PENDING")
+                .last("LIMIT 1 FOR UPDATE"));
+    }
+
     default PageResult<PromoteAppealDO> selectPageByPromoterIds(PromoteAppealPageReqVO reqVO, Collection<Long> promoterIds) {
         return BaseMapperX.super.selectPage(reqVO, new LambdaQueryWrapperX<PromoteAppealDO>()
                 .eqIfPresent(PromoteAppealDO::getPromoterId, reqVO.getPromoterId())

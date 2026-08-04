@@ -5,13 +5,17 @@ import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.DecimalMin;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 
 @Schema(description = "用户 App - 合作商价格申报创建 Request VO")
 @Data
 public class AppPartnerPriceReportCreateReqVO {
 
-    @Schema(description = "服务商 ID", example = "1001")
+    @Schema(description = "当前合作商辖区内已审核通过的服务商 ID", requiredMode = Schema.RequiredMode.REQUIRED,
+            example = "1001")
+    @NotNull(message = "服务商不能为空")
     private Long merchantId;
 
     @Schema(description = "类目 ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "3001")
@@ -24,8 +28,10 @@ public class AppPartnerPriceReportCreateReqVO {
 
     @Schema(description = "建议价格，单位元", requiredMode = Schema.RequiredMode.REQUIRED, example = "128.00")
     @NotNull(message = "建议价格不能为空")
+    @DecimalMin(value = "0.01", message = "建议价格必须大于 0")
     private BigDecimal suggestedPrice;
 
     @Schema(description = "申报备注", example = "本辖区人工成本偏高，建议上调")
+    @Size(max = 500, message = "申报备注不能超过 500 个字符")
     private String remark;
 }

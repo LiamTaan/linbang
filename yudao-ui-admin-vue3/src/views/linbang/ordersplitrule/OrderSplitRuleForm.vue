@@ -1,6 +1,12 @@
 <template>
   <Dialog :title="dialogTitle" v-model="dialogVisible">
-    <el-form ref="formRef" :model="formData" :rules="formRules" label-width="120px" v-loading="formLoading">
+    <el-form
+      ref="formRef"
+      :model="formData"
+      :rules="formRules"
+      label-width="120px"
+      v-loading="formLoading"
+    >
       <el-form-item label="规则名称" prop="ruleName">
         <el-input v-model="formData.ruleName" placeholder="请输入规则名称" />
       </el-form-item>
@@ -27,7 +33,12 @@
         />
       </el-form-item>
       <el-form-item label="适用计价方式" prop="applicablePricingModes">
-        <el-select v-model="formData.applicablePricingModes" multiple clearable placeholder="为空表示全部适用">
+        <el-select
+          v-model="formData.applicablePricingModes"
+          multiple
+          clearable
+          placeholder="为空表示全部适用"
+        >
           <el-option
             v-for="dict in getStrDictOptions(DICT_TYPE.LB_PRICING_MODE)"
             :key="dict.value"
@@ -37,7 +48,12 @@
         </el-select>
       </el-form-item>
       <el-form-item label="最小金额" prop="minOrderAmount">
-        <el-input-number v-model="formData.minOrderAmount" :min="0" :precision="2" class="!w-220px" />
+        <el-input-number
+          v-model="formData.minOrderAmount"
+          :min="0"
+          :precision="2"
+          class="!w-220px"
+        />
       </el-form-item>
       <el-form-item label="最小数量" prop="minQuantity">
         <el-input-number v-model="formData.minQuantity" :min="0" :precision="2" class="!w-220px" />
@@ -54,22 +70,35 @@
           <el-option label="按内容拆分" value="BY_CONTENT" />
           <el-option label="按多人拆分" value="BY_PERSON" />
         </el-select>
-        <div class="form-tip">多人拆单仅在 BY_PERSON 下按人数推高单元数；工程类可由类目默认拆分方式兜底。</div>
+        <div class="form-tip"
+          >多人拆单仅在 BY_PERSON 下按人数推高单元数；工程类可由类目默认拆分方式兜底。</div
+        >
       </el-form-item>
       <el-form-item label="默认单元数" prop="defaultUnitCount">
         <el-input-number v-model="formData.defaultUnitCount" :min="1" class="!w-220px" />
       </el-form-item>
       <el-form-item label="单元金额上限" prop="unitAmountLimit">
-        <el-input-number v-model="formData.unitAmountLimit" :min="0.01" :precision="2" class="!w-220px" />
+        <el-input-number
+          v-model="formData.unitAmountLimit"
+          :min="0.01"
+          :precision="2"
+          class="!w-220px"
+        />
       </el-form-item>
       <el-form-item label="标题前缀">
         <el-input v-model="formData.unitTemplate.titlePrefix" placeholder="如 工程单元" />
       </el-form-item>
       <el-form-item label="内容模板">
-        <el-input v-model="formData.unitTemplate.contentTemplate" placeholder="支持 {seq}、{splitMode}" />
+        <el-input
+          v-model="formData.unitTemplate.contentTemplate"
+          placeholder="支持 {seq}、{splitMode}"
+        />
       </el-form-item>
       <el-form-item label="锁定原因">
-        <el-input v-model="formData.unitTemplate.lockReasonTemplate" placeholder="如 待前序单元完成" />
+        <el-input
+          v-model="formData.unitTemplate.lockReasonTemplate"
+          placeholder="如 待前序单元完成"
+        />
       </el-form-item>
       <el-form-item label="排序号" prop="sortNo">
         <el-input-number v-model="formData.sortNo" :min="0" class="!w-220px" />
@@ -100,6 +129,7 @@ import { useI18n } from '@/hooks/web/useI18n'
 import { useMessage } from '@/hooks/web/useMessage'
 import { MerchantServiceCategoryApi } from '@/api/linbang/merchantcategory'
 import { OrderSplitRuleApi, type OrderSplitRule } from '@/api/linbang/ordersplitrule'
+import { requestDynamicKeyToken } from '../shared/dynamic-key'
 import { ENABLE_STATUS_OPTIONS } from '../utils/display'
 
 defineOptions({ name: 'OrderSplitRuleForm' })
@@ -167,11 +197,14 @@ const submitForm = async () => {
       applicablePricingModes: formData.value.applicablePricingModes || [],
       unitTemplate: formData.value.unitTemplate || {}
     }
+    const verifyToken = await requestDynamicKeyToken(
+      formType.value === 'create' ? '新增订单拆单规则' : '修改订单拆单规则'
+    )
     if (formType.value === 'create') {
-      await OrderSplitRuleApi.create(data)
+      await OrderSplitRuleApi.create(data, verifyToken)
       message.success(t('common.createSuccess'))
     } else {
-      await OrderSplitRuleApi.update(data)
+      await OrderSplitRuleApi.update(data, verifyToken)
       message.success(t('common.updateSuccess'))
     }
     dialogVisible.value = false
@@ -204,8 +237,8 @@ const loadCategoryTree = async () => {
 <style scoped>
 .form-tip {
   margin-top: 6px;
-  color: var(--el-text-color-secondary);
   font-size: 12px;
   line-height: 1.5;
+  color: var(--el-text-color-secondary);
 }
 </style>

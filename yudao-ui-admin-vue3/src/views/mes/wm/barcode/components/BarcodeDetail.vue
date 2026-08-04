@@ -79,7 +79,6 @@ import { ref } from 'vue'
 import { useMessage } from '@/hooks/web/useMessage'
 import { DICT_TYPE } from '@/utils/dict'
 import { formatDate } from '@/utils/formatTime'
-import { escapeHtml } from '@/utils'
 import download from '@/utils/download'
 import Barcode from './Barcode.vue'
 import { WmBarcodeApi, type WmBarcodeVO } from '@/api/mes/wm/barcode'
@@ -143,12 +142,15 @@ const handlePrint = () => {
   }
 
   try {
-    const html = `<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>打印条码</title>
-    <style>
+    printWindow.opener = null
+    const printDocument = printWindow.document
+    printDocument.documentElement.lang = 'zh-CN'
+    printDocument.title = '打印条码'
+
+    const charset = printDocument.createElement('meta')
+    charset.setAttribute('charset', 'UTF-8')
+    const style = printDocument.createElement('style')
+    style.textContent = `
       * { margin: 0; padding: 0; }
       body { font-family: Arial, sans-serif; padding: 20px; }
       .print-container { text-align: center; }
@@ -159,27 +161,50 @@ const handlePrint = () => {
         body { padding: 0; }
         .print-container { padding: 20px; }
       }
-    </style>
-  </head>
-  <body>
-    <div class="print-container">
-      <img src="${base64}" class="barcode-img" alt="条码" />
-      <div class="info">
-        <p><strong>业务编码:</strong> ${escapeHtml(barcodeData.value.bizCode || '')}</p>
-        <p><strong>业务名称:</strong> ${escapeHtml(barcodeData.value.bizName || '')}</p>
-        <p><strong>条码内容:</strong> ${escapeHtml(barcodeData.value.content || '')}</p>
-      </div>
-    </div>
-  </body>
-</html>`
-    printWindow.document.write(html)
-    printWindow.document.close()
+    `
+    printDocument.head.replaceChildren(charset, style)
 
-    // 延迟打印，确保内容加载完成
-    printWindow.onload = () => {
+    const container = printDocument.createElement('div')
+    container.className = 'print-container'
+    const image = printDocument.createElement('img')
+    image.className = 'barcode-img'
+    image.alt = '条码'
+    image.src = base64
+    container.appendChild(image)
+
+    const info = printDocument.createElement('div')
+    info.className = 'info'
+    const appendInfo = (label: string, value: string | number | undefined) => {
+      const row = printDocument.createElement('p')
+      const title = printDocument.createElement('strong')
+      title.textContent = `${label}: `
+      row.append(title, printDocument.createTextNode(String(value ?? '')))
+      info.appendChild(row)
+    }
+    appendInfo('业务编码', barcodeData.value.bizCode)
+    appendInfo('业务名称', barcodeData.value.bizName)
+    appendInfo('条码内容', barcodeData.value.content)
+    container.appendChild(info)
+    printDocument.body.replaceChildren(container)
+
+    const print = () => {
       setTimeout(() => {
+        printWindow.focus()
         printWindow.print()
-      }, 500)
+      }, 100)
+    }
+    if (image.complete) {
+      print()
+    } else {
+      image.addEventListener('load', print, { once: true })
+      image.addEventListener(
+        'error',
+        () => {
+          message.error('条码图片加载失败，无法打印')
+          printWindow.close()
+        },
+        { once: true }
+      )
     }
   } catch (error) {
     console.error('打印失败:', error)

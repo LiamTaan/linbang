@@ -14,7 +14,12 @@
         <el-input v-model="formData.cityLevel" placeholder="请输入城市等级" />
       </el-form-item>
       <el-form-item label="服务类目" prop="categoryId">
-        <el-input :model-value="selectedCategoryLabel" placeholder="请选择服务类目" readonly @click="openCategoryDialog">
+        <el-input
+          :model-value="selectedCategoryLabel"
+          placeholder="请选择服务类目"
+          readonly
+          @click="openCategoryDialog"
+        >
           <template #append>
             <el-button @click="openCategoryDialog">选择</el-button>
           </template>
@@ -62,7 +67,11 @@
   <ServiceCategorySelectDialog ref="categorySelectDialogRef" @selected="handleCategorySelected" />
 </template>
 <script setup lang="ts">
-import { DivideRuleApi, type DivideRuleDetail, type DivideRuleFormData } from '@/api/linbang/dividerule'
+import {
+  DivideRuleApi,
+  type DivideRuleDetail,
+  type DivideRuleFormData
+} from '@/api/linbang/dividerule'
 import {
   MerchantServiceCategoryApi,
   type MerchantServiceCategory
@@ -119,7 +128,10 @@ const selectedCategoryLabel = computed(() => {
   if (!selectedCategory.value) {
     return ''
   }
-  return [selectedCategory.value.categoryName, selectedCategory.value.categoryLevel && `L${selectedCategory.value.categoryLevel}`]
+  return [
+    selectedCategory.value.categoryName,
+    selectedCategory.value.categoryLevel && `L${selectedCategory.value.categoryLevel}`
+  ]
     .filter(Boolean)
     .join(' / ')
 })
@@ -166,7 +178,9 @@ const submitForm = async () => {
   formLoading.value = true
   try {
     const data = formData.value as DivideRuleFormData
-    const verifyToken = await requestDynamicKeyToken(formType.value === 'create' ? '新增分账规则' : '修改分账规则')
+    const verifyToken = await requestDynamicKeyToken(
+      formType.value === 'create' ? '新增分账规则' : '修改分账规则'
+    )
     if (formType.value === 'create') {
       await DivideRuleApi.createDivideRule(data, verifyToken)
       message.success(t('common.createSuccess'))

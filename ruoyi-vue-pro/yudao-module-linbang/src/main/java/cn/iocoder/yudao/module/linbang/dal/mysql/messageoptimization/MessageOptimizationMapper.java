@@ -10,6 +10,12 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface MessageOptimizationMapper extends BaseMapperX<MessageOptimizationDO> {
 
+    default MessageOptimizationDO selectByOptimizationKeyForUpdate(String optimizationKey) {
+        return selectOne(new LambdaQueryWrapperX<MessageOptimizationDO>()
+                .eq(MessageOptimizationDO::getOptimizationKey, optimizationKey)
+                .last("LIMIT 1 FOR UPDATE"));
+    }
+
     default PageResult<MessageOptimizationDO> selectPage(MessageOptimizationPageReqVO reqVO) {
         return selectPage(reqVO, new LambdaQueryWrapperX<MessageOptimizationDO>()
                 .eqIfPresent(MessageOptimizationDO::getRefType, reqVO.getRefType())

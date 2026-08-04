@@ -3,6 +3,7 @@ package cn.iocoder.yudao.module.pay.service.app;
 import cn.hutool.core.collection.CollUtil;
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.iocoder.yudao.framework.common.util.http.HttpUrlSecurityUtils;
 import cn.iocoder.yudao.module.pay.controller.admin.app.vo.PayAppCreateReqVO;
 import cn.iocoder.yudao.module.pay.controller.admin.app.vo.PayAppPageReqVO;
 import cn.iocoder.yudao.module.pay.controller.admin.app.vo.PayAppUpdateReqVO;
@@ -10,8 +11,12 @@ import cn.iocoder.yudao.module.pay.convert.app.PayAppConvert;
 import cn.iocoder.yudao.module.pay.dal.dataobject.app.PayAppDO;
 import cn.iocoder.yudao.module.pay.dal.mysql.app.PayAppMapper;
 import cn.iocoder.yudao.module.pay.enums.ErrorCodeConstants;
+import cn.iocoder.yudao.module.pay.enums.notify.PayNotifyTypeEnum;
+import cn.iocoder.yudao.module.pay.dal.dataobject.notify.PayNotifyTaskDO;
+import cn.iocoder.yudao.module.pay.service.notify.PayNotifyInternalHandler;
 import cn.iocoder.yudao.module.pay.service.order.PayOrderService;
 import cn.iocoder.yudao.module.pay.service.refund.PayRefundService;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
@@ -42,11 +47,15 @@ public class PayAppServiceImpl implements PayAppService {
     @Resource
     @Lazy // 延迟加载，避免循环依赖报错
     private PayRefundService refundService;
+    @Resource
+    private ObjectProvider<PayNotifyInternalHandler> internalHandlerProvider;
 
     @Override
     public Long createApp(PayAppCreateReqVO createReqVO) {
         // 验证 appKey 是否重复
         validateAppKeyUnique(null, createReqVO.getAppKey());
+        validateNotifyUrls(createReqVO.getOrderNotifyUrl(), createReqVO.getRefundNotifyUrl(),
+                createReqVO.getTransferNotifyUrl());
 
         // 插入
         PayAppDO app = PayAppConvert.INSTANCE.convert(createReqVO);
@@ -61,6 +70,8 @@ public class PayAppServiceImpl implements PayAppService {
         validateAppExists(updateReqVO.getId());
         // 验证 appKey 是否重复
         validateAppKeyUnique(updateReqVO.getId(), updateReqVO.getAppKey());
+        validateNotifyUrls(updateReqVO.getOrderNotifyUrl(), updateReqVO.getRefundNotifyUrl(),
+                updateReqVO.getTransferNotifyUrl());
 
         // 更新
         PayAppDO updateObj = PayAppConvert.INSTANCE.convert(updateReqVO);
@@ -78,6 +89,28 @@ public class PayAppServiceImpl implements PayAppService {
         }
         if (!app.getId().equals(id)) {
             throw exception(APP_KEY_EXISTS);
+        }
+    }
+
+    private void validateNotifyUrls(String orderNotifyUrl, String refundNotifyUrl, String transferNotifyUrl) {
+        validateNotifyUrl(PayNotifyTypeEnum.ORDER.getType(), orderNotifyUrl, "支付结果");
+        validateNotifyUrl(PayNotifyTypeEnum.REFUND.getType(), refundNotifyUrl, "退款结果");
+        if (transferNotifyUrl != null && !transferNotifyUrl.trim().isEmpty()) {
+            validateNotifyUrl(PayNotifyTypeEnum.TRANSFER.getType(), transferNotifyUrl, "转账结果");
+        }
+    }
+
+    private void validateNotifyUrl(Integer type, String notifyUrl, String label) {
+        PayNotifyTaskDO routeProbe = new PayNotifyTaskDO().setType(type).setNotifyUrl(notifyUrl);
+        for (PayNotifyInternalHandler handler : internalHandlerProvider) {
+            if (handler.supports(routeProbe)) {
+                return;
+            }
+        }
+        try {
+            HttpUrlSecurityUtils.validatePublicHttpsUrl(notifyUrl);
+        } catch (IllegalArgumentException ex) {
+            throw exception(APP_NOTIFY_URL_INVALID, label);
         }
     }
 

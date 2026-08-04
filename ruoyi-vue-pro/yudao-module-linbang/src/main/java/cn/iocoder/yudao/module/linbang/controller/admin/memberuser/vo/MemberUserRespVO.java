@@ -28,7 +28,7 @@ public class MemberUserRespVO {
     @ExcelProperty("手机号")
     private String mobile;
 
-    @Schema(description = "昵称", requiredMode = Schema.RequiredMode.REQUIRED, example = "??")
+    @Schema(description = "昵称", requiredMode = Schema.RequiredMode.REQUIRED, example = "邻里小帮手")
     @ExcelProperty("昵称")
     private String nickname;
 
@@ -68,7 +68,7 @@ public class MemberUserRespVO {
     @ExcelProperty("最后登录IP")
     private String lastLoginIp;
 
-    @Schema(description = "备注", example = "??")
+    @Schema(description = "备注", example = "重点关注用户")
     @ExcelProperty("备注")
     private String remark;
 

@@ -78,6 +78,7 @@ public class AppPromoteCenterRespVO {
     private List<RecentCommissionRespVO> recentCommissionOrders;
 
     @Data
+    @Schema(description = "用户 App - 最近佣金摘要 Response VO")
     public static class RecentCommissionRespVO {
 
         @Schema(description = "主键", example = "1")

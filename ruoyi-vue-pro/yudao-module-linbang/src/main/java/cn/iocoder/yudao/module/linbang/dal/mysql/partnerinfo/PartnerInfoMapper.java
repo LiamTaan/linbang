@@ -12,6 +12,16 @@ import java.util.List;
 @Mapper
 public interface PartnerInfoMapper extends BaseMapperX<PartnerInfoDO> {
 
+    default PartnerInfoDO selectByUserId(Long userId) {
+        return selectOne(PartnerInfoDO::getUserId, userId);
+    }
+
+    default PartnerInfoDO selectByUserIdForUpdate(Long userId) {
+        return selectOne(new LambdaQueryWrapperX<PartnerInfoDO>()
+                .eq(PartnerInfoDO::getUserId, userId)
+                .last("FOR UPDATE"));
+    }
+
     default PageResult<PartnerInfoDO> selectPage(PartnerInfoPageReqVO reqVO, List<Long> matchedUserIds) {
         return selectPage(reqVO, new LambdaQueryWrapperX<PartnerInfoDO>()
                 .inIfPresent(PartnerInfoDO::getUserId, matchedUserIds)

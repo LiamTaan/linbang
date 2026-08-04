@@ -6,6 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.json.JsonUtils;
+import cn.iocoder.yudao.framework.common.util.number.MoneyUtils;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.infra.dal.dataobject.file.FileDO;
 import cn.iocoder.yudao.module.infra.service.config.ConfigService;
@@ -83,11 +84,15 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
+import static cn.iocoder.yudao.module.linbang.constants.FinanceDisplayConstants.REFUND_CHANNEL_FAILURE_REASON;
 import static cn.iocoder.yudao.module.linbang.enums.ErrorCodeConstants.*;
 
 @Service
 @Validated
 public class AppOrderServiceImpl implements AppOrderService {
+
+    private static final int ACCEPT_ORDER_SCAN_BATCH_SIZE = 500;
+    private static final int ACCEPT_ORDER_MAX_PAGE_WINDOW = 10_000;
 
     @Resource
     private MemberUserService memberUserService;
@@ -278,7 +283,7 @@ public class AppOrderServiceImpl implements AppOrderService {
         orderInfoMapper.insert(order);
 
         savePriceItems(order.getId(), reqVO.getPriceItems());
-        saveAttachments(order.getId(), reqVO.getAttachmentFileIds());
+        saveAttachments(order.getId(), authUserId, reqVO.getAttachmentFileIds());
         saveUnits(order, splitPlan);
         saveOperateLog(order.getId(), null, "CREATE_ORDER", "USER", loginUser.getId(), null, order.getStatus(),
                 "用户创建订单，并确认交易保障协议与防逃单提醒");
@@ -287,6 +292,7 @@ public class AppOrderServiceImpl implements AppOrderService {
 
     @Override
     public AppOrderSplitRuleMatchRespVO matchSplitRule(AppOrderSplitRuleMatchReqVO reqVO) {
+        validateOrderAmount(reqVO.getBudgetAmount());
         MerchantServiceCategoryDO category = reqVO.getCategoryId() != null
                 ? merchantServiceCategoryMapper.selectById(reqVO.getCategoryId()) : null;
         OrderSplitPlan splitPlan = orderSplitRuleService.matchRule(OrderSplitPreviewContext.builder()
@@ -344,97 +350,156 @@ public class AppOrderServiceImpl implements AppOrderService {
         if (CollUtil.isEmpty(enabledCategoryIds)) {
             return PageResult.empty();
         }
+        Set<Long> queryCategoryIds = new HashSet<>(enabledCategoryIds);
+        if (categoryFilterIds != null) {
+            queryCategoryIds.retainAll(categoryFilterIds);
+        }
+        if (CollUtil.isEmpty(queryCategoryIds)) {
+            return PageResult.empty();
+        }
         List<MerchantServicePointDO> visibleServicePoints = getVisibleEnabledServicePoints(context);
         if (CollUtil.isEmpty(visibleServicePoints)) {
             return PageResult.empty();
         }
 
-        List<OrderMatchRecordDO> activeRecords = orderMatchRecordMapper.selectActiveListByMerchantId(merchant.getId(), LocalDateTime.now());
-        Map<Long, OrderMatchRecordDO> latestRecordByUnitId = activeRecords.stream()
-                .collect(Collectors.toMap(OrderMatchRecordDO::getUnitId, item -> item,
-                        (left, right) -> left.getId() >= right.getId() ? left : right, LinkedHashMap::new));
-        List<OrderInfoDO> allOrders = orderInfoMapper.selectList(new LambdaQueryWrapperX<OrderInfoDO>()
-                .eq(OrderInfoDO::getStatus, "PENDING_ACCEPT")
-                .orderByDesc(OrderInfoDO::getId));
-        repairOrderSplitAssignmentConsistency(allOrders.stream().map(OrderInfoDO::getId).collect(Collectors.toList()));
-        allOrders = orderInfoMapper.selectList(new LambdaQueryWrapperX<OrderInfoDO>()
-                .eq(OrderInfoDO::getStatus, "PENDING_ACCEPT")
-                .orderByDesc(OrderInfoDO::getId));
-
-        List<OrderInfoDO> filteredOrders = allOrders.stream()
-                .filter(order -> enabledCategoryIds.contains(order.getCategoryId()))
-                .filter(order -> isOrderInMerchantServiceArea(order, visibleServicePoints))
-                .filter(order -> categoryFilterIds == null || categoryFilterIds.contains(order.getCategoryId()))
-                .filter(order -> reqVO.getPricingMode() == null || Objects.equals(order.getPricingMode(), reqVO.getPricingMode()))
-                .filter(order -> reqVO.getMinOrderAmount() == null || (order.getOrderAmount() != null
-                        && order.getOrderAmount().compareTo(reqVO.getMinOrderAmount()) >= 0))
-                .filter(order -> reqVO.getMaxOrderAmount() == null || (order.getOrderAmount() != null
-                        && order.getOrderAmount().compareTo(reqVO.getMaxOrderAmount()) <= 0))
-                .filter(order -> {
-                    if (StrUtil.isBlank(keyword)) {
-                        return true;
-                    }
-                    return StrUtil.containsIgnoreCase(order.getRequireDesc(), keyword)
-                            || (CollUtil.isNotEmpty(keywordCategoryIds) && keywordCategoryIds.contains(order.getCategoryId()));
-                })
-                .collect(Collectors.toList());
-        if (CollUtil.isEmpty(filteredOrders)) {
-            return PageResult.empty();
+        int pageNo = reqVO.getPageNo() == null || reqVO.getPageNo() < 1 ? 1 : reqVO.getPageNo();
+        int pageSize = reqVO.getPageSize() == null || reqVO.getPageSize() < 1 ? 10 : reqVO.getPageSize();
+        long pageWindow = (long) pageNo * pageSize;
+        if (pageWindow > ACCEPT_ORDER_MAX_PAGE_WINDOW) {
+            throw exception(ORDER_ACCEPT_PAGE_WINDOW_TOO_LARGE);
         }
-
-        Set<Long> filteredOrderIds = filteredOrders.stream().map(OrderInfoDO::getId).collect(Collectors.toSet());
-        Map<Long, List<OrderUnitDO>> unitMapByOrderId = orderUnitMapper.selectList(new LambdaQueryWrapperX<OrderUnitDO>()
-                        .in(OrderUnitDO::getOrderId, filteredOrderIds)
-                        .eq(OrderUnitDO::getStatus, "PENDING_ACCEPT")
-                        .eq(OrderUnitDO::getIsLocked, Boolean.FALSE)
-                        .isNull(OrderUnitDO::getMerchantId)
-                        .orderByAsc(OrderUnitDO::getOrderId, OrderUnitDO::getUnitSeq, OrderUnitDO::getId))
-                .stream().collect(Collectors.groupingBy(OrderUnitDO::getOrderId));
-        Map<Long, MerchantServiceCategoryDO> categoryMap = buildCategoryMap(filteredOrders);
-        Map<Long, BigDecimal> distanceMap = new HashMap<>();
-        List<AppOrderAcceptPageItemRespVO> list = new ArrayList<>();
-        for (OrderInfoDO order : filteredOrders) {
-            List<OrderUnitDO> units = unitMapByOrderId.get(order.getId());
-            if (CollUtil.isEmpty(units)) {
+        int retainLimit = (int) pageWindow;
+        Comparator<AppOrderAcceptPageItemRespVO> comparator = buildAcceptOrderComparator(reqVO);
+        PriorityQueue<AppOrderAcceptPageItemRespVO> retained = new PriorityQueue<>(retainLimit, comparator.reversed());
+        long total = 0L;
+        Long lastOrderId = null;
+        LocalDateTime queryTime = LocalDateTime.now();
+        while (true) {
+            LambdaQueryWrapperX<OrderInfoDO> orderQueryWrapper = new LambdaQueryWrapperX<OrderInfoDO>()
+                    .ltIfPresent(OrderInfoDO::getId, lastOrderId)
+                    .eq(OrderInfoDO::getStatus, "PENDING_ACCEPT")
+                    .in(OrderInfoDO::getCategoryId, queryCategoryIds)
+                    .eqIfPresent(OrderInfoDO::getPricingMode, reqVO.getPricingMode());
+            orderQueryWrapper.ge(reqVO.getMinOrderAmount() != null, OrderInfoDO::getOrderAmount, reqVO.getMinOrderAmount());
+            orderQueryWrapper.le(reqVO.getMaxOrderAmount() != null, OrderInfoDO::getOrderAmount, reqVO.getMaxOrderAmount());
+            if (StrUtil.isNotBlank(keyword)) {
+                if (CollUtil.isEmpty(keywordCategoryIds)) {
+                    orderQueryWrapper.like(OrderInfoDO::getRequireDesc, keyword);
+                } else {
+                    orderQueryWrapper.and(wrapper -> wrapper.like(OrderInfoDO::getRequireDesc, keyword)
+                            .or().in(OrderInfoDO::getCategoryId, keywordCategoryIds));
+                }
+            }
+            orderQueryWrapper.orderByDesc(OrderInfoDO::getId).last("LIMIT " + ACCEPT_ORDER_SCAN_BATCH_SIZE);
+            List<OrderInfoDO> orderBatch = orderInfoMapper.selectList(orderQueryWrapper);
+            if (CollUtil.isEmpty(orderBatch)) {
+                break;
+            }
+            lastOrderId = orderBatch.get(orderBatch.size() - 1).getId();
+            Set<Long> scannedOrderIds = orderBatch.stream().map(OrderInfoDO::getId).collect(Collectors.toSet());
+            repairOrderSplitAssignmentConsistency(new ArrayList<>(scannedOrderIds));
+            LambdaQueryWrapperX<OrderInfoDO> refreshedQuery = new LambdaQueryWrapperX<>();
+            refreshedQuery.in(OrderInfoDO::getId, scannedOrderIds)
+                    .eq(OrderInfoDO::getStatus, "PENDING_ACCEPT")
+                    .in(OrderInfoDO::getCategoryId, queryCategoryIds);
+            refreshedQuery.eqIfPresent(OrderInfoDO::getPricingMode, reqVO.getPricingMode());
+            refreshedQuery.ge(reqVO.getMinOrderAmount() != null,
+                    OrderInfoDO::getOrderAmount, reqVO.getMinOrderAmount());
+            refreshedQuery.le(reqVO.getMaxOrderAmount() != null,
+                    OrderInfoDO::getOrderAmount, reqVO.getMaxOrderAmount());
+            if (StrUtil.isNotBlank(keyword)) {
+                if (CollUtil.isEmpty(keywordCategoryIds)) {
+                    refreshedQuery.like(OrderInfoDO::getRequireDesc, keyword);
+                } else {
+                    refreshedQuery.and(wrapper -> wrapper.like(OrderInfoDO::getRequireDesc, keyword)
+                            .or().in(OrderInfoDO::getCategoryId, keywordCategoryIds));
+                }
+            }
+            orderBatch = orderInfoMapper.selectList(refreshedQuery.orderByDesc(OrderInfoDO::getId));
+            List<OrderInfoDO> filteredOrders = orderBatch.stream()
+                    .filter(order -> isOrderInMerchantServiceArea(order, visibleServicePoints))
+                    .collect(Collectors.toList());
+            if (CollUtil.isEmpty(filteredOrders)) {
                 continue;
             }
-            BigDecimal distanceKm = calculateDistanceToPoints(order, visibleServicePoints);
-            distanceMap.put(order.getId(), distanceKm);
-            for (OrderUnitDO unit : units) {
-                OrderMatchRecordDO record = latestRecordByUnitId.get(unit.getId());
-                LocalDateTime deadlineTime = record != null && record.getExpiredTime() != null
-                        ? record.getExpiredTime() : unit.getAcceptDeadlineTime();
-                AppOrderAcceptPageItemRespVO respVO = new AppOrderAcceptPageItemRespVO();
-                respVO.setOrderId(order.getId());
-                respVO.setUnitId(unit.getId());
-                respVO.setOrderNo(order.getOrderNo());
-                respVO.setCategoryId(order.getCategoryId());
-                respVO.setCategoryName(Optional.ofNullable(categoryMap.get(order.getCategoryId()))
-                        .map(MerchantServiceCategoryDO::getCategoryName).orElse(null));
-                respVO.setPricingMode(order.getPricingMode());
-                respVO.setRequireDesc(order.getRequireDesc());
-                respVO.setOrderAmount(order.getOrderAmount());
-                respVO.setServiceDurationDesc(order.getServiceDurationDesc());
-                respVO.setDistanceKm(record != null && record.getDistanceKm() != null ? record.getDistanceKm() : distanceKm);
-                respVO.setStatus(order.getStatus());
-                respVO.setDispatchStatus(unit.getDispatchStatus());
-                respVO.setStageNo(record != null ? record.getStageNo() : unit.getCurrentBatchNo());
-                respVO.setPushBatchNo(record != null ? record.getPushBatchNo() : unit.getCurrentBatchNo());
-                respVO.setCountdownSeconds(deadlineTime == null ? null
-                        : Math.max(0, (int) java.time.Duration.between(LocalDateTime.now(), deadlineTime).getSeconds()));
-                respVO.setPriorityLayer(record != null ? record.getPriorityLayer() : null);
-                respVO.setPriorityPoolFlag(record != null ? record.getPriorityPoolFlag() : null);
-                respVO.setCategoryMatchLevel(record != null ? record.getCategoryMatchLevel() : null);
-                respVO.setAcceptDeadlineTime(deadlineTime);
-                respVO.setCreateTime(order.getCreateTime());
-                list.add(respVO);
+            Set<Long> filteredOrderIds = filteredOrders.stream().map(OrderInfoDO::getId).collect(Collectors.toSet());
+            List<OrderUnitDO> unitBatch = orderUnitMapper.selectList(new LambdaQueryWrapperX<OrderUnitDO>()
+                    .in(OrderUnitDO::getOrderId, filteredOrderIds)
+                    .eq(OrderUnitDO::getStatus, "PENDING_ACCEPT")
+                    .eq(OrderUnitDO::getIsLocked, Boolean.FALSE)
+                    .isNull(OrderUnitDO::getMerchantId)
+                    .orderByAsc(OrderUnitDO::getOrderId, OrderUnitDO::getUnitSeq, OrderUnitDO::getId));
+            if (CollUtil.isEmpty(unitBatch)) {
+                continue;
+            }
+            Map<Long, List<OrderUnitDO>> unitMapByOrderId = unitBatch.stream()
+                    .collect(Collectors.groupingBy(OrderUnitDO::getOrderId));
+            Set<Long> unitIds = unitBatch.stream().map(OrderUnitDO::getId).collect(Collectors.toSet());
+            Map<Long, OrderMatchRecordDO> latestRecordByUnitId = orderMatchRecordMapper.selectList(
+                            new LambdaQueryWrapperX<OrderMatchRecordDO>()
+                                    .in(OrderMatchRecordDO::getUnitId, unitIds)
+                                    .eq(OrderMatchRecordDO::getMerchantId, merchant.getId())
+                                    .eq(OrderMatchRecordDO::getStatus, "PUSHED")
+                                    .ge(OrderMatchRecordDO::getExpiredTime, queryTime)
+                                    .orderByDesc(OrderMatchRecordDO::getId))
+                    .stream().collect(Collectors.toMap(OrderMatchRecordDO::getUnitId, item -> item,
+                            (newer, older) -> newer.getId() >= older.getId() ? newer : older, LinkedHashMap::new));
+            Map<Long, MerchantServiceCategoryDO> categoryMap = buildCategoryMap(filteredOrders);
+            for (OrderInfoDO order : filteredOrders) {
+                List<OrderUnitDO> units = unitMapByOrderId.get(order.getId());
+                if (CollUtil.isEmpty(units)) {
+                    continue;
+                }
+                BigDecimal distanceKm = calculateDistanceToPoints(order, visibleServicePoints);
+                for (OrderUnitDO unit : units) {
+                    OrderMatchRecordDO record = latestRecordByUnitId.get(unit.getId());
+                    LocalDateTime deadlineTime = record != null && record.getExpiredTime() != null
+                            ? record.getExpiredTime() : unit.getAcceptDeadlineTime();
+                    AppOrderAcceptPageItemRespVO respVO = new AppOrderAcceptPageItemRespVO();
+                    respVO.setOrderId(order.getId());
+                    respVO.setUnitId(unit.getId());
+                    respVO.setOrderNo(order.getOrderNo());
+                    respVO.setCategoryId(order.getCategoryId());
+                    respVO.setCategoryName(Optional.ofNullable(categoryMap.get(order.getCategoryId()))
+                            .map(MerchantServiceCategoryDO::getCategoryName).orElse(null));
+                    respVO.setPricingMode(order.getPricingMode());
+                    respVO.setRequireDesc(order.getRequireDesc());
+                    respVO.setOrderAmount(order.getOrderAmount());
+                    respVO.setServiceDurationDesc(order.getServiceDurationDesc());
+                    respVO.setDistanceKm(record != null && record.getDistanceKm() != null
+                            ? record.getDistanceKm() : distanceKm);
+                    respVO.setStatus(order.getStatus());
+                    respVO.setDispatchStatus(unit.getDispatchStatus());
+                    respVO.setStageNo(record != null ? record.getStageNo() : unit.getCurrentBatchNo());
+                    respVO.setPushBatchNo(record != null ? record.getPushBatchNo() : unit.getCurrentBatchNo());
+                    respVO.setCountdownSeconds(deadlineTime == null ? null
+                            : Math.max(0, (int) java.time.Duration.between(queryTime, deadlineTime).getSeconds()));
+                    respVO.setPriorityLayer(record != null ? record.getPriorityLayer() : null);
+                    respVO.setPriorityPoolFlag(record != null ? record.getPriorityPoolFlag() : null);
+                    respVO.setCategoryMatchLevel(record != null ? record.getCategoryMatchLevel() : null);
+                    respVO.setAcceptDeadlineTime(deadlineTime);
+                    respVO.setCreateTime(order.getCreateTime());
+                    total++;
+                    if (retained.size() < retainLimit) {
+                        retained.offer(respVO);
+                    } else if (comparator.compare(respVO, retained.peek()) < 0) {
+                        retained.poll();
+                        retained.offer(respVO);
+                    }
+                }
             }
         }
-        if (CollUtil.isEmpty(list)) {
+        if (total == 0L) {
             return PageResult.empty();
         }
-        list.sort(buildAcceptOrderComparator(reqVO, distanceMap));
-        return manualPage(list, reqVO.getPageNo(), reqVO.getPageSize());
+        List<AppOrderAcceptPageItemRespVO> sorted = new ArrayList<>(retained);
+        sorted.sort(comparator);
+        int fromIndex = (pageNo - 1) * pageSize;
+        if (fromIndex >= sorted.size()) {
+            return new PageResult<>(Collections.emptyList(), total);
+        }
+        int toIndex = Math.min(fromIndex + pageSize, sorted.size());
+        return new PageResult<>(new ArrayList<>(sorted.subList(fromIndex, toIndex)), total);
     }
 
     @Override
@@ -535,35 +600,40 @@ public class AppOrderServiceImpl implements AppOrderService {
         if (merchantView && merchant == null) {
             return PageResult.empty();
         }
-        List<OrderInfoDO> orders = orderInfoMapper.selectList(new LambdaQueryWrapperX<OrderInfoDO>()
+        LambdaQueryWrapperX<OrderInfoDO> queryWrapper = new LambdaQueryWrapperX<OrderInfoDO>()
                 .eqIfPresent(OrderInfoDO::getUserId, merchantView ? null : loginUser.getId())
                 .eqIfPresent(OrderInfoDO::getMerchantId, merchantView ? merchant.getId() : null)
                 .eqIfPresent(OrderInfoDO::getStatus, reqVO.getStatus())
                 .inIfPresent(OrderInfoDO::getCategoryId, categoryFilterIds)
-                .eqIfPresent(OrderInfoDO::getPricingMode, reqVO.getPricingMode())
-                .orderByDesc(OrderInfoDO::getId));
-        repairOrderSplitAssignmentConsistency(orders.stream().map(OrderInfoDO::getId).collect(Collectors.toList()));
-        orders = orderInfoMapper.selectList(new LambdaQueryWrapperX<OrderInfoDO>()
-                .eqIfPresent(OrderInfoDO::getUserId, merchantView ? null : loginUser.getId())
-                .eqIfPresent(OrderInfoDO::getMerchantId, merchantView ? merchant.getId() : null)
-                .eqIfPresent(OrderInfoDO::getStatus, reqVO.getStatus())
-                .inIfPresent(OrderInfoDO::getCategoryId, categoryFilterIds)
-                .eqIfPresent(OrderInfoDO::getPricingMode, reqVO.getPricingMode())
-                .orderByDesc(OrderInfoDO::getId));
+                .eqIfPresent(OrderInfoDO::getPricingMode, reqVO.getPricingMode());
+        applyBusinessCategoryQuery(queryWrapper, reqVO.getBusinessCategory(), loginUser.getId(), merchantView);
         if (merchantView) {
             AppMerchantOperatorContext context = getOptionalMerchantContext(authUserId);
             if (context != null && context.isSubAccount()) {
-                orders = orders.stream()
-                        .filter(order -> isOrderVisibleToOperator(order, context))
-                        .collect(Collectors.toList());
+                boolean hasUsableServicePoint = getVisibleEnabledServicePoints(context).stream()
+                        .map(this::ensureResolvedServicePoint)
+                        .anyMatch(point -> point.getLongitude() != null && point.getLatitude() != null);
+                if (!hasUsableServicePoint) {
+                    return PageResult.empty();
+                }
+                queryWrapper.isNotNull(OrderInfoDO::getLongitude).isNotNull(OrderInfoDO::getLatitude);
             }
         }
-        List<OrderInfoDO> filteredOrders = applyBusinessCategoryFilter(loginUser.getId(), orders, reqVO.getBusinessCategory());
-        if (CollUtil.isEmpty(filteredOrders)) {
-            return PageResult.empty();
+        queryWrapper.orderByDesc(OrderInfoDO::getId);
+        PageResult<OrderInfoDO> orderPage = orderInfoMapper.selectPage(reqVO, queryWrapper);
+        List<OrderInfoDO> orders = orderPage.getList();
+        if (CollUtil.isEmpty(orders)) {
+            return new PageResult<>(Collections.emptyList(), orderPage.getTotal());
         }
-        Map<Long, MerchantServiceCategoryDO> categoryMap = buildCategoryMap(filteredOrders);
-        List<Long> orderIds = filteredOrders.stream().map(OrderInfoDO::getId).collect(Collectors.toList());
+        repairOrderSplitAssignmentConsistency(orders.stream().map(OrderInfoDO::getId).collect(Collectors.toList()));
+        orderPage = orderInfoMapper.selectPage(reqVO, queryWrapper);
+        orders = orderPage.getList();
+        if (CollUtil.isEmpty(orders)) {
+            return new PageResult<>(Collections.emptyList(), orderPage.getTotal());
+        }
+        List<Long> orderIds = orders.stream().map(OrderInfoDO::getId).collect(Collectors.toList());
+        Map<Long, MerchantServiceCategoryDO> categoryMap = buildCategoryMap(orders);
+        Map<Long, List<MerchantServicePointDO>> servicePointMap = buildMerchantServicePointMap(orders);
         Map<Long, List<OrderUnitDO>> orderUnitMap = orderUnitMapper.selectList(new LambdaQueryWrapperX<OrderUnitDO>()
                         .in(OrderUnitDO::getOrderId, orderIds)
                         .orderByAsc(OrderUnitDO::getOrderId, OrderUnitDO::getUnitSeq, OrderUnitDO::getId))
@@ -573,9 +643,10 @@ public class AppOrderServiceImpl implements AppOrderService {
                         .orderByDesc(MatchPushBatchDO::getOrderId, MatchPushBatchDO::getStageNo,
                                 MatchPushBatchDO::getPushBatchNo, MatchPushBatchDO::getPlannedAt, MatchPushBatchDO::getId))
                 .stream().collect(Collectors.groupingBy(MatchPushBatchDO::getOrderId));
+        Set<Long> reviewedOrderIds = getReviewedOrderIds(loginUser.getId(), orderIds);
         LocalDateTime now = LocalDateTime.now();
-        List<AppOrderPageItemRespVO> list = filteredOrders.stream().map(order -> {
-            boolean waitReview = isWaitReviewOrder(loginUser.getId(), order);
+        List<AppOrderPageItemRespVO> list = orders.stream().map(order -> {
+            boolean waitReview = isWaitReviewOrder(loginUser.getId(), order, reviewedOrderIds);
             OrderUnitDO displayUnit = resolvePublisherDisplayUnit(orderUnitMap.get(order.getId()));
             MatchPushBatchDO currentBatch = resolvePublisherCurrentBatch(displayUnit, matchBatchMap.get(order.getId()));
             AppOrderPageItemRespVO respVO = new AppOrderPageItemRespVO();
@@ -588,7 +659,7 @@ public class AppOrderServiceImpl implements AppOrderService {
             respVO.setRequireDesc(order.getRequireDesc());
             respVO.setOrderAmount(order.getOrderAmount());
             respVO.setServiceDurationDesc(order.getServiceDurationDesc());
-            respVO.setDistanceKm(calculateOrderDistanceKm(order));
+            respVO.setDistanceKm(calculateOrderDistanceKm(order, servicePointMap));
             respVO.setStatus(order.getStatus());
             respVO.setSplitStatus(order.getSplitStatus());
             respVO.setPayStatus(resolvePayStatus(order));
@@ -621,7 +692,7 @@ public class AppOrderServiceImpl implements AppOrderService {
             }
             return respVO;
         }).collect(Collectors.toList());
-        return manualPage(list, reqVO.getPageNo(), reqVO.getPageSize());
+        return new PageResult<>(list, orderPage.getTotal());
     }
 
     @Override
@@ -643,7 +714,8 @@ public class AppOrderServiceImpl implements AppOrderService {
         List<ReviewCommentDO> reviews = reviewCommentMapper.selectList(new LambdaQueryWrapperX<ReviewCommentDO>()
                 .eq(ReviewCommentDO::getOrderId, order.getId())
                 .eq(ReviewCommentDO::getStatus, "ENABLE")
-                .orderByDesc(ReviewCommentDO::getCreateTime, ReviewCommentDO::getId));
+                .orderByDesc(ReviewCommentDO::getCreateTime, ReviewCommentDO::getId)
+                .last("LIMIT 500"));
         PayOrderDO payOrder = aggregate.getPayOrder();
         List<PayRefundDO> refunds = aggregate.getRefunds();
         List<OrderOperateLogDO> operateLogs = aggregate.getOperateLogs();
@@ -839,7 +911,8 @@ public class AppOrderServiceImpl implements AppOrderService {
             refundResp.setRejectReason(refund.getRejectReason());
             refundResp.setRefundPrice(refund.getRefundPrice());
             refundResp.setReason(refund.getReason());
-            refundResp.setChannelErrorMsg(refund.getChannelErrorMsg());
+            refundResp.setChannelErrorMsg(PayRefundStatusEnum.isFailure(refund.getStatus())
+                    ? REFUND_CHANNEL_FAILURE_REASON : null);
             refundResp.setSuccessTime(refund.getSuccessTime());
             refundResp.setCreateTime(refund.getCreateTime());
             return refundResp;
@@ -969,7 +1042,7 @@ public class AppOrderServiceImpl implements AppOrderService {
                 .build());
         orderAttachmentMapper.delete(new LambdaQueryWrapperX<OrderAttachmentDO>()
                 .eq(OrderAttachmentDO::getOrderId, order.getId()));
-        saveAttachments(order.getId(), reqVO.getAttachmentFileIds());
+        saveAttachments(order.getId(), authUserId, reqVO.getAttachmentFileIds());
         saveOperateLog(order.getId(), null, "UPDATE_ORDER", "USER", loginUser.getId(),
                 order.getStatus(), order.getStatus(), "用户更新订单地址、工期、说明、开票标记或附件");
         return Boolean.TRUE;
@@ -991,10 +1064,13 @@ public class AppOrderServiceImpl implements AppOrderService {
         }
 
         String beforeStatus = order.getStatus();
-        orderInfoMapper.updateById(OrderInfoDO.builder()
-                .id(order.getId())
-                .status("CLOSED")
-                .build());
+        int updated = orderInfoMapper.update(null, new LambdaUpdateWrapper<OrderInfoDO>()
+                .eq(OrderInfoDO::getId, order.getId())
+                .in(OrderInfoDO::getStatus, Arrays.asList("PENDING_PAY", "PENDING_ACCEPT"))
+                .set(OrderInfoDO::getStatus, "CLOSED"));
+        if (updated == 0) {
+            throw exception(ORDER_STATUS_NOT_ALLOW_CANCEL);
+        }
         orderUnitMapper.update(OrderUnitDO.builder().status("CLOSED").build(), new LambdaUpdateWrapper<OrderUnitDO>()
                 .eq(OrderUnitDO::getOrderId, order.getId())
                 .in(OrderUnitDO::getStatus, Arrays.asList("PENDING_CREATE", "PENDING_ACCEPT", "ACCEPTED")));
@@ -1059,14 +1135,18 @@ public class AppOrderServiceImpl implements AppOrderService {
             throw exception(ORDER_INFO_NOT_EXISTS);
         }
 
-        orderUnitMapper.updateById(OrderUnitDO.builder()
-                .id(unit.getId())
-                .status("SERVING")
-                .build());
-        orderInfoMapper.updateById(OrderInfoDO.builder()
-                .id(order.getId())
-                .status("SERVING")
-                .build());
+        int updated = orderUnitMapper.update(null, new LambdaUpdateWrapper<OrderUnitDO>()
+                .eq(OrderUnitDO::getId, unit.getId())
+                .eq(OrderUnitDO::getMerchantId, merchant.getId())
+                .eq(OrderUnitDO::getStatus, "ACCEPTED")
+                .set(OrderUnitDO::getStatus, "SERVING"));
+        if (updated == 0) {
+            throw exception(ORDER_STATUS_NOT_ALLOW_CONFIRM);
+        }
+        orderInfoMapper.update(null, new LambdaUpdateWrapper<OrderInfoDO>()
+                .eq(OrderInfoDO::getId, order.getId())
+                .in(OrderInfoDO::getStatus, Arrays.asList("ACCEPTED", "SERVING"))
+                .set(OrderInfoDO::getStatus, "SERVING"));
         orderFlowOrchestratorService.onOrderServing(order.getId());
         saveOperateLog(order.getId(), unit.getId(), "START_UNIT_SERVICE", "MERCHANT", loginUser.getId(),
                 unit.getStatus(), "SERVING", StrUtil.blankToDefault(reqVO.getStartRemark(), "服务商开始服务"));
@@ -1091,12 +1171,15 @@ public class AppOrderServiceImpl implements AppOrderService {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        orderUnitMapper.updateById(OrderUnitDO.builder()
-                .id(unit.getId())
-                .status("FINISHED")
-                .finishTime(now)
-                .appealExpireTime(now.plusDays(7))
-                .build());
+        int updated = orderUnitMapper.update(null, new LambdaUpdateWrapper<OrderUnitDO>()
+                .eq(OrderUnitDO::getId, unit.getId())
+                .eq(OrderUnitDO::getStatus, "PENDING_CONFIRM")
+                .set(OrderUnitDO::getStatus, "FINISHED")
+                .set(OrderUnitDO::getFinishTime, now)
+                .set(OrderUnitDO::getAppealExpireTime, now.plusDays(7)));
+        if (updated == 0) {
+            throw exception(ORDER_STATUS_NOT_ALLOW_CONFIRM);
+        }
         saveOperateLog(order.getId(), unit.getId(), "CONFIRM_UNIT_FINISH", "USER", loginUser.getId(),
                 unit.getStatus(), "FINISHED", StrUtil.blankToDefault(reqVO.getConfirmRemark(), "用户确认单元完成"));
 
@@ -1181,16 +1264,21 @@ public class AppOrderServiceImpl implements AppOrderService {
         }
         LocalDateTime now = LocalDateTime.now();
         String afterStatus = "FINISHED";
-        orderUnitMapper.updateById(OrderUnitDO.builder()
-                .id(unit.getId())
-                .verifyStatus("VERIFIED")
-                .verifyTime(now)
-                .verifyBy(loginUser.getId())
-                .verifyRemark(reqVO.getVerifyRemark())
-                .status(afterStatus)
-                .finishTime(unit.getFinishTime() != null ? unit.getFinishTime() : now)
-                .appealExpireTime(unit.getAppealExpireTime() != null ? unit.getAppealExpireTime() : now.plusDays(7))
-                .build());
+        int updated = orderUnitMapper.update(null, new LambdaUpdateWrapper<OrderUnitDO>()
+                .eq(OrderUnitDO::getId, unit.getId())
+                .eq(OrderUnitDO::getStatus, unit.getStatus())
+                .eq(OrderUnitDO::getVerifyStatus, unit.getVerifyStatus())
+                .set(OrderUnitDO::getVerifyStatus, "VERIFIED")
+                .set(OrderUnitDO::getVerifyTime, now)
+                .set(OrderUnitDO::getVerifyBy, loginUser.getId())
+                .set(OrderUnitDO::getVerifyRemark, reqVO.getVerifyRemark())
+                .set(OrderUnitDO::getStatus, afterStatus)
+                .set(OrderUnitDO::getFinishTime, unit.getFinishTime() != null ? unit.getFinishTime() : now)
+                .set(OrderUnitDO::getAppealExpireTime, unit.getAppealExpireTime() != null
+                        ? unit.getAppealExpireTime() : now.plusDays(7)));
+        if (updated == 0) {
+            throw exception(ORDER_VERIFY_ALREADY_FINISHED);
+        }
         saveOperateLog(order.getId(), unit.getId(), "VERIFY_UNIT", "USER", loginUser.getId(),
                 unit.getStatus(), afterStatus, StrUtil.blankToDefault(reqVO.getVerifyRemark(), "订单单元核销完成"));
         OrderUnitDO nextUnit = orderUnitMapper.selectOne(new LambdaQueryWrapperX<OrderUnitDO>()
@@ -1295,11 +1383,14 @@ public class AppOrderServiceImpl implements AppOrderService {
             throw exception(ORDER_UNIT_ACCEPTED_BY_OTHER);
         }
 
-        orderInfoMapper.updateById(OrderInfoDO.builder()
-                .id(order.getId())
-                .merchantId(merchant.getId())
-                .status("ACCEPTED")
-                .build());
+        int orderUpdated = orderInfoMapper.update(null, new LambdaUpdateWrapper<OrderInfoDO>()
+                .eq(OrderInfoDO::getId, order.getId())
+                .eq(OrderInfoDO::getStatus, "PENDING_ACCEPT")
+                .set(OrderInfoDO::getMerchantId, merchant.getId())
+                .set(OrderInfoDO::getStatus, "ACCEPTED"));
+        if (orderUpdated == 0) {
+            throw exception(ORDER_STATUS_NOT_ALLOW_ACCEPT);
+        }
         matchDispatchService.markAccepted(unit.getId(), merchant.getId());
         orderFlowOrchestratorService.onOrderAccepted(order.getId());
         saveOperateLog(order.getId(), unit.getId(), "ACCEPT_ORDER", "MERCHANT", loginUser.getId(),
@@ -1320,7 +1411,7 @@ public class AppOrderServiceImpl implements AppOrderService {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
         AppMerchantOperatorContext context = merchantOperatorContextService.getRequiredOrderAcceptContext(authUserId);
         MerchantInfoDO merchant = getRequiredMerchant(context);
-        OrderUnitDO unit = orderUnitMapper.selectById(reqVO.getUnitId());
+        OrderUnitDO unit = orderUnitMapper.selectByIdForUpdate(reqVO.getUnitId());
         if (unit == null) {
             throw exception(ORDER_UNIT_NOT_EXISTS);
         }
@@ -1336,9 +1427,13 @@ public class AppOrderServiceImpl implements AppOrderService {
             throw exception(ORDER_INFO_NOT_EXISTS);
         }
 
+        if (reqVO.getFileIds().size() > 10 || reqVO.getFileIds().stream().anyMatch(Objects::isNull)
+                || reqVO.getFileIds().size() != new HashSet<>(reqVO.getFileIds()).size()) {
+            throw exception(ORDER_ACCESS_DENIED);
+        }
         LocalDateTime now = LocalDateTime.now();
         for (Long fileId : reqVO.getFileIds()) {
-            FileDO file = fileService.getFile(fileId);
+            FileDO file = getValidatedOwnedOrderFile(fileId, authUserId);
             orderUnitProofMapper.insert(OrderUnitProofDO.builder()
                     .unitId(unit.getId())
                     .orderId(order.getId())
@@ -1375,12 +1470,16 @@ public class AppOrderServiceImpl implements AppOrderService {
         MemberUserDO loginUser = memberUserService.getOrCreateMemberUser(authUserId);
         AppMerchantOperatorContext context = merchantOperatorContextService.getRequiredOrderAcceptContext(authUserId);
         MerchantInfoDO merchant = getRequiredMerchant(context);
-        OrderUnitProofDO proof = orderUnitProofMapper.selectById(reqVO.getProofId());
-        if (proof == null) {
+        OrderUnitProofDO proofSnapshot = orderUnitProofMapper.selectById(reqVO.getProofId());
+        if (proofSnapshot == null) {
             throw exception(ORDER_UNIT_NOT_EXISTS);
         }
-        OrderUnitDO unit = orderUnitMapper.selectById(proof.getUnitId());
+        OrderUnitDO unit = orderUnitMapper.selectByIdForUpdate(proofSnapshot.getUnitId());
         if (unit == null) {
+            throw exception(ORDER_UNIT_NOT_EXISTS);
+        }
+        OrderUnitProofDO proof = orderUnitProofMapper.selectByIdForUpdate(reqVO.getProofId());
+        if (proof == null || !Objects.equals(proof.getUnitId(), unit.getId())) {
             throw exception(ORDER_UNIT_NOT_EXISTS);
         }
         if (!Objects.equals(proof.getMerchantId(), merchant.getId()) || !Objects.equals(unit.getMerchantId(), merchant.getId())) {
@@ -1827,11 +1926,11 @@ public class AppOrderServiceImpl implements AppOrderService {
     }
 
     private MerchantInfoDO getRequiredMerchant(AppMerchantOperatorContext context) {
-        memberQualificationExpiryService.validateMerchantCanAccept(context.getMerchant().getUserId());
-        MerchantInfoDO merchant = context.getMerchant();
+        MerchantInfoDO merchant = context == null ? null : context.getMerchant();
         if (merchant == null || !"ENABLE".equals(merchant.getStatus())) {
             throw exception(MERCHANT_AUTH_REQUIRED);
         }
+        memberQualificationExpiryService.validateMerchantCanAccept(merchant.getUserId());
         return merchant;
     }
 
@@ -1954,12 +2053,14 @@ public class AppOrderServiceImpl implements AppOrderService {
         return point;
     }
 
-    private BigDecimal calculateOrderDistanceKm(OrderInfoDO order) {
+    private BigDecimal calculateOrderDistanceKm(OrderInfoDO order,
+                                                Map<Long, List<MerchantServicePointDO>> servicePointMap) {
         if (order == null || order.getMerchantId() == null) {
             return null;
         }
         OrderInfoDO resolvedOrder = ensureResolvedOrderLocation(order);
-        return calculateDistanceToMerchant(resolvedOrder, resolvedOrder.getMerchantId());
+        return calculateDistanceToPoints(resolvedOrder,
+                servicePointMap.getOrDefault(resolvedOrder.getMerchantId(), Collections.emptyList()));
     }
 
     private BigDecimal calculateDistanceToMerchant(OrderInfoDO order, Long merchantId) {
@@ -2148,6 +2249,18 @@ public class AppOrderServiceImpl implements AppOrderService {
                 .collect(Collectors.toMap(MerchantServiceCategoryDO::getId, item -> item));
     }
 
+    private Map<Long, List<MerchantServicePointDO>> buildMerchantServicePointMap(List<OrderInfoDO> orders) {
+        Set<Long> merchantIds = orders.stream().map(OrderInfoDO::getMerchantId)
+                .filter(Objects::nonNull).collect(Collectors.toSet());
+        if (CollUtil.isEmpty(merchantIds)) {
+            return Collections.emptyMap();
+        }
+        return merchantServicePointMapper.selectList(new LambdaQueryWrapperX<MerchantServicePointDO>()
+                        .in(MerchantServicePointDO::getMerchantId, merchantIds)
+                        .orderByAsc(MerchantServicePointDO::getMerchantId, MerchantServicePointDO::getId))
+                .stream().collect(Collectors.groupingBy(MerchantServicePointDO::getMerchantId));
+    }
+
     private Set<Long> resolveCategoryIdsByKeyword(String keyword) {
         if (StrUtil.isBlank(keyword)) {
             return Collections.emptySet();
@@ -2186,16 +2299,17 @@ public class AppOrderServiceImpl implements AppOrderService {
         }
     }
 
-    private Comparator<AppOrderAcceptPageItemRespVO> buildAcceptOrderComparator(AppOrderAcceptPageReqVO reqVO,
-                                                                                 Map<Long, BigDecimal> distanceMap) {
+    private Comparator<AppOrderAcceptPageItemRespVO> buildAcceptOrderComparator(AppOrderAcceptPageReqVO reqVO) {
         Comparator<AppOrderAcceptPageItemRespVO> comparator = Comparator
                 .comparing(AppOrderAcceptPageItemRespVO::getCreateTime, Comparator.nullsLast(Comparator.reverseOrder()))
-                .thenComparing(AppOrderAcceptPageItemRespVO::getOrderId, Comparator.nullsLast(Comparator.reverseOrder()));
+                .thenComparing(AppOrderAcceptPageItemRespVO::getOrderId, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(AppOrderAcceptPageItemRespVO::getUnitId, Comparator.nullsLast(Comparator.reverseOrder()));
 
         if (StrUtil.isNotBlank(reqVO.getPublishTimeSort()) && "OLDEST".equalsIgnoreCase(reqVO.getPublishTimeSort())) {
             comparator = Comparator
                     .comparing(AppOrderAcceptPageItemRespVO::getCreateTime, Comparator.nullsLast(Comparator.naturalOrder()))
-                    .thenComparing(AppOrderAcceptPageItemRespVO::getOrderId, Comparator.nullsLast(Comparator.naturalOrder()));
+                    .thenComparing(AppOrderAcceptPageItemRespVO::getOrderId, Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(AppOrderAcceptPageItemRespVO::getUnitId, Comparator.nullsLast(Comparator.naturalOrder()));
         }
         if (StrUtil.isNotBlank(reqVO.getPriceSort())) {
             Comparator<BigDecimal> priceComparator = "PRICE_ASC".equalsIgnoreCase(reqVO.getPriceSort())
@@ -2210,31 +2324,81 @@ public class AppOrderServiceImpl implements AppOrderService {
                     ? Comparator.nullsLast(Comparator.reverseOrder())
                     : Comparator.nullsLast(Comparator.naturalOrder());
             Comparator<AppOrderAcceptPageItemRespVO> baseComparator = comparator;
-            comparator = Comparator.comparing((AppOrderAcceptPageItemRespVO item) -> distanceMap.get(item.getOrderId()), distanceComparator)
+            comparator = Comparator.comparing(AppOrderAcceptPageItemRespVO::getDistanceKm, distanceComparator)
                     .thenComparing(baseComparator);
         }
         return comparator;
     }
 
-    private List<OrderInfoDO> applyBusinessCategoryFilter(Long userId, List<OrderInfoDO> orders, String businessCategory) {
-        if (StrUtil.isBlank(businessCategory) || CollUtil.isEmpty(orders)) {
-            return orders;
+    private void applyBusinessCategoryQuery(LambdaQueryWrapperX<OrderInfoDO> queryWrapper, String businessCategory,
+                                            Long userId, boolean merchantView) {
+        if (StrUtil.isBlank(businessCategory)) {
+            return;
         }
-        return orders.stream()
-                .filter(order -> Objects.equals(resolveBusinessCategory(order, isWaitReviewOrder(userId, order)), businessCategory))
-                .collect(Collectors.toList());
+        switch (businessCategory) {
+            case "WAIT_PAY":
+                queryWrapper.eq(OrderInfoDO::getStatus, "PENDING_PAY");
+                break;
+            case "WAIT_ACCEPT":
+                queryWrapper.eq(OrderInfoDO::getStatus, "PENDING_ACCEPT");
+                break;
+            case "IN_SERVICE":
+                queryWrapper.in(OrderInfoDO::getStatus, Arrays.asList("ACCEPTED", "SERVING", "PENDING_CONFIRM"));
+                break;
+            case "AFTER_SALE":
+                queryWrapper.eq(OrderInfoDO::getStatus, "AFTER_SALE");
+                break;
+            case "REFUNDED":
+                queryWrapper.eq(OrderInfoDO::getStatus, "REFUNDED");
+                break;
+            case "FINISHED":
+                queryWrapper.eq(OrderInfoDO::getStatus, "FINISHED");
+                if (!merchantView && userId != null) {
+                    queryWrapper.exists("SELECT 1 FROM lb_review r "
+                            + "WHERE r.order_id = lb_order_info.id "
+                            + "AND r.from_user_id = {0} "
+                            + "AND r.tenant_id = lb_order_info.tenant_id AND r.deleted = b'0'", userId);
+                }
+                break;
+            case "WAIT_REVIEW":
+                if (merchantView || userId == null) {
+                    queryWrapper.apply("1 = 0");
+                    break;
+                }
+                queryWrapper.eq(OrderInfoDO::getStatus, "FINISHED")
+                        .notExists("SELECT 1 FROM lb_review r "
+                                + "WHERE r.order_id = lb_order_info.id "
+                                + "AND r.from_user_id = {0} "
+                                + "AND r.tenant_id = lb_order_info.tenant_id AND r.deleted = b'0'", userId);
+                break;
+            default:
+                queryWrapper.apply("1 = 0");
+                break;
+        }
     }
 
-    private boolean isWaitReviewOrder(Long userId, OrderInfoDO order) {
+    private Set<Long> getReviewedOrderIds(Long userId, Collection<Long> orderIds) {
+        if (userId == null || CollUtil.isEmpty(orderIds)) {
+            return Collections.emptySet();
+        }
+        return reviewCommentMapper.selectList(new LambdaQueryWrapperX<ReviewCommentDO>()
+                        .select(ReviewCommentDO::getOrderId)
+                        .in(ReviewCommentDO::getOrderId, orderIds)
+                        .eq(ReviewCommentDO::getFromUserId, userId))
+                .stream()
+                .map(ReviewCommentDO::getOrderId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    private boolean isWaitReviewOrder(Long userId, OrderInfoDO order, Set<Long> reviewedOrderIds) {
         if (order == null || !Objects.equals(order.getStatus(), "FINISHED")) {
             return false;
         }
         if (!Objects.equals(order.getUserId(), userId)) {
             return false;
         }
-        return reviewCommentMapper.selectCount(new LambdaQueryWrapperX<ReviewCommentDO>()
-                .eq(ReviewCommentDO::getOrderId, order.getId())
-                .eq(ReviewCommentDO::getFromUserId, userId)) == 0;
+        return reviewedOrderIds == null || !reviewedOrderIds.contains(order.getId());
     }
 
     private String resolveBusinessCategory(OrderInfoDO order, boolean waitReview) {
@@ -2396,20 +2560,6 @@ public class AppOrderServiceImpl implements AppOrderService {
         return respVO;
     }
 
-    private <T> PageResult<T> manualPage(List<T> list, Integer pageNo, Integer pageSize) {
-        if (CollUtil.isEmpty(list)) {
-            return PageResult.empty();
-        }
-        int safePageNo = pageNo == null || pageNo < 1 ? 1 : pageNo;
-        int safePageSize = pageSize == null || pageSize < 1 ? 10 : pageSize;
-        int fromIndex = (safePageNo - 1) * safePageSize;
-        if (fromIndex >= list.size()) {
-            return PageResult.empty((long) list.size());
-        }
-        int toIndex = Math.min(fromIndex + safePageSize, list.size());
-        return new PageResult<>(list.subList(fromIndex, toIndex), (long) list.size());
-    }
-
     private OrderUnitDO resolvePublisherDisplayUnit(List<OrderUnitDO> units) {
         if (CollUtil.isEmpty(units)) {
             return null;
@@ -2521,23 +2671,37 @@ public class AppOrderServiceImpl implements AppOrderService {
     }
 
     private BigDecimal calculateOrderAmount(AppOrderCreateReqVO reqVO) {
+        BigDecimal amount;
         if (CollUtil.isNotEmpty(reqVO.getPriceItems())) {
-            return reqVO.getPriceItems().stream()
+            amount = reqVO.getPriceItems().stream()
                     .map(AppOrderCreateReqVO.OrderPriceItemReqVO::getItemAmount)
                     .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
+        } else {
+            amount = Optional.ofNullable(reqVO.getBudgetAmount()).orElse(BigDecimal.ZERO);
         }
-        return Optional.ofNullable(reqVO.getBudgetAmount()).orElse(BigDecimal.ZERO);
+        validateOrderAmount(amount);
+        return amount;
     }
 
     private BigDecimal calculateOrderAmount(AppOrderPreviewReqVO reqVO) {
+        BigDecimal amount;
         if (CollUtil.isNotEmpty(reqVO.getPriceItems())) {
-            return reqVO.getPriceItems().stream()
+            amount = reqVO.getPriceItems().stream()
                     .map(AppOrderCreateReqVO.OrderPriceItemReqVO::getItemAmount)
                     .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
+        } else {
+            amount = Optional.ofNullable(reqVO.getBudgetAmount()).orElse(BigDecimal.ZERO);
         }
-        return Optional.ofNullable(reqVO.getBudgetAmount()).orElse(BigDecimal.ZERO);
+        validateOrderAmount(amount);
+        return amount;
+    }
+
+    private void validateOrderAmount(BigDecimal amount) {
+        if (amount != null && amount.compareTo(MoneyUtils.MAX_YUAN_AMOUNT) > 0) {
+            throw exception(ORDER_AMOUNT_EXCEED_PAY_LIMIT);
+        }
     }
 
     private void savePriceItems(Long orderId, List<AppOrderCreateReqVO.OrderPriceItemReqVO> priceItems) {
@@ -2556,18 +2720,42 @@ public class AppOrderServiceImpl implements AppOrderService {
         }
     }
 
-    private void saveAttachments(Long orderId, List<Long> attachmentFileIds) {
+    private void saveAttachments(Long orderId, Long authUserId, List<Long> attachmentFileIds) {
         if (CollUtil.isEmpty(attachmentFileIds)) {
             return;
         }
+        if (attachmentFileIds.size() > 10) {
+            throw exception(ORDER_ACCESS_DENIED);
+        }
+        Set<Long> fileIds = new HashSet<>();
         for (int i = 0; i < attachmentFileIds.size(); i++) {
+            Long fileId = attachmentFileIds.get(i);
+            if (fileId == null || !fileIds.add(fileId)) {
+                throw exception(ORDER_ACCESS_DENIED);
+            }
+            getValidatedOwnedOrderFile(fileId, authUserId);
             orderAttachmentMapper.insert(OrderAttachmentDO.builder()
                     .orderId(orderId)
-                    .fileId(attachmentFileIds.get(i))
+                    .fileId(fileId)
                     .fileType("ORDER_ATTACH")
                     .sortNo(i + 1)
                     .build());
         }
+    }
+
+    private FileDO getValidatedOwnedOrderFile(Long fileId, Long authUserId) {
+        FileDO file = fileService.getFile(fileId);
+        if (file == null || !Objects.equals(file.getCreator(), String.valueOf(authUserId))
+                || !isAllowedOrderFileType(file.getType())) {
+            throw exception(ORDER_ACCESS_DENIED);
+        }
+        return file;
+    }
+
+    private boolean isAllowedOrderFileType(String type) {
+        return StrUtil.startWithIgnoreCase(type, "image/")
+                || StrUtil.startWithIgnoreCase(type, "video/")
+                || "application/pdf".equalsIgnoreCase(type);
     }
 
     private void saveUnits(OrderInfoDO order, OrderSplitPlan splitPlan) {
@@ -2717,33 +2905,65 @@ public class AppOrderServiceImpl implements AppOrderService {
                 }
                 LambdaUpdateWrapper<OrderUnitDO> repair = new LambdaUpdateWrapper<OrderUnitDO>()
                         .eq(OrderUnitDO::getId, unit.getId())
+                        .eq(OrderUnitDO::getStatus, unit.getStatus())
                         .set(OrderUnitDO::getMerchantId, inheritMerchantId)
                         .set(OrderUnitDO::getIsLocked, Boolean.FALSE)
                         .set(OrderUnitDO::getLockReason, null);
+                if (unit.getMerchantId() == null) {
+                    repair.isNull(OrderUnitDO::getMerchantId);
+                } else {
+                    repair.eq(OrderUnitDO::getMerchantId, unit.getMerchantId());
+                }
+                if (unit.getIsLocked() == null) {
+                    repair.isNull(OrderUnitDO::getIsLocked);
+                } else {
+                    repair.eq(OrderUnitDO::getIsLocked, unit.getIsLocked());
+                }
+                if (unit.getLockReason() == null) {
+                    repair.isNull(OrderUnitDO::getLockReason);
+                } else {
+                    repair.eq(OrderUnitDO::getLockReason, unit.getLockReason());
+                }
+                if (unit.getDispatchStatus() == null) {
+                    repair.isNull(OrderUnitDO::getDispatchStatus);
+                } else {
+                    repair.eq(OrderUnitDO::getDispatchStatus, unit.getDispatchStatus());
+                }
+                if (unit.getAcceptDeadlineTime() == null) {
+                    repair.isNull(OrderUnitDO::getAcceptDeadlineTime);
+                } else {
+                    repair.eq(OrderUnitDO::getAcceptDeadlineTime, unit.getAcceptDeadlineTime());
+                }
                 if (needsAcceptRepair) {
                     repair.set(OrderUnitDO::getStatus, "ACCEPTED")
                             .set(OrderUnitDO::getDispatchStatus, "ACCEPTED")
                             .set(OrderUnitDO::getAcceptDeadlineTime, null);
-                    unit.setStatus("ACCEPTED");
-                    unit.setDispatchStatus("ACCEPTED");
-                    unit.setAcceptDeadlineTime(null);
                 } else if (needsDispatchRepair) {
                     repair.set(OrderUnitDO::getDispatchStatus, "ACCEPTED");
+                }
+                int repaired = orderUnitMapper.update(null, repair);
+                if (repaired == 0) {
+                    continue;
+                }
+                if (needsAcceptRepair) {
+                    unit.setStatus("ACCEPTED");
+                    unit.setAcceptDeadlineTime(null);
+                }
+                if (needsDispatchRepair) {
                     unit.setDispatchStatus("ACCEPTED");
                 }
                 unit.setMerchantId(inheritMerchantId);
                 unit.setIsLocked(Boolean.FALSE);
                 unit.setLockReason(null);
-                orderUnitMapper.update(null, repair);
                 changed = true;
             }
             if (changed) {
                 String nextOrderStatus = resolveOrderStatusAfterUnitConfirm(orderUnits);
                 if (!Objects.equals(order.getStatus(), nextOrderStatus)) {
-                    orderInfoMapper.updateById(OrderInfoDO.builder()
-                            .id(order.getId())
-                            .status(nextOrderStatus)
-                            .build());
+                    orderInfoMapper.update(null, new LambdaUpdateWrapper<OrderInfoDO>()
+                            .eq(OrderInfoDO::getId, order.getId())
+                            .eq(OrderInfoDO::getStatus, order.getStatus())
+                            .set(OrderInfoDO::getStatus, nextOrderStatus));
                 }
             }
         }

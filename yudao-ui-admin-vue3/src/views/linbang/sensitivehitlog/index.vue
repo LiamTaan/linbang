@@ -1,23 +1,65 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="场景" prop="sceneType">
-        <el-input v-model="queryParams.sceneType" placeholder="如 MESSAGE/COMMENT" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.sceneType"
+          placeholder="如 MESSAGE/COMMENT"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="用户" prop="userKeyword">
-        <el-input v-model="queryParams.userKeyword" placeholder="用户编号/昵称/手机号" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.userKeyword"
+          placeholder="用户编号/昵称/手机号"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="业务类型" prop="bizType">
-        <el-input v-model="queryParams.bizType" placeholder="如 REVIEW/PROMOTE" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.bizType"
+          placeholder="如 REVIEW/PROMOTE"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="内容类型" prop="contentType">
-        <el-input v-model="queryParams.contentType" placeholder="如 TEXT/IMAGE/QRCODE" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.contentType"
+          placeholder="如 TEXT/IMAGE/QRCODE"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="策略" prop="strategy">
-        <el-input v-model="queryParams.strategy" placeholder="如 BLOCK/REPLACE" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.strategy"
+          placeholder="如 BLOCK/REPLACE"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="人工审核" prop="manualAuditResult">
-        <el-input v-model="queryParams.manualAuditResult" placeholder="如 PASS/REJECT" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.manualAuditResult"
+          placeholder="如 PASS/REJECT"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="创建时间" prop="createTime">
         <el-date-picker
@@ -61,7 +103,9 @@
         <template #default="{ row }">
           <div class="leading-20px">
             <div>{{ row.ocrTextSnapshot || '-' }}</div>
-            <div class="text-[var(--el-text-color-secondary)]">{{ row.qrContentSnapshot || '-' }}</div>
+            <div class="text-[var(--el-text-color-secondary)]">{{
+              row.qrContentSnapshot || '-'
+            }}</div>
           </div>
         </template>
       </el-table-column>
@@ -74,26 +118,53 @@
         </template>
       </el-table-column>
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 
   <Dialog v-model="detailVisible" title="敏感词命中日志详情" width="760px">
     <el-descriptions :column="2" border>
       <el-descriptions-item label="场景">{{ detailData?.sceneType || '-' }}</el-descriptions-item>
       <el-descriptions-item label="命中词">{{ detailData?.hitWord || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="用户">{{ detailData?.userNickname || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="手机号">{{ detailData?.userMobile || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="业务">{{ detailData?.bizType || '-' }} / {{ detailData?.bizId || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="用户">{{
+        detailData?.userNickname || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="手机号">{{
+        detailData?.userMobile || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="业务"
+        >{{ detailData?.bizType || '-' }} / {{ detailData?.bizId || '-' }}</el-descriptions-item
+      >
       <el-descriptions-item label="敏感词ID">{{ detailData?.wordId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="拦截级别">{{ detailData?.blockLevel || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="处理策略">{{ detailData?.strategy || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="内容类型">{{ detailData?.contentType || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="拦截级别">{{
+        detailData?.blockLevel || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="处理策略">{{
+        detailData?.strategy || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="内容类型">{{
+        detailData?.contentType || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="文件ID">{{ detailData?.fileId || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="人工审核结果">{{ detailData?.manualAuditResult || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ detailData?.createTime || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="内容快照" :span="2">{{ detailData?.contentSnapshot || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="OCR快照" :span="2">{{ detailData?.ocrTextSnapshot || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="二维码内容" :span="2">{{ detailData?.qrContentSnapshot || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="人工审核结果">{{
+        detailData?.manualAuditResult || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        detailData?.createTime || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="内容快照" :span="2">{{
+        detailData?.contentSnapshot || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="OCR快照" :span="2">{{
+        detailData?.ocrTextSnapshot || '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="二维码内容" :span="2">{{
+        detailData?.qrContentSnapshot || '-'
+      }}</el-descriptions-item>
     </el-descriptions>
   </Dialog>
 </template>

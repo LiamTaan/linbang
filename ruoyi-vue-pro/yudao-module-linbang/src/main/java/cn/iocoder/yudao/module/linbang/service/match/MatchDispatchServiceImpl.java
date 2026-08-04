@@ -26,8 +26,13 @@ import cn.iocoder.yudao.module.linbang.service.map.AmapLocationService;
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchService;
 import cn.iocoder.yudao.module.linbang.service.messagepushtask.MessagePushDispatchTarget;
 import cn.iocoder.yudao.module.linbang.service.orderflow.OrderFlowOrchestratorService;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
@@ -42,6 +47,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class MatchDispatchServiceImpl implements MatchDispatchService {
 
     @Resource
@@ -119,13 +125,19 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
             }
             List<MatchStrategyService.StageRule> rules = matchStrategyService.getStageRules();
             if (batch.getStageNo() < rules.size()) {
-                markBatchStatus(batch.getId(), "EXPIRED");
+                if (!claimPushingBatch(batch.getId(), "EXPIRED")) {
+                    continue;
+                }
                 OrderInfoDO order = orderInfoMapper.selectById(unit.getOrderId());
                 createStageBatch(order, unit, batch.getStageNo() + 1, "SCHEDULE");
                 continue;
             }
-            markBatchStatus(batch.getId(), "FLOWED");
-            flowUnit(unit);
+            if (!claimPushingBatch(batch.getId(), "FLOWED")) {
+                continue;
+            }
+            if (!flowUnit(unit)) {
+                markBatchStatus(batch.getId(), "ACCEPTED");
+            }
         }
     }
 
@@ -155,6 +167,9 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
     }
 
     private void createStageBatch(OrderInfoDO order, OrderUnitDO unit, int stageNo, String triggerType) {
+        if (order == null || unit == null) {
+            return;
+        }
         if (matchPushBatchMapper.selectByUnitIdAndStageNo(unit.getId(), stageNo) != null) {
             return;
         }
@@ -167,7 +182,7 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
         }
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime expiredAt = now.plusSeconds(stageRule.getDurationSeconds());
-        matchPushBatchMapper.insert(MatchPushBatchDO.builder()
+        MatchPushBatchDO batch = MatchPushBatchDO.builder()
                 .orderId(order.getId())
                 .unitId(unit.getId())
                 .stageNo(stageNo)
@@ -178,7 +193,12 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
                 .expiredAt(expiredAt)
                 .status("PUSHING")
                 .triggerType(triggerType)
-                .build());
+                .build();
+        try {
+            matchPushBatchMapper.insert(batch);
+        } catch (DuplicateKeyException ex) {
+            return;
+        }
         orderUnitMapper.updateById(OrderUnitDO.builder()
                 .id(unit.getId())
                 .dispatchStatus("PUSHING")
@@ -199,7 +219,7 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
             if (orderMatchRecordMapper.selectByUnitIdAndMerchantIdAndStageNo(unit.getId(), candidate.getMerchant().getId(), stageNo) != null) {
                 continue;
             }
-            orderMatchRecordMapper.insert(OrderMatchRecordDO.builder()
+            OrderMatchRecordDO matchRecord = OrderMatchRecordDO.builder()
                     .orderId(order.getId())
                     .unitId(unit.getId())
                     .merchantId(candidate.getMerchant().getId())
@@ -212,20 +232,27 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
                     .priorityLayer(candidate.getPriorityLayer())
                     .priorityPoolFlag(candidate.isPriorityPoolFlag())
                     .categoryMatchLevel(candidate.getCategoryMatchLevel())
-                    .acceptDeadlineTime(unit.getAcceptDeadlineTime())
+                    .acceptDeadlineTime(expiredAt)
                     .expiredTime(expiredAt)
                     .status("PUSHED")
                     .finalResult("WAITING")
                     .tenantId(0L)
-                    .build());
+                    .build();
+            try {
+                orderMatchRecordMapper.insert(matchRecord);
+            } catch (DuplicateKeyException ex) {
+                continue;
+            }
             String dedupeKey = "lb_match_pushed:" + candidate.getMerchant().getUserId() + ":" + unit.getId() + ":" + stageNo;
             targets.add(new MessagePushDispatchTarget(candidate.getMerchant().getUserId(), unit.getId(), dedupeKey));
             messagePushDispatchService.dispatchSingleIdempotent("lb_grab_countdown", "抢单倒计时提醒",
                     "MATCH_COUNTDOWN", unit.getId(), candidate.getMerchant().getUserId(), "分钟级派单倒计时提醒",
                     "lb_grab_countdown:" + candidate.getMerchant().getUserId() + ":" + unit.getId() + ":" + stageNo);
         }
-        messagePushDispatchService.dispatchBatch("lb_match_pushed", "匹配推送通知", "MULTI_USER",
-                "MATCH_PUSH", unit.getId(), "分钟级派单推送", targets);
+        if (!targets.isEmpty()) {
+            messagePushDispatchService.dispatchBatch("lb_match_pushed", "匹配推送通知", "MULTI_USER",
+                    "MATCH_PUSH", unit.getId(), "分钟级派单推送", targets);
+        }
     }
 
     private List<MerchantCandidate> buildCandidates(OrderInfoDO order, MatchStrategyService.StageRule stageRule) {
@@ -378,40 +405,74 @@ public class MatchDispatchServiceImpl implements MatchDispatchService {
                 .build());
     }
 
-    private void flowUnit(OrderUnitDO unit) {
+    private boolean claimPushingBatch(Long batchId, String status) {
+        return matchPushBatchMapper.update(null, new LambdaUpdateWrapper<MatchPushBatchDO>()
+                .eq(MatchPushBatchDO::getId, batchId)
+                .eq(MatchPushBatchDO::getStatus, "PUSHING")
+                .set(MatchPushBatchDO::getStatus, status)) == 1;
+    }
+
+    private boolean flowUnit(OrderUnitDO unit) {
         LocalDateTime now = LocalDateTime.now();
         OrderInfoDO order = orderInfoMapper.selectById(unit.getOrderId());
-        orderUnitMapper.updateById(OrderUnitDO.builder()
-                .id(unit.getId())
-                .dispatchStatus("FLOWED")
-                .flowTime(now)
-                .flowReason("当前派单批次无人接单，系统自动流单并发起退款")
-                .autoRefundStatus("PROCESSING")
-                .build());
+        int unitUpdated = orderUnitMapper.update(null, new LambdaUpdateWrapper<OrderUnitDO>()
+                .eq(OrderUnitDO::getId, unit.getId())
+                .eq(OrderUnitDO::getStatus, "PENDING_ACCEPT")
+                .eq(OrderUnitDO::getDispatchStatus, "PUSHING")
+                .eq(OrderUnitDO::getIsLocked, false)
+                .isNull(OrderUnitDO::getMerchantId)
+                .set(OrderUnitDO::getDispatchStatus, "FLOWED")
+                .set(OrderUnitDO::getFlowTime, now)
+                .set(OrderUnitDO::getFlowReason, "当前派单批次无人接单，系统自动流单并发起退款")
+                .set(OrderUnitDO::getAutoRefundStatus, "NONE"));
+        if (unitUpdated != 1) {
+            return false;
+        }
         if (order != null && Objects.equals(order.getStatus(), "PENDING_ACCEPT")) {
-            orderInfoMapper.updateById(OrderInfoDO.builder()
-                    .id(order.getId())
-                    .status("AFTER_SALE")
-                    .build());
-            orderOperateLogMapper.insert(OrderOperateLogDO.builder()
-                    .orderId(order.getId())
-                    .unitId(unit.getId())
-                    .operateType("ORDER_FLOW")
-                    .operateRole("SYSTEM")
-                    .operateBy(0L)
-                    .beforeStatus(order.getStatus())
-                    .afterStatus("AFTER_SALE")
-                    .remark("订单最终流单，系统自动发起退款")
-                    .operateTime(now)
-                    .build());
-            messagePushDispatchService.dispatchSingle("ORDER_STATUS_CHANGED", "订单状态通知", "ORDER",
-                    order.getId(), order.getUserId(), "订单已截止，系统正在自动退款");
+            int orderUpdated = orderInfoMapper.update(null, new LambdaUpdateWrapper<OrderInfoDO>()
+                    .eq(OrderInfoDO::getId, order.getId())
+                    .eq(OrderInfoDO::getStatus, "PENDING_ACCEPT")
+                    .set(OrderInfoDO::getStatus, "AFTER_SALE"));
+            if (orderUpdated == 1) {
+                orderOperateLogMapper.insert(OrderOperateLogDO.builder()
+                        .orderId(order.getId())
+                        .unitId(unit.getId())
+                        .operateType("ORDER_FLOW")
+                        .operateRole("SYSTEM")
+                        .operateBy(0L)
+                        .beforeStatus(order.getStatus())
+                        .afterStatus("AFTER_SALE")
+                        .remark("订单最终流单，系统自动发起退款")
+                        .operateTime(now)
+                        .build());
+                messagePushDispatchService.dispatchSingle("ORDER_STATUS_CHANGED", "订单状态通知", "ORDER",
+                        order.getId(), order.getUserId(), "订单已截止，系统正在自动退款");
+            }
         }
         messagePushDispatchService.dispatchSingleIdempotent("lb_order_flow_advice", "流单建议通知",
                 "ORDER_FLOW", unit.getId(), order != null ? order.getUserId() : null,
                 "流单后建议通知", "lb_order_flow_advice:" + unit.getId() + ":" + now.toLocalDate());
-        autoFlowRefundService.createAutoRefund(unit.getOrderId(), unit.getId(), now);
+        triggerAutoRefundAfterCommit(unit.getOrderId(), unit.getId(), now);
         orderFlowOrchestratorService.onOrderFlowed(unit.getOrderId());
+        return true;
+    }
+
+    private void triggerAutoRefundAfterCommit(Long orderId, Long unitId, LocalDateTime flowTime) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            autoFlowRefundService.createAutoRefund(orderId, unitId, flowTime);
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    autoFlowRefundService.createAutoRefund(orderId, unitId, flowTime);
+                } catch (RuntimeException ex) {
+                    log.error("[triggerAutoRefundAfterCommit][orderId({}) unitId({}) 流单退款发起失败]",
+                            orderId, unitId, ex);
+                }
+            }
+        });
     }
 
     private static class MerchantCandidate {

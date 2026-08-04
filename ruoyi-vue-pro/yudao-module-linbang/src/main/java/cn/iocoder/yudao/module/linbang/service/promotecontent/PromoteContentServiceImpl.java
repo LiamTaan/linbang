@@ -130,25 +130,35 @@ public class PromoteContentServiceImpl implements PromoteContentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void auditContent(Long operatorId, PromoteContentAuditReqVO reqVO) {
-        PromoteContentDO content = validateContent(reqVO.getId());
+        PromoteContentDO content = validateContentForUpdate(reqVO.getId());
         if (!Objects.equals(content.getStatus(), LinbangRiskConstants.PROMOTE_STATUS_PENDING_MANUAL_AUDIT)) {
+            throw exception(PROMOTE_CONTENT_STATUS_INVALID);
+        }
+        String auditResult = StrUtil.trimToEmpty(reqVO.getAuditResult()).toUpperCase(java.util.Locale.ROOT);
+        if (!Objects.equals(auditResult, LinbangRiskConstants.PROMOTE_STATUS_APPROVED)
+                && !Objects.equals(auditResult, LinbangRiskConstants.PROMOTE_STATUS_REJECTED)) {
+            throw exception(PROMOTE_CONTENT_STATUS_INVALID);
+        }
+        if (Objects.equals(auditResult, LinbangRiskConstants.PROMOTE_STATUS_REJECTED)
+                && StrUtil.isBlank(reqVO.getRejectReason())) {
             throw exception(PROMOTE_CONTENT_STATUS_INVALID);
         }
         PromoteContentDO update = PromoteContentDO.builder()
                 .id(content.getId())
-                .manualAuditResult(reqVO.getAuditResult())
+                .manualAuditResult(auditResult)
                 .manualAuditRemark(reqVO.getAuditRemark())
                 .manualAuditBy(operatorId)
                 .manualAuditTime(java.time.LocalDateTime.now())
-                .rejectReason(reqVO.getRejectReason())
-                .status(Objects.equals(reqVO.getAuditResult(), "APPROVED")
+                .rejectReason(Objects.equals(auditResult, LinbangRiskConstants.PROMOTE_STATUS_REJECTED)
+                        ? reqVO.getRejectReason() : null)
+                .status(Objects.equals(auditResult, LinbangRiskConstants.PROMOTE_STATUS_APPROVED)
                         ? LinbangRiskConstants.PROMOTE_STATUS_APPROVED
                         : LinbangRiskConstants.PROMOTE_STATUS_REJECTED)
                 .build();
         promoteContentMapper.updateById(update);
-        saveAuditLog(content.getId(), LinbangRiskConstants.PROMOTE_AUDIT_TYPE_MANUAL, reqVO.getAuditResult(),
+        saveAuditLog(content.getId(), LinbangRiskConstants.PROMOTE_AUDIT_TYPE_MANUAL, auditResult,
                 reqVO.getAuditRemark(), reqVO.getRejectReason(), operatorId);
-        if (!Objects.equals(reqVO.getAuditResult(), "APPROVED")) {
+        if (Objects.equals(auditResult, LinbangRiskConstants.PROMOTE_STATUS_REJECTED)) {
             applyPenalty(content, reqVO.getPenaltyAction(), reqVO.getScoreChange(), reqVO.getPenaltyReason());
         }
     }
@@ -156,7 +166,7 @@ public class PromoteContentServiceImpl implements PromoteContentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void offlineContent(Long operatorId, PromoteContentOfflineReqVO reqVO) {
-        PromoteContentDO content = validateContent(reqVO.getId());
+        PromoteContentDO content = validateContentForUpdate(reqVO.getId());
         if (!Objects.equals(content.getStatus(), LinbangRiskConstants.PROMOTE_STATUS_APPROVED)) {
             throw exception(PROMOTE_CONTENT_STATUS_INVALID);
         }
@@ -173,6 +183,14 @@ public class PromoteContentServiceImpl implements PromoteContentService {
 
     private PromoteContentDO validateContent(Long id) {
         PromoteContentDO content = promoteContentMapper.selectById(id);
+        if (content == null) {
+            throw exception(PROMOTE_CONTENT_NOT_EXISTS);
+        }
+        return content;
+    }
+
+    private PromoteContentDO validateContentForUpdate(Long id) {
+        PromoteContentDO content = promoteContentMapper.selectByIdForUpdate(id);
         if (content == null) {
             throw exception(PROMOTE_CONTENT_NOT_EXISTS);
         }

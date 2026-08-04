@@ -20,18 +20,14 @@
 
     <!-- 弹窗播放 -->
     <el-dialog v-model="dialogVideo" title="视频播放" append-to-body>
-      <video-player
+      <video
         v-if="dialogVideo"
+        ref="videoElement"
         class="video-player vjs-big-play-centered"
-        :src="props.url"
-        poster=""
         crossorigin="anonymous"
         controls
         playsinline
-        :volume="0.6"
-        :width="800"
-        :playback-rates="[0.7, 1.0, 1.5, 2.0]"
-      />
+      ></video>
       <!--     事件，暫時沒用
       @mounted="handleMounted"-->
       <!--        @ready="handleEvent($event)"-->
@@ -50,7 +46,7 @@
 
 <script lang="ts" setup>
 import 'video.js/dist/video-js.css'
-import { VideoPlayer } from '@videojs-player/vue'
+import videojs from 'video.js'
 
 defineOptions({ name: 'WxVideoPlayer' })
 
@@ -62,6 +58,8 @@ const props = defineProps({
 })
 
 const dialogVideo = ref(false)
+const videoElement = ref<HTMLVideoElement>()
+let player: ReturnType<typeof videojs> | undefined
 
 // const handleEvent = (log) => {
 //   console.log('Basic player event', log)
@@ -70,4 +68,39 @@ const dialogVideo = ref(false)
 const playVideo = () => {
   dialogVideo.value = true
 }
+
+const disposePlayer = () => {
+  if (player && !player.isDisposed()) {
+    player.dispose()
+  }
+  player = undefined
+}
+
+watch(dialogVideo, async (open) => {
+  if (!open) {
+    disposePlayer()
+    return
+  }
+  await nextTick()
+  if (!videoElement.value) return
+  player = videojs(videoElement.value, {
+    controls: true,
+    fluid: true,
+    playsinline: true,
+    playbackRates: [0.7, 1, 1.5, 2],
+    sources: [{ src: props.url }],
+    volume: 0.6
+  })
+})
+
+watch(
+  () => props.url,
+  (url) => {
+    if (player && !player.isDisposed()) {
+      player.src({ src: url })
+    }
+  }
+)
+
+onBeforeUnmount(disposePlayer)
 </script>

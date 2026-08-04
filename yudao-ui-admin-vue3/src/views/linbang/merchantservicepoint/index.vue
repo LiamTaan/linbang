@@ -47,12 +47,8 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button @click="handleQuery">
-          <Icon icon="ep:search" class="mr-5px" /> 搜索
-        </el-button>
-        <el-button @click="resetQuery">
-          <Icon icon="ep:refresh" class="mr-5px" /> 重置
-        </el-button>
+        <el-button @click="handleQuery"> <Icon icon="ep:search" class="mr-5px" /> 搜索 </el-button>
+        <el-button @click="resetQuery"> <Icon icon="ep:refresh" class="mr-5px" /> 重置 </el-button>
         <el-button
           type="primary"
           plain
@@ -159,21 +155,35 @@
   <Dialog v-model="detailVisible" title="服务点详情" width="900px">
     <el-descriptions v-loading="detailLoading" :column="2" border>
       <el-descriptions-item label="服务商">{{ formatMerchantDisplay() }}</el-descriptions-item>
-      <el-descriptions-item label="服务点名称">{{ detailData?.pointName || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="服务点名称">{{
+        detailData?.pointName || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="状态">
         {{ formatEnableStatus(detailData?.status) }}
       </el-descriptions-item>
       <el-descriptions-item label="省市区" :span="2">
-        {{ [detailData?.province, detailData?.city, detailData?.district].filter(Boolean).join(' / ') || '-' }}
+        {{
+          [detailData?.province, detailData?.city, detailData?.district]
+            .filter(Boolean)
+            .join(' / ') || '-'
+        }}
       </el-descriptions-item>
       <el-descriptions-item label="街道">{{ detailData?.street || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="服务半径(km)">{{ detailData?.serviceRadiusKm ?? '-' }}</el-descriptions-item>
-      <el-descriptions-item label="详细地址" :span="2">{{ detailData?.detailAddress || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="服务半径(km)">{{
+        detailData?.serviceRadiusKm ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="详细地址" :span="2">{{
+        detailData?.detailAddress || '-'
+      }}</el-descriptions-item>
       <el-descriptions-item label="经纬度" :span="2">
         {{ detailData?.longitude ?? '-' }} / {{ detailData?.latitude ?? '-' }}
       </el-descriptions-item>
-      <el-descriptions-item label="创建时间">{{ formatDate(detailData?.createTime) }}</el-descriptions-item>
-      <el-descriptions-item label="更新时间">{{ formatDate(detailData?.updateTime) }}</el-descriptions-item>
+      <el-descriptions-item label="创建时间">{{
+        formatDate(detailData?.createTime)
+      }}</el-descriptions-item>
+      <el-descriptions-item label="更新时间">{{
+        formatDate(detailData?.updateTime)
+      }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">服务商信息</el-divider>
@@ -194,7 +204,8 @@
         {{ formatAcceptStatus(detailData?.merchant?.acceptStatus) }}
       </el-descriptions-item>
       <el-descriptions-item label="信用分 / 等级">
-        {{ detailData?.merchant?.creditScore ?? '-' }} / {{ detailData?.merchant?.creditLevel || '-' }}
+        {{ detailData?.merchant?.creditScore ?? '-' }} /
+        {{ detailData?.merchant?.creditLevel || '-' }}
       </el-descriptions-item>
       <el-descriptions-item label="最近入驻单号">
         {{ detailData?.merchant?.latestEntryNo || '-' }}
@@ -220,7 +231,9 @@
       <el-col :span="8">
         <el-card shadow="never">
           <div class="text-14px text-[var(--el-text-color-secondary)]">服务点总数</div>
-          <div class="mt-8px text-24px font-600">{{ detailData?.summary?.servicePointCount ?? 0 }}</div>
+          <div class="mt-8px text-24px font-600">{{
+            detailData?.summary?.servicePointCount ?? 0
+          }}</div>
         </el-card>
       </el-col>
       <el-col :span="8">
@@ -234,7 +247,9 @@
       </el-col>
       <el-col :span="8">
         <el-card shadow="never">
-          <div class="text-14px text-[var(--el-text-color-secondary)]">同区县 / 同城市 / 服务类目</div>
+          <div class="text-14px text-[var(--el-text-color-secondary)]"
+            >同区县 / 同城市 / 服务类目</div
+          >
           <div class="mt-8px text-18px font-600">
             {{ detailData?.summary?.sameDistrictPointCount ?? 0 }} /
             {{ detailData?.summary?.sameCityPointCount ?? 0 }} /
@@ -245,7 +260,13 @@
     </el-row>
 
     <el-divider content-position="left">服务类目</el-divider>
-    <el-table v-if="detailData?.categories?.length" :data="detailData.categories" size="small" border max-height="240">
+    <el-table
+      v-if="detailData?.categories?.length"
+      :data="detailData.categories"
+      size="small"
+      border
+      max-height="240"
+    >
       <el-table-column label="类目" prop="categoryName" min-width="160" />
       <el-table-column label="层级" prop="categoryLevel" width="80" />
       <el-table-column label="默认计价模式" prop="defaultPricingMode" width="140">
@@ -350,8 +371,11 @@ const queryParams = reactive({
 
 const formatMerchantDisplay = () => {
   const merchant = detailData.value?.merchant
-  return [merchant?.merchantName, merchant?.contactName, merchant?.contactMobile].filter(Boolean).join(' / ')
-    || (detailData.value?.merchantId ? '服务商信息缺失' : '-')
+  return (
+    [merchant?.merchantName, merchant?.contactName, merchant?.contactMobile]
+      .filter(Boolean)
+      .join(' / ') || (detailData.value?.merchantId ? '服务商信息缺失' : '-')
+  )
 }
 
 const getList = async () => {

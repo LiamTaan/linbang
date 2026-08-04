@@ -36,7 +36,12 @@
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable class="!w-180px">
+          <el-select
+            v-model="queryParams.status"
+            placeholder="请选择状态"
+            clearable
+            class="!w-180px"
+          >
             <el-option
               v-for="item in ENABLE_STATUS_OPTIONS"
               :key="item.value"
@@ -120,11 +125,7 @@ import {
   type MerchantServiceCategory
 } from '@/api/linbang/merchantcategory'
 import { useMessage } from '@/hooks/web/useMessage'
-import {
-  ENABLE_STATUS_OPTIONS,
-  formatBooleanYesNo,
-  formatEnableStatus
-} from '../utils/display'
+import { ENABLE_STATUS_OPTIONS, formatBooleanYesNo, formatEnableStatus } from '../utils/display'
 
 defineOptions({ name: 'ServiceCategorySelectDialog' })
 

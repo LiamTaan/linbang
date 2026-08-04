@@ -14,7 +14,7 @@ import javax.servlet.http.*;
 import java.util.*;
 import java.io.IOException;
 
-import cn.iocoder.yudao.framework.common.pojo.PageParam;
+import static cn.iocoder.yudao.module.linbang.constants.LinbangExportConstants.MAX_EXPORT_ROWS;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -35,39 +35,6 @@ public class WalletAccountController {
 
     @Resource
     private WalletAccountService walletAccountService;
-
-    @PostMapping("/create")
-    @Operation(summary = "创建钱包账户")
-    @PreAuthorize("@ss.hasPermission('linbang:wallet:account:create')")
-    public CommonResult<Long> createWalletAccount(@Valid @RequestBody WalletAccountSaveReqVO createReqVO) {
-        return success(walletAccountService.createWalletAccount(createReqVO));
-    }
-
-    @PutMapping("/update")
-    @Operation(summary = "更新钱包账户")
-    @PreAuthorize("@ss.hasPermission('linbang:wallet:account:update')")
-    public CommonResult<Boolean> updateWalletAccount(@Valid @RequestBody WalletAccountSaveReqVO updateReqVO) {
-        walletAccountService.updateWalletAccount(updateReqVO);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete")
-    @Operation(summary = "删除钱包账户")
-    @Parameter(name = "id", description = "编号", required = true)
-    @PreAuthorize("@ss.hasPermission('linbang:wallet:account:delete')")
-    public CommonResult<Boolean> deleteWalletAccount(@RequestParam("id") Long id) {
-        walletAccountService.deleteWalletAccount(id);
-        return success(true);
-    }
-
-    @DeleteMapping("/delete-list")
-    @Parameter(name = "ids", description = "编号", required = true)
-    @Operation(summary = "批量删除钱包账户")
-                @PreAuthorize("@ss.hasPermission('linbang:wallet:account:delete')")
-    public CommonResult<Boolean> deleteWalletAccountList(@RequestParam("ids") List<Long> ids) {
-        walletAccountService.deleteWalletAccountListByIds(ids);
-        return success(true);
-    }
 
     @GetMapping("/get")
     @Operation(summary = "获得钱包账户")
@@ -90,7 +57,7 @@ public class WalletAccountController {
     @ApiAccessLog(operateType = EXPORT)
     public void exportWalletAccountExcel(@Valid WalletAccountPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
-        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        pageReqVO.setPageSize(MAX_EXPORT_ROWS);
         List<WalletAccountRespVO> list = walletAccountService.getWalletAccountPage(pageReqVO).getList();
         // 导出 Excel
         ExcelUtils.write(response, "钱包账户.xls", "数据", WalletAccountRespVO.class, list);

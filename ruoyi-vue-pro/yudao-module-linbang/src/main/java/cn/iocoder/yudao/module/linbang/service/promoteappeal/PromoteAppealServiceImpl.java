@@ -17,6 +17,7 @@ import cn.iocoder.yudao.module.linbang.dal.mysql.memberuser.MemberUserMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.promoteappeal.PromoteAppealMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.promotecontent.PromoteContentMapper;
 import cn.iocoder.yudao.module.linbang.dal.mysql.promoter.PromoterMapper;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,9 +49,13 @@ public class PromoteAppealServiceImpl implements PromoteAppealService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createAppAppeal(Long userId, AppPromoteAppealCreateReqVO reqVO) {
-        PromoteContentDO content = promoteContentMapper.selectById(reqVO.getContentId());
+        PromoteContentDO content = promoteContentMapper.selectByIdForUpdate(reqVO.getContentId());
         if (content == null || !Objects.equals(content.getUserId(), userId)) {
             throw exception(PROMOTE_CONTENT_NOT_EXISTS);
+        }
+        PromoteAppealDO existing = promoteAppealMapper.selectPendingForUpdate(content.getId(), content.getPromoterId());
+        if (existing != null) {
+            return existing.getId();
         }
         PromoteAppealDO appeal = PromoteAppealDO.builder()
                 .contentId(content.getId())
@@ -59,7 +64,16 @@ public class PromoteAppealServiceImpl implements PromoteAppealService {
                 .appealReason(reqVO.getAppealReason())
                 .status(LinbangRiskConstants.PROMOTE_APPEAL_STATUS_PENDING)
                 .build();
-        promoteAppealMapper.insert(appeal);
+        try {
+            promoteAppealMapper.insert(appeal);
+        } catch (DuplicateKeyException ex) {
+            PromoteAppealDO concurrent = promoteAppealMapper
+                    .selectPendingForUpdate(content.getId(), content.getPromoterId());
+            if (concurrent != null) {
+                return concurrent.getId();
+            }
+            throw ex;
+        }
         return appeal.getId();
     }
 
@@ -95,20 +109,34 @@ public class PromoteAppealServiceImpl implements PromoteAppealService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void auditAppeal(Long operatorId, PromoteAppealAuditReqVO reqVO) {
-        PromoteAppealDO appeal = validateAppeal(reqVO.getId());
+        PromoteAppealDO snapshot = validateAppeal(reqVO.getId());
+        PromoteContentDO content = snapshot.getContentId() == null ? null
+                : promoteContentMapper.selectByIdForUpdate(snapshot.getContentId());
+        PromoteAppealDO appeal = promoteAppealMapper.selectByIdForUpdate(reqVO.getId());
+        if (appeal == null) {
+            throw exception(PROMOTE_APPEAL_NOT_EXISTS);
+        }
+        if (!Objects.equals(snapshot.getContentId(), appeal.getContentId())) {
+            throw exception(PROMOTE_APPEAL_STATUS_INVALID);
+        }
+        String auditResult = cn.hutool.core.util.StrUtil.trimToEmpty(reqVO.getAuditResult())
+                .toUpperCase(java.util.Locale.ROOT);
         if (!Objects.equals(appeal.getStatus(), LinbangRiskConstants.PROMOTE_APPEAL_STATUS_PENDING)) {
+            throw exception(PROMOTE_APPEAL_STATUS_INVALID);
+        }
+        if (!Objects.equals(auditResult, LinbangRiskConstants.PROMOTE_APPEAL_STATUS_APPROVED)
+                && !Objects.equals(auditResult, LinbangRiskConstants.PROMOTE_APPEAL_STATUS_REJECTED)) {
             throw exception(PROMOTE_APPEAL_STATUS_INVALID);
         }
         promoteAppealMapper.updateById(PromoteAppealDO.builder()
                 .id(appeal.getId())
-                .status(reqVO.getAuditResult())
+                .status(auditResult)
                 .auditRemark(reqVO.getAuditRemark())
                 .rejectReason(reqVO.getRejectReason())
                 .auditBy(operatorId)
                 .auditTime(java.time.LocalDateTime.now())
                 .build());
-        if (Objects.equals(reqVO.getAuditResult(), LinbangRiskConstants.PROMOTE_APPEAL_STATUS_APPROVED)) {
-            PromoteContentDO content = promoteContentMapper.selectById(appeal.getContentId());
+        if (Objects.equals(auditResult, LinbangRiskConstants.PROMOTE_APPEAL_STATUS_APPROVED)) {
             if (content != null) {
                 promoteContentMapper.updateById(PromoteContentDO.builder()
                         .id(content.getId())

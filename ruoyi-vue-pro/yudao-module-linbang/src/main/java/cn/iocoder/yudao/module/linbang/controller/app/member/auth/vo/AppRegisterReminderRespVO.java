@@ -12,7 +12,8 @@ public class AppRegisterReminderRespVO {
     @Schema(description = "是否需要提醒", example = "true")
     private Boolean remindRequired;
 
-    @Schema(description = "提醒键", example = "SOCIAL_32_openid_xxx")
+    @Schema(description = "提醒键，可直接用于确认提醒；不包含原始第三方标识或设备标识",
+            example = "SOCIAL_32_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
     private String reminderKey;
 
     @Schema(description = "提醒场景", example = "SOCIAL_UNREGISTERED")

@@ -1,17 +1,47 @@
 <template>
   <ContentWrap>
-    <el-form ref="queryFormRef" :model="queryParams" :inline="true" label-width="88px" class="-mb-15px">
+    <el-form
+      ref="queryFormRef"
+      :model="queryParams"
+      :inline="true"
+      label-width="88px"
+      class="-mb-15px"
+    >
       <el-form-item label="标题" prop="title">
-        <el-input v-model="queryParams.title" placeholder="请输入推广标题" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.title"
+          placeholder="请输入推广标题"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="状态" prop="status">
-        <el-input v-model="queryParams.status" placeholder="如 APPROVED/OFFLINE" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.status"
+          placeholder="如 APPROVED/OFFLINE"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="系统审" prop="systemAuditResult">
-        <el-input v-model="queryParams.systemAuditResult" placeholder="如 PASS/REJECT" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.systemAuditResult"
+          placeholder="如 PASS/REJECT"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item label="人工审" prop="manualAuditResult">
-        <el-input v-model="queryParams.manualAuditResult" placeholder="如 APPROVED/REJECTED" clearable class="!w-220px" @keyup.enter="handleQuery" />
+        <el-input
+          v-model="queryParams.manualAuditResult"
+          placeholder="如 APPROVED/REJECTED"
+          clearable
+          class="!w-220px"
+          @keyup.enter="handleQuery"
+        />
       </el-form-item>
       <el-form-item>
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
@@ -45,7 +75,12 @@
         </template>
       </el-table-column>
     </el-table>
-    <Pagination :total="total" v-model:page="queryParams.pageNo" v-model:limit="queryParams.pageSize" @pagination="getList" />
+    <Pagination
+      :total="total"
+      v-model:page="queryParams.pageNo"
+      v-model:limit="queryParams.pageSize"
+      @pagination="getList"
+    />
   </ContentWrap>
 </template>
 
@@ -110,7 +145,9 @@ const showAudit = async (row: PromoteContent, auditResult: string) => {
 }
 
 const showOffline = async (row: PromoteContent) => {
-  const offlineReason = await ElMessageBox.prompt('请输入下架原因', '下架推广内容', { inputType: 'textarea' })
+  const offlineReason = await ElMessageBox.prompt('请输入下架原因', '下架推广内容', {
+    inputType: 'textarea'
+  })
   await PromoteContentApi.offline({
     id: row.id,
     offlineReason: offlineReason.value

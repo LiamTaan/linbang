@@ -41,6 +41,7 @@ public class SensitiveWordDetailRespVO {
     private List<RelatedWordRespVO> relatedWords;
 
     @Data
+    @Schema(description = "管理后台 - 关联敏感词摘要 Response VO")
     public static class RelatedWordRespVO {
         @Schema(description = "词条 ID", example = "320002")
         private Long id;

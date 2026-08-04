@@ -56,10 +56,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { reactive, ref } from 'vue'
 import { useI18n } from '@/hooks/web/useI18n'
 import { useMessage } from '@/hooks/web/useMessage'
-import {
-  MessageTemplateApi,
-  type MessageTemplateDetail
-} from '@/api/linbang/messagetemplate'
+import { MessageTemplateApi, type MessageTemplateDetail } from '@/api/linbang/messagetemplate'
 import { CHANNEL_TYPE_OPTIONS, ENABLE_STATUS_OPTIONS } from '../utils/display'
 
 defineOptions({ name: 'MessageTemplateForm' })

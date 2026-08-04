@@ -21,7 +21,12 @@
           />
         </el-form-item>
         <el-form-item label="审核状态">
-          <el-select v-model="queryParams.auditStatus" placeholder="请选择审核状态" clearable class="!w-220px">
+          <el-select
+            v-model="queryParams.auditStatus"
+            placeholder="请选择审核状态"
+            clearable
+            class="!w-220px"
+          >
             <el-option
               v-for="dict in getStrDictOptions(DICT_TYPE.LB_AUDIT_STATUS)"
               :key="dict.value"
@@ -31,7 +36,12 @@
           </el-select>
         </el-form-item>
         <el-form-item label="退款状态">
-          <el-select v-model="queryParams.status" placeholder="请选择退款状态" clearable class="!w-220px">
+          <el-select
+            v-model="queryParams.status"
+            placeholder="请选择退款状态"
+            clearable
+            class="!w-220px"
+          >
             <el-option
               v-for="dict in getIntDictOptions(DICT_TYPE.PAY_REFUND_STATUS)"
               :key="dict.value"
@@ -68,13 +78,19 @@
             <div class="leading-20px">
               <div class="font-600">{{ row.merchantRefundId || '-' }}</div>
               <div class="text-[var(--el-text-color-secondary)]">{{ row.no || '-' }}</div>
-              <div class="text-[var(--el-text-color-secondary)]">{{ row.merchantOrderId || '-' }}</div>
+              <div class="text-[var(--el-text-color-secondary)]">{{
+                row.merchantOrderId || '-'
+              }}</div>
             </div>
           </template>
         </el-table-column>
         <el-table-column label="审核状态" width="120">
           <template #default="{ row }">
-            <dict-tag v-if="row.auditStatus" :type="DICT_TYPE.LB_AUDIT_STATUS" :value="row.auditStatus" />
+            <dict-tag
+              v-if="row.auditStatus"
+              :type="DICT_TYPE.LB_AUDIT_STATUS"
+              :value="row.auditStatus"
+            />
             <span v-else>-</span>
           </template>
         </el-table-column>
@@ -94,7 +110,12 @@
           </template>
         </el-table-column>
         <el-table-column label="退款原因" prop="reason" min-width="180" />
-        <el-table-column label="创建时间" prop="createTime" width="180" :formatter="dateFormatter" />
+        <el-table-column
+          label="创建时间"
+          prop="createTime"
+          width="180"
+          :formatter="dateFormatter"
+        />
       </el-table>
 
       <Pagination
